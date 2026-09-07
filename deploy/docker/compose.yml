@@ -1,0 +1,14 @@
+services:
+  openclaw-os:
+    build: { context: ., args: { OPENCLAW_PIN: "2026.9.2" } }
+    environment:
+      - OPENCLAW_GATEWAY_BIND=lan
+      - CLAWOS_GATEWAY_TOKEN=${CLAWOS_GATEWAY_TOKEN:?set a long random token}
+      # - OPENCLAW_SANDBOX=1   # sandboxes inside Docker need the socket or upstream's scripts/docker/setup.sh conventions
+    ports: ["18789:18789"]
+    volumes:
+      - openclaw-home:/home/node/.openclaw
+      # - /var/run/docker.sock:/var/run/docker.sock   # only if sandboxed blueprints are used
+    command: ["bash", "-lc", "clawos install --in-container --yes && exec openclaw gateway run"]
+volumes:
+  openclaw-home: {}

@@ -1,0 +1,18 @@
+{
+  "name": "@clawos/gatekeeper-fs",
+  "version": "0.1.0",
+  "description": "Scoped host-directory gatekeeper for OpenClaw OS.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist", "openclaw.plugin.json", "config.schema.json", "hooks", "README.md"],
+  "scripts": { "build": "tsup src/index.ts --format esm --dts --clean", "test": "vitest run", "typecheck": "tsc -p tsconfig.json --noEmit", "validate": "openclaw plugins validate --entry ./dist/index.js" },
+  "dependencies": { "@clawos/shared": "workspace:*", "@clawos/gatekeeper-kit": "workspace:*", "typebox": "catalog:" },
+  "peerDependencies": { "openclaw": "catalog:" },
+  "devDependencies": { "tsup": "catalog:", "typescript": "catalog:", "vitest": "catalog:", "@types/node": "catalog:" },
+  "openclaw": {
+    "extensions": ["./dist/index.js"],
+    "compat": { "pluginApi": ">=2026.9.2 <2026.11.0", "minGatewayVersion": "2026.9.2" },
+    "build": { "openclawVersion": "2026.9.2", "pluginSdkVersion": "2026.9.2" }
+  }
+}

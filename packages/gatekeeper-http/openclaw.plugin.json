@@ -1,0 +1,8 @@
+{
+  "id": "gatekeeper-http",
+  "name": "HTTP Gatekeeper",
+  "description": "OpenAPI-driven generic REST gatekeeper (v1.1, plan §9 Phase 8).",
+  "contracts": { "tools": [] },
+  "activation": { "onStartup": false },
+  "clawos": { "gatekeeper": { "vendor": "http", "apiVersion": 1 } }
+}

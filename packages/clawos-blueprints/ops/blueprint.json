@@ -1,0 +1,28 @@
+{
+  "name": "ops",
+  "version": "0.1.0",
+  "description": "Scheduled operations agent: cron-driven summaries and notifications.",
+  "workspaceFiles": [
+    "AGENTS.md",
+    "SOUL.md"
+  ],
+  "skills": [],
+  "toolPolicy": {
+    "profile": "messaging",
+    "allow": [
+      "cron"
+    ],
+    "deny": [
+      "group:runtime",
+      "group:fs",
+      "browser"
+    ]
+  },
+  "sandbox": {
+    "mode": "off"
+  },
+  "expectedGatekeepers": [
+    "github",
+    "http"
+  ]
+}

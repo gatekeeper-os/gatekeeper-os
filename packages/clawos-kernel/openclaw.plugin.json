@@ -1,0 +1,17 @@
+{
+  "id": "clawos-kernel",
+  "name": "OpenClaw OS Kernel",
+  "description": "Capability model, gatekeeper registry, approval queue, and audit for OpenClaw OS.",
+  "contracts": {
+    "tools": ["os_request_access", "os_list_grants"],
+    "trustedToolPolicies": ["clawos-capability-policy"],
+    "gatewayMethodDispatch": [
+      "os.status", "os.grants.list", "os.grants.introduce", "os.grants.revoke",
+      "os.approvals.list", "os.approvals.apply", "os.approvals.reject", "os.approvals.revert",
+      "os.gatekeepers.list", "os.gatekeepers.connect", "os.audit.query"
+    ]
+  },
+  "activation": { "onStartup": true },
+  "configSchema": { "$ref": "./config.schema.json" },
+  "clawos": { "kernel": true, "apiVersion": 1 }
+}

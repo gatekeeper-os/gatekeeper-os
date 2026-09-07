@@ -1,0 +1,30 @@
+{
+  "name": "openclaw-os",
+  "version": "0.1.0",
+  "private": true,
+  "description": "An operating-system layer over upstream OpenClaw, modeled on Cloudflare OS gatekeepers.",
+  "type": "module",
+  "packageManager": "pnpm@10.15.0",
+  "engines": { "node": ">=22.22.3" },
+  "scripts": {
+    "build": "pnpm -r --filter './packages/**' run build",
+    "typecheck": "pnpm build && pnpm -r --filter './packages/**' run typecheck",
+    "test": "pnpm build && vitest run",
+    "lint": "eslint . && pnpm run check:catalog && pnpm run check:secrets",
+    "check:catalog": "tsx scripts/check-catalog.ts",
+    "check:secrets": "bash scripts/check-secrets.sh",
+    "conformance": "tsx packages/clawos-conformance/src/run.ts",
+    "dev:gateway": "tsx scripts/dev-gateway.ts",
+    "vm:up": "bash scripts/vm/up.sh",
+    "vm:test": "bash scripts/vm/test.sh",
+    "validate:plugins": "pnpm -r --filter './packages/clawos-kernel' --filter './packages/gatekeeper-*' run validate"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "tsup": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

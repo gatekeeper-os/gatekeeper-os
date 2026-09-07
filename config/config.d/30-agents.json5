@@ -1,0 +1,4 @@
+// Blueprint-provisioned agents. Written by `clawos blueprint apply`; do not edit by hand.
+{
+  agents: { entries: {} },
+}

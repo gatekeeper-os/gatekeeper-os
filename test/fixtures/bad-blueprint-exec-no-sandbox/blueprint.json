@@ -1,0 +1,6 @@
+{
+  "name": "bad-exec-no-sandbox",
+  "version": "0.0.1",
+  "toolPolicy": { "allow": ["exec"] },
+  "sandbox": { "mode": "off" }
+}

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "operators": { "type": "array", "items": { "type": "object", "required": ["channel", "senderId"], "properties": { "channel": { "type": "string" }, "senderId": { "type": "string" }, "name": { "type": "string" } }, "additionalProperties": false } },
+    "autoApprove": { "type": "array", "items": { "type": "string" } },
+    "install": { "type": "object", "properties": { "allowSources": { "type": "array", "items": { "type": "string" } }, "allowHashes": { "type": "array", "items": { "type": "string" } } }, "additionalProperties": false },
+    "egress": { "type": "object", "properties": { "denyPatterns": { "type": "array", "items": { "type": "string" } } }, "additionalProperties": false },
+    "audit": { "type": "object", "properties": { "llm": { "type": "boolean" } }, "additionalProperties": false },
+    "maintenance": { "type": "boolean" },
+    "notify": { "type": "object", "properties": { "channel": { "type": "string" }, "target": { "type": "string" } }, "additionalProperties": false }
+  }
+}

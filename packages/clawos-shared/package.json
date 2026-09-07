@@ -1,0 +1,12 @@
+{
+  "name": "@clawos/shared",
+  "version": "0.1.0",
+  "description": "Contracts for OpenClaw OS: gatekeeper interfaces, approval queue, grants.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist", "openclaw.plugin.json", "config.schema.json", "hooks", "README.md"],
+  "scripts": { "build": "tsup src/index.ts --format esm --dts --clean", "test": "vitest run", "typecheck": "tsc -p tsconfig.json --noEmit" },
+  "dependencies": { "typebox": "catalog:" },
+  "devDependencies": { "tsup": "catalog:", "typescript": "catalog:", "vitest": "catalog:", "@types/node": "catalog:" }
+}

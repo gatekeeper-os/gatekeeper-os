@@ -1,0 +1,29 @@
+{
+  "name": "coder",
+  "version": "0.1.0",
+  "description": "Sandboxed coding agent with scoped filesystem and exec inside a container.",
+  "workspaceFiles": [
+    "AGENTS.md",
+    "SOUL.md"
+  ],
+  "skills": [],
+  "toolPolicy": {
+    "profile": "messaging",
+    "allow": [
+      "group:fs",
+      "exec",
+      "process"
+    ],
+    "deny": [
+      "browser"
+    ]
+  },
+  "sandbox": {
+    "mode": "all",
+    "workspaceAccess": "rw"
+  },
+  "expectedGatekeepers": [
+    "fs",
+    "github"
+  ]
+}

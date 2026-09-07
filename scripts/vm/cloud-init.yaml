@@ -1,0 +1,15 @@
+#cloud-config
+# Base provisioning for the test VM (docs/vm-testing.md §2). No Node, no OpenClaw — the installer must provide them.
+users:
+  - name: tester
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: [docker]
+    lock_passwd: true
+package_update: true
+packages: [curl, git, build-essential, ca-certificates, jq, sqlite3, rsync, unzip]
+runcmd:
+  - curl -fsSL https://get.docker.com | sh
+  - usermod -aG docker tester
+  - loginctl enable-linger tester
+  - mkdir -p /home/tester/src && chown tester:tester /home/tester/src

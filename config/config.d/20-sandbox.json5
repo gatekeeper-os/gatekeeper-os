@@ -1,0 +1,8 @@
+// Default sandbox profile (plan §7.3). Blueprints tighten per agent in 30-agents.json5.
+{
+  agents: {
+    defaults: {
+      sandbox: { mode: "non-main", scope: "agent", backend: "docker", workspaceAccess: "ro" },
+    },
+  },
+}

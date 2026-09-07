@@ -1,0 +1,19 @@
+// OS plugins and their configuration. `clawos gatekeeper add` appends gatekeeper entries here.
+{
+  plugins: {
+    entries: {
+      "clawos-kernel": {
+        enabled: true,
+        config: {
+          operators: [],                                  // [{ channel: "telegram", senderId: "…" }]
+          autoApprove: [],                                // ["github.issue.comment"]
+          install: { allowSources: ["npm:@clawos/*", "clawhub:@clawos/*"] },
+          egress: { denyPatterns: ["(?i)api[_-]?key\\s*[:=]", "grant:[a-z0-9]{8}"] },
+          audit: { llm: false },
+        },
+      },
+      "gatekeeper-fs": { enabled: true, config: { roots: [] } },   // ["/home/you/projects"]
+    },
+  },
+  hooks: { internal: { entries: { "clawos-bootstrap": { enabled: true }, "clawos-lifecycle": { enabled: true } } } },
+}

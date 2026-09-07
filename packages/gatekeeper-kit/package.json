@@ -1,0 +1,13 @@
+{
+  "name": "@clawos/gatekeeper-kit",
+  "version": "0.1.0",
+  "description": "Builder and security-critical helpers for OpenClaw OS gatekeepers.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist", "openclaw.plugin.json", "config.schema.json", "hooks", "README.md"],
+  "scripts": { "build": "tsup src/index.ts --format esm --dts --clean", "test": "vitest run", "typecheck": "tsc -p tsconfig.json --noEmit" },
+  "dependencies": { "@clawos/shared": "workspace:*", "typebox": "catalog:" },
+  "devDependencies": { "tsup": "catalog:", "typescript": "catalog:", "vitest": "catalog:", "@types/node": "catalog:" },
+  "peerDependencies": { "openclaw": "catalog:" }
+}

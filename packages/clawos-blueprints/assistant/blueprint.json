@@ -1,0 +1,25 @@
+{
+  "name": "assistant",
+  "version": "0.1.0",
+  "description": "Messaging-only personal assistant. No filesystem or shell access; uses gatekeepers for everything external.",
+  "workspaceFiles": [
+    "AGENTS.md",
+    "SOUL.md"
+  ],
+  "skills": [],
+  "toolPolicy": {
+    "profile": "messaging",
+    "allow": [],
+    "deny": [
+      "group:runtime",
+      "group:fs",
+      "browser"
+    ]
+  },
+  "sandbox": {
+    "mode": "off"
+  },
+  "expectedGatekeepers": [
+    "github"
+  ]
+}

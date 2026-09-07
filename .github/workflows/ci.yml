@@ -1,0 +1,24 @@
+name: ci
+on:
+  push: { branches: [main, "phase/**"] }
+  pull_request:
+jobs:
+  build-test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .node-version, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run check:catalog
+      - run: pnpm run check:secrets
+      - run: pnpm typecheck
+      - run: pnpm build
+      - run: pnpm test
+      - name: Install pinned upstream and validate plugins
+        run: |
+          pin=$(node -p "require('./clawos.lock.json').upstream.version")
+          npm install -g "openclaw@$pin" --allow-scripts=openclaw
+          openclaw --version | grep -q "$pin"
+          pnpm run validate:plugins

@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.wrangler/
+*.tsbuildinfo
+vm-artifacts/
+scripts/vm/secrets.env
+scripts/vm/.state/
+os/
+*.log
+.env
+.env.*
+!.env.example
+coverage/
+.DS_Store

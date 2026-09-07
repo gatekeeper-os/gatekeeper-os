@@ -1,0 +1,7 @@
+{
+  "name": "@clawos/blueprints",
+  "version": "0.1.0",
+  "description": "Versioned agent templates for OpenClaw OS.",
+  "type": "module",
+  "files": ["blueprint.schema.json", "assistant", "coder", "ops", "researcher"]
+}

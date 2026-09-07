@@ -1,0 +1,15 @@
+packages:
+  - "packages/*"
+  - "scripts/spike-probe"
+
+# Shared dependency ranges. Keep the `openclaw` peer range identical in every package that declares it
+# (scripts/check-catalog.ts enforces this — see cloudflare-os-starter's catalog-drift lesson, plan §8).
+catalog:
+  openclaw: ">=2026.9.2 <2026.11.0"
+  typebox: "1.1.39"
+  typescript: "5.9.2"
+  tsup: "8.5.0"
+  tsx: "4.20.5"
+  vitest: "3.2.4"
+  eslint: "9.34.0"
+  "@types/node": "22.18.0"

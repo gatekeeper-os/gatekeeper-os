@@ -1,0 +1,24 @@
+// OpenClaw OS hardened baseline. Derived from upstream's security page baseline (VERIFIED) plus OS requirements.
+// Owned by the OS (plan §6.2). Operator overrides go in 90-local.json5.
+{
+  gateway: {
+    mode: "local",
+    bind: "loopback",
+    auth: { mode: "token", token: "${CLAWOS_GATEWAY_TOKEN}" },
+    reload: { mode: "hybrid" },
+  },
+  session: { dmScope: "per-channel-peer" },
+  tools: {
+    profile: "messaging",
+    deny: ["group:runtime", "group:fs", "group:automation", "browser"],
+    exec: { mode: "deny" },
+    sessions: { visibility: "self" },
+    elevated: { enabled: false },
+  },
+  update: { channel: "stable", auto: { enabled: false } },
+  plugins: { deny: [] },
+  hooks: { internal: { enabled: true } },
+  // Primary install boundary (VERIFIED 2026.9.2): a trusted local command returning allow | warn | block for plugin and skill
+  // installs. Bound to the OS policy command in Phase 3; exact invocation contract is spike S-1 item (m).
+  // security: { installPolicy: { command: "clawos install-policy" } },
+}

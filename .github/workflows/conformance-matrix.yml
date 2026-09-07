@@ -1,0 +1,32 @@
+name: conformance-matrix
+# Nightly: does the OS still work against upstream latest / beta / extended-stable? (plan §6.5)
+on:
+  schedule: [{ cron: "0 6 * * *" }]
+  workflow_dispatch:
+jobs:
+  conformance:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix: { tag: [latest, beta, extended-stable] }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .node-version, cache: pnpm }
+      - run: pnpm install --frozen-lockfile && pnpm build
+      - run: npm install -g "openclaw@${{ matrix.tag }}" --allow-scripts=openclaw && openclaw --version
+      - name: Start throwaway cell
+        run: |
+          export OPENCLAW_PROFILE=clawos-ci OPENCLAW_GATEWAY_PORT=19100 OPENCLAW_GATEWAY_TOKEN=ci-token OPENCLAW_NO_AUTO_UPDATE=1
+          mkdir -p ~/.openclaw-clawos-ci && printf '{ gateway: { auth: { mode: "token", token: "ci-token" } } }' > ~/.openclaw-clawos-ci/openclaw.json && chmod 600 ~/.openclaw-clawos-ci/openclaw.json
+          openclaw plugins install ./packages/clawos-kernel --force --accept-capabilities   # local sources warn; --force confirms provenance (VERIFIED)
+          openclaw plugins install ./packages/gatekeeper-fs --force --accept-capabilities
+          (openclaw gateway run > gateway.log 2>&1 &) ; for i in $(seq 1 30); do curl -fsS http://127.0.0.1:19100/readyz && break; sleep 2; done
+      - run: pnpm conformance --gateway ws://127.0.0.1:19100 --token ci-token --verdict verdict-${{ matrix.tag }}.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: verdict-${{ matrix.tag }}, path: "verdict-*.json" }
+      - name: Open upstream-drift issue on failure
+        if: failure() && matrix.tag == 'beta'
+        run: echo "TODO(phase-7): gh issue create --label upstream-drift …"
