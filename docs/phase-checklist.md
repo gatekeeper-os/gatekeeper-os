@@ -5,7 +5,7 @@ Check a box only when the criterion passed in the VM (or, for host-only unit tes
 ## Phase 0 — Bootstrap and spikes
 
 - [x] Monorepo skeleton per plan §8 committed; `AGENTS.md` and `REVIEW.md` created from `docs/agent-operating-rules.md` — evidence: `7534893` (provided derived short forms)
-- [ ] `clawos.lock.json` pins `openclaw@<version>`; CI installs that version and prints `openclaw --version` — evidence: CI run URL
+- [x] `clawos.lock.json` pins `openclaw@2026.9.2`; CI installs that version and prints `openclaw --version` — evidence: https://github.com/ControlStackAI/openclaw-os/actions/runs/34160492903 (success, `dbb663c`)
 - [x] `scripts/dev-gateway.ts` starts and stops a throwaway cell with `openclaw gateway run` — evidence: `vm-artifacts/20260907-192654-phase-0/{run.log,dev-gateway.log}`, exit 0
 - [x] `scripts/vm/up.sh` creates the VM and takes snapshot `base` — evidence: `18eb1d7`; `scripts/vm/.state/up-metadata-retry.log`; subsequent acceptance runs successfully restored `base`
 - [x] `plans/spike-S1.md` answers every UNVERIFIED item in plan §2.2 and §5.1 with the command used — evidence: `vm-artifacts/20260907-201658-phase-0/` exit 0; provider-documentation naming bound + live SDK-slot fallback; see S-1 limits
@@ -25,7 +25,7 @@ existed. No phase tag or advancement. See `plans/PROGRESS.md`.
 exited **0** from `base`. c/j are now answered: documented naming limits with a
 live 64-character schema-boundary test, and catalog-selected SDK runtime slots
 with enabled/disabled/stopped checks. All eleven structural assertions pass.
-**Remaining Phase 0 gate:** live CI destination/run URL. No tag or Phase 1 work.
+**Publication update:** private `ControlStackAI/openclaw-os` created; live CI passed at `dbb663c` (run linked above). Phase 0 merge/tag has not yet been performed; no Phase 1 work.
 
 ## Phase 1 — Host layer and installer
 

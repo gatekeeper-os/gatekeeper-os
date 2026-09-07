@@ -219,3 +219,26 @@ base and ignored artifacts preserved. Production Gateway and other VM untouched.
 **Next:** use the selected GitHub destination, push this reviewable branch and run
 CI; require a green run before the Phase 0 merge/tag and Phase 1. See the
 current `plans/spike-S1.md` and `docs/phase-checklist.md` for evidence.
+
+## 2026-09-07 — authorized repository publication and live CI
+
+**Repository:** https://github.com/ControlStackAI/openclaw-os, verified private,
+default branch `main`. Matt authorized creation in ControlStackAI. HTTPS origin
+configured; scaffold `main` and prepared `phase/0-bootstrap` pushed.
+
+**Live CI:** https://github.com/ControlStackAI/openclaw-os/actions/runs/34160492903
+completed **success** at `dbb663c`. Frozen dependency install, catalog and secret
+checks, typecheck, build, 11 unit tests, pinned upstream installation and all five
+plugin metadata checks passed. Output: `OpenClaw 2026.9.2 (3928bad)`. Twelve
+conformance TODOs remain TODOs, not passes. Existing fresh-base VM acceptance
+`vm-artifacts/20260907-201658-phase-0/` remains the runtime evidence (11 assertions).
+
+**Publication fix:** GitHub rejected the scaffold conformance-matrix workflow
+before execution (run 34160489943). Quoted its flow-map expression and changed a
+colon-containing plain run scalar to a block scalar in `8f5770a`; both workflow
+files parse successfully. This does not implement or dispatch Phase 7. Follow-up
+CI: https://github.com/ControlStackAI/openclaw-os/actions/runs/34160573000.
+
+**State:** destination and live-CI blockers resolved. No phase merge/tag or
+Phase 1 implementation in this repository-creation step. Production and VM
+state untouched. Next project step is the Phase 0 merge/tag checkpoint.
