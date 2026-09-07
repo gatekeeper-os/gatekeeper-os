@@ -161,7 +161,7 @@ export async function install(args: string[], globals: GlobalOptions): Promise<n
   record("hooks", "ok", "internal hooks are declared by the kernel plugin (Phase 3)");
 
   // [8/12] reconcile
-  const reconciled = await reconcile(cell.name);
+  const reconciled = await reconcile(cell.name, { skipRestart: true });
   if (reconciled.conflicts?.length) {
     throw new StepError(
       `config apply refused: OS-owned paths changed outside the OS (${reconciled.conflicts.join(", ")})`,

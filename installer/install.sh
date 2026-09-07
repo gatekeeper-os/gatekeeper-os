@@ -60,7 +60,9 @@ if ! command -v node >/dev/null 2>&1; then
   export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
 fi
 command -v node >/dev/null 2>&1 || fail "node is still not on PATH after provisioning"
-log "node $(node -p 'process.versions.node')"
+# npm is verified here rather than in preflight: on a clean host it only exists once Node is provisioned.
+command -v npm >/dev/null 2>&1 || fail "npm is not on PATH (it should have arrived with Node)"
+log "node $(node -p 'process.versions.node'), npm $(npm --version)"
 
 # 4. Upstream at the pin, never `latest`.
 current="$(openclaw --version 2>/dev/null | grep -oE '[0-9]{4}\.[0-9]+\.[0-9]+' | head -1 || true)"
@@ -79,7 +81,19 @@ openclaw --version
 # `npm pack` produces exactly the files listed in the package's `files` field — `dist/`, `bin/` and the staged
 # `templates/` — which is a self-contained artifact that installs on a host with nothing but Node.
 log "building the clawos CLI from source"
+# The build needs pnpm at the exact version the lockfile was written with. Corepack is the preferred route, but
+# it is not always enabled on a fresh host and `corepack enable` can fail silently, so fall back to a *pinned*
+# global install read from the repository's own `packageManager` field. Never `pnpm@latest`: a different pnpm
+# could resolve the lockfile differently, which is the thing --frozen-lockfile exists to prevent.
+pm="$(sed -n 's/.*"packageManager"[[:space:]]*:[[:space:]]*"\(pnpm@[0-9.]*\)".*/\1/p' "$src_root/package.json" | head -1)"
+[ -n "$pm" ] || fail "could not read packageManager from $src_root/package.json"
 corepack enable >/dev/null 2>&1 || true
+if ! command -v pnpm >/dev/null 2>&1; then
+  log "pnpm not available via corepack; installing $pm globally"
+  npm install -g "$pm"
+fi
+command -v pnpm >/dev/null 2>&1 || fail "pnpm is not on PATH after provisioning"
+log "pnpm $(pnpm --version)"
 (
   cd "$src_root"
   # Fail closed. A frozen install that fell back to resolving a fresh lockfile would silently install dependency

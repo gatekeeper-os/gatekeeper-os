@@ -47,11 +47,13 @@ else
   warn "node not found — install.sh decides whether it may be provisioned"
 fi
 
-# Required tools
-for tool in curl tar npm; do
+# Required tools. `npm` is deliberately not in this list: it arrives with Node, and on a clean host Node has not
+# been provisioned yet when preflight runs. install.sh verifies npm after the Node step instead.
+for tool in curl tar; do
   command -v "$tool" >/dev/null || fail "$tool is required"
 done
-ok "curl, tar, npm present"
+ok "curl, tar present"
+if command -v npm >/dev/null; then ok "npm present"; else warn "npm not found - it arrives with Node"; fi
 
 # Container runtime (optional)
 if command -v docker >/dev/null || command -v podman >/dev/null; then

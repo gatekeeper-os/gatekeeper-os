@@ -56,6 +56,9 @@ lv_sync() {
 }
 lv_shutdown() {
   lv_owned
+  # Already stopped is the normal state between acceptance runs, and libvirt treats "shutdown a stopped domain"
+  # as an error. That is a postcondition already met, not a failure.
+  [ "$(lv domstate "$VM_NAME")" = 'shut off' ] && return 0
   lv shutdown "$VM_NAME"
   local deadline=$((SECONDS+90))
   until [ "$(lv domstate "$VM_NAME")" = 'shut off' ]; do

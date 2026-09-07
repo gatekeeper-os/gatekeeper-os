@@ -4,7 +4,11 @@
   gateway: {
     mode: "local",
     bind: "loopback",
-    auth: { mode: "token", token: "${CLAWOS_GATEWAY_TOKEN}" },
+    // SecretRef, not a "${ENV}" string: upstream's doctor flags an interpolated token as a plaintext
+    // secret-bearing field, and a SecretRef keeps the value out of openclaw.json entirely. `mode` is set
+    // explicitly so credential rotation stays eligible for hot reload (VERIFIED, gateway/configuration.md).
+    // `gateway.auth.token` is on upstream's SecretRef credential surface (VERIFIED).
+    auth: { mode: "token", token: { source: "env", provider: "default", id: "CLAWOS_GATEWAY_TOKEN" } },
     reload: { mode: "hybrid" },
   },
   session: { dmScope: "per-channel-peer" },

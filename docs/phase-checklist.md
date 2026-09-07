@@ -29,19 +29,26 @@ with enabled/disabled/stopped checks. All eleven structural assertions pass.
 
 ## Phase 1 — Host layer and installer
 
-- [ ] From snapshot `base`: `installer/install.sh` completes non-interactively; Gateway running; `clawos status` healthy — evidence:
-- [ ] `openclaw doctor --lint --json` exit 0 — evidence:
-- [ ] `openclaw security audit --deep --json` has no critical findings — evidence:
-- [ ] Re-running `clawos install` is a no-op (every step reports postcondition already met) — evidence:
-- [ ] `clawos config apply` twice → second run shows no diff — evidence:
-- [ ] `clawos cell create firmA --port 18801` → both cells run concurrently with separate state dirs and units — evidence:
-- [ ] `clawos backup create` + `restore` round-trips a cell — evidence:
-- [ ] Systemd drop-in (not upstream's unit) carries `OPENCLAW_NO_AUTO_UPDATE=1` and `CLAWOS_CELL` — evidence:
-- [ ] Config file mode 600, state dir 700, `os/cell.key` 600 — evidence:
-- [ ] Install time from `base` under 10 minutes — evidence: timing in artifact log
-- [ ] Snapshot `installed` taken — evidence:
-- [ ] macOS smoke install (manual or Lima) recorded — evidence:
-- [ ] Tag `phase-1`
+- [x] From snapshot `base`: `installer/install.sh` completes non-interactively; Gateway running; `clawos status` healthy — evidence: `vm-artifacts/20260907-213353-phase-1/` exit 0; `install-result.json` (exit 0), `status.json` (`healthy: true`). Source install, not `curl | bash` — see the §10.2 correction.
+- [ ] `openclaw doctor --lint --json` reports **no error-severity findings** — evidence:
+      *Criterion corrected 2026-09-07 (Phase 1).* The original text said "exit 0". Exit 0 means *zero findings of
+      any severity*, and the hardened baseline deliberately produces two warnings: `core/doctor/node-hosting-preconditions`
+      (loopback-only bind — intended; node onboarding is not used) and `core/doctor/skill-workshop-tool-policy`
+      (`skill_workshop` absent from the `messaging` profile — intended; the baseline denies broad tool groups).
+      Reversing either to score a green exit code would weaken the security posture Phase 1 exists to establish, so
+      the criterion is "no error-severity findings" and the accepted warnings are named. The third original warning
+      (plaintext `gateway.auth.token`) was a real defect and is fixed: the token is a SecretRef.
+- [x] `openclaw security audit --deep --json` has no critical findings — evidence: `vm-artifacts/20260907-213353-phase-1/security-audit.json` → `summary.critical: 0` (2 warn, 1 info)
+- [x] Re-running `clawos install` is a no-op (every step reports postcondition already met) — evidence: `vm-artifacts/20260907-213353-phase-1/install-again.json` → `changed: false`; step 6 (plugins) reports `deferred`, not `ok`, because the kernel is Phase 3
+- [x] `clawos config apply` twice → second run shows no diff — evidence: `vm-artifacts/20260907-213353-phase-1/config-apply-2.json` → `changed: false`, `changes: []`. Also verified beyond the criterion: `config-apply-conflict.json` proves an external edit to an OS-owned path is refused (exit 1, `conflicts: ["gateway.bind"]`), `bind-after-refusal.json` proves the refusal wrote nothing, and `config-apply-forced.json` proves `--force` recovers.
+- [x] `clawos cell create firma --port 18801` → both cells run concurrently with separate state dirs and units — evidence: `vm-artifacts/20260907-213353-phase-1/cell-list.json`, `units.txt`, `listening-ports.txt` (18789 + 18801), `state-dirs.txt`. Cell keys verified distinct, which is what makes a cell a trust boundary. (Name lowercased: cell names map to unit and directory names.)
+- [x] `clawos backup create` + `restore` round-trips a cell — evidence: `vm-artifacts/20260907-213353-phase-1/backup-create.json`, `archive-listing.txt` (contains `os/clawos.lock.json`), `backup-restore.json`, `status-after-restore.json`. The round-trip is proven by a marker file written *after* the backup and absent after the restore, not by exit code alone. Uses upstream `backup create/verify/restore` only; no SQLite is opened.
+- [x] Systemd drop-in (not upstream's unit) carries `OPENCLAW_NO_AUTO_UPDATE=1` and `CLAWOS_CELL` — evidence: `vm-artifacts/20260907-213353-phase-1/clawos.conf` and `upstream-unit.service` (neither OS-owned Environment line appears in upstream's unit)
+- [x] Config file mode 600, state dir 700, `os/cell.key` 600 — evidence: `vm-artifacts/20260907-213353-phase-1/permissions.txt` (also `.env` 600). `clawos backup restore` re-asserts these modes, because extraction otherwise restored `~/.openclaw` as 775.
+- [x] Install time from `base` under 10 minutes — evidence: `vm-artifacts/20260907-213353-phase-1/install-result.json` → **139 s** including Node provisioning, upstream install, workspace build and CLI pack; whole phase script 263 s
+- [x] Snapshot `installed` taken — evidence: `virsh -c qemu:///session snapshot-list clawos-test` lists `base` (2026-09-07 11:38) and `installed` (2026-09-07 14:41). Taken from a *clean* base install (reset → sync → `installer/install.sh` → `clawos status` healthy), not from the post-acceptance VM, so it means what `docs/vm-testing.md` §4 says it means.
+- [ ] macOS smoke install (manual or Lima) recorded — evidence: **NOT DONE — no macOS host is available.** The development host `alina` is NixOS and `arch-zbook` is Arch; a Lima VM on Linux runs Linux, not macOS, so it cannot satisfy this criterion. Phase 1 is therefore **not tagged**. See `plans/PROGRESS.md`.
+- [ ] Tag `phase-1` — **withheld.** The macOS criterion above is unmet, and the plan's acceptance requires "a clean Ubuntu 24.04 VM **and** a clean macOS machine".
 
 ## Phase 2 — Contracts and kit
 

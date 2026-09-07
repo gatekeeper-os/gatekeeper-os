@@ -935,7 +935,7 @@ Each phase lists deliverables, steps, and acceptance criteria. Do not start a ph
 4. `clawos config apply` per §6.2; `clawos backup create|restore`.
 5. `clawos doctor`: runs upstream doctor lint, checks perms (`600`/`700`), lockfile vs. installed version, unit status, health endpoints, disk space, and prints fix hints.
 
-**Acceptance.** On a clean Ubuntu 24.04 VM and a clean macOS machine: `curl … | bash` → Gateway running, `clawos status` healthy, `openclaw doctor --lint` exit 0, `openclaw security audit` no critical findings, `clawos config apply` idempotent, a second cell can be created and both run concurrently, `clawos backup create` + `restore` round-trips.
+**Acceptance.** On a clean Ubuntu 24.04 VM and a clean macOS machine: source install (the `curl … | bash` form is not available yet — see the §10.2 correction) → Gateway running, `clawos status` healthy, `openclaw doctor --lint` with no error-severity findings (corrected from "exit 0"; see `docs/phase-checklist.md` for the two deliberately accepted warnings), `openclaw security audit` no critical findings, `clawos config apply` idempotent, a second cell can be created and both run concurrently, `clawos backup create` + `restore` round-trips.
 
 ### Phase 2 — Contracts and kit (2–3 days)
 

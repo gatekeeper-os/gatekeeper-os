@@ -256,3 +256,88 @@ The evidence-only changes since that run do not change executable code.
 `phase-0`. No kernel conformance claimed: twelve TODOs belong to later phases.
 **Next:** Phase 1 host layer/installer, isolated worktree, fresh-base VM acceptance;
 macOS acceptance requires a suitable separate host and is not waived.
+
+## 2026-09-07 — Phase 1 host layer and installer (Ubuntu acceptance green; macOS missing, not tagged)
+
+**Built.** `installer/install.sh`, `installer/preflight.sh`, `installer/systemd/clawos.conf`,
+`config/config.d/*`, and `packages/clawos-cli` with `install`, `cell create|list`, `status`,
+`doctor`, `config apply`, `backup create|restore`. The CLI is dependency-free (`src/util/`
+holds a JSON5-subset parser, patch-compatible merge/diff, mode-enforcing fs helpers, a
+sanitising subprocess wrapper, and the single upstream-CLI wrapper `util/openclaw.ts`).
+
+**VM acceptance.** `CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state scripts/vm/test.sh phase-1`
+from snapshot `base` → **exit 0, 23/23 assertions**, artifacts `vm-artifacts/20260907-213353-phase-1/`.
+Install from a Node-less base: **139 s** (criterion: <600 s); whole script 263 s.
+Snapshots now `base` (untouched) and `installed` (taken from a separate clean install run).
+Ubuntu 24.04, OpenClaw 2026.9.2. Host: 88 unit tests pass; `check:catalog`, `check:secrets`,
+`typecheck`, `build` clean.
+
+**Plan corrections made in this phase** (each with the upstream evidence, in the same commit):
+
+1. **§6.2 step 4 was unimplementable.** In 2026.9.2 `config patch` has no `--expect-current-json`,
+   no `--expect-current-absent` and no `--merge`. The conditional-write flags are `config set`-only,
+   apply to a single operation, and are explicitly incompatible with batch mode and `--dry-run`;
+   `--merge` is a `config set` flag a patch does not need, since a patch already merges recursively.
+   Verified in `docs/cli/config.md` §"Conditional writes" and `dist/config-cli-BAjpm1Yf.js`.
+   The obvious repair — per-path `config set --expect-current-json <value>` — was **rejected**: it
+   would put the expected current value of every OS-owned path, `gateway.auth` included, into an
+   argument vector. **Replacement:** ownership digests in `os/clawos.lock.json`, computed over
+   upstream's *redacted* config snapshot. Concurrent edits are still detected and still fail closed;
+   no value reaches argv or the lockfile. Limits stated in the plan: a change confined to a secret's
+   value is invisible (the OS owns no credential leaf directly), and the check-then-write race is
+   closed only in the observable direction, backed by upstream's own snapshot guard.
+   Proven in the VM, not just asserted: an external `openclaw config set gateway.bind lan` makes
+   `clawos config apply` exit 1 naming `gateway.bind`, write nothing, and recover under `--force`.
+2. **§10.2's `curl … | bash` does not exist.** The repository is private and no `@clawos/*` package
+   is published, so there is no registry path either. The installer now detects the
+   piped-without-a-checkout case and reports what is missing; the plan no longer advertises it.
+3. **§10.3 step 6 (plugins) is deferred, not done.** `clawos install` reports `deferred` for the
+   kernel and gatekeeper-fs rather than claiming a postcondition it cannot meet. `10-plugins.json5`
+   ships **empty**: declaring `enabled: true` for a plugin that does not exist produced an upstream
+   stale-entry warning and asserted an enablement the system cannot honour.
+4. **§3.3 `os/backups/` cannot be the archive output.** Upstream rejects an output path inside the
+   source state tree, so archives live in `~/.clawos/backups/<cell>/`. Upstream restore is also never
+   in place, so `clawos backup restore` performs upstream's documented activation sequence and keeps
+   the displaced state at `<stateDir>.pre-restore-<ts>`.
+5. **The `doctor --lint` criterion changed from "exit 0" to "no error-severity findings."** Exit 0
+   means zero findings of any severity, and the hardened baseline deliberately produces two warnings
+   (`node-hosting-preconditions`: loopback-only bind; `skill-workshop-tool-policy`: `skill_workshop`
+   outside the `messaging` profile). Reversing either to win a green exit code would weaken the
+   posture Phase 1 exists to establish. The third warning was a **real defect and is fixed**:
+   `gateway.auth.token` is now a SecretRef (`{source:"env",provider:"default",id:…}`), which is on
+   upstream's SecretRef credential surface, instead of a `${ENV}` string in a plaintext field.
+
+**Other defects found and fixed during acceptance** (each was a genuine failure first):
+`preflight` demanded `npm` before Node exists on a clean host; `pnpm` was absent and is now
+provisioned at the version pinned in `packageManager`, never `latest`; `config apply` restarted a
+Gateway whose unit step had not run yet; `--force` was short-circuited by the in-sync check; the
+backup manifest's `archivePath` already includes the archive-root segment; `lv_shutdown` failed on
+an already-stopped domain; and my own `tar … | grep -q` check was a false negative under `pipefail`.
+
+**Security posture.** Secrets never enter argv: structured config goes to upstream by `--file`, the
+Gateway token lives only in `~/.openclaw/.env` (600) behind a SecretRef, and `config get` reads the
+redacted snapshot. `sanitize()` is a backstop on all captured output. Test fixtures for the redactor
+are assembled at runtime so `check:secrets` stays strict rather than getting an exclusion.
+Phase-1 artifact collection is allowlisted structural evidence; the raw `openclaw.json` and `.env`
+are never collected.
+
+**VM state sharing.** `CLAWOS_VM_STATE_DIR` lets a phase worktree reuse the bootstrap worktree's
+immutable `base` snapshot **without** weakening the disk-ownership check: the path must resolve, end
+in `scripts/vm/.state`, belong to a worktree of this repository (same `git --git-common-dir`), and
+contain `tester.qcow2` and `ssh-key`. Rejection verified against `/tmp`, `~/.openclaw`, and a
+nonexistent path. Named snapshots remain immutable. `alinaos-arch-validation` untouched; no
+development-host OpenClaw or production service was invoked or changed.
+
+**Not done, and why.**
+- **macOS acceptance is missing.** No macOS host is available (`alina` is NixOS, `arch-zbook` is
+  Arch); Lima on Linux runs Linux. The plan's Phase 1 acceptance requires a clean macOS machine, so
+  **`phase-1` is not tagged and Phase 1 is not claimed complete.** This is a missing criterion, not a
+  waived one. `preflight.sh` handles Darwin and `clawos install` is systemd-specific in its service
+  step, so macOS (launchd) support is expected to need work, not just a test run.
+- **The 12 conformance tests remain `todo`** and Phase 1 asserts none of them. The kernel is Phase 3.
+  `test/phase-1.sh` records this in `scope.json` so a green Phase 1 cannot be misread as conformance.
+- `pnpm lint` has no `eslint.config.js` (pre-existing Phase 0 gap; CI does not run it).
+- `clawos status` reports host-layer health only and names `os.status`, grants and approvals as
+  not observed, because those are kernel surfaces that do not exist yet.
+
+**Next:** a macOS host for the remaining criterion, then tag; otherwise Phase 2 (contracts and kit).

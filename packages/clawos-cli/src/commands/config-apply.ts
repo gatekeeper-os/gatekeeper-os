@@ -94,11 +94,15 @@ export function digestOwned(live: Map<string, Json | undefined>): Record<string,
  */
 export async function reconcile(
   cellName: string,
-  opts: { force?: boolean; dryRun?: boolean } = {},
+  opts: { force?: boolean; dryRun?: boolean; skipRestart?: boolean } = {},
 ): Promise<ConfigApplyResult> {
   const cell = resolveCell(cellName);
   const force = opts.force ?? false;
   const dryRunOnly = opts.dryRun ?? false;
+  // `clawos install` reconciles at step 8, before the service exists at step 9. Restarting a service that has
+  // not been installed yet fails ("Gateway service disabled"), so install defers the restart to the step that
+  // owns the unit.
+  const skipRestart = opts.skipRestart ?? false;
   const generatedPath = join(cell.osDir, "config.generated.json");
 
   const desired = mergeFragments(join(cell.osDir, "config.d"));
@@ -116,8 +120,10 @@ export async function reconcile(
     return { changed: false, changes, fingerprint, restarted: false, conflicts };
   }
 
-  // Idempotence: the fragments produced the same generated file and the live owned paths still match.
-  const inSync = changes.length === 0 && lock?.configFingerprint === fingerprint && !adopted;
+  // Idempotence: the fragments produced the same generated file and the live owned paths still match. A forced
+  // run past a detected conflict is never in sync — the whole point is to rewrite the paths that drifted.
+  const inSync =
+    changes.length === 0 && lock?.configFingerprint === fingerprint && !adopted && conflicts.length === 0;
   if (inSync && !dryRunOnly) {
     return { changed: false, changes: [], fingerprint, restarted: false };
   }
@@ -144,7 +150,8 @@ export async function reconcile(
   const lint = openclaw(cell, ["doctor", "--lint", "--json"]);
   if (lint.code >= 2) throw new StepError(`doctor --lint failed after apply: ${lint.stderr || lint.stdout}`);
 
-  const restartNeeded = changes.some((c) => RESTART_REQUIRING.some((k) => c.path === k || c.path.startsWith(`${k}.`)));
+  const restartNeeded =
+    !skipRestart && changes.some((c) => RESTART_REQUIRING.some((k) => c.path === k || c.path.startsWith(`${k}.`)));
   let restarted = false;
   if (restartNeeded) {
     const restart = openclaw(cell, ["gateway", "restart"]);

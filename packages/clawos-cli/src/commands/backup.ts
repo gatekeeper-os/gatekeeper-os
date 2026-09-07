@@ -16,7 +16,7 @@
  *    state asset into place, run `doctor`, restart — so a failed restore is always recoverable.
  */
 
-import { existsSync, mkdirSync, readdirSync, renameSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readdirSync, renameSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { resolveCellFromRegistry, type Cell } from "../util/cell.js";
@@ -90,12 +90,18 @@ async function backupRestore(args: string[], globals: GlobalOptions): Promise<nu
   if (restore.code !== 0) throw new StepError(`openclaw backup restore failed: ${restore.stderr || restore.stdout}`);
 
   // 3. Locate the state asset through the manifest, which is the documented source of truth.
+  //
+  // `archivePath` is recorded relative to the extraction directory and already includes the archive-root segment
+  // (e.g. `<root>/payload/posix/home/tester/.openclaw`), so it resolves against `staging`, not against the
+  // archive root. The archive-root fallback covers any archive that records it the other way.
   const root = findArchiveRoot(staging);
   const manifest = readJson<BackupManifest>(join(root, "manifest.json"));
   const stateAsset = manifest?.assets?.find((asset) => asset.kind === "state");
   if (!stateAsset) throw new StepError("restored archive has no state asset in its manifest");
-  const restoredState = join(root, stateAsset.archivePath);
-  if (!existsSync(restoredState)) throw new StepError("manifest names a state asset that is not in the archive");
+  const restoredState = [join(staging, stateAsset.archivePath), join(root, stateAsset.archivePath)].find((p) =>
+    existsSync(p),
+  );
+  if (!restoredState) throw new StepError("manifest names a state asset that is not in the archive");
 
   // 4. Activation, exactly as upstream documents it: stop, move current state aside, move the asset into place.
   run("systemctl", ["--user", "stop", cell.unit]);
@@ -107,6 +113,20 @@ async function backupRestore(args: string[], globals: GlobalOptions): Promise<nu
     if (existsSync(aside)) renameSync(aside, cell.stateDir); // put the cell back before reporting
     run("systemctl", ["--user", "start", cell.unit]);
     throw new StepError(`could not move the restored state into place: ${String(error)}`);
+  }
+
+  // 4b. Re-assert the permission invariants. Extraction applies the archive's own modes under the current umask,
+  // so a restored state directory can come back more permissive than the cell requires (observed: 775 on
+  // `~/.openclaw`). A restore that silently loosens the security posture would be a real regression, so the modes
+  // are enforced here rather than left for `clawos doctor` to report afterwards.
+  ensureDir(cell.stateDir, 0o700);
+  ensureDir(cell.osDir, 0o700);
+  for (const [file, mode] of [
+    [cell.configPath, 0o600],
+    [join(cell.osDir, "cell.key"), 0o600],
+    [join(cell.stateDir, ".env"), 0o600],
+  ] as const) {
+    if (existsSync(file)) chmodSync(file, mode);
   }
 
   // 5. doctor before restarting, then verify the cell actually came back.
