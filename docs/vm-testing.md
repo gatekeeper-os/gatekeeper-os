@@ -163,3 +163,11 @@ of prior cells and refuses a second run on the same image. It does not pretend t
 local snapshot or make a reusable installed snapshot. Source is the checked-out commit;
 acceptance still enters exclusively through `scripts/vm/test.sh phase-1`, and only allowlisted
 structural evidence is uploaded. Linux libvirt remains the Node-less clean-install criterion.
+
+## Phase 2 library-only acceptance (2026-09-07)
+
+Phase 2 is the explicit host-only exception in the phase table: `scripts/vm/test.sh phase-2` builds and typechecks
+shared/kit, runs their unit tests, and runs catalog/secret checks. It launches no Gateway, installs no runtime plugins,
+and calls no VM driver. Evidence is retained under `vm-artifacts/<timestamp>-phase-2/` with `snapshot=host-only`,
+mode, revision, Node version, upstream pin, command log and exit code. This establishes library behavior only; lifecycle
+fixtures do not establish live Gateway authorization conformance, which remains Phase 3.

@@ -7,7 +7,22 @@ case "$phase" in
   phase-0|phase-1) default_snap=base;;
   phase-3|phase-4|phase-6) default_snap=installed;;
   phase-5|phase-7) default_snap=connected;;
-  phase-2) vm_log "phase-2 is host-only: running pnpm test"; (cd "$REPO_ROOT" && pnpm test); exit $?;;
+  phase-2)
+    # Explicit library-only exception in docs/vm-testing.md. No VM or Gateway is started.
+    out="$REPO_ROOT/vm-artifacts/$(date -u +%Y%m%d-%H%M%S)-phase-2"
+    mkdir -p "$out"
+    printf 'host-only\n' > "$out/snapshot"
+    printf 'library-acceptance\n' > "$out/mode"
+    (cd "$REPO_ROOT" && git rev-parse HEAD) > "$out/revision"
+    node --version > "$out/node-version"
+    node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).upstream.version)' "$REPO_ROOT/clawos.lock.json" > "$out/upstream-pin"
+    set +e
+    (cd "$REPO_ROOT" && bash test/phase-2.sh) 2>&1 | tee "$out/run.log"
+    rc=${PIPESTATUS[0]}
+    set -e
+    printf '%s\n' "$rc" > "$out/exit-code"
+    vm_log "artifacts: $out (exit $rc)"
+    exit "$rc";;
   *) vm_die "unknown phase $phase";;
 esac
 snap="${2:-$default_snap}"
