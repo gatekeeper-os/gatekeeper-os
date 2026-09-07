@@ -84,3 +84,25 @@ A phase is tested when `scripts/vm/test.sh phase-N` exits 0 from the required sn
 ## 8. Timing expectations
 
 Fresh `base` → `installed` should take under ten minutes on a 2-vCPU VM (Phase 1 acceptance in the plan). The full Phase 7 update pipeline should complete in under fifteen minutes including staging and conformance. If a run exceeds twice these numbers, treat it as a defect to investigate rather than an inconvenience.
+
+## Phase 0 libvirt implementation (2026-09-07)
+
+On this development host, use `CLAWOS_VM_DRIVER=libvirt scripts/vm/up.sh` and
+`CLAWOS_VM_DRIVER=libvirt scripts/vm/test.sh phase-0`. The driver uses
+`qemu:///session`, a dedicated `clawos-test` domain, loopback SSH port 22240,
+4 GiB RAM, two vCPUs and a 24 GiB qcow2 overlay. It checks disk ownership before
+operating on a domain and refuses to overwrite named snapshots. Images, private
+SSH identity, generated seed and diagnostics stay in ignored `scripts/vm/.state/`.
+The Ubuntu image is checked against the publisher's SHA256SUMS before use.
+
+The NoCloud seed includes explicit instance metadata, and the Docker group is
+created before `tester`. Bootstrap fails on cloud-init failure or preinstalled
+Node; it never creates a misleading `base` snapshot. SSH uses its own known-hosts
+file and `-F /dev/null`, independent of the development host's SSH includes.
+The existing `alinaos-arch-validation` VM is not used or modified.
+
+Legacy `secrets.env` command-line interpolation is disabled. S-1 uses an isolated,
+deterministic local model and requires no personal/provider credentials. Future
+credentialed phases must use protected delivery, not shell argument interpolation.
+Phase-0 collection copies only allowlisted structural evidence; collector failure
+propagates to the acceptance exit status.

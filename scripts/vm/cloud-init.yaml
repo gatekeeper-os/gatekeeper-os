@@ -1,5 +1,6 @@
 #cloud-config
 # Base provisioning for the test VM (docs/vm-testing.md §2). No Node, no OpenClaw — the installer must provide them.
+groups: [docker]
 users:
   - name: tester
     shell: /bin/bash

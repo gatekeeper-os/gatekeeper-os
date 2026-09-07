@@ -19,18 +19,20 @@ bash "$REPO_ROOT/scripts/vm/reset.sh" "$snap"
 bash "$REPO_ROOT/scripts/vm/sync.sh"
 
 # Secrets are injected as env for this run only (docs/vm-testing.md §6); never written into the VM tree.
-secrets_env=""
-if [ -f "$REPO_ROOT/scripts/vm/secrets.env" ]; then
-  secrets_env="$(grep -vE '^\s*(#|$)' "$REPO_ROOT/scripts/vm/secrets.env" | xargs -d '\n' printf '%q ' )"
+if [ -s "$REPO_ROOT/scripts/vm/secrets.env" ]; then
+  vm_die "Legacy secrets.env command-line injection is disabled; use protected credential delivery"
 fi
 
 start_ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 set +e
-vm_call exec "cd $VM_SRC && env $secrets_env CLAWOS_TEST_START='$start_ts' bash test/$phase.sh" 2>&1 | tee "$out/run.log"
+vm_call exec "cd $VM_SRC && env CLAWOS_TEST_START='$start_ts' bash test/$phase.sh" 2>&1 | tee "$out/run.log"
 rc=${PIPESTATUS[0]}
 set -e
 echo "$rc" > "$out/exit-code"
 
-bash "$REPO_ROOT/scripts/vm/collect.sh" "$out" "$start_ts" || true
+if ! bash "$REPO_ROOT/scripts/vm/collect.sh" "$out" "$start_ts" "$phase"; then
+  rc=99
+  echo "$rc" > "$out/exit-code"
+fi
 vm_log "artifacts: $out (exit $rc)"
 exit "$rc"

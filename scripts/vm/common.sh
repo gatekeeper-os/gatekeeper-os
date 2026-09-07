@@ -38,7 +38,9 @@ ssh_snapshot(){ vm_die "ssh driver has no snapshots; use your provider's image/s
 ssh_reset()  { vm_die "ssh driver has no snapshots; restore '$1' with your provider and re-run"; }
 ssh_pull()   { rsync -az "$(ssh_target):$1" "$2"; }
 
-# ---- libvirt / lima / vagrant: TODO(phase-0) implement if that is the hypervisor on the dev host ---
+source "$REPO_ROOT/scripts/vm/libvirt.sh"
+
+# ---- lima / vagrant: TODO(phase-0) implement if that is the hypervisor on the dev host ---
 nyi() { vm_die "driver '$DRIVER' not implemented yet — implement in scripts/vm/common.sh or use CLAWOS_VM_DRIVER=multipass|ssh"; }
 
 vm_call() {  # vm_call <op> [args…]
@@ -46,7 +48,8 @@ vm_call() {  # vm_call <op> [args…]
   case "$DRIVER" in
     multipass) "mp_$op" "$@";;
     ssh)       "ssh_$op" "$@";;
-    libvirt|lima|vagrant) nyi;;
+    libvirt) "lv_$op" "$@";;
+    lima|vagrant) nyi;;
     *) vm_die "unknown driver $DRIVER";;
   esac
 }
