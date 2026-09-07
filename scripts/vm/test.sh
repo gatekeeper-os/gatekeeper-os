@@ -11,9 +11,16 @@ case "$phase" in
   *) vm_die "unknown phase $phase";;
 esac
 snap="${2:-$default_snap}"
+mode="${3:-full}"
+case "$phase:$mode" in
+  *:full) install_only=0;;
+  phase-1:install-only) install_only=1;;
+  *) vm_die "unsupported acceptance mode: $phase $mode";;
+esac
 ts="$(date -u +%Y%m%d-%H%M%S)"
 out="$REPO_ROOT/vm-artifacts/$ts-$phase"; mkdir -p "$out"
 echo "$snap" > "$out/snapshot"
+echo "$mode" > "$out/mode"
 
 bash "$REPO_ROOT/scripts/vm/reset.sh" "$snap"
 bash "$REPO_ROOT/scripts/vm/sync.sh"
@@ -25,7 +32,7 @@ fi
 
 start_ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 set +e
-vm_call exec "cd $VM_SRC && env CLAWOS_TEST_START='$start_ts' bash test/$phase.sh" 2>&1 | tee "$out/run.log"
+vm_call exec "cd $VM_SRC && env CLAWOS_TEST_INSTALL_ONLY=$install_only CLAWOS_TEST_START='$start_ts' bash test/$phase.sh" 2>&1 | tee "$out/run.log"
 rc=${PIPESTATUS[0]}
 set -e
 echo "$rc" > "$out/exit-code"

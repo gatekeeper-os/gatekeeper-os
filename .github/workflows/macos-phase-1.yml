@@ -1,0 +1,31 @@
+name: macOS Phase 1 acceptance
+on:
+  push:
+    branches: ["phase/1-installer"]
+    paths:
+      - ".github/workflows/macos-phase-1.yml"
+      - "installer/**"
+      - "packages/clawos-cli/**"
+      - "scripts/vm/**"
+      - "test/phase-1.sh"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    runs-on: macos-14
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - name: Fresh hosted VM acceptance through the VM harness
+        env:
+          CLAWOS_VM_DRIVER: github-hosted
+        run: bash scripts/vm/test.sh phase-1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-phase-1-evidence
+          path: vm-artifacts/

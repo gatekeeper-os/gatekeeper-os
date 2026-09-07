@@ -2,6 +2,19 @@ packages:
   - "packages/*"
   - "scripts/spike-probe"
 
+# Install-time build scripts, decided explicitly rather than left to an interactive prompt (plan §7.5).
+# Only esbuild needs one: tsup cannot build without its platform binary. Everything else is present for
+# type-checking or as a transitive dependency and has no reason to execute code at install time. `openclaw` is a
+# development-time peer here; a cell's *runtime* install is a separate
+# `npm install -g openclaw@<pin> --allow-scripts=openclaw` performed by the installer inside the VM.
+allowBuilds:
+  '@google/genai': false
+  esbuild: true
+  koffi: false
+  openclaw: false
+  protobufjs: false
+  tree-sitter-bash: false
+
 # Shared dependency ranges. Keep the `openclaw` peer range identical in every package that declares it
 # (scripts/check-catalog.ts enforces this — see cloudflare-os-starter's catalog-drift lesson, plan §8).
 catalog:

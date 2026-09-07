@@ -106,3 +106,60 @@ deterministic local model and requires no personal/provider credentials. Future
 credentialed phases must use protected delivery, not shell argument interpolation.
 Phase-0 collection copies only allowlisted structural evidence; collector failure
 propagates to the acceptance exit status.
+
+## Phase 1 libvirt implementation (2026-09-07)
+
+### Sharing VM state across worktrees
+
+The libvirt driver derives its state directory from the worktree it runs in, and refuses to operate on a domain
+whose disk is not the one in that directory. A phase branch lives in its own worktree, so by default it cannot
+reach the `clawos-test` domain and the immutable `base` snapshot that `phase-0-bootstrap` built — and recreating
+`base` would mean re-downloading the cloud image and discarding the reference point every earlier acceptance run
+was measured against.
+
+`CLAWOS_VM_STATE_DIR` selects a shared state directory deliberately. It **does not weaken the ownership check**:
+the driver still requires the running domain's disk to be exactly the disk in the selected directory. Before use
+the path is resolved, required to end in `scripts/vm/.state`, required to belong to a worktree of *this*
+repository (compared by `git rev-parse --git-common-dir`), and required to contain `tester.qcow2` and `ssh-key`.
+Anything else is refused — verified against `/tmp`, `~/.openclaw`, and a nonexistent path. Snapshots stay
+immutable: `lv_snapshot` still refuses to overwrite a named snapshot, so a shared `base` cannot be destroyed by a
+phase run.
+
+```bash
+CLAWOS_VM_DRIVER=libvirt \
+CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state \
+  scripts/vm/test.sh phase-1
+```
+
+Only one task may use the `clawos-test` domain at a time. The unrelated `alinaos-arch-validation` domain is never
+touched.
+
+### Phase 1 collection
+
+`collect.sh` has a `phase-1` branch that pulls only the structural evidence `test/phase-1.sh` wrote to
+`~/phase-1-evidence/`, plus unit status and the journal. The raw `openclaw.json` and the cell `.env` — the two
+files that hold credentials — are never collected. The token-like-string grep still gates the run.
+
+### Node provisioning
+
+`installer/install.sh` provisions Node only when `CLAWOS_ALLOW_NODE_PROVISION=1`, which `test/phase-1.sh` sets
+because it runs on a disposable VM. On any other host a missing Node is a hard failure with instructions, so the
+installer cannot silently mutate a development machine's toolchain.
+
+### Refreshing the installed snapshot after installer changes
+
+First pass full fresh-base `scripts/vm/test.sh phase-1`. Then run
+`scripts/vm/test.sh phase-1 base install-only` through the same driver. This explicitly
+recorded mode exits after source install and healthy status, before drift, second-cell, and
+backup scenarios. It is **not** full acceptance. Only after this clean install succeeds,
+replace the stale disposable `installed` snapshot (base stays immutable) using the driver's
+snapshot operation. A failed clean install never replaces the old snapshot.
+
+### GitHub-hosted macOS acceptance
+
+`github-hosted` is a disposable cloud-VM driver, used only in the macOS Actions workflow.
+The Actions job creates the fresh image; reset verifies the hosted-runner identity and absence
+of prior cells and refuses a second run on the same image. It does not pretend to restore a
+local snapshot or make a reusable installed snapshot. Source is the checked-out commit;
+acceptance still enters exclusively through `scripts/vm/test.sh phase-1`, and only allowlisted
+structural evidence is uploaded. Linux libvirt remains the Node-less clean-install criterion.

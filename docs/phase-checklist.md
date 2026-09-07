@@ -29,19 +29,22 @@ with enabled/disabled/stopped checks. All eleven structural assertions pass.
 
 ## Phase 1 — Host layer and installer
 
-- [ ] From snapshot `base`: `installer/install.sh` completes non-interactively; Gateway running; `clawos status` healthy — evidence:
-- [ ] `openclaw doctor --lint --json` exit 0 — evidence:
-- [ ] `openclaw security audit --deep --json` has no critical findings — evidence:
-- [ ] Re-running `clawos install` is a no-op (every step reports postcondition already met) — evidence:
-- [ ] `clawos config apply` twice → second run shows no diff — evidence:
-- [ ] `clawos cell create firmA --port 18801` → both cells run concurrently with separate state dirs and units — evidence:
-- [ ] `clawos backup create` + `restore` round-trips a cell — evidence:
-- [ ] Systemd drop-in (not upstream's unit) carries `OPENCLAW_NO_AUTO_UPDATE=1` and `CLAWOS_CELL` — evidence:
-- [ ] Config file mode 600, state dir 700, `os/cell.key` 600 — evidence:
-- [ ] Install time from `base` under 10 minutes — evidence: timing in artifact log
-- [ ] Snapshot `installed` taken — evidence:
-- [ ] macOS smoke install (manual or Lima) recorded — evidence:
-- [ ] Tag `phase-1`
+Latest complete Ubuntu acceptance: `vm-artifacts/20260907-223901-phase-1/`, fresh `base`,
+**exit 0, 25/25 assertions**. This supersedes the original 23/23 run's concurrency claim.
+
+- [x] Source installer completes noninteractively in under ten minutes; Gateway and status healthy — `install-result.json`, `status.json`.
+- [x] Doctor lint has no error-severity findings — `doctor-lint-errors.json`. The deliberate loopback/node-hosting and messaging-profile/skill-workshop warnings remain accepted; zero warnings is not required. SecretRef token removed the original plaintext-token warning.
+- [x] Deep security audit has no critical findings — `security-audit.json`.
+- [x] Install and config apply are idempotent — `install-again.json`, `config-apply-2.json`.
+- [x] Pre-existing owned drift is refused; forced recovery works — conflict/refusal/forced artifacts.
+- [x] An upstream edit injected **after dry-run** is preserved, even under `--force`; checkpoint unchanged; retry without a competing writer succeeds — `config-race.json`, `bind-after-race.json`, `config-race-recovery.json`, run log assertions. The SDK base-hash transaction, not the digest precheck, guards the write interval.
+- [x] Two cells run concurrently with distinct ports, state dirs, units and keys — `cell-list.json`, `units.txt`, `listening-ports.txt`, run log.
+- [x] Backup round-trip removes a post-backup marker and restores a healthy cell — `backup-restore.json`, `status-after-restore.json`. Restore consent authorizes upstream's required noninteractive stop flag; a failed stop never moves live state.
+- [x] Linux drop-in carries OS environment without editing the upstream unit; required modes hold — `clawos.conf`, `upstream-unit.service`, `permissions.txt`.
+- [x] Refreshed clean `installed` snapshot — separate fresh-base `20260907-224639-phase-1` **install-only** run exited 0; snapshot recreated 2026-09-07 15:49 PDT. `base` metadata hash unchanged; dedicated VM stopped. Install-only is preparation, not a substitute for the full acceptance above.
+- [x] Current branch CI passed — https://github.com/ControlStackAI/openclaw-os/actions/runs/34167820496 (`88bbe26`), also PR CI 34167822735. 92 unit tests pass; 12 kernel conformance TODOs are not passes.
+- [x] macOS full acceptance — https://github.com/ControlStackAI/openclaw-os/actions/runs/34167820614 (`88bbe26`), artifact `20260907-224656-phase-1`: **exit 0, 25/25**, Darwin, full mode; install 65 seconds. Two healthy concurrent cells, backup round-trip, no doctor errors or critical audit findings. Downloaded evidence verified locally under `vm-artifacts/github-macos-34167820614/`.
+- [x] Phase 1 completion checkpoint `phase-1` — Ubuntu/macOS gates passed; [PR #1](https://github.com/ControlStackAI/openclaw-os/pull/1).
 
 ## Phase 2 — Contracts and kit
 

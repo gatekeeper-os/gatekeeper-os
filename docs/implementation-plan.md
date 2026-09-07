@@ -49,7 +49,7 @@ OpenClaw OS does not replace the OpenClaw Gateway, its Control UI, its channels,
 
 **Prefer wrapper-owned components over patches.** From `cloudflare-os-starter/docs/customization.md`: "Prefer wrapper-owned Workers and service bindings over patches inside the submodule." Translated: prefer an OS plugin over a config hack, and a config hack over anything touching upstream files (which is forbidden anyway).
 
-**Config is derived from upstream, not overlaid blindly.** The starter derives `wrangler.prod.jsonc` from upstream's base so incompatible base changes are visible in review. We do the same: OS config fragments are reconciled into `openclaw.json` through `openclaw config patch` with dry-run and conditional-write guards, and `openclaw doctor --lint --json` is the gate.
+**Config is derived from upstream, not overlaid blindly.** The starter derives `wrangler.prod.jsonc` from upstream's base so incompatible base changes are visible in review. We do the same: OS config fragments are reconciled into `openclaw.json` through CLI dry-run plus the public SDK transactional writer with a base-revision guard, and `openclaw doctor --lint --json` is the gate.
 
 **Deferred approval beats synchronous approval.** The cloudflare-os README's critique is the reason this project exists: synchronous approval makes people reach for `--dangerously-skip-permissions`. Gatekeepers simulate, queue, and let the human approve later.
 
@@ -95,7 +95,7 @@ All rows **VERIFIED** unless marked.
 | **Plugin hooks** (`api.on(name, handler, opts)`) | Gate/Modify/Claim/Observe points in the agent loop | `before_tool_call` (Modify/Gate; returns `{params?, block?, blockReason?, requireApproval?}`), `before_agent_run` (Gate), `before_prompt_build` (Modify; can narrow the turn's submitted tools in the ordinary phase, without `requiresToolAuthority`), `before_install` (Gate, fail-closed), `message_sending` (Modify/Gate), `before_message_write` (sync Modify/Gate), `after_tool_call`, `agent_end`, `llm_input/llm_output`, `gateway_start/stop`. Gate hooks default to a 15 s budget and **fail closed**. `matcher: [toolIds]` and `priority` supported. `api.registerHook` is a different, internal system — do not use it for these names. |
 | **Trusted tool policy** | `api.registerTrustedToolPolicy()` runs before plugin policy | Privileged OS-level injection point. Manifest `contracts.trustedToolPolicies`. |
 | **Config** (`~/.openclaw/openclaw.json`, JSON5) | Declarative policy | `tools.profile/allow/deny/byProvider/toolsBySender`, `plugins.deny` (authoritative), `agents.defaults.sandbox.{mode,scope,backend,workspaceAccess}`, `gateway.auth`, `update.channel`, `update.auto.enabled`. `$include` supports single file (replaces containing object) or array (deep-merged in order, later wins, ≤10 levels); include paths must resolve under the directory holding `openclaw.json` or under `OPENCLAW_INCLUDE_ROOTS`. `${VAR}` substitution in string values. Invalid external edits are rejected without rewriting the file. |
-| **`openclaw config`** | Safe writes | `config patch --file/--stdin [--dry-run]`: objects merge recursively, arrays and scalars replace, `null` deletes; `--expect-current-json` / `--expect-current-absent` for conditional writes. `config validate`, `config schema`. |
+| **`openclaw config`** | Safe writes | `config patch --file/--stdin [--dry-run]`: objects merge recursively, arrays and scalars replace, `null` deletes; `config set` alone supports `--expect-current-json` / `--expect-current-absent`; the SDK transactional writer accepts `baseHash`. `config validate`, `config schema`. |
 | **`openclaw doctor`** | CI gate | `--lint --json` is read-only, structured findings, exit 0 clean / 1 findings / 2 failure. |
 | **Exec approvals** | Native synchronous approval for `exec` | `tools.exec.mode: deny|allowlist|ask|auto|full`; grants persisted per agent; approval events `exec.approval.requested/resolve`; CLI `openclaw approvals`, `openclaw exec-policy`. Reserved command namespaces for plugins: `config.*`, `exec.approvals.*`, `wizard.*`, `update.*`. |
 | **State/paths** | Where things live | `OPENCLAW_STATE_DIR`, `OPENCLAW_CONFIG_PATH`, `OPENCLAW_WORKSPACE_DIR`, `OPENCLAW_PROFILE` (→ `~/.openclaw-<profile>`), `OPENCLAW_GATEWAY_PORT`, `OPENCLAW_NO_AUTO_UPDATE`. Workspace files: `AGENTS.md`, `SOUL.md`, `USER.md`, `IDENTITY.md`, `BOOT.md`, `MEMORY.md`, `memory/`, `skills/`. Per-agent store `~/.openclaw/agents/<agentId>/agent/`. Required perms: config `600`, state dir `700`. |
@@ -214,9 +214,21 @@ All OS state lives under `<stateDir>/os/`, where `<stateDir>` is `~/.openclaw` f
     │   ├── accounts/                 #   encrypted tokens (see §7.4)
     │   └── cache/                    #   simulation cache / overlay
     ├── blueprints/                   # applied blueprint snapshots
-    ├── backups/                      # pre-update backups (openclaw backup + os/)
+    ├── backups/                      # OS-authored tars only; see the correction under §3.3
     └── logs/                         # OS logs (never contain secrets)
 ```
+
+**CORRECTION 2026-09-07 (Phase 1).** `os/backups/` cannot be the output directory for `openclaw backup create`.
+Upstream rejects output paths inside the source state or workspace tree to avoid self-inclusion, and `os/` is
+inside the state directory. Archives therefore live at `~/.clawos/backups/<cell>/`, alongside the host-level cell
+registry. `os/backups/` remains only for tars the OS writes itself.
+
+A second constraint shapes `clawos backup restore`: upstream restore is **never in place**. It requires a fresh
+empty target, has no `--force`, and leaves activation to the operator. `clawos backup restore` therefore performs
+upstream's documented activation sequence — verify, extract to a staging directory outside the state tree, stop
+the unit, move the current state aside (never delete it), move the extracted state asset into place using the
+manifest's `assets[]` entry of kind `state`, run `doctor`, restart, and confirm `/readyz`. The displaced state is
+kept at `<stateDir>.pre-restore-<ts>`, so a failed restore is always recoverable.
 
 Environment for a named cell (written into its systemd unit by `clawos cell create`):
 
@@ -715,12 +727,18 @@ This is the analogue of the starter's git submodule gitlink: the pin *is* the ve
 
 `openclaw.json` is upstream's file, but the OS needs to own specific subtrees. **DECISION:** the OS uses *reconciliation*, not file rewriting. `clawos config apply`:
 
-1. Deep-merges `os/config.d/*.json5` in filename order into `os/config.generated.json` (arrays replace, later wins — the same semantics as `openclaw config patch`, so the generated file is a faithful preview).
-2. Diffs it against the previous `config.generated.json` and shows the operator what will change.
-3. Runs `openclaw config patch --file os/config.generated.json --dry-run`; aborts on validation errors.
-4. Runs the real patch, using `--expect-current-json` on the paths the OS owns so a concurrent edit is detected rather than clobbered. Objects on protected paths (`agents.entries`, `plugins.entries`) are patched with `--merge` (**VERIFIED** requirement).
-5. Runs `openclaw doctor --lint --json`; exit 1 with findings is shown, exit 2 aborts and reverts via the previous generated file.
-6. Records the config fingerprint in the lockfile. Restart-requiring keys (`gateway.port/bind/auth/tls`) trigger `openclaw gateway restart`; everything else hot-applies under `gateway.reload.mode: "hybrid"` (**VERIFIED**).
+1. Deep-merges `os/config.d/*.json5` in filename order and computes a names-only diff.
+2. Captures the authored file's SHA-256 revision **before** reading the redacted ownership snapshot. Refuses an unstable read or an owned-path mismatch against the last successful checkpoint (`--force` permits only pre-existing drift).
+3. Runs `openclaw config patch --file os/config.generated.json --dry-run` for CLI schema/SecretRef validation.
+4. Commits through the installed **public** `openclaw/plugin-sdk/config-mutation` `mutateConfigFile({base: "source", baseHash, ...})` in a separate, cell-scoped helper process. The patch is a mode-600 file, never argv. Objects merge and arrays/scalars replace; operator entries survive. The SDK revalidates under its canonical cross-process lock and guards atomic publication. No retry or unguarded fallback, including under `--force`.
+5. Requires the persisted revision to match both before and after re-reading owned paths, and again before recording the checkpoint. A post-commit external edit is left in place; the OS refuses to certify it. Runs lint and restarts for changed restart-requiring paths, including forced drift recovery. Does not perform an unsafe automatic rollback over newer edits.
+6. Records ownership digests and fingerprint only after those checks. Named cells resolve their registered port; both state and config paths are explicit in every child process.
+
+**CORRECTION 2026-09-07 (review of Phase 1).** `config patch` has no expectation flags; `config set` expectations are single-operation only and would expose credential-bearing expected values in argv. The initial digest-precheck + unguarded patch implementation was **not atomic**: an edit after the precheck could be overwritten, and computing post-write digests did not verify a postcondition. The earlier 23/23 run tested pre-existing drift only and did not establish race protection. That design is superseded by the SDK transaction above.
+
+**VERIFIED public contract:** pinned 2026.9.2 `docs/plugins/sdk-subpaths.md` identifies `config-mutation` as the transactional writer; its exported types expose `mutateConfigFile`, `baseHash`, and `persistedHash`. The shipped implementation uses a cross-process lock, compares the base hash, and retains the root snapshot publication guard. The CLI helper imports only that documented SDK subpath from the installed binary's package; it does not vendor or modify upstream. All source values and SDK diagnostics remain private to the helper. The parent receives only the persisted hash.
+
+Ownership digests remain useful for drift **between** applies. They use redacted snapshots, so a secret-value-only change predating the run remains invisible to those digests; credential indirections are SecretRefs, not plaintext. In contrast, the full authored-file transaction revision catches **any** file edit during the run, including secret-only and operator-owned edits. Such an edit aborts conservatively rather than retrying over it. Direct-file editors do not participate in upstream's lock; the last-instant publication guarantee is the supported upstream guard, not a promise of filesystem CAS against arbitrary raw writers.
 
 Why not `$include`: the 2026.9.2 docs state that root includes, include arrays, and includes with sibling overrides **fail closed for OpenClaw-owned writes** (`config patch`, doctor migrations), and that `$include` configs are not auto-migrated at startup (**VERIFIED**). A root-level include array would therefore break the very `config patch` path the OS and upstream tooling rely on. Reconciliation is the design, not a fallback.
 
@@ -746,7 +764,7 @@ clawos update [--to <version> | --channel stable|extended-stable|beta] [--dry-ru
 
 1. **Resolve target.** Query npm dist-tags (`npm view openclaw dist-tags --json`); resolve the target version. Refuse `dev` (git main) unless `--allow-dev`.
 2. **Preflight compat.** Compare the target against every installed OS plugin's `openclaw.compat.pluginApi` range (read from the lockfile + package metadata). If any plugin is out of range, stop and print which plugin needs a release — unless `--force-compat`, which continues but marks the run *experimental*.
-3. **Record rollback point.** `lastKnownGood ← current`. `openclaw backup create --output os/backups/<ts> --verify`; also tar `os/` (excluding `backups/`).
+3. **Record rollback point.** `lastKnownGood ← current`. `openclaw backup create --output ~/.clawos/backups/<cell>/ --verify` (**not** `os/backups/` — upstream rejects an output path inside the source state tree; see the §3.3 correction); also tar `os/` (excluding `backups/`).
 4. **Stage.** `npm install -g openclaw@<target> --allow-scripts=openclaw` into a **staging prefix** (`os/staging/npm-prefix`, via `npm --prefix`) so the running Gateway is untouched. (Upstream's own `openclaw update` also validates the new version while the current Gateway keeps serving — **VERIFIED** — but we need the conformance step in between, which upstream cannot run for us.)
 5. **Conformance.** Start a throwaway Gateway from the staged binary with `OPENCLAW_STATE_DIR=os/staging/state`, a copied config, port `+1000`, and `--profile clawos-staging`; run `clawos-conformance` against it (§8.3). Any failure → abort, staging discarded, nothing changed.
 6. **Maintenance window.** Set cell `maintenance=true` (new turns are gently refused by `before_agent_run`), wait up to 60 s for in-flight runs (`os.status` shows active runs), `openclaw gateway stop`.
@@ -915,7 +933,9 @@ Each phase lists deliverables, steps, and acceptance criteria. Do not start a ph
 4. `clawos config apply` per §6.2; `clawos backup create|restore`.
 5. `clawos doctor`: runs upstream doctor lint, checks perms (`600`/`700`), lockfile vs. installed version, unit status, health endpoints, disk space, and prints fix hints.
 
-**Acceptance.** On a clean Ubuntu 24.04 VM and a clean macOS machine: `curl … | bash` → Gateway running, `clawos status` healthy, `openclaw doctor --lint` exit 0, `openclaw security audit` no critical findings, `clawos config apply` idempotent, a second cell can be created and both run concurrently, `clawos backup create` + `restore` round-trips.
+**macOS implementation note (2026-09-07):** launchd-aware install/status/doctor/cell paths are prepared; upstream owns its LaunchAgent, while OS environment is loaded from the cell `.env`. Backup stop/start uses upstream CLI on both platforms. Reserved macOS profile labels are rejected. These paths have unit/static coverage only until a real macOS acceptance run is recorded.
+
+**Acceptance.** On a clean Ubuntu 24.04 VM and a clean macOS machine: source install (the `curl … | bash` form is not available yet — see the §10.2 correction) → Gateway running, `clawos status` healthy, `openclaw doctor --lint` with no error-severity findings (corrected from "exit 0"; see `docs/phase-checklist.md` for the two deliberately accepted warnings), `openclaw security audit` no critical findings, `clawos config apply` idempotent, a second cell can be created and both run concurrently, `clawos backup create` + `restore` round-trips.
 
 ### Phase 2 — Contracts and kit (2–3 days)
 
@@ -975,16 +995,24 @@ Linux with systemd (Ubuntu 22.04+/Debian 12+/Arch/Fedora 39+), macOS 13+, or Win
 
 ### 10.2 Fresh install (recommended path)
 
+**CORRECTION 2026-09-07 (Phase 1).** The `curl … | bash` one-liner below is **not available yet** and the
+installer no longer pretends otherwise. It needs either a public repository or an authenticated fetch, and
+`ControlStackAI/openclaw-os` is private; no `@clawos/*` package is published to npm, so there is no registry
+fallback either. `installer/install.sh` detects the piped-without-a-checkout case and reports exactly what is
+missing instead of failing obscurely on a 404. The source install below is the supported path today, and it is
+what Phase 1 acceptance exercises. The one-liner becomes real when the packages are published.
+
 ```bash
-# 1. Install OpenClaw OS (installs pinned upstream OpenClaw, the kernel, and the fs gatekeeper)
-curl -fsSL https://raw.githubusercontent.com/<org>/openclaw-os/main/installer/install.sh | bash
-#    equivalent, from a clone:
-git clone https://github.com/<org>/openclaw-os.git && cd openclaw-os && ./installer/install.sh
+# 1. Install OpenClaw OS from a clone (the supported path today)
+git clone https://github.com/ControlStackAI/openclaw-os.git && cd openclaw-os && ./installer/install.sh
+
+#    NOT YET AVAILABLE (private repo, nothing published) — see the correction above:
+#    curl -fsSL https://raw.githubusercontent.com/ControlStackAI/openclaw-os/main/installer/install.sh | bash
 
 # The installer runs, in order:
 #   preflight.sh                                   → OS/Node/Docker/port checks
 #   npm install -g openclaw@2026.9.2 --allow-scripts=openclaw
-#   npm install -g @clawos/cli@1.0.0
+#   pnpm install --frozen-lockfile && build && npm pack → npm install -g <clawos-cli tarball>
 #   clawos install --cell default --yes            → see 10.3 for what it does
 
 # 2. Onboard models/channels with upstream's wizard (unchanged upstream flow)
@@ -1017,8 +1045,11 @@ clawos status
 [3/12] state dir            mkdir -p ~/.openclaw/os/{config.d,audit,gatekeepers,blueprints,backups,logs} (700)
 [4/12] keys                 os/cell.key (600) ; CLAWOS_GATEWAY_TOKEN → ~/.openclaw/.env (600)
 [5/12] config               write minimal openclaw.json if absent (600) ; copy config/config.d/* → os/config.d/
-[6/12] plugins              openclaw plugins install npm:@clawos/kernel@<ver> --pin --accept-capabilities
-                            openclaw plugins install npm:@clawos/gatekeeper-fs@<ver> --pin --accept-capabilities
+[6/12] plugins              DEFERRED to Phase 3 — the kernel and gatekeeper-fs do not exist yet and nothing is
+                            published, so this step installs nothing and reports state "deferred" rather than
+                            claiming a postcondition it cannot meet. When Phase 3 lands it becomes:
+                              openclaw plugins install npm:@clawos/kernel@<ver> --pin --accept-capabilities
+                              openclaw plugins install npm:@clawos/gatekeeper-fs@<ver> --pin --accept-capabilities
 [7/12] hooks                (none to install — internal hooks are plugin-declared by the kernel; enabled by config)
 [8/12] reconcile            clawos config apply  (patch → doctor --lint → fingerprint)
 [9/12] service              openclaw gateway install ; systemd drop-in with OPENCLAW_NO_AUTO_UPDATE=1, CLAWOS_CELL=default

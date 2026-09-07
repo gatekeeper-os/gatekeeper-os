@@ -6,6 +6,14 @@ out="${1:?outdir}"; since="${2:-1 hour ago}"
 grab() { local name="$1"; shift; vm_call exec "$*" > "$out/$name" 2>&1 || true; }
 if [ "${3:-}" = phase-0 ]; then
   vm_call pull /home/tester/phase-0-evidence/ "$out/" || exit 1
+elif [ "${3:-}" = phase-1 ]; then
+  # Allowlisted structural evidence only: the per-check JSON the phase script wrote, plus service state. The raw
+  # `openclaw.json` and the cell `.env` are never collected — those are the two files that hold credentials.
+  vm_call pull /home/tester/phase-1-evidence/ "$out/" || exit 1
+  if [ "$DRIVER" != github-hosted ]; then
+    grab systemd-status.txt 'systemctl --user status "openclaw-gateway*" --no-pager'
+    grab journal.txt        "journalctl --user -u 'openclaw-gateway*' --since '$since' --no-pager"
+  fi
 else
 grab openclaw-version.txt        'openclaw --version'
 grab plugins.json                'openclaw plugins list --json'

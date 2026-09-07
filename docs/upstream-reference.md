@@ -74,12 +74,43 @@ Includes and substitution: `$include` — single file replaces the containing ob
 
 ```bash
 openclaw config file|get <path>|schema|validate
-openclaw config set <path> <value> [--merge|--replace] [--strict-json]
-openclaw config patch --file <f> | --stdin [--dry-run] [--expect-current-json <v>] [--expect-current-absent]
+openclaw config set <path> <value> [--merge|--replace] [--strict-json] [--dry-run]
+                                   [--expect-current-json <v> | --expect-current-absent]
+openclaw config patch --file <f> | --stdin [--dry-run] [--allow-exec] [--json] [--replace-path <p>]
 openclaw config unset <path>
-# patch semantics: objects merge recursively; arrays and scalars replace; null deletes;
-# objects on agents.entries / plugins.entries require --merge to avoid data loss
+# patch semantics: objects merge recursively; arrays and scalars replace; null deletes.
 ```
+
+**Corrected 2026-09-07 (Phase 1).** An earlier revision of this file listed `--expect-current-json` /
+`--expect-current-absent` on `config patch`, and said `agents.entries` / `plugins.entries` "require `--merge`" on a
+patch. Both were wrong, and plan §6.2 inherited the error. VERIFIED against the pinned 2026.9.2 — `docs/cli/config.md`
+§"Conditional writes" and the shipped `dist/config-cli-BAjpm1Yf.js` option table:
+
+- The conditional-write flags exist **only on `config set`**. They are mutually exclusive, apply to a single
+  operation, require a direct non-redirected path, and **cannot be combined with batch mode or `--dry-run`**. A
+  mismatch exits 1, writes nothing, and prints neither the expected nor the current value.
+- `--merge` is a **`config set`** flag. `config patch` has no `--merge` and does not need one: a patch already
+  merges objects recursively. The protected-path guard that `--merge`/`--replace` answers applies to `config set`
+  object assignment. On a patch the corresponding escape hatch is `--replace-path <path>`, which the OS
+  deliberately never passes, so operator-added `agents.entries` / `plugins.entries` survive reconciliation.
+- `config get <path> --json` reads the **redacted** snapshot; secrets never print. That is what makes it safe as
+  the OS's ownership-digest source. Accepted limitation: a change confined to a secret's *value* is invisible to
+  the ownership guard. The OS owns no credential leaf directly — `gateway.auth.token` is a
+  SecretRef env indirection — so no OS-owned path depends on that distinction.
+- The CLI snapshot guard protects its own read/write interval, **not** a caller's earlier digest precheck.
+  The initial Phase 1 claim that it closed both intervals was incorrect.
+- **VERIFIED 2026-09-07:** public `openclaw/plugin-sdk/config-mutation` exports `mutateConfigFile`,
+  `readConfigFileSnapshotForWrite`, and `replaceConfigFile` (`docs/plugins/sdk-subpaths.md`, Config section;
+  exported declaration in `dist/plugin-sdk/config-mutation.d.ts`). `mutateConfigFile` accepts `base: "source"`,
+  `baseHash`, and `writeOptions` (including explicit-set/unset paths, suppressed output, and `beforeCommit`),
+  and returns `persistedHash`. The pinned implementation (`dist/mutate-ZNN4iFCn.js`, inspected only) acquires
+  the canonical cross-process file lock, reads a fresh snapshot, compares the caller's raw SHA-256 base hash,
+  and commits through upstream's guarded atomic writer. This is the OS real-write path; CLI patch remains
+  dry-run validation only. `beforeCommit` requires direct guarded root publication; includes fail closed.
+  No custom IO, retry helper, direct config rewrite, private SDK import, or upstream patch is used.
+
+Consequence: plan §6.2 step 4 could not be implemented as written. See §6.2 for the replacement design and why
+per-path `config set --expect-current-json <value>` was rejected on secrecy grounds.
 
 Hardened baseline (upstream security page): `gateway.bind: loopback`, `auth.mode: token`, `session.dmScope: per-channel-peer`, `tools.profile: messaging`, `tools.deny: [group:automation, group:runtime, group:fs]`, `tools.exec: {security: deny, ask: always}` (→ `mode: deny`), `channels.whatsapp.dmPolicy: pairing`. Trust model: one Gateway = one trust boundary; for mixed trust use separate Gateways, credentials, OS users or hosts.
 
@@ -310,3 +341,22 @@ is not inferred from it.
 `os-spike.discovery` is an OS test RPC registered with public
 `api.registerGatewayMethod`, `profileAccess: independent`; it returns only
 presence/outcome booleans. There is no registration RPC or driver serialization.
+
+### Phase 1 macOS host-layer preparation (2026-09-07)
+
+VERIFIED documentation, **not macOS runtime acceptance**: `docs/gateway/index.md` names
+`ai.openclaw.gateway` and `ai.openclaw.<profile>` per-user LaunchAgents;
+`docs/cli/gateway.md` reserves the macOS profile names `gateway`/`node` and documents
+`gateway install/start/stop`. `docs/gateway/authentication.md` documents cell `.env` loading
+under launchd. OS environment goes in that file; upstream alone owns the plist. The CLI uses
+`launchctl print gui/<uid>/<label>` for a running-state check and upstream lifecycle commands
+for backup stop/start. Linux keeps the systemd drop-in. No macOS host has executed this path yet.
+
+**Cell selector correction:** `OPENCLAW_PROFILE=default` explicitly selects the default profile. Do not use an
+empty string to clear inherited profiles: the pinned native-service guard passes it to
+`resolveProfileStateDir`, which rejects empty names. Fresh VM acceptance exposed this; explicit
+state/config paths are supported when they match the canonical home/profile paths.
+
+**Backup lifecycle correction:** pinned `gateway stop` requires `--force` in a non-interactive shell (documented lifecycle flag and observed refusal in the VM).
+`clawos backup restore --yes` already authorizes that selected-cell interruption; its stop
+call now passes the upstream flag and still refuses all state moves on a failed stop.
