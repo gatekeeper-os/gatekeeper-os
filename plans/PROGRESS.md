@@ -379,3 +379,12 @@ which Vitest treated as cleanup; corrected the fixture and all checks passed.
 **Gates:** Phase 1 remains unmerged/untagged, macOS acceptance missing; no Phase 2 advance.
 The old `installed` snapshot contains `4421cfa` and is **stale** for later phases; preserve it
 until a new clean-install checkpoint can replace it. Production and unrelated VM untouched.
+
+### Final-patch retest failure and correction
+
+The second run failed at `gateway install`: `OPENCLAW_PROFILE=""` was rejected by the native-service
+canonical identity guard. It is **not** equivalent to an unset selector there. Changed it to explicit
+`default`; named cells retain their names. The failure has a clear pinned-source cause
+(`isDefaultInstallIdentity` calls `resolveProfileStateDir` with the empty value). The test run was
+stopped after the failed install to avoid cascading checks against an uninstalled Gateway; no full
+verdict or snapshot is claimed. A fresh-base retest follows. Atomic config writes had completed.

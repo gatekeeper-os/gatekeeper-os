@@ -26,7 +26,7 @@ describe("resolveCell", () => {
     const cell = resolveCell("default");
     expect(cell.stateDir).toBe(join(homedir(), ".openclaw"));
     expect(cell.unit).toBe("openclaw-gateway.service");
-    expect(cell.env.OPENCLAW_PROFILE).toBe("");
+    expect(cell.env.OPENCLAW_PROFILE).toBe("default");
     expect(cell.env.OPENCLAW_CONFIG_PATH).toBe(cell.configPath);
     expect(cell.env.OPENCLAW_GATEWAY_PORT).toBe("18789");
     expect(cell.env.OPENCLAW_NO_AUTO_UPDATE).toBe("1");

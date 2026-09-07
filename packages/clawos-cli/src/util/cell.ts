@@ -58,7 +58,7 @@ export function resolveCell(name = "default", port?: number, platform = process.
   const env: NodeJS.ProcessEnv = {
     OPENCLAW_STATE_DIR: stateDir,
     OPENCLAW_CONFIG_PATH: join(stateDir, "openclaw.json"),
-    OPENCLAW_PROFILE: isDefault ? "" : name,
+    OPENCLAW_PROFILE: name,
     OPENCLAW_GATEWAY_PORT: String(resolvedPort),
     OPENCLAW_NO_AUTO_UPDATE: "1",
     CLAWOS_CELL: name,

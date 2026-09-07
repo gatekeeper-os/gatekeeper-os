@@ -351,3 +351,8 @@ VERIFIED documentation, **not macOS runtime acceptance**: `docs/gateway/index.md
 under launchd. OS environment goes in that file; upstream alone owns the plist. The CLI uses
 `launchctl print gui/<uid>/<label>` for a running-state check and upstream lifecycle commands
 for backup stop/start. Linux keeps the systemd drop-in. No macOS host has executed this path yet.
+
+**Cell selector correction:** `OPENCLAW_PROFILE=default` explicitly selects the default profile. Do not use an
+empty string to clear inherited profiles: the pinned native-service guard passes it to
+`resolveProfileStateDir`, which rejects empty names. Fresh VM acceptance exposed this; explicit
+state/config paths are supported when they match the canonical home/profile paths.
