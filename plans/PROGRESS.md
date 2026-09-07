@@ -122,3 +122,57 @@ from this worktree:** `cat plans/PROGRESS.md`. `clawos status` is not yet a vali
 system-state check because the OS has not been implemented/installed.
 
 **Cleanup:** dedicated `clawos-test` is shut off; existing `alinaos-arch-validation` remains running. VM artifacts and ignored disks are preserved locally.
+
+## 2026-09-07 — continuation: live spike passed; Phase 0 still incomplete
+
+**Phases completed:** none. **Current tag:** none. **Branch:** `phase/0-bootstrap`.
+**Fix commit:** `9ba75fe`. `main` and production OpenClaw remain untouched.
+
+**Recovered:** interrupted `20260907-191546-phase-0` had 20 correlated calls and
+successful SDK token reconnect, but no final verdict; recorded **UNKNOWN** and
+collected its allowlisted evidence without rerunning assertions in the dirty guest.
+
+**Fixed:** inert discovery/tool-discovery capability and hook registration;
+ordinary pre-policy `before_prompt_build` narrowing; object-form SDK runtime-store
+stash shared across registration instances; paired SDK identity/token probes;
+dev Gateway smoke lifecycle; disabled snapshot metadata checks for ordinary
+plugins; required empty config schemas for HTTP/MCP placeholders; isolated CI
+pin inspection. Updated plan/reference with the empirical corrections in the
+same fix commit. No upstream modification or gatekeeper tool-surface change.
+
+**Complete VM command:** `CLAWOS_VM_DRIVER=libvirt scripts/vm/test.sh phase-0`.
+- `20260907-192247-phase-0`: **exit 1**, missing `configSchema` in two placeholder
+  manifests; failed before runtime spike. Clear cause corrected, not ignored.
+- `20260907-192654-phase-0`: **exit 0**, fresh `base`, Ubuntu 24.04,
+  Node 24.20.0, OpenClaw 2026.9.2. Evidence collection and secret scan passed.
+
+**Final acceptance observations:**
+- PASS metadata-only checks for all five workspace plugins (not runtime conformance).
+- PASS dev Gateway readiness and termination, foreground probe Gateway readiness.
+- PASS 20/20 hook identities and matching tool executions; 20 narrowed hook
+  observations and 40/40 actual model requests contain only `probe_echo`.
+- PASS paired SDK device-token reconnect; role/scopes/device present, optional
+  pairedClientId/authenticatedUserId absent. Shared auth alone is not pairing.
+- PASS own SQLite; install-policy block, malformed denial, and allow.
+- `assertions.json`: seven true results. The ordinary authoring-validator
+  rejection remains an explicit negative artifact, not a claimed validator pass.
+
+**Host-only checks:** `pnpm typecheck`, `pnpm test` (11 pass, 12 conformance TODOs),
+`pnpm check:catalog`, `pnpm check:secrets`, `python3 test/vm-bootstrap.test.py`
+(two pass), shell/Node syntax checks, edited JSON/YAML parsing, and
+`git diff --check` passed. No host Gateway was installed or invoked by this work.
+
+**Open Phase 0 gates:** live CI (no remote; GitHub destination still unanswered),
+S-1 c (portable tool-name bounds), and S-1 j (live manifest discovery/vendor
+attachment). Existing catalog-cache fallback settles static tool registration,
+not live vendor attachment. Section 5's resolved facts are updated, but this does
+not waive the other gates. Kernel remains scaffold code; negative authorization
+conformance belongs to its implementation, not this positive probe.
+
+**Cleanup:** all guest test ports (19100, 19101, 19110) verified unbound;
+dedicated VM shutdown requested after collection. Base snapshot and ignored
+evidence/disks preserved. Existing arch validation VM was not modified.
+
+**Next:** settle c/j with bounded evidence or a reviewed explicit fallback,
+then use the chosen GitHub destination for live CI. Do not tag Phase 0 or begin
+Phase 1 before those gates pass. Inspection command: `cat plans/PROGRESS.md`.

@@ -6,16 +6,20 @@ Check a box only when the criterion passed in the VM (or, for host-only unit tes
 
 - [x] Monorepo skeleton per plan §8 committed; `AGENTS.md` and `REVIEW.md` created from `docs/agent-operating-rules.md` — evidence: `7534893` (provided derived short forms)
 - [ ] `clawos.lock.json` pins `openclaw@<version>`; CI installs that version and prints `openclaw --version` — evidence: CI run URL
-- [ ] `scripts/dev-gateway.ts` starts and stops a throwaway cell with `openclaw gateway run` — evidence:
+- [x] `scripts/dev-gateway.ts` starts and stops a throwaway cell with `openclaw gateway run` — evidence: `vm-artifacts/20260907-192654-phase-0/{run.log,dev-gateway.log}`, exit 0
 - [x] `scripts/vm/up.sh` creates the VM and takes snapshot `base` — evidence: `18eb1d7`; `scripts/vm/.state/up-metadata-retry.log`; subsequent acceptance runs successfully restored `base`
 - [ ] `plans/spike-S1.md` answers every UNVERIFIED item in plan §2.2 and §5.1 with the command used — evidence:
-- [ ] Plan updated: no UNVERIFIED marker remains in §5 — evidence: commit hash
-- [ ] Three skills (`write-gatekeeper`, `clawos-operator`, `write-blueprint`) drafted under `.agents/skills/` — evidence:
+- [x] Plan updated: no UNVERIFIED marker remains in §5 — evidence: `9ba75fe`; bounded probe evidence is distinguished from unimplemented kernel conformance; c/j outside §5 remain partial
+- [x] Three skills (`write-gatekeeper`, `clawos-operator`, `write-blueprint`) drafted under `.agents/skills/` — evidence: supplied scaffold `7534893`; verified tracked paths, not newly published or applied
 - [ ] Tag `phase-0`
 
-**Stopped in Phase 0, 2026-09-07:** latest acceptance exited 1. Required hook callbacks
-and tool narrowing absent; see `plans/PROGRESS.md` and `plans/spike-S1.md`. No phase
-tag, no live CI run, and no advancement past the failed acceptance gate.
+**Phase 0 continuation, 2026-09-07:** fresh-base live spike exited **0** in
+`vm-artifacts/20260907-192654-phase-0/`: 20/20 call correlations, 40/40 narrowed
+requests, paired device-token reconnect, SQLite, install policy, plugin metadata,
+and dev Gateway lifecycle passed. Prior interrupted run stays UNKNOWN overall;
+the subsequent missing-schema run exited 1 and was fixed in `9ba75fe`.
+**Phase remains incomplete:** S-1 c/j are partial and no live CI destination/run
+exists. No phase tag or advancement. See `plans/PROGRESS.md`.
 
 ## Phase 1 — Host layer and installer
 
