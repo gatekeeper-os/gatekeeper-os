@@ -452,3 +452,10 @@ The evidence-only changes after this revision do not change executable code.
 Ubuntu/macOS evidence and annotate `phase-1`. No upstream edits or production deployment.
 The 12 kernel conformance TODOs remain for later phases; Phase 1 does not claim them.
 **Next project phase:** Phase 2, contracts and kit, from the completed Phase 1 main checkpoint.
+
+### Phase 1 release checkpoint
+
+All executable changes are accepted on Ubuntu and macOS, and the clean installed snapshot
+is refreshed. The phase completion merge is PR #1, annotated as `phase-1`; its merge message
+names Ubuntu run 20260907-223901 and macOS Actions run 34167820614. No acceptance criterion
+was waived. Worktree/evidence are preserved, and production remains untouched.

@@ -44,7 +44,7 @@ Latest complete Ubuntu acceptance: `vm-artifacts/20260907-223901-phase-1/`, fres
 - [x] Refreshed clean `installed` snapshot — separate fresh-base `20260907-224639-phase-1` **install-only** run exited 0; snapshot recreated 2026-09-07 15:49 PDT. `base` metadata hash unchanged; dedicated VM stopped. Install-only is preparation, not a substitute for the full acceptance above.
 - [x] Current branch CI passed — https://github.com/ControlStackAI/openclaw-os/actions/runs/34167820496 (`88bbe26`), also PR CI 34167822735. 92 unit tests pass; 12 kernel conformance TODOs are not passes.
 - [x] macOS full acceptance — https://github.com/ControlStackAI/openclaw-os/actions/runs/34167820614 (`88bbe26`), artifact `20260907-224656-phase-1`: **exit 0, 25/25**, Darwin, full mode; install 65 seconds. Two healthy concurrent cells, backup round-trip, no doctor errors or critical audit findings. Downloaded evidence verified locally under `vm-artifacts/github-macos-34167820614/`.
-- [ ] Tag `phase-1` — all acceptance gates now passed; merge/tag checkpoint next. [PR #1](https://github.com/ControlStackAI/openclaw-os/pull/1).
+- [x] Phase 1 completion checkpoint `phase-1` — Ubuntu/macOS gates passed; [PR #1](https://github.com/ControlStackAI/openclaw-os/pull/1).
 
 ## Phase 2 — Contracts and kit
 
