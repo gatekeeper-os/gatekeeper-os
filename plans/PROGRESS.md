@@ -388,3 +388,17 @@ canonical identity guard. It is **not** equivalent to an unset selector there. C
 (`isDefaultInstallIdentity` calls `resolveProfileStateDir` with the empty value). The test run was
 stopped after the failed install to avoid cascading checks against an uninstalled Gateway; no full
 verdict or snapshot is claimed. A fresh-base retest follows. Atomic config writes had completed.
+
+### Backup stop regression and harness collection failure
+
+Run `20260907-223137-phase-1` passed **24/25**, but backup restore refused before moving
+state because upstream requires `gateway stop --force` for the default operator service.
+A sanitized diagnostic confirmed the explicit refusal. `restore --yes` authorizes the
+selected-cell stop, so the wrapper now supplies `--force`; it still fails closed on any stop
+failure. The host collector also hit a shell syntax error because the running harness was
+edited before it returned from the guest. Its complete guest verdict was 1; collection was
+recovered separately with `collect.sh` and no full harness pass is claimed. Future changes
+are finished before launching a harness, never while its shell is still reading the file.
+
+CI for `422128e` passed on push and draft PR: runs 34167145981 and 34167148927. Fresh
+acceptance of the backup correction follows before refreshing the installed snapshot.

@@ -103,8 +103,9 @@ async function backupRestore(args: string[], globals: GlobalOptions): Promise<nu
   );
   if (!restoredState) throw new StepError("manifest names a state asset that is not in the archive");
 
+  // Restore --yes above explicitly authorizes stopping this selected cell; upstream requires --force for the default service.
   // 4. Activation, exactly as upstream documents it: stop, move current state aside, move the asset into place.
-  if (openclaw(cell, ["gateway", "stop"]).code !== 0) throw new StepError("Gateway stop failed; state was not moved");
+  if (openclaw(cell, ["gateway", "stop", "--force"]).code !== 0) throw new StepError("Gateway stop failed; state was not moved");
   const aside = `${cell.stateDir}.pre-restore-${stamp}`;
   if (existsSync(cell.stateDir)) renameSync(cell.stateDir, aside);
   try {

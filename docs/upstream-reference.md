@@ -356,3 +356,8 @@ for backup stop/start. Linux keeps the systemd drop-in. No macOS host has execut
 empty string to clear inherited profiles: the pinned native-service guard passes it to
 `resolveProfileStateDir`, which rejects empty names. Fresh VM acceptance exposed this; explicit
 state/config paths are supported when they match the canonical home/profile paths.
+
+**Backup lifecycle correction:** pinned `gateway stop` requires `--force` to stop the default
+operator service noninteractively (documented lifecycle flag and observed refusal in the VM).
+`clawos backup restore --yes` already authorizes that selected-cell interruption; its stop
+call now passes the upstream flag and still refuses all state moves on a failed stop.
