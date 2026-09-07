@@ -13,7 +13,7 @@ function live(entries: Record<string, Json | undefined>): Map<string, Json | und
 }
 
 // The ownership guard is the replacement for `config patch --expect-current-json`, which does not exist upstream.
-// It is the only thing standing between a `clawos config apply` and clobbering an operator's concurrent edit, so
+// The SDK baseHash transaction separately guards the write interval; this guard detects pre-existing drift, so
 // it is tested for both directions: it must fire on a real conflict and must not fire on an unchanged cell.
 describe("detectConflicts", () => {
   const recorded = digestOwned(live({ "gateway.bind": "loopback", "tools.exec": { mode: "deny" } }));

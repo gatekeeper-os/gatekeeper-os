@@ -7,11 +7,14 @@
  * `src/upstream/` rule in `AGENTS.md` §2.
  */
 
+import { createHash } from "node:crypto";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
 import type { Cell } from "./cell.js";
 import type { Json } from "./json5.js";
 import { getPath } from "./merge.js";
-import { run, runJson, type RunResult } from "./proc.js";
+import { run, runJson, StepError, type RunResult } from "./proc.js";
 
 /**
  * Config subtrees the OS owns (plan §6.2 INVARIANT). Everything else — channels, models, auth profiles — belongs
@@ -64,14 +67,21 @@ export function installedVersion(cell: Cell): string | undefined {
  * `config get --json` prints redacted values (secrets never print — VERIFIED, `docs/cli/config.md`), so a
  * credential never enters this process, never reaches a digest, and cannot leak into a diff or an artifact. The
  * cost is that a change confined to a secret's *value* is invisible to the ownership guard; the OS owns no
- * credential leaf directly (`gateway.auth.token` is an `${ENV}` indirection), so that is an accepted limitation
+ * credential leaf directly (`gateway.auth.token` is an env SecretRef), so that is an accepted limitation
  * and is recorded in `docs/upstream-reference.md`.
  */
 export function readOwnedConfig(cell: Cell): Json {
   const out: { [key: string]: Json } = {};
   for (const root of OWNED_ROOTS) {
-    const value = openclawJson<Json>(cell, ["config", "get", root, "--json"]);
-    if (value !== undefined) out[root] = value;
+    const result = openclaw(cell, ["config", "get", root, "--json"]);
+    let value: Json;
+    try { value = JSON.parse(result.stdout) as Json; }
+    catch { throw new StepError(`could not read owned config root ${root}; refusing reconciliation`); }
+    if (result.code === 0) { out[root] = value; continue; }
+    const failure = value as { ok?: boolean; error?: { message?: string } };
+    if (result.code === 1 && failure?.ok === false &&
+        failure.error?.message?.startsWith(`Config path is valid but unset: ${root}.`)) continue;
+    throw new StepError(`could not read owned config root ${root}; refusing reconciliation`);
   }
   return out;
 }
@@ -117,4 +127,23 @@ export function readEnvFile(path: string): NodeJS.ProcessEnv {
     if (match) out[match[1]!] = match[2]!;
   }
   return out;
+}
+
+/** Raw authored-file revision (the public SDK baseHash contract). Never returns config values. */
+export function configRevision(cell: Cell): string {
+  return createHash("sha256").update(readFileSync(cell.configPath)).digest("hex");
+}
+
+/** Commit through the installed public SDK in a separate cell-scoped process, without config in argv. */
+export function transactionalPatch(cell: Cell, file: string, revision: string): string {
+  const binary = run("sh", ["-c", "command -v openclaw"]);
+  if (binary.code !== 0) throw new StepError("openclaw is not on PATH");
+  const helper = join(dirname(fileURLToPath(import.meta.url)), "..", "bin", "config-transaction.mjs");
+  const result = run(process.execPath, [helper, binary.stdout.trim(), file, revision], cell.env);
+  if (result.code !== 0) throw new StepError("config transaction refused: config changed or validation failed; retry after reviewing live config");
+  try {
+    const parsed = JSON.parse(result.stdout) as { persistedHash?: string };
+    if (parsed.persistedHash && /^[a-f0-9]{64}$/.test(parsed.persistedHash)) return parsed.persistedHash;
+  } catch { /* fail closed, never echo SDK output */ }
+  throw new StepError("config transaction returned no valid persisted revision");
 }

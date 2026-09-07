@@ -341,3 +341,41 @@ development-host OpenClaw or production service was invoked or changed.
   not observed, because those are kernel surfaces that do not exist yet.
 
 **Next:** a macOS host for the remaining criterion, then tag; otherwise Phase 2 (contracts and kit).
+
+
+## 2026-09-07 — Phase 1 resumed: atomic reconciliation repair and launchd preparation
+
+**Supersedes the earlier concurrency claim:** `4421cfa`'s digest precheck was not atomic,
+and its post-read only stored digests. The original 23/23 acceptance did not exercise the
+check-to-write window. Replaced the real CLI patch with the installed public SDK
+`config-mutation` transaction (`baseHash`, canonical cross-process lock, guarded publication).
+The separate helper receives only paths and a revision; it suppresses SDK error values.
+Each apply stages its own private candidate; generated/lock checkpoints advance only after
+persisted-revision and lint checks. No upstream source modified or private subpath imported.
+
+**Other fixes:** failed ownership reads are no longer interpreted as absence; lint error
+findings block checkpoints; `--force` does not bypass the transaction and restarts when
+recovering restart-requiring drift; named-cell reconciliation uses its actual port; child
+state/config/profile/port selectors are explicit. Backup refuses to move state if Gateway
+stop fails and uses upstream lifecycle commands on both platforms.
+
+**macOS preparation:** upstream-owned LaunchAgent install/start, label-aware status/doctor,
+reserved-label rejection, dotenv OS environment, and lsof port preflight. Unit/static checks
+only; no macOS runtime claim. Requested an available disposable Mac; no machine identified yet.
+
+**Verified:** first fresh-base Ubuntu run `vm-artifacts/20260907-222050-phase-1/`, command
+`CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state scripts/vm/test.sh phase-1`,
+exit 0, **25/25 assertions**, 356 seconds total. The new PATH shim injects an upstream edit
+AFTER dry-run, removes itself before SDK resolution, and proves refusal under `--force`,
+preserved external value, unchanged lockfile, then successful recovery with identical input.
+This run predates the final staging/read/lint/backup changes. A second fresh-base acceptance
+is currently running against the complete patch; it is **pending**, not counted as passed.
+
+**Local final-patch checks:** workspace typecheck/build, **92 unit tests** (12 conformance
+TODOs not passes), catalog/secret checks, shell syntax and `git diff --check` passed.
+One added unit-test fixture initially failed because a `beforeEach` returned a mock function,
+which Vitest treated as cleanup; corrected the fixture and all checks passed.
+
+**Gates:** Phase 1 remains unmerged/untagged, macOS acceptance missing; no Phase 2 advance.
+The old `installed` snapshot contains `4421cfa` and is **stale** for later phases; preserve it
+until a new clean-install checkpoint can replace it. Production and unrelated VM untouched.

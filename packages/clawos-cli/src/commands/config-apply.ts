@@ -1,39 +1,16 @@
-/**
- * `clawos config apply` — desired-state reconciliation of `os/config.d/*.json5` into upstream's `openclaw.json`.
- *
- * This implements plan §6.2 as corrected in Phase 1. The plan originally specified step 4 as
- * "`openclaw config patch … --expect-current-json` on the paths the OS owns, with `--merge` on protected maps".
- * Neither flag exists on `config patch` in `openclaw@2026.9.2`: the conditional-write flags apply only to a single
- * `config set` (and are explicitly incompatible with batch mode and `--dry-run`), and `--merge` is a `config set`
- * flag that `config patch` does not need because a patch already merges objects recursively.
- *
- * Reverting to per-path `config set --expect-current-json <value>` was rejected: it would place the *expected
- * current value* of every OS-owned path — including `gateway.auth` — into an argument vector, a process listing
- * and any shell trace, which the secrecy invariant forbids outright.
- *
- * The replacement keeps the protection and drops the leak. Ownership is tracked by digest:
- *
- *   1. Merge fragments in filename order → `os/config.generated.json`.
- *   2. Diff against the previously generated file and print the changed **paths** (never values).
- *   3. Guard: re-read the OS-owned paths from upstream's redacted config snapshot and compare each against the
- *      digest recorded in the lockfile at the last successful apply. A mismatch means somebody edited an
- *      OS-owned path outside the OS — abort, change nothing, and name the paths. Fails closed.
- *   4. `config patch --file … --dry-run` for schema and SecretRef validation; abort on failure.
- *   5. Real `config patch --file …`. No `--replace-path`: protected maps such as `agents.entries` and
- *      `plugins.entries` merge recursively, so operator-added entries survive.
- *   6. Verify the postcondition by re-reading the owned paths, which also closes the check-to-write race in the
- *      direction we can observe. Upstream's own config snapshot guard covers the final file replacement.
- *   7. `doctor --lint --json`, then record the fingerprint and the new owned digests.
+/** Desired-state reconciliation using a preflight ownership guard and an atomic upstream SDK transaction.
+ * The full-file revision is captured BEFORE ownership reads; any later edit refuses the commit, even --force.
+ * Config values stay in mode-600 files and in the helper's memory, never in argv or output.
  */
 
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { resolveCell } from "../util/cell.js";
+import { resolveCell, resolveCellFromRegistry } from "../util/cell.js";
 import { writeFileIfChanged, writeJson } from "../util/fsx.js";
 import { parseFragment, type Json } from "../util/json5.js";
 import { digest, readLockfile, writeLockfile } from "../util/lockfile.js";
 import { canonicalize, diffPaths, mergeAll, type ConfigChange } from "../util/merge.js";
-import { openclaw, ownedSlice, readOwnedConfig, RESTART_REQUIRING } from "../util/openclaw.js";
+import { configRevision, transactionalPatch, openclaw, ownedSlice, readOwnedConfig, RESTART_REQUIRING } from "../util/openclaw.js";
 import { StepError } from "../util/proc.js";
 import type { GlobalOptions } from "../options.js";
 
@@ -63,7 +40,7 @@ export function mergeFragments(configD: string): Json {
 /**
  * Compare the live OS-owned paths against the digests recorded at the last successful apply.
  *
- * Returns the paths that changed underneath the OS. An empty result means it is safe to write. When the lockfile
+ * Returns paths changed since the last apply. This is only a preflight; the SDK transaction guards the write. When the lockfile
  * has no recorded digests the cell has never been reconciled, so there is nothing to conflict with and the
  * current state is adopted instead.
  */
@@ -94,9 +71,9 @@ export function digestOwned(live: Map<string, Json | undefined>): Record<string,
  */
 export async function reconcile(
   cellName: string,
-  opts: { force?: boolean; dryRun?: boolean; skipRestart?: boolean } = {},
+  opts: { force?: boolean; dryRun?: boolean; skipRestart?: boolean; port?: number } = {},
 ): Promise<ConfigApplyResult> {
-  const cell = resolveCell(cellName);
+  const cell = opts.port === undefined ? resolveCellFromRegistry(cellName) : resolveCell(cellName, opts.port);
   const force = opts.force ?? false;
   const dryRunOnly = opts.dryRun ?? false;
   // `clawos install` reconciles at step 8, before the service exists at step 9. Restarting a service that has
@@ -113,7 +90,9 @@ export async function reconcile(
   const changes = diffPaths(previous, desired);
 
   // Step 3 — ownership guard. Reads the redacted snapshot, so no credential enters this process.
+  const revision = configRevision(cell);
   const liveOwned = ownedSlice(readOwnedConfig(cell));
+  if (configRevision(cell) !== revision) throw new StepError("config changed during ownership read; nothing written");
   const lock = readLockfile(cell);
   const { conflicts, adopted } = detectConflicts(liveOwned, lock?.ownedDigests);
   if (conflicts.length > 0 && !force) {
@@ -128,45 +107,57 @@ export async function reconcile(
     return { changed: false, changes: [], fingerprint, restarted: false };
   }
 
-  writeFileIfChanged(generatedPath, generated, 0o600);
+  const staging = mkdtempSync(join(cell.osDir, ".config-apply-"));
+  const candidatePath = join(staging, "candidate.json");
+  try {
+    writeFileIfChanged(candidatePath, generated, 0o600);
 
-  // Step 4 — validate before writing anything.
-  const dry = openclaw(cell, ["config", "patch", "--file", generatedPath, "--dry-run", "--json"]);
-  if (dry.code !== 0) {
-    throw new StepError(`config patch --dry-run rejected the generated config: ${dry.stderr || dry.stdout}`);
+    // Step 4 — validate before writing anything.
+    const dry = openclaw(cell, ["config", "patch", "--file", candidatePath, "--dry-run", "--json"]);
+    if (dry.code !== 0) {
+      throw new StepError("config patch --dry-run rejected the generated config; no upstream write performed");
+    }
+    if (dryRunOnly) {
+      return { changed: changes.length > 0, changes, fingerprint, restarted: false };
+    }
+
+    // No gap between the caller's revision and upstream's lock/snapshot/atomic publication guard.
+    const persistedRevision = transactionalPatch(cell, candidatePath, revision);
+    if (configRevision(cell) !== persistedRevision) throw new StepError("config changed after commit; checkpoint not recorded");
+    const afterDigests = digestOwned(ownedSlice(readOwnedConfig(cell)));
+    if (configRevision(cell) !== persistedRevision) throw new StepError("config changed during verification; checkpoint not recorded");
+
+    // Step 7 — lint. Exit 1 is findings (surfaced); exit 2 or worse is a hard failure.
+    const lint = openclaw(cell, ["doctor", "--lint", "--json"]);
+    let lintOk = false;
+    try {
+      const report = JSON.parse(lint.stdout) as { findings?: { severity?: string }[] };
+      lintOk = lint.code <= 1 && Array.isArray(report.findings) && !report.findings.some(f => f.severity === "error");
+    } catch { /* fail closed on missing/unparseable verdict */ }
+    if (!lintOk) throw new StepError("doctor --lint failed after apply; checkpoint not recorded");
+
+    const restartNeeded =
+      !skipRestart && [...changes.map(c => c.path), ...conflicts].some(path => RESTART_REQUIRING.some(k => path === k || path.startsWith(`${k}.`)));
+    let restarted = false;
+    if (restartNeeded) {
+      const restart = openclaw(cell, ["gateway", "restart"]);
+      if (restart.code !== 0) throw new StepError(`gateway restart failed: ${restart.stderr || restart.stdout}`);
+      restarted = true;
+    }
+
+    if (configRevision(cell) !== persistedRevision) throw new StepError("config changed before checkpoint; checkpoint not recorded");
+    writeFileIfChanged(generatedPath, generated, 0o600);
+    if (lock) {
+      writeLockfile(cell, { ...lock, configFingerprint: fingerprint, ownedDigests: afterDigests });
+    } else {
+      // `clawos install` writes the lockfile in its last step; stash the digests so the guard is armed either way.
+      writeJson(join(cell.osDir, "config.state.json"), { configFingerprint: fingerprint, ownedDigests: afterDigests });
+    }
+
+    return { changed: true, changes, fingerprint, restarted, adopted: adopted || undefined };
+  } finally {
+    rmSync(staging, { recursive: true, force: true });
   }
-  if (dryRunOnly) {
-    return { changed: changes.length > 0, changes, fingerprint, restarted: false };
-  }
-
-  // Step 5 — the real write. Objects merge recursively; no --replace-path, so operator entries survive.
-  const patch = openclaw(cell, ["config", "patch", "--file", generatedPath]);
-  if (patch.code !== 0) throw new StepError(`config patch failed: ${patch.stderr || patch.stdout}`);
-
-  // Step 6 — postcondition: re-read what upstream actually stored on the owned paths.
-  const afterDigests = digestOwned(ownedSlice(readOwnedConfig(cell)));
-
-  // Step 7 — lint. Exit 1 is findings (surfaced); exit 2 or worse is a hard failure.
-  const lint = openclaw(cell, ["doctor", "--lint", "--json"]);
-  if (lint.code >= 2) throw new StepError(`doctor --lint failed after apply: ${lint.stderr || lint.stdout}`);
-
-  const restartNeeded =
-    !skipRestart && changes.some((c) => RESTART_REQUIRING.some((k) => c.path === k || c.path.startsWith(`${k}.`)));
-  let restarted = false;
-  if (restartNeeded) {
-    const restart = openclaw(cell, ["gateway", "restart"]);
-    if (restart.code !== 0) throw new StepError(`gateway restart failed: ${restart.stderr || restart.stdout}`);
-    restarted = true;
-  }
-
-  if (lock) {
-    writeLockfile(cell, { ...lock, configFingerprint: fingerprint, ownedDigests: afterDigests });
-  } else {
-    // `clawos install` writes the lockfile in its last step; stash the digests so the guard is armed either way.
-    writeJson(join(cell.osDir, "config.state.json"), { configFingerprint: fingerprint, ownedDigests: afterDigests });
-  }
-
-  return { changed: true, changes, fingerprint, restarted, adopted: adopted || undefined };
 }
 
 /** `clawos config apply` command wrapper: run the reconciliation and render its verdict. */

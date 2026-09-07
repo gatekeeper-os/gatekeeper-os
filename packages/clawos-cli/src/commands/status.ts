@@ -32,6 +32,10 @@ export interface StatusResult {
 
 /** True when a systemd user unit reports `active`. */
 export function unitIsActive(unit: string): boolean {
+  if (process.platform === "darwin") {
+    const status = run("launchctl", ["print", `gui/${process.getuid!()}/${unit}`]);
+    return status.code === 0 && /^\s*state = running\s*$/m.test(status.stdout);
+  }
   return run("systemctl", ["--user", "is-active", "--quiet", unit]).code === 0;
 }
 

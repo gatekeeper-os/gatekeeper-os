@@ -7,6 +7,7 @@
  */
 
 import { existsSync, statfsSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { resolveCellFromRegistry } from "../util/cell.js";
 import { modeOf } from "../util/fsx.js";
@@ -71,7 +72,7 @@ export async function doctor(_args: string[], globals: GlobalOptions): Promise<n
     });
   }
 
-  const dropIn = join(cell.dropInDir, "clawos.conf");
+  const dropIn = process.platform === "darwin" ? join(homedir(), "Library", "LaunchAgents", `${cell.unit}.plist`) : join(cell.dropInDir, "clawos.conf");
   if (!existsSync(dropIn)) {
     findings.push({ id: "dropin-missing", severity: "error", message: `${dropIn} is missing`, hint: "clawos install" });
   }
@@ -81,7 +82,7 @@ export async function doctor(_args: string[], globals: GlobalOptions): Promise<n
       id: "unit-inactive",
       severity: "error",
       message: `${cell.unit} is not active`,
-      hint: `systemctl --user status ${cell.unit}`,
+      hint: "openclaw gateway status",
     });
   }
 

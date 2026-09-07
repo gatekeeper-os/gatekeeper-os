@@ -26,8 +26,17 @@ describe("resolveCell", () => {
     const cell = resolveCell("default");
     expect(cell.stateDir).toBe(join(homedir(), ".openclaw"));
     expect(cell.unit).toBe("openclaw-gateway.service");
-    expect(cell.env.OPENCLAW_PROFILE).toBeUndefined();
+    expect(cell.env.OPENCLAW_PROFILE).toBe("");
+    expect(cell.env.OPENCLAW_CONFIG_PATH).toBe(cell.configPath);
+    expect(cell.env.OPENCLAW_GATEWAY_PORT).toBe("18789");
     expect(cell.env.OPENCLAW_NO_AUTO_UPDATE).toBe("1");
+  });
+
+  it("maps macOS cells to distinct upstream LaunchAgent labels and rejects reserved collisions", () => {
+    expect(resolveCell("default", 18789, "darwin").unit).toBe("ai.openclaw.gateway");
+    expect(resolveCell("firma", 18801, "darwin").unit).toBe("ai.openclaw.firma");
+    expect(() => resolveCell("gateway", 18789, "darwin")).toThrow(/collides/);
+    expect(() => resolveCell("node", 18789, "darwin")).toThrow(/collides/);
   });
 
   it("uses upstream's profile convention for a named cell", () => {

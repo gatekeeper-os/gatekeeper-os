@@ -63,7 +63,11 @@ else
 fi
 
 # Port. Occupied is fine when this cell already owns the listener — that is what a re-run looks like.
-port_busy() { command -v ss >/dev/null && ss -H -ltn "sport = :${PORT}" 2>/dev/null | grep -q .; }
+port_busy() {
+  if command -v ss >/dev/null; then ss -H -ltn "sport = :${PORT}" 2>/dev/null | grep -q .
+  elif command -v lsof >/dev/null; then lsof -nP -iTCP:"${PORT}" -sTCP:LISTEN -t >/dev/null 2>&1
+  else fail "ss or lsof is required to check the Gateway port"; fi
+}
 if port_busy; then
   if systemctl --user is-active --quiet "$UNIT" 2>/dev/null; then
     ok "port ${PORT} is held by ${UNIT} (this cell) — install will converge it"

@@ -161,7 +161,7 @@ export async function install(args: string[], globals: GlobalOptions): Promise<n
   record("hooks", "ok", "internal hooks are declared by the kernel plugin (Phase 3)");
 
   // [8/12] reconcile
-  const reconciled = await reconcile(cell.name, { skipRestart: true });
+  const reconciled = await reconcile(cell.name, { skipRestart: true, port: cell.port });
   if (reconciled.conflicts?.length) {
     throw new StepError(
       `config apply refused: OS-owned paths changed outside the OS (${reconciled.conflicts.join(", ")})`,
@@ -170,20 +170,41 @@ export async function install(args: string[], globals: GlobalOptions): Promise<n
   }
   record("reconcile", reconciled.changed ? "changed" : "ok", `${reconciled.changes.length} path(s)`);
 
+  // On launchd, OS environment is loaded from the cell dotenv by upstream; never edit its plist.
+  if (process.platform === "darwin") {
+    for (const [key, value] of [["OPENCLAW_NO_AUTO_UPDATE", "1"], ["CLAWOS_CELL", cell.name]]) {
+      if (!hasEnvVar(envPath, key!)) {
+        appendEnvVar(envPath, key!, value!);
+        record(`environment-${key}`, "changed");
+      }
+    }
+  }
+
   // [9/12] service: upstream installs its own unit; we add a drop-in beside it and enable the unit.
   let serviceChanged = false;
-  if (!existsSync(join(homedir(), ".config", "systemd", "user", cell.unit))) {
-    const gatewayInstall = openclaw(cell, ["gateway", "install"]);
-    if (gatewayInstall.code !== 0) throw new StepError(`openclaw gateway install failed: ${gatewayInstall.stderr}`);
-    serviceChanged = true;
+  if (process.platform === "darwin") {
+    const plist = join(homedir(), "Library", "LaunchAgents", `${cell.unit}.plist`);
+    if (!existsSync(plist)) {
+      const installed = openclaw(cell, ["gateway", "install"]);
+      if (installed.code !== 0) throw new StepError("upstream LaunchAgent installation failed");
+      serviceChanged = true;
+    }
+    const start = openclaw(cell, ["gateway", "start"]);
+    if (start.code !== 0) throw new StepError("upstream LaunchAgent start failed");
+  } else {
+    if (!existsSync(join(homedir(), ".config", "systemd", "user", cell.unit))) {
+      const gatewayInstall = openclaw(cell, ["gateway", "install"]);
+      if (gatewayInstall.code !== 0) throw new StepError(`openclaw gateway install failed: ${gatewayInstall.stderr}`);
+      serviceChanged = true;
+    }
+    ensureDir(cell.dropInDir, 0o700);
+    if (writeFileIfChanged(join(cell.dropInDir, "clawos.conf"), renderDropIn(cell), 0o644)) serviceChanged = true;
+    if (serviceChanged && run("systemctl", ["--user", "daemon-reload"]).code !== 0) throw new StepError("systemd daemon-reload failed");
+    run("loginctl", ["enable-linger", userInfo().username]);
+    const enable = run("systemctl", ["--user", "enable", "--now", cell.unit]);
+    if (enable.code !== 0) throw new StepError(`systemctl --user enable --now ${cell.unit} failed: ${enable.stderr}`);
+    if (serviceChanged && run("systemctl", ["--user", "restart", cell.unit]).code !== 0) throw new StepError("systemd restart failed");
   }
-  ensureDir(cell.dropInDir, 0o700);
-  if (writeFileIfChanged(join(cell.dropInDir, "clawos.conf"), renderDropIn(cell), 0o644)) serviceChanged = true;
-  if (serviceChanged) run("systemctl", ["--user", "daemon-reload"]);
-  run("loginctl", ["enable-linger", userInfo().username]);
-  const enable = run("systemctl", ["--user", "enable", "--now", cell.unit]);
-  if (enable.code !== 0) throw new StepError(`systemctl --user enable --now ${cell.unit} failed: ${enable.stderr}`);
-  if (serviceChanged) run("systemctl", ["--user", "restart", cell.unit]);
   record("service", serviceChanged ? "changed" : "ok", cell.unit);
 
   // [10/12] verify: startup then readiness, within the plan's 60 s budget.

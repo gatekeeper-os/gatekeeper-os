@@ -96,9 +96,18 @@ patch. Both were wrong, and plan §6.2 inherited the error. VERIFIED against the
 - `config get <path> --json` reads the **redacted** snapshot; secrets never print. That is what makes it safe as
   the OS's ownership-digest source. Accepted limitation: a change confined to a secret's *value* is invisible to
   the ownership guard. The OS owns no credential leaf directly — `gateway.auth.token` is a
-  `${CLAWOS_GATEWAY_TOKEN}` env indirection — so no OS-owned path depends on that distinction.
-- Upstream's config snapshot guard still rejects a race between an expectation check and the final file
-  replacement, which is the backstop under the OS's own check-then-write sequence.
+  SecretRef env indirection — so no OS-owned path depends on that distinction.
+- The CLI snapshot guard protects its own read/write interval, **not** a caller's earlier digest precheck.
+  The initial Phase 1 claim that it closed both intervals was incorrect.
+- **VERIFIED 2026-09-07:** public `openclaw/plugin-sdk/config-mutation` exports `mutateConfigFile`,
+  `readConfigFileSnapshotForWrite`, and `replaceConfigFile` (`docs/plugins/sdk-subpaths.md`, Config section;
+  exported declaration in `dist/plugin-sdk/config-mutation.d.ts`). `mutateConfigFile` accepts `base: "source"`,
+  `baseHash`, and `writeOptions` (including explicit-set/unset paths, suppressed output, and `beforeCommit`),
+  and returns `persistedHash`. The pinned implementation (`dist/mutate-ZNN4iFCn.js`, inspected only) acquires
+  the canonical cross-process file lock, reads a fresh snapshot, compares the caller's raw SHA-256 base hash,
+  and commits through upstream's guarded atomic writer. This is the OS real-write path; CLI patch remains
+  dry-run validation only. `beforeCommit` requires direct guarded root publication; includes fail closed.
+  No custom IO, retry helper, direct config rewrite, private SDK import, or upstream patch is used.
 
 Consequence: plan §6.2 step 4 could not be implemented as written. See §6.2 for the replacement design and why
 per-path `config set --expect-current-json <value>` was rejected on secrecy grounds.
@@ -332,3 +341,13 @@ is not inferred from it.
 `os-spike.discovery` is an OS test RPC registered with public
 `api.registerGatewayMethod`, `profileAccess: independent`; it returns only
 presence/outcome booleans. There is no registration RPC or driver serialization.
+
+### Phase 1 macOS host-layer preparation (2026-09-07)
+
+VERIFIED documentation, **not macOS runtime acceptance**: `docs/gateway/index.md` names
+`ai.openclaw.gateway` and `ai.openclaw.<profile>` per-user LaunchAgents;
+`docs/cli/gateway.md` reserves the macOS profile names `gateway`/`node` and documents
+`gateway install/start/stop`. `docs/gateway/authentication.md` documents cell `.env` loading
+under launchd. OS environment goes in that file; upstream alone owns the plist. The CLI uses
+`launchctl print gui/<uid>/<label>` for a running-state check and upstream lifecycle commands
+for backup stop/start. Linux keeps the systemd drop-in. No macOS host has executed this path yet.

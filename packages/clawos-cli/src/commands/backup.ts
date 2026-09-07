@@ -22,7 +22,7 @@ import { join } from "node:path";
 import { resolveCellFromRegistry, type Cell } from "../util/cell.js";
 import { ensureDir, readJson } from "../util/fsx.js";
 import { openclaw, waitForEndpoint } from "../util/openclaw.js";
-import { run, StepError } from "../util/proc.js";
+import { StepError } from "../util/proc.js";
 import type { GlobalOptions } from "../options.js";
 
 /** Where a cell's archives live — outside the state tree, because upstream rejects self-inclusion. */
@@ -104,14 +104,14 @@ async function backupRestore(args: string[], globals: GlobalOptions): Promise<nu
   if (!restoredState) throw new StepError("manifest names a state asset that is not in the archive");
 
   // 4. Activation, exactly as upstream documents it: stop, move current state aside, move the asset into place.
-  run("systemctl", ["--user", "stop", cell.unit]);
+  if (openclaw(cell, ["gateway", "stop"]).code !== 0) throw new StepError("Gateway stop failed; state was not moved");
   const aside = `${cell.stateDir}.pre-restore-${stamp}`;
   if (existsSync(cell.stateDir)) renameSync(cell.stateDir, aside);
   try {
     renameSync(restoredState, cell.stateDir);
   } catch (error) {
     if (existsSync(aside)) renameSync(aside, cell.stateDir); // put the cell back before reporting
-    run("systemctl", ["--user", "start", cell.unit]);
+    openclaw(cell, ["gateway", "start"]);
     throw new StepError(`could not move the restored state into place: ${String(error)}`);
   }
 
@@ -131,7 +131,7 @@ async function backupRestore(args: string[], globals: GlobalOptions): Promise<nu
 
   // 5. doctor before restarting, then verify the cell actually came back.
   const doctor = openclaw(cell, ["doctor", "--non-interactive"]);
-  const start = run("systemctl", ["--user", "start", cell.unit]);
+  const start = openclaw(cell, ["gateway", "start"]);
   if (start.code !== 0) throw new StepError(`could not start ${cell.unit} after restore: ${start.stderr}`);
   const ready = await waitForEndpoint(cell.port, "/readyz", 60_000);
 

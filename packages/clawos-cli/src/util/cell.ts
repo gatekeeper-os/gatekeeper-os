@@ -47,14 +47,19 @@ export function assertCellName(name: string): void {
 }
 
 /** Build the full path/identity set for a cell. */
-export function resolveCell(name = "default", port?: number): Cell {
+export function resolveCell(name = "default", port?: number, platform = process.platform): Cell {
   assertCellName(name);
+  if (platform === "darwin" && ["gateway", "node"].includes(name)) throw new Error("cell name collides with an upstream LaunchAgent label");
   const isDefault = name === "default";
   const stateDir = isDefault ? join(homedir(), ".openclaw") : join(homedir(), `.openclaw-${name}`);
-  const unit = isDefault ? "openclaw-gateway.service" : `openclaw-gateway-${name}.service`;
+  const unit = platform === "darwin" ? (isDefault ? "ai.openclaw.gateway" : `ai.openclaw.${name}`)
+    : (isDefault ? "openclaw-gateway.service" : `openclaw-gateway-${name}.service`);
   const resolvedPort = port ?? DEFAULT_PORT;
   const env: NodeJS.ProcessEnv = {
     OPENCLAW_STATE_DIR: stateDir,
+    OPENCLAW_CONFIG_PATH: join(stateDir, "openclaw.json"),
+    OPENCLAW_PROFILE: isDefault ? "" : name,
+    OPENCLAW_GATEWAY_PORT: String(resolvedPort),
     OPENCLAW_NO_AUTO_UPDATE: "1",
     CLAWOS_CELL: name,
   };

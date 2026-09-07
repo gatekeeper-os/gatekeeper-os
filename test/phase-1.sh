@@ -89,6 +89,42 @@ else
   fail config-apply-force-recovers "$(head -c 300 "$EV/config-apply-forced.json")"
 fi
 
+# A one-shot PATH shim inserts an upstream edit AFTER dry-run, before the real transaction.
+# It removes itself before helper discovery so the helper still loads the actual installed public SDK.
+real_openclaw="$(command -v openclaw)"
+race_bin="$(mktemp -d)"
+cat > "$race_bin/openclaw" <<'SH'
+#!/usr/bin/env bash
+"$CLAWOS_TEST_REAL_OPENCLAW" "$@"
+rc=$?
+if [[ " $* " == *" --dry-run "* && "$rc" = 0 ]]; then
+  "$CLAWOS_TEST_REAL_OPENCLAW" config set gateway.bind '"lan"' --strict-json >/dev/null 2>&1 || exit 90
+  rm -- "$0"
+fi
+exit "$rc"
+SH
+chmod +x "$race_bin/openclaw"
+echo '{tools:{sessions:{visibility:"tree"}}}' > "$HOME/.openclaw/os/config.d/90-local.json5"
+before_lock="$(sha256sum "$HOME/.openclaw/os/clawos.lock.json" | cut -d' ' -f1)"
+PATH="$race_bin:$PATH" CLAWOS_TEST_REAL_OPENCLAW="$real_openclaw" clawos config apply --force --json > "$EV/config-race.json" 2>&1
+race_rc=$?
+openclaw config get gateway.bind --json > "$EV/bind-after-race.json" 2>&1
+if [ "$race_rc" -ne 0 ] && grep -q lan "$EV/bind-after-race.json" \
+  && [ "$before_lock" = "$(sha256sum "$HOME/.openclaw/os/clawos.lock.json" | cut -d' ' -f1)" ]; then
+  pass config-apply-atomic-race-refusal
+else
+  fail config-apply-atomic-race-refusal "exit $race_rc; concurrent edit or checkpoint was overwritten"
+fi
+# Prove the refusal was the revision guard, not a broken helper: identical desired input now succeeds.
+clawos config apply --force --json > "$EV/config-race-recovery.json" 2>&1
+if [ "$?" -eq 0 ] && jq -e '.changed == true' "$EV/config-race-recovery.json" >/dev/null; then
+  pass config-apply-atomic-race-recovery
+else
+  fail config-apply-atomic-race-recovery "transaction failed without a competing writer"
+fi
+echo '{}' > "$HOME/.openclaw/os/config.d/90-local.json5"
+clawos config apply --json > "$EV/config-race-cleanup.json" 2>&1 || fail config-race-cleanup
+
 # ---------------------------------------------------------------- second cell, concurrently
 clawos cell create firma --port 18801 --yes --json > "$EV/cell-create.json" 2>&1
 cell_rc=$?
