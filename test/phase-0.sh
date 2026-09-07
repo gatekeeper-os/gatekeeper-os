@@ -52,6 +52,9 @@ until curl -fsS http://127.0.0.1:19100/readyz >/dev/null 2>&1; do
   sleep 1
 done
 echo 'PASS foreground-gateway-ready'
+openclaw gateway call os-spike.discovery --json > /home/tester/phase-0-evidence/discovery-enabled.json 2>/home/tester/discovery-rpc.log
+openclaw agent --agent naming --session-id spike-naming --message 'Describe the available probe tools.' --json > /home/tester/naming-result.json 2>/home/tester/naming-error.log
+echo 'PASS naming-schema-turn'
 openclaw gateway call os-spike.report --json > /home/tester/phase-0-evidence/spike-initial.json 2>/home/tester/rpc.log
 for n in $(seq 1 20); do
   openclaw agent --agent main --session-id "spike-turn-$n" --message 'Run the available probe once.' --json > /home/tester/turn-result.json 2>/home/tester/turn-error.log || { echo "FAIL scripted-turn-$n"; exit 1; }
@@ -74,4 +77,17 @@ for mode in block malformed allow; do
   echo "PASS install-policy-$mode"
 done
 cp "$OPENCLAW_STATE_DIR/os/install-policy.jsonl" /home/tester/phase-0-evidence/
+# A manifest on disk must not be mistaken for a live driver after disable/restart.
+kill "$gateway_pid"
+wait "$gateway_pid" || true
+node scripts/spike-disable-fixture.mjs
+openclaw config validate > /home/tester/disabled-config-validation.log 2>&1
+openclaw gateway run > /home/tester/gateway-disabled.log 2>&1 & gateway_pid=$!
+deadline=$((SECONDS+120))
+until curl -fsS http://127.0.0.1:19100/readyz >/dev/null 2>&1; do
+  if ! kill -0 "$gateway_pid" 2>/dev/null || ((SECONDS >= deadline)); then echo 'FAIL disabled-gateway-start'; exit 1; fi
+  sleep 1
+done
+openclaw gateway call os-spike.discovery --json > /home/tester/phase-0-evidence/discovery-disabled.json 2>/home/tester/discovery-rpc.log
+cp "$OPENCLAW_STATE_DIR/os/spike-S1.jsonl" /home/tester/phase-0-evidence/
 node scripts/spike-assert.mjs

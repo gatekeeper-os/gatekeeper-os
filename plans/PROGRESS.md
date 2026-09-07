@@ -176,3 +176,46 @@ evidence/disks preserved. Existing arch validation VM was not modified.
 **Next:** settle c/j with bounded evidence or a reviewed explicit fallback,
 then use the chosen GitHub destination for live CI. Do not tag Phase 0 or begin
 Phase 1 before those gates pass. Inspection command: `cat plans/PROGRESS.md`.
+
+
+## 2026-09-07 — continuation: c/j resolved; live CI destination remains
+
+**Built:** naming-agent boundary probe; independently loaded no-tool fixture in
+`scripts/spike-probe/fixture-vendor/`; catalog/slot consumer in
+`scripts/spike-probe/src/discovery.ts`; disable/restart test and eleven structural
+assertions. No gatekeeper business logic, kernel implementation or new skill.
+
+**Exact VM command:** `CLAWOS_VM_DRIVER=libvirt scripts/vm/test.sh phase-0`.
+**Upstream:** OpenClaw 2026.9.2, Node 24.20.0, Ubuntu 24.04. **Snapshot:** `base`.
+**Artifacts:** `vm-artifacts/20260907-201658-phase-0/`. **Result: exit 0** including
+artifact collection and secret scan.
+
+**Acceptance:** naming schema at 64 characters PASS; live cross-plugin closure
+attachment PASS; wrong-cell and disabled-driver denial PASS; service stop clears
+slot and rejects retained closure PASS. Baseline remains PASS: 20 correlated
+calls, 40 narrowed requests (+1 naming request), device-token reconnect, SQLite,
+all five metadata checks, dev Gateway start/stop, three install-policy outcomes.
+Eleven assertions are true. S-1 inventory is answered with explicit scope limits.
+
+**Host checks:** probe build/typecheck, workspace typecheck/build, 11 unit tests,
+catalog/secret checks, two VM-bootstrap regressions, shell/Node syntax, and
+`git diff --check` passed. Twelve conformance TODOs remain unimplemented.
+
+**Plan corrections in this change:** §3.4 gives a 64-character total naming bound
+based on OpenAI/Anthropic references, not permissive mock acceptance. §4.2/§5.1
+replace the guessed startup enumerator/registration RPC with the catalog plus
+lifecycle-owned public SDK runtime-store fallback. Slots are not an identity
+boundary against native plugins. Security/kernel integration remains Phase 3.
+
+**Remaining gate:** no Git remote or live CI run. A read-only lookup could not
+resolve an accessible `ControlStackAI/openclaw-os`; GitHub owner/repository was
+requested, with no answer yet. Nothing was published. No phase tagged or merged;
+Phases 1–7 remain untouched. This is a CI-destination block, not a failed spike.
+
+**Cleanup:** guest listening sockets showed only SSH (22) and local DNS (53);
+test ports 19100, 19101 and 19110 were unbound. Dedicated VM clean shutdown confirmed; immutable
+base and ignored artifacts preserved. Production Gateway and other VM untouched.
+
+**Next:** use the selected GitHub destination, push this reviewable branch and run
+CI; require a green run before the Phase 0 merge/tag and Phase 1. See the
+current `plans/spike-S1.md` and `docs/phase-checklist.md` for evidence.

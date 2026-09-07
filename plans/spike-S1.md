@@ -11,14 +11,14 @@ fail closed for OpenClaw-owned writes), `matcher` = explicit tool ids only (no w
 
 | # | Question | Command / method | Answer | Plan sections updated |
 |---|---|---|---|---|
-| c | Allowed characters / max length for plugin tool names | register `gk_a_b_c`, 64/65-char names and dotted name; observe load and actual model schemas | PARTIAL: all tested names reached the local model before narrowing was fixed. This is not a provider-portable character/length guarantee; no universal limit established. | §3.4 |
+| c | Allowed characters / max length for plugin tool names | provider documentation + naming-agent turn through real pinned Gateway; actual model schema log | VERIFIED bounded answer: generic registration is permissive; OpenAI/Anthropic document `[A-Za-z0-9_-]{1,64}`. OS retains lowercase underscore names, total ≤64. Boundary name reaches the local model unchanged; no universal/paid-provider runtime claim. | §3.4 |
 | d | Does the manifest tolerate unknown top-level keys (`clawos`)? | actual probe load + `os-spike.report`; retain negative authoring-validator output | VERIFIED for pinned release: `clawos` did not prevent load/RPC. `plugins validate` instead rejects ordinary entries lacking generated authoring metadata; use metadata inspection and separate runtime checks. | §4.2, §8 |
 | e | Does `before_prompt_build` `toolsAllow` remove model schemas? | inspect `llm_input` and the local model's structural tool-name log | VERIFIED in recovered run: 20 hook observations and 40 requests contained only `probe_echo`, after discovery registration and ordinary prompt phase correction. Complete retest verdict below. | §5.2 |
 | f | Is `toolCallId` present and correlated for plugin tools? | 20 scripted calls; record hook identity flags and stash consumption | VERIFIED on tested path: 20/20 hooks have call/agent/session identity; 20/20 executions consume matching entries from the SDK shared runtime store. Optional SDK fields still require fail-closed checks. | §5.1–2 |
 | g | Which paired operator identity fields are populated? | two connections via public SDK `GatewayClient`, second using SDK-issued device token | VERIFIED: role/scopes and `connect.device.id`; device-token reconnect sets `isDeviceTokenAuth`. `pairedClientId` and `authenticatedUserId` absent on both; shared-auth operator role alone does not imply pairing. | §5.4 |
 | h | Own SQLite while Gateway runs? | public Node resolver, open/write/query/close `os/probe.sqlite` at startup | VERIFIED on Node 24.20.0; static import failed loader, `createRequire('node:sqlite')` succeeded. | §5.3 |
 | i | Can late registration expose tools? | `registerTool` at `gateway_start`; actual model schema observation | VERIFIED tested path: registration returns successfully but `probe_late` absent from model schemas. Existing catalog-cache fallback selected. | §5.1 |
-| j | How to enumerate loaded manifests? | record API/runtime root keys; inspect pinned public SDK references; metadata snapshot CLI | PARTIAL: no live in-process enumerator verified. CLI metadata inspection is not a loaded-runtime registry. Existing OS-owned catalog fallback is selected for static tool shapes; live gatekeeper attachment still needs a verified contract. | §4.2 |
+| j | How to enumerate loaded manifests? | catalog-selected manifest + independently loaded lifecycle fixture via public SDK runtime store; RPC before/after disable/restart | VERIFIED fallback: do not require an undocumented live enumerator. Catalog metadata identifies candidates, a lifecycle-owned slot proves fixture availability. Live attachment and wrong-cell/disabled/stopped-handle denial pass. No upstream registry mutation or registration RPC; native-plugin trust and kernel conformance remain separate. | §4.2, §5.1 |
 | m | Install-policy protocol? | absolute executable, block/malformed/allow fixture installs | VERIFIED prior complete runs: version-1 JSON input/output; block and malformed denied; allow installed. Interrupted run completed only block evidence; complete retest below. | §7.5 |
 
 ## 2026-09-07 preliminary run — not a completed spike
@@ -209,3 +209,69 @@ names into a universal provider guarantee, or mistake a disabled metadata
 snapshot for a live registry. No Git remote or live CI run exists. The kernel
 source remains a scaffold, not a verified security implementation. Phase 0 is
 not complete or tagged; no later phase or gatekeeper review STOP was entered.
+
+
+## 2026-09-07 — remaining c/j probes passed
+
+**Exact acceptance command:**
+`CLAWOS_VM_DRIVER=libvirt scripts/vm/test.sh phase-0`.
+Fresh immutable `base`; Ubuntu 24.04, Node 24.20.0, OpenClaw 2026.9.2.
+**Artifacts:** `vm-artifacts/20260907-201658-phase-0/`; **exit 0** including
+collection and secret scan. Previous failures/UNKNOWN evidence remain preserved.
+
+### c — naming contract and real Gateway boundary
+
+`web_fetch` read the provider references linked in upstream-reference §12:
+OpenAI documents letters/digits/underscores/dashes, maximum 64; Anthropic gives
+`^[a-zA-Z0-9_-]{1,64}$`. This answers portability for those documented APIs, not
+an unknown universal maximum across every provider. Keep the OS's stricter
+lowercase underscore convention and reject names above 64 (Phase 2 kit/catalog).
+Do not truncate, rename, or infer provider acceptance from a permissive mock.
+
+VM command:
+`openclaw agent --agent naming --session-id spike-naming --message 'Describe the available probe tools.' --json`.
+Its ordinary prompt hook selected `gk_a_b_c` and exactly 64 `n` characters.
+Both reached `llm_input` and one actual local-model request unchanged; dotted and
+65-character probes were absent from that selected surface. `assertions.json`:
+`portable-naming-boundary: true`. The original 20 sessions still produced
+20 correlated executions and 40 exactly narrowed model requests; total requests
+are now 41 because the naming turn makes one additional request.
+
+### j — catalog metadata plus live attachment, without an enumerator
+
+The guessed startup enumerator and serialization/RPC attachment are not needed.
+Public SDK object-form runtime stores share a process-local slot across plugin
+entries. The fixture under `scripts/spike-probe/fixture-vendor/` registers **no
+tools**, grants, sessions, credential flow, or external service. Its lifecycle
+service publishes a no-argument descriptive closure; stop revokes the closure
+and clears only its own slot. The consumer reads the OS-owned configured
+catalog's canonical root and marker, then checks the live slot's id/version/root/
+cell before calling the closure. Discovery registration does not publish it.
+
+VM commands inside the same harness (all explicit isolated paths):
+- `openclaw gateway call os-spike.discovery --json` while enabled.
+- Stop the test Gateway; `node scripts/spike-disable-fixture.mjs` changes only
+  the fixture's enabled flag; `openclaw config validate`; start a new Gateway.
+- `openclaw gateway call os-spike.discovery --json` while disabled.
+
+`discovery-enabled.json`: manifest matched, live slot present, closure called,
+wrong-cell lookup denied. `discovery-disabled.json`: manifest still matched on
+disk, but no live slot, no attachment, and disabled denial true.
+`spike-S1.jsonl`, `j:fixture-stop`: slot cleared and retained closure denied.
+All four new assertions and seven baseline assertions are true. Metadata,
+dev Gateway lifecycle, token reconnect, SQLite, and install-policy block/
+malformed/allow also passed.
+
+**Limits:** named slots are not unforgeable caller identity; native plugins share
+process trust. This is an attachment-transport probe, not the future kernel's
+`resolveGrant`, catalog integrity, hot-reload security, or malicious-plugin
+conformance. Those requirements remain in their implementation phases. No
+upstream internals are imported or modified; no real gatekeeper surface/review
+STOP was entered. Plan §4.2/§5.1 now describe the supported fallback explicitly.
+
+**S-1 question inventory is answered. Phase 0 still cannot be tagged:** its live
+CI criterion requires a GitHub destination/run URL. There is no remote; read-only
+`gh repo view ControlStackAI/openclaw-os` could not resolve an accessible repo.
+No repository was created or content pushed. Host build/typechecks, 11 unit
+tests, catalog/secret checks, and two bootstrap regressions passed; 12 later
+conformance TODOs are still not passes.

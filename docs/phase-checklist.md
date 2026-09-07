@@ -8,8 +8,8 @@ Check a box only when the criterion passed in the VM (or, for host-only unit tes
 - [ ] `clawos.lock.json` pins `openclaw@<version>`; CI installs that version and prints `openclaw --version` — evidence: CI run URL
 - [x] `scripts/dev-gateway.ts` starts and stops a throwaway cell with `openclaw gateway run` — evidence: `vm-artifacts/20260907-192654-phase-0/{run.log,dev-gateway.log}`, exit 0
 - [x] `scripts/vm/up.sh` creates the VM and takes snapshot `base` — evidence: `18eb1d7`; `scripts/vm/.state/up-metadata-retry.log`; subsequent acceptance runs successfully restored `base`
-- [ ] `plans/spike-S1.md` answers every UNVERIFIED item in plan §2.2 and §5.1 with the command used — evidence:
-- [x] Plan updated: no UNVERIFIED marker remains in §5 — evidence: `9ba75fe`; bounded probe evidence is distinguished from unimplemented kernel conformance; c/j outside §5 remain partial
+- [x] `plans/spike-S1.md` answers every UNVERIFIED item in plan §2.2 and §5.1 with the command used — evidence: `vm-artifacts/20260907-201658-phase-0/` exit 0; provider-documentation naming bound + live SDK-slot fallback; see S-1 limits
+- [x] Plan updated: no UNVERIFIED marker remains in §5 — evidence: `9ba75fe`; bounded probe evidence is distinguished from unimplemented kernel conformance; c/j resolved by the 201658 continuation
 - [x] Three skills (`write-gatekeeper`, `clawos-operator`, `write-blueprint`) drafted under `.agents/skills/` — evidence: supplied scaffold `7534893`; verified tracked paths, not newly published or applied
 - [ ] Tag `phase-0`
 
@@ -18,8 +18,14 @@ Check a box only when the criterion passed in the VM (or, for host-only unit tes
 requests, paired device-token reconnect, SQLite, install policy, plugin metadata,
 and dev Gateway lifecycle passed. Prior interrupted run stays UNKNOWN overall;
 the subsequent missing-schema run exited 1 and was fixed in `9ba75fe`.
-**Phase remains incomplete:** S-1 c/j are partial and no live CI destination/run
-exists. No phase tag or advancement. See `plans/PROGRESS.md`.
+**At that earlier checkpoint:** S-1 c/j were partial and no live CI destination/run
+existed. No phase tag or advancement. See `plans/PROGRESS.md`.
+
+**Latest Phase 0 continuation, 2026-09-07:** `vm-artifacts/20260907-201658-phase-0/`
+exited **0** from `base`. c/j are now answered: documented naming limits with a
+live 64-character schema-boundary test, and catalog-selected SDK runtime slots
+with enabled/disabled/stopped checks. All eleven structural assertions pass.
+**Remaining Phase 0 gate:** live CI destination/run URL. No tag or Phase 1 work.
 
 ## Phase 1 — Host layer and installer
 

@@ -275,3 +275,38 @@ negative operator-authorization conformance.
 
 Phase 0 is still incomplete: S-1 c/j are partial and live CI has no destination.
 The kernel source is still a scaffold; only the probe's runtime is verified here.
+
+
+## 12. S-1 naming and live attachment continuation (2026-09-07)
+
+**Documented provider naming contract (not paid-provider execution):**
+- OpenAI Chat Completions function `name`: letters, digits, underscores/dashes;
+  maximum 64 characters. Read via `web_fetch`:
+  https://developers.openai.com/api/reference/resources/chat (Function definition).
+- Anthropic user-defined tool `name`: `^[a-zA-Z0-9_-]{1,64}$`. Read via `web_fetch`:
+  https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools.
+- Pinned OpenClaw `docs/plugins/sdk-overview.md`, Node-host `agentTool.name`,
+  independently documents a letter-first, 64-character provider-safe subset.
+  That Node-host restriction is not claimed for generic `registerTool()`.
+
+OS tool names retain §3.4's lowercase underscore convention with an explicit
+64-character total bound. The kit/catalog must reject invalid names, never
+silently truncate or rename (Phase 2). Dotted/65-character names being accepted
+by the local OpenAI-compatible stub does not make them portable. Boundary-schema
+acceptance and its exact run are in `plans/spike-S1.md`.
+
+**Supported attachment surface:** `openclaw/plugin-sdk/runtime-store` exports
+`createPluginRuntimeStore<T>({pluginId,errorMessage})`, `setRuntime`,
+`tryGetRuntime`, `getRuntime`, `clearRuntime`. Object keys share one process-local
+slot across independently loaded modules. `api.registerService` owns start/stop;
+see pinned `docs/plugins/sdk-runtime.md` under Storing runtime references and
+Gateway service events. It is not an upstream manifest enumerator or an
+unforgeable identity mechanism. The OS-owned catalog selects roots/ids; live
+slot checks distinguish available drivers from mere installed metadata. Native
+plugins already share process trust. S-1 fixture evidence (including disabled
+and retained-handle denial) is recorded separately; kernel security conformance
+is not inferred from it.
+
+`os-spike.discovery` is an OS test RPC registered with public
+`api.registerGatewayMethod`, `profileAccess: independent`; it returns only
+presence/outcome booleans. There is no registration RPC or driver serialization.

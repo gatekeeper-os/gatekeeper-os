@@ -1,0 +1,18 @@
+{
+  "id": "spike-vendor-fixture",
+  "name": "S-1 attachment fixture",
+  "activation": {
+    "onStartup": true
+  },
+  "clawos": {
+    "gatekeeper": {
+      "vendor": "spike",
+      "apiVersion": 1
+    }
+  },
+  "configSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  }
+}

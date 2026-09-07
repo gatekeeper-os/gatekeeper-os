@@ -6,12 +6,19 @@ const rows=q=>records.filter(x=>x.q===q).map(x=>x.data);
 const modelRequests=readFileSync(`${root}/model-tools.jsonl`,'utf8').trim().split('\n').map(x=>JSON.parse(x));
 const narrowed=names=>Array.isArray(names) && names.length===1 && names[0]==='probe_echo';
 const paired=JSON.parse(readFileSync(`${root}/paired-client.json`,'utf8'));
+const naming=names=>Array.isArray(names) && names.length===2 && names.includes('gk_a_b_c') && names.includes('n'.repeat(64));
+const enabled=JSON.parse(readFileSync(`${root}/discovery-enabled.json`,'utf8'));
+const disabled=JSON.parse(readFileSync(`${root}/discovery-disabled.json`,'utf8'));
 const checks={
+  'portable-naming-boundary': rows('e:llm_input').filter(x=>naming(x.names)).length===1 && modelRequests.filter(x=>naming(x.names)).length===1,
+  'live-vendor-attachment': enabled.manifestMatched && enabled.loaded && enabled.attached && enabled.wrongCellDenied,
+  'disabled-vendor-denied': disabled.manifestMatched && disabled.disabledDenied && !disabled.loaded && !disabled.attached,
+  'vendor-stop-revokes-runtime': rows('j:fixture-stop').length===1 && rows('j:fixture-stop').every(x=>x.cleared && x.retainedDenied),
   'sqlite-owned-store': rows('h:sqlite').some(x=>x.ok),
   'twenty-correlated-tool-calls': rows('f:execute').length===20 && rows('f:execute').every(x=>x.hasToolCallId && x.correlated),
   'twenty-tool-hooks-with-identity': rows('f:before_tool_call').length===20 && rows('f:before_tool_call').every(x=>x.hasToolCallId && x.hasAgentId && x.hasSessionKey),
-  'model-tools-narrowed': rows('e:llm_input').length===20 && rows('e:llm_input').every(x=>x.hasTools && narrowed(x.names)),
-  'actual-model-requests-narrowed': modelRequests.length===40 && modelRequests.every(x=>narrowed(x.names)),
+  'model-tools-narrowed': rows('e:llm_input').length===21 && rows('e:llm_input').filter(x=>x.hasTools && narrowed(x.names)).length===20,
+  'actual-model-requests-narrowed': modelRequests.length===41 && modelRequests.filter(x=>narrowed(x.names)).length===40,
   'paired-device-token-auth': paired.ok===true && paired.observations.length===2 && paired.observations.every(x=>x.identity.hasDeviceId) && paired.observations[1].identity.isDeviceTokenAuth===true,
   'operator-client-observed': rows('g:gateway-client').some(x=>x.present && x.role==='operator'),
 };

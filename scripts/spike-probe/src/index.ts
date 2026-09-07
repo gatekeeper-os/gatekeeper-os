@@ -3,6 +3,7 @@ import { definePluginEntry, type OpenClawPluginApi } from 'openclaw/plugin-sdk/p
 import { createPluginRuntimeStore } from 'openclaw/plugin-sdk/runtime-store';
 import { getGlobalHookRunner } from 'openclaw/plugin-sdk/plugin-runtime';
 import { Type } from 'typebox';
+import { inspectAttachment } from './discovery.js';
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join, isAbsolute } from 'node:path';
@@ -59,7 +60,10 @@ export default definePluginEntry({
       try { api.registerTool(tool(name)); if (api.registrationMode === 'full') rec('c:register', { name, length: name.length, accepted: true }); }
       catch { if (api.registrationMode === 'full') rec('c:register', { name, length: name.length, accepted: false }); }
     }
-    api.on('before_prompt_build', () => { rec('diagnostic:prompt-hook', hookState()); return { toolsAllow: ['probe_echo', 'probe_late'] }; });
+    api.on('before_prompt_build', (_event, ctx) => {
+      rec('diagnostic:prompt-hook', hookState());
+      return { toolsAllow: ctx.agentId === 'naming' ? ['gk_a_b_c', 'n'.repeat(64)] : ['probe_echo', 'probe_late'] };
+    });
     api.on('before_tool_call', (event, ctx) => {
       if (event.toolCallId && ctx.agentId && ctx.sessionKey) sharedCalls().add(event.toolCallId);
       rec('f:before_tool_call', { tool: event.toolName, hasToolCallId: Boolean(event.toolCallId),
@@ -88,6 +92,10 @@ export default definePluginEntry({
         db.close();
       } catch { rec('h:sqlite', { ok: false }); }
     });
+    api.registerGatewayMethod('os-spike.discovery', ({ respond }) => {
+      const enabled = api.config.plugins?.entries?.['spike-vendor-fixture']?.enabled === true;
+      respond(true, inspectAttachment(state, enabled));
+    }, { profileAccess: 'independent' });
     api.registerGatewayMethod('os-spike.report', ({ client, respond }) => {
       rec('diagnostic:rpc-hooks', hookState());
       rec('g:gateway-client', { present: Boolean(client), keys: Object.keys(client ?? {}),

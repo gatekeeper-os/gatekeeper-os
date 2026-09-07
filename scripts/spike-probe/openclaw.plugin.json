@@ -12,7 +12,8 @@
       "probe_late"
     ],
     "gatewayMethodDispatch": [
-      "os-spike.report"
+      "os-spike.report",
+      "os-spike.discovery"
     ]
   },
   "activation": {
