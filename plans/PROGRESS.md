@@ -242,3 +242,17 @@ CI: https://github.com/ControlStackAI/openclaw-os/actions/runs/34160573000.
 **State:** destination and live-CI blockers resolved. No phase merge/tag or
 Phase 1 implementation in this repository-creation step. Production and VM
 state untouched. Next project step is the Phase 0 merge/tag checkpoint.
+
+## 2026-09-07 — Phase 0 complete
+
+**Acceptance:** all Phase 0 gates passed. Fresh-base VM run
+`CLAWOS_VM_DRIVER=libvirt scripts/vm/test.sh phase-0`, artifacts
+`vm-artifacts/20260907-201658-phase-0/`, exit 0, eleven assertions;
+OpenClaw 2026.9.2 on Ubuntu 24.04. Live CI on `8f5770a` completed success:
+https://github.com/ControlStackAI/openclaw-os/actions/runs/34160573000.
+The evidence-only changes since that run do not change executable code.
+
+**Checkpoint:** merge into main with the acceptance run in its message and tag
+`phase-0`. No kernel conformance claimed: twelve TODOs belong to later phases.
+**Next:** Phase 1 host layer/installer, isolated worktree, fresh-base VM acceptance;
+macOS acceptance requires a suitable separate host and is not waived.

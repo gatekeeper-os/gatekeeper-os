@@ -11,7 +11,7 @@ Check a box only when the criterion passed in the VM (or, for host-only unit tes
 - [x] `plans/spike-S1.md` answers every UNVERIFIED item in plan §2.2 and §5.1 with the command used — evidence: `vm-artifacts/20260907-201658-phase-0/` exit 0; provider-documentation naming bound + live SDK-slot fallback; see S-1 limits
 - [x] Plan updated: no UNVERIFIED marker remains in §5 — evidence: `9ba75fe`; bounded probe evidence is distinguished from unimplemented kernel conformance; c/j resolved by the 201658 continuation
 - [x] Three skills (`write-gatekeeper`, `clawos-operator`, `write-blueprint`) drafted under `.agents/skills/` — evidence: supplied scaffold `7534893`; verified tracked paths, not newly published or applied
-- [ ] Tag `phase-0`
+- [x] Tag `phase-0` — Phase 0 completion merge; VM 20260907-201658 + green CI 34160573000
 
 **Phase 0 continuation, 2026-09-07:** fresh-base live spike exited **0** in
 `vm-artifacts/20260907-192654-phase-0/`: 20/20 call correlations, 40/40 narrowed
