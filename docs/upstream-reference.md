@@ -74,12 +74,34 @@ Includes and substitution: `$include` — single file replaces the containing ob
 
 ```bash
 openclaw config file|get <path>|schema|validate
-openclaw config set <path> <value> [--merge|--replace] [--strict-json]
-openclaw config patch --file <f> | --stdin [--dry-run] [--expect-current-json <v>] [--expect-current-absent]
+openclaw config set <path> <value> [--merge|--replace] [--strict-json] [--dry-run]
+                                   [--expect-current-json <v> | --expect-current-absent]
+openclaw config patch --file <f> | --stdin [--dry-run] [--allow-exec] [--json] [--replace-path <p>]
 openclaw config unset <path>
-# patch semantics: objects merge recursively; arrays and scalars replace; null deletes;
-# objects on agents.entries / plugins.entries require --merge to avoid data loss
+# patch semantics: objects merge recursively; arrays and scalars replace; null deletes.
 ```
+
+**Corrected 2026-09-07 (Phase 1).** An earlier revision of this file listed `--expect-current-json` /
+`--expect-current-absent` on `config patch`, and said `agents.entries` / `plugins.entries` "require `--merge`" on a
+patch. Both were wrong, and plan §6.2 inherited the error. VERIFIED against the pinned 2026.9.2 — `docs/cli/config.md`
+§"Conditional writes" and the shipped `dist/config-cli-BAjpm1Yf.js` option table:
+
+- The conditional-write flags exist **only on `config set`**. They are mutually exclusive, apply to a single
+  operation, require a direct non-redirected path, and **cannot be combined with batch mode or `--dry-run`**. A
+  mismatch exits 1, writes nothing, and prints neither the expected nor the current value.
+- `--merge` is a **`config set`** flag. `config patch` has no `--merge` and does not need one: a patch already
+  merges objects recursively. The protected-path guard that `--merge`/`--replace` answers applies to `config set`
+  object assignment. On a patch the corresponding escape hatch is `--replace-path <path>`, which the OS
+  deliberately never passes, so operator-added `agents.entries` / `plugins.entries` survive reconciliation.
+- `config get <path> --json` reads the **redacted** snapshot; secrets never print. That is what makes it safe as
+  the OS's ownership-digest source. Accepted limitation: a change confined to a secret's *value* is invisible to
+  the ownership guard. The OS owns no credential leaf directly — `gateway.auth.token` is a
+  `${CLAWOS_GATEWAY_TOKEN}` env indirection — so no OS-owned path depends on that distinction.
+- Upstream's config snapshot guard still rejects a race between an expectation check and the final file
+  replacement, which is the backstop under the OS's own check-then-write sequence.
+
+Consequence: plan §6.2 step 4 could not be implemented as written. See §6.2 for the replacement design and why
+per-path `config set --expect-current-json <value>` was rejected on secrecy grounds.
 
 Hardened baseline (upstream security page): `gateway.bind: loopback`, `auth.mode: token`, `session.dmScope: per-channel-peer`, `tools.profile: messaging`, `tools.deny: [group:automation, group:runtime, group:fs]`, `tools.exec: {security: deny, ask: always}` (→ `mode: deny`), `channels.whatsapp.dmPolicy: pairing`. Trust model: one Gateway = one trust boundary; for mixed trust use separate Gateways, credentials, OS users or hosts.
 

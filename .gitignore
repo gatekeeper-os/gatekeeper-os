@@ -12,3 +12,4 @@ os/
 !.env.example
 coverage/
 .DS_Store
+packages/clawos-cli/templates/
