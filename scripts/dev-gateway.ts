@@ -31,7 +31,11 @@ const deadline = Date.now() + 120_000;
 while (!stopping && child.exitCode === null) {
   try {
     const response = await fetch(`http://127.0.0.1:${port}/readyz`, { signal: AbortSignal.timeout(1000) });
-    if (response.ok) { console.log(`[dev-gateway] ready port=${port}`); break; }
+    if (response.ok) {
+      console.log(`[dev-gateway] ready port=${port}`);
+      if (process.argv.includes('--smoke')) stop();
+      break;
+    }
   } catch { /* Startup may not have bound the socket yet. */ }
   if (Date.now() > deadline) {
     console.error('[dev-gateway] readiness deadline exceeded'); child.kill('SIGTERM'); process.exitCode = 1; break;

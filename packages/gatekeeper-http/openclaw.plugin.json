@@ -3,6 +3,7 @@
   "name": "HTTP Gatekeeper",
   "description": "OpenAPI-driven generic REST gatekeeper (v1.1, plan §9 Phase 8).",
   "contracts": { "tools": [] },
+  "configSchema": { "type": "object", "properties": {}, "additionalProperties": false },
   "activation": { "onStartup": false },
   "clawos": { "gatekeeper": { "vendor": "http", "apiVersion": 1 } }
 }

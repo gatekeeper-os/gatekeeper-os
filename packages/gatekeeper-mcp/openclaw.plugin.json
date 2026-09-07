@@ -3,6 +3,7 @@
   "name": "MCP Gatekeeper",
   "description": "Wraps any MCP server behind the gatekeeper model (v1.1, plan §9 Phase 8).",
   "contracts": { "tools": [] },
+  "configSchema": { "type": "object", "properties": {}, "additionalProperties": false },
   "activation": { "onStartup": false },
   "clawos": { "gatekeeper": { "vendor": "mcp", "apiVersion": 1 } }
 }

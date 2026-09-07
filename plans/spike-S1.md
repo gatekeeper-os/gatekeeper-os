@@ -11,15 +11,15 @@ fail closed for OpenClaw-owned writes), `matcher` = explicit tool ids only (no w
 
 | # | Question | Command / method | Answer | Plan sections updated |
 |---|---|---|---|---|
-| c | Allowed characters / max length for plugin tool names | register `gk_a_b_c`, a 64-char name, a dotted name; observe load diagnostics | PARTIAL: dotted, 64-char and 65-char names registered and reached model schemas; universal character/length boundary not established. | §3.4 |
-| d | Does the manifest tolerate unknown top-level keys (`clawos`)? | `openclaw plugins validate` + load with the key present; check `plugins inspect --json` diagnostics | PARTIAL: plugin loaded with clawos metadata and RPC executed; separate plugins validate run pending. | §4.2 |
-| e | Does `before_prompt_build` `toolsAllow` remove tool schemas from the model request? | inspect the `llm_input` payload | BLOCKED: zero llm_input callbacks; 40 actual local-model requests retained the unnarrowed tool catalog, despite conversation opt-in. | §5.2 |
-| f | Is `toolCallId` always present on `before_tool_call` for plugin tools? | log the event for 20 calls (probe writes `f:before_tool_call`) | BLOCKED: 20 tool bodies had toolCallId but zero before_tool_call callbacks; 20/20 lacked stash correlation, including with explicit matcher. | §5.2 |
-| g | Which identity fields are populated on `GatewayClient` for a paired operator (`pairedClientId`, `authenticatedUserId`, `connect.role`)? | probe method `os-spike.report` logs `client` keys | PARTIAL: shared-auth CLI client had operator role/scopes; pairedClientId/authenticatedUserId/device absent. Paired-device path untested. | §5.4 |
-| h | Can a plugin open its own SQLite under `OPENCLAW_STATE_DIR` while the gateway holds its DB? | probe opens `os/probe.sqlite` at `gateway_start` | VERIFIED: createRequire(node:sqlite) opened/wrote/queried/closed os/probe.sqlite while Gateway ran. Static import failed loader. | §5.3 |
-| i | Can tools be registered after `register()` (at `gateway_start`)? | probe attempts late `api.registerTool` | VERIFIED for tested path: late registerTool returned successfully, but probe_late absent from all 40 model requests. Catalog-cache fallback selected. | §5.1 |
-| j | How does a plugin obtain the list of loaded plugin manifests (for gatekeeper discovery)? | explore `api.runtime` keys logged by the probe; else use the `os/gatekeepers.json` catalog | PARTIAL: API/runtime key names recorded; no direct registry accessor in root keys. No claim about unexplored nested surfaces. | §4.2 |
-| m | Does `security.installPolicy` accept a command like `clawos install-policy` and what is its stdin/stdout contract? | read `docs/gateway/security` in the installed package; test with a dummy policy | VERIFIED: absolute executable; protocolVersion 1 JSON stdin/stdout; block and malformed denied; allow installed (evaluated twice). | §7.5 |
+| c | Allowed characters / max length for plugin tool names | register `gk_a_b_c`, 64/65-char names and dotted name; observe load and actual model schemas | PARTIAL: all tested names reached the local model before narrowing was fixed. This is not a provider-portable character/length guarantee; no universal limit established. | §3.4 |
+| d | Does the manifest tolerate unknown top-level keys (`clawos`)? | actual probe load + `os-spike.report`; retain negative authoring-validator output | VERIFIED for pinned release: `clawos` did not prevent load/RPC. `plugins validate` instead rejects ordinary entries lacking generated authoring metadata; use metadata inspection and separate runtime checks. | §4.2, §8 |
+| e | Does `before_prompt_build` `toolsAllow` remove model schemas? | inspect `llm_input` and the local model's structural tool-name log | VERIFIED in recovered run: 20 hook observations and 40 requests contained only `probe_echo`, after discovery registration and ordinary prompt phase correction. Complete retest verdict below. | §5.2 |
+| f | Is `toolCallId` present and correlated for plugin tools? | 20 scripted calls; record hook identity flags and stash consumption | VERIFIED on tested path: 20/20 hooks have call/agent/session identity; 20/20 executions consume matching entries from the SDK shared runtime store. Optional SDK fields still require fail-closed checks. | §5.1–2 |
+| g | Which paired operator identity fields are populated? | two connections via public SDK `GatewayClient`, second using SDK-issued device token | VERIFIED: role/scopes and `connect.device.id`; device-token reconnect sets `isDeviceTokenAuth`. `pairedClientId` and `authenticatedUserId` absent on both; shared-auth operator role alone does not imply pairing. | §5.4 |
+| h | Own SQLite while Gateway runs? | public Node resolver, open/write/query/close `os/probe.sqlite` at startup | VERIFIED on Node 24.20.0; static import failed loader, `createRequire('node:sqlite')` succeeded. | §5.3 |
+| i | Can late registration expose tools? | `registerTool` at `gateway_start`; actual model schema observation | VERIFIED tested path: registration returns successfully but `probe_late` absent from model schemas. Existing catalog-cache fallback selected. | §5.1 |
+| j | How to enumerate loaded manifests? | record API/runtime root keys; inspect pinned public SDK references; metadata snapshot CLI | PARTIAL: no live in-process enumerator verified. CLI metadata inspection is not a loaded-runtime registry. Existing OS-owned catalog fallback is selected for static tool shapes; live gatekeeper attachment still needs a verified contract. | §4.2 |
+| m | Install-policy protocol? | absolute executable, block/malformed/allow fixture installs | VERIFIED prior complete runs: version-1 JSON input/output; block and malformed denied; allow installed. Interrupted run completed only block evidence; complete retest below. | §7.5 |
 
 ## 2026-09-07 preliminary run — not a completed spike
 
@@ -113,3 +113,99 @@ kickoff and `docs/agent-operating-rules.md` §7, this ends the run; no hook bypa
 private upstream import, monkey-patch or upstream patch was attempted.
 
 `plans/PROGRESS.md` records remaining acceptance and the next inspection command.
+
+## 2026-09-07 — continuation: registration-mode root cause
+
+Matt authorized continuation. Read-only source diagnosis and fresh-base run
+`vm-artifacts/20260907-190118-phase-0/` confirmed:
+
+- Same Gateway PID: startup/RPC saw `before_tool_call=1`, `llm_input=1`;
+  tool bodies saw zero of both (and zero prompt hooks).
+- The agent runtime uses an exact discovery-mode registry for hook lookup.
+  The supplied `if (api.registrationMode !== "full") return` leaves it empty.
+  Tool lookup can separately fall back to startup registrations, explaining
+  working tool bodies with no hooks.
+- The probe now declares inert tools/hooks in full/discovery/tool-discovery;
+  it starts no services or filesystem writes during discovery registration.
+  Full-only lifecycle work remains below the capability declarations.
+- The supplied `requiresToolAuthority: true` also selected the wrong prompt
+  phase. Pinned `docs/plugins/hooks.md` explicitly forbids changing `toolsAllow`
+  in post-policy enrichment. Narrowing now uses ordinary `before_prompt_build`.
+
+Read-only hook counts use the public (deprecated) SDK `plugin-runtime` barrel,
+not an internal import, patched runner, or manual hook invocation.
+
+Run `20260907-190538-phase-0` verified `pnpm dev:gateway --smoke` readiness and
+shutdown, then stopped at the newly exercised authoring validator:
+`plugins validate --root scripts/spike-probe --entry dist/index.js --json`
+rejects ordinary `definePluginEntry` with “plugin entry does not expose tool or
+feature authoring metadata”. This is not a `clawos` unknown-key rejection.
+The next acceptance retains that exact negative result and checks actual runtime
+load through the probe RPC. No failure was relabeled as successful validation.
+
+Fresh-base corrected runtime retest pending; no phase advancement or tag.
+
+## 2026-09-07 — interrupted continuation recovery
+
+`20260907-191508-phase-0` was explicitly canceled before a run log.
+`20260907-191546-phase-0` has no acceptance exit code and no `assertions.json`:
+**overall outcome UNKNOWN**, not a pass. Following the Gateway restart, no test
+process remained. The guest structural evidence was recovered using:
+
+```bash
+CLAWOS_VM_DRIVER=libvirt scripts/vm/collect.sh vm-artifacts/20260907-191546-phase-0 '2026-09-07T19:15:46Z' phase-0
+```
+
+Recovered files establish 20 hooks, 20 correlated tool bodies, 20 narrowed
+`llm_input` observations, 40 narrowed actual model requests, and a successful
+paired-device-token reconnect. Install-policy evidence stops after `block`.
+No assertions were rerun in the dirty guest or used to invent a missing exit code.
+
+Fresh-base run `20260907-192247-phase-0` exited **1** before the runtime spike.
+The prepared metadata validator found a real scaffold defect: `gatekeeper-http`
+and `gatekeeper-mcp` manifests lacked required `configSchema`, even when disabled.
+Pinned `docs/plugins/manifest.md` lists that field as mandatory. Both Phase-8
+placeholders now declare an empty closed object schema; no tools, resources,
+URLs, credentials, or runtime implementation were added. The repository's
+`write-gatekeeper` skill was checked; neither tool-surface STOP was reached.
+The metadata result now uses the Node entry directly so its `.json` artifact is
+JSON rather than pnpm's console preamble. Metadata success is never called
+runtime conformance for these placeholder plugins.
+
+## 2026-09-07 — completed fresh-base retest: live spike PASS
+
+Exact acceptance command: `CLAWOS_VM_DRIVER=libvirt scripts/vm/test.sh phase-0`.
+Artifacts: `vm-artifacts/20260907-192654-phase-0/`; snapshot `base`;
+Ubuntu 24.04 / Node 24.20.0 / OpenClaw 2026.9.2. Wrapper and collection exited **0**.
+
+```text
+PASS workspace-plugin-metadata (5/5; snapshot only)
+PASS dev-gateway-start-stop
+PASS foreground-gateway-ready
+PASS scripted-turn-1 through scripted-turn-20
+PASS paired-client-identity-and-device-token-reconnect
+PASS install-policy-block / malformed / allow
+PASS sqlite-owned-store
+PASS twenty-correlated-tool-calls
+PASS twenty-tool-hooks-with-identity
+PASS model-tools-narrowed (20 llm_input observations)
+PASS actual-model-requests-narrowed (40 requests; only probe_echo)
+PASS paired-device-token-auth
+PASS operator-client-observed
+exit 0
+```
+
+`assertions.json` contains seven true results; `plugin-metadata.json` contains
+five successful metadata-only results. `paired-client.json` contains only
+identity-presence flags, roles/scopes and auth-mode booleans, never tokens or IDs.
+The authoring-validator rejection remains explicitly preserved in
+`probe-validation.json`; it is not reported as successful authoring validation.
+The collector's secret scan passed. After completion, guest ports 19100, 19101
+and 19110 were verified unbound before requesting dedicated-VM shutdown.
+
+**Remaining gates:** c (portable tool-name character/length bounds) and j (live
+manifest discovery/vendor attachment) remain partial. Do not turn the tested
+names into a universal provider guarantee, or mistake a disabled metadata
+snapshot for a live registry. No Git remote or live CI run exists. The kernel
+source remains a scaffold, not a verified security implementation. Phase 0 is
+not complete or tagged; no later phase or gatekeeper review STOP was entered.

@@ -85,7 +85,7 @@ Hardened baseline (upstream security page): `gateway.bind: loopback`, `auth.mode
 
 ## 5. Plugin system
 
-Manifest `openclaw.plugin.json`: `id`, `name`, `description`, `contracts.{tools[],agentToolResultMiddleware,trustedToolPolicies,gatewayMethodDispatch,workerProviders,…}`, `activation.onStartup`, `configSchema`, `toolMetadata.<tool>.optional`, `cliCommands`. Whether unknown top-level keys are tolerated: **UNVERIFIED** (the manifest page is titled "strict config validation" — assume strict; fallback is a sibling `clawos.gatekeeper.json`). `openclaw.compat.pluginApi` is enforced at install time for non-bundled sources; `peerDependencies.openclaw` is npm metadata only.
+Manifest `openclaw.plugin.json`: `id`, `name`, `description`, `contracts.{tools[],agentToolResultMiddleware,trustedToolPolicies,gatewayMethodDispatch,workerProviders,…}`, `activation.onStartup`, `configSchema`, `toolMetadata.<tool>.optional`, `cliCommands`. Unknown top-level `clawos` metadata is **VERIFIED** to permit the S-1 probe load/RPC on 2026.9.2. This does not imply it is preserved in snapshot reports. `configSchema` remains mandatory, including disabled placeholder plugins (pinned `docs/plugins/manifest.md`). `openclaw.compat.pluginApi` is enforced at install time for non-bundled sources; `peerDependencies.openclaw` is npm metadata only.
 
 `package.json`: `type: module`, `peerDependencies.openclaw`, `openclaw.extensions[]`, `openclaw.compat.{pluginApi,minGatewayVersion}`, `openclaw.build.{openclawVersion,pluginSdkVersion}`.
 
@@ -110,7 +110,7 @@ Local-path installs re-prompt for capability consent every time (no recorded int
 | Hook | Type | Handler shape |
 |---|---|---|
 | `before_agent_run` | Gate | `(e{prompt,messages}, ctx{agentId,sessionKey,sessionId,runId,channel,channelId,senderId?,chatId?}) → pass \| { outcome:"block", reason, message? }` — 15 s, fail closed |
-| `before_prompt_build` | Modify | add context; narrow the turn's submitted tools (`requiresToolAuthority`) — 15 s, log+skip |
+| `before_prompt_build` | Modify | add context; narrow the turn's submitted tools in the ordinary phase (omit `requiresToolAuthority`) — 15 s, log+skip |
 | `before_tool_call` | Modify/Gate | `(e{toolName,params,toolKind?,toolInputKind?,derivedPaths?,runId?,toolCallId?}, ctx{agentId,sessionKey,sessionId,runId,trace,abortSignal?,requester?}) → { params?, block?, blockReason?, requireApproval?: {title, description, severity?, timeoutMs?, allowedDecisions?, pluginId?, onResolution?} }` — `block:true` terminal; first `requireApproval` wins; 15 s fail closed |
 | `after_tool_call` | Observe | results, errors, duration |
 | `before_agent_reply` | Claim | short-circuit with synthetic reply or silence |
@@ -173,7 +173,11 @@ directly from them:
 - `openclaw backup create` sources: the state directory (usually `~/.openclaw`, so `os/` is included), the active config path, `credentials/` if outside the state dir, and every configured agent directory.
 - Trusted sources for install are ClawHub packages and the bundled/official catalog; arbitrary npm/git/local sources warn and need `--force` non-interactively — which is why the OS installer passes `--force --pin --accept-capabilities` for `@clawos/*` until they are published to ClawHub.
 
-## 10. S-1 observations and blocking discrepancy (2026-09-07)
+## 10. Historical S-1 observations and discrepancy (2026-09-07)
+
+**Superseded diagnosis:** the continuation below identifies the full-only registration
+guard and wrong prompt phase. These failure counts are retained as historical evidence,
+not the current hook outcome. See the final continuation report in `plans/spike-S1.md`.
 
 Evidence and exact commands: `plans/spike-S1.md`; latest run
 `vm-artifacts/20260907-184712-phase-0/`, Ubuntu 24.04 / Node 24.20.0 /
@@ -202,3 +206,72 @@ OpenClaw 2026.9.2, reset from `base`. Phase 0 has **not** passed.
   metadata did not prevent runtime loading; CLI validation is still pending.
   CLI shared-auth clients had operator role/scopes but no paired device or
   authenticated user ID; this does not answer the paired-client question.
+
+## Continuation diagnostic surface (2026-09-07)
+
+Read-only hook counts are obtained through the published
+`openclaw/plugin-sdk/plugin-runtime` export `getGlobalHookRunner()` →
+`getHookCount(name)`. VERIFIED source: pinned `dist/plugin-sdk/plugin-runtime.d.ts`
+and `docs/plugins/sdk-subpaths.md` (deprecated public barrel). Used only by the
+throwaway probe, never to reset, initialize, replace or invoke upstream hooks.
+
+The paired-device probe uses `GatewayClient` from the documented public
+`openclaw/plugin-sdk/gateway-runtime` subpath (`docs/plugins/sdk-subpaths.md`).
+The SDK owns device identity generation, signing, pairing-token storage and the
+wire handshake; the probe supplies isolated config auth only in memory and stores
+only identity-presence flags. No upstream database is read by OS code.
+
+Read-only diagnosis of the pinned distribution identifies the registration path:
+`runtime-plugins-BDPJ7y4t.js:82` loads a non-activated registry handle;
+`loader-DPiOPJjR.js:824` selects `discovery` for that handle;
+`generation-scope-Cf83d_iq.js:9` carries it into the turn;
+`hook-runner-global-0kfmMG4T.js:134` prefers this exact scoped registry.
+A `full`-only early return therefore leaves turn hooks empty even while fallback
+tools from the startup registry execute. These are inspection references, never
+private imports. See `sdk-entrypoints.md` registration-mode table and
+`sdk-runtime.md` for the live runtime available during discovery.
+
+Two further scaffold corrections from the pinned public contracts:
+- `before_prompt_build` must return `toolsAllow` in the ordinary phase, **without**
+  `requiresToolAuthority`. That flag selects post-policy enrichment and permits only
+  context additions, not tool changes (`docs/plugins/hooks.md`, Authorized prompt
+  enrichment). The scaffold's interpretation of the flag was wrong.
+- `plugins validate --root scripts/spike-probe --entry dist/index.js --json`
+  exited 1 in fresh-base run `20260907-190538-phase-0`, reporting only
+  `plugin entry does not expose tool or feature authoring metadata`. This command
+  validates generated tool/feature authoring metadata, not every ordinary
+  `definePluginEntry` plugin. Use config/manifest loading plus runtime inspection
+  and an actual registered RPC for this probe; preserve the CLI limitation.
+
+Cross-registration identity storage uses the documented
+`openclaw/plugin-sdk/runtime-store` → `createPluginRuntimeStore({pluginId,
+errorMessage})`. The object overload provides a shared process-local slot even
+across duplicate SDK modules; the string overload does not. The probe initializes
+its own slot only during full registration and accesses it lazily in hooks/tools.
+Pinned SDK declarations are generic (`createPluginRuntimeStore<T>`); no upstream
+registry is replaced or mutated by the probe. Source: `sdk-runtime.md`, Storing
+runtime references; `dist/plugin-sdk/runtime-store.d.ts`.
+
+Ordinary-plugin CI validation uses the documented `plugins inspect --all --json`
+snapshot path (no `--runtime`), with entries disabled in a fresh isolated config.
+It validates discovery/config-schema presence and rejects error diagnostics; it
+does **not** claim plugin execution or runtime conformance. The executable
+entrypoints are built and checked to remain inside their package roots.
+
+## Completed continuation retest (2026-09-07)
+
+`CLAWOS_VM_DRIVER=libvirt scripts/vm/test.sh phase-0`, fresh snapshot `base`,
+artifacts `vm-artifacts/20260907-192654-phase-0/`, **exit 0**. Hook correlation
+20/20; narrowed `llm_input` 20/20; actual narrowed model requests 40/40; SQLite,
+paired SDK device-token reconnect, all three install-policy outcomes, dev Gateway
+start/stop, and metadata-only inspection of five workspace plugins passed.
+The old full-only-guard failure above is resolved for this path.
+
+Paired identity fields observed: `connect.role`, `connect.scopes`,
+`connect.device.id`, and `isDeviceTokenAuth` on token reconnect. No populated
+`pairedClientId` or `authenticatedUserId` on either paired connection. Shared-auth
+CLI role alone is not a pairing guarantee. This positive probe does not replace
+negative operator-authorization conformance.
+
+Phase 0 is still incomplete: S-1 c/j are partial and live CI has no destination.
+The kernel source is still a scaffold; only the probe's runtime is verified here.

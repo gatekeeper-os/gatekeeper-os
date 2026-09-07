@@ -20,12 +20,31 @@ printf '%s\n' "$actual" > /home/tester/phase-0-evidence/openclaw-version.txt
 echo 'PASS pinned-upstream-installed'
 if ! command -v pnpm >/dev/null; then npm install -g pnpm@10.15.0 > /home/tester/pnpm-install.log 2>&1; fi
 pnpm install --frozen-lockfile > /home/tester/pnpm-install-workspace.log 2>&1
+pnpm build > /home/tester/workspace-build.log 2>&1
+node scripts/check-plugin-metadata.mjs > /home/tester/phase-0-evidence/plugin-metadata.json 2>/home/tester/plugin-metadata.log
+echo 'PASS workspace-plugin-metadata'
 pnpm --filter spike-probe build > /home/tester/probe-build.log 2>&1
+pnpm dev:gateway --smoke > /home/tester/phase-0-evidence/dev-gateway.log 2>&1
+grep -q '\[dev-gateway\] ready port=19110' /home/tester/phase-0-evidence/dev-gateway.log
+if curl -fsS --max-time 2 http://127.0.0.1:19110/readyz >/dev/null 2>&1; then echo 'FAIL dev-gateway-still-bound'; exit 1; fi
+echo 'PASS dev-gateway-start-stop'
 node scripts/spike-config.mjs
 openclaw config validate > /home/tester/config-validation.log 2>&1
+if openclaw plugins validate --root scripts/spike-probe --entry dist/index.js --json > /home/tester/phase-0-evidence/probe-validation.json 2>/home/tester/probe-validation.log; then
+  echo 'PASS probe-authoring-validation'
+else
+  python3 -c 'import json; d=json.load(open("/home/tester/phase-0-evidence/probe-validation.json")); assert d == {"valid":False,"errors":["plugin entry does not expose tool or feature authoring metadata: ./dist/index.js"]}'
+  echo 'NOTE ordinary-plugin-authoring-validation-unsupported; checking runtime load via RPC'
+fi
 node scripts/spike-model.mjs > /home/tester/model.log 2>&1 & model_pid=$!
 openclaw gateway run > /home/tester/gateway.log 2>&1 & gateway_pid=$!
-cleanup() { kill "$gateway_pid" "$model_pid" 2>/dev/null || true; wait "$gateway_pid" "$model_pid" 2>/dev/null || true; }
+cleanup() {
+  kill "$gateway_pid" "$model_pid" 2>/dev/null || true
+  wait "$gateway_pid" "$model_pid" 2>/dev/null || true
+  for artifact in spike-S1.jsonl model-tools.jsonl install-policy.jsonl; do
+    if [ -f "$OPENCLAW_STATE_DIR/os/$artifact" ]; then cp "$OPENCLAW_STATE_DIR/os/$artifact" /home/tester/phase-0-evidence/; fi
+  done
+}
 trap cleanup EXIT
 deadline=$((SECONDS+120))
 until curl -fsS http://127.0.0.1:19100/readyz >/dev/null 2>&1; do
@@ -38,6 +57,7 @@ for n in $(seq 1 20); do
   openclaw agent --agent main --session-id "spike-turn-$n" --message 'Run the available probe once.' --json > /home/tester/turn-result.json 2>/home/tester/turn-error.log || { echo "FAIL scripted-turn-$n"; exit 1; }
   echo "PASS scripted-turn-$n"
 done
+node scripts/spike-probe/paired-client.mjs
 openclaw gateway call os-spike.report --json > /home/tester/phase-0-evidence/spike-final.json 2>/home/tester/rpc.log
 cp "$OPENCLAW_STATE_DIR/os/spike-S1.jsonl" /home/tester/phase-0-evidence/
 cp "$OPENCLAW_STATE_DIR/os/model-tools.jsonl" /home/tester/phase-0-evidence/
