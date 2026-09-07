@@ -9,4 +9,8 @@ export default defineGatekeeper({
   createVendor: (ctx) => new GitHubVendor(ctx),
   resources,
   tools,
+  // Existing tool surface only; Phase 4 reviews and implementation remain outstanding.
+  actions: Object.fromEntries(tools.filter(tool => tool.kind === "action").map(tool => [tool.name, {
+    describe() { throw new Error("GitHub driver is not implemented."); },
+  }])),
 });

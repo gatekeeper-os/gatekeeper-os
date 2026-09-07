@@ -11,7 +11,7 @@ export class IssueGatekeeper extends KitGatekeeper {
     gk_github_issue_comment: {
       describe: (p: { body: string }) => ({ title: `Comment on issue #${this.number}`, description: `> ${p.body}`,
         actionKind: { tag: "github.issue.comment", label: "Comment on issue" }, autoApprovable: !/@/.test(p.body), implementsRevert: true }),
-      simulate: (p: { body: string }, overlay: OverlayStore) => overlay.add({ actionId: 0, kind: "comment", payload: { id: overlay.nextTempId(), body: p.body, author: "you", pending: true } }),
+      simulate: (p: { body: string }, overlay: OverlayStore, actionId: number) => overlay.add({ actionId, kind: "comment", payload: { id: overlay.nextTempId(), body: p.body, author: "you", pending: true } }),
       apply: async (_p: { body: string }) => { throw new Error("TODO(phase-4): api.createComment"); },
       revert: async () => { throw new Error("TODO(phase-4): api.deleteComment"); },
     },

@@ -6,6 +6,8 @@ export default defineGatekeeper({
   vendor: "fs", apiVersion: 1, id: "gatekeeper-fs", name: "Filesystem Gatekeeper",
   description: "Mediates agent access to specific host directories.",
   createVendor: (ctx) => new FsVendor(ctx),
+  // Metadata-only placeholder: Phase 3 must implement the reviewed descriptor before use.
+  actions: { gk_fs_file_write: { describe() { throw new Error("Filesystem driver is not implemented."); } } },
   resources: [
     { type: "dir", urlPattern: "file:///:path+", title: "Directory", description: "Read and write files inside one directory tree.",
       grantable: true, observerStrategy: "low-stakes", tools: ["gk_fs_dir_list", "gk_fs_file_read", "gk_fs_file_write"] },

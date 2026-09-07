@@ -950,6 +950,27 @@ operator identity must come from trusted RPC context. Stored `descriptionJson` i
 `ActionDescriptionSchema`. Grant handles use lowercase Crockford base32 (`0-9a-hjkmnp-tv-z`), preserving the example
 `grant:7k3m9q2p`; the initial all-alphanumeric regex did not implement the stated base32 contract. No live grants exist yet.
 
+**Phase 2 kit integration (2026-09-07).** The scaffold could not enforce the stated builder acceptance rule because its
+action descriptors existed only on resource instances. `GatekeeperDefinition.actions` now declares pure action
+`describe` functions; instance-level `ActionImpl` validation remains mandatory, and authors reuse the descriptor.
+`ObservationImpl` is split into pure `describe` and `read`, allowing dry passes without fetching and authorization before
+reads. Simulators receive the reserved actionId and must store exactly one matching overlay entry. For unsimulated actions,
+`SessionCallContext.actionApproval` is a process-local, kernel-retained exact `(toolCallId, tool, params)` approval binding;
+missing or changed bindings fail closed. It is not a new RPC authority field. The kernel adapter remains Phase 3 work.
+
+The implemented builder uses only the public entry/runtime-store/service surfaces already verified in S-1. Manifest config
+validation remains upstream-owned. Discovery is inert; lifecycle publication revokes retained nested handles on stop or
+replacement. This is unit-tested library transport, not live kernel conformance. Runtime slots are not a boundary against
+malicious native plugins. File-backed journal/sequence/overlay ownership is one live resource instance in one cell process.
+Submission and remote-write uncertainty fails closed for operator reconciliation; it never silently retries a possibly
+applied vendor action. CacheMutationStore retains an authoritative base for rejection and refresh replay.
+
+Token filenames are SHA-256 hashes of exact operator IDs rather than raw IDs (which may contain slashes or channel prefixes).
+AES-GCM authenticates canonical store path and operator identity, so ciphertext cannot be transplanted between accounts or
+vendor/cell stores sharing a key. Cross-path restores need explicit re-encryption or reconnection. The original OAuth
+scaffold was one-stage despite its comment; both nonce stages now rotate/consume once within the original expiry.
+`SKELETON.md` documents these APIs, recovery limits, private-only v1 behavior and the later driver review gates.
+
 ### Phase 3 — Kernel (5–8 days)
 
 **Deliverables:** `packages/clawos-kernel` per §5, with store, registry, policy pipeline, approval queue, drainer, audit, `os.*` RPC, `openclaw os` CLI, OAuth router; `gatekeeper-fs` as the first driver (no OAuth, strategy D, trivially testable); conformance suite tests `plugin-loads`, `hooks-fire`, `tool-narrowing`, `gate-blocks`, `rpc-methods`, `cli-mounted`, `health`, `fs-gatekeeper`, `install-gate`.

@@ -94,6 +94,15 @@ export interface SessionCallContext {
   observers?: string[];
   /** True during the kernel's dry pass: return the description, perform no side effects. */
   dryRun?: boolean;
+  /** Trusted pre-recorded synchronous approval. Never populated from tool parameters or serialized over RPC. */
+  actionApproval?: {
+    /** Exact upstream call that was approved. */
+    toolCallId: string;
+    /** Exact tool whose action was approved. */
+    tool: string;
+    /** Exact validated parameters retained by the kernel at approval time. */
+    params: Record<string, unknown>;
+  };
 }
 
 /** One live binding of (grant → gatekeeper resource) inside one agent session. */

@@ -1,6 +1,10 @@
 # @clawos/gatekeeper-kit
 
-Owns the order of operations a gatekeeper author is most likely to get subtly wrong (cloudflare-os `plans/gatekeeper-kit.md`):
-OAuth nonce lifecycle, token refresh coalescing, action id sequencing, the simulation overlay, observer admission, and error
-sanitization. `defineGatekeeper()` turns a definition into an OpenClaw plugin entry — and refuses definitions that would break
-the security model (plan §9 Phase 2 acceptance). Start a new gatekeeper from `SKELETON.md`.
+Security-critical helpers for gatekeeper authors. Start with [SKELETON.md](SKELETON.md).
+
+Includes the validated lifecycle builder, two-stage OAuth nonces, encrypted account storage with refresh coalescing,
+persistent simulation stores, action sequencing, a resource-session base class, fixed-message error sanitization, and
+an offline test queue. Kernel authorization and tool registration remain exclusively the kernel's responsibility.
+
+Phase 2 acceptance is library-only: `scripts/vm/test.sh phase-2`. No Gateway, external API, or production state is used.
+See the skeleton's ordering/recovery section for single-writer ownership, uncertain-action handling and sync approval binding.
