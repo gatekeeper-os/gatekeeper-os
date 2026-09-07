@@ -402,3 +402,53 @@ are finished before launching a harness, never while its shell is still reading 
 
 CI for `422128e` passed on push and draft PR: runs 34167145981 and 34167148927. Fresh
 acceptance of the backup correction follows before refreshing the installed snapshot.
+
+
+## 2026-09-07 — Phase 1 Ubuntu accepted; installed snapshot refreshed; hosted macOS running
+
+**Complete final-code Ubuntu acceptance:** `CLAWOS_VM_DRIVER=libvirt
+CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state scripts/vm/test.sh phase-1`,
+`vm-artifacts/20260907-223901-phase-1/`, **exit 0, 25/25 assertions**, 291 seconds total.
+Includes the actual after-dry-run race, unchanged checkpoint, successful recovery,
+two concurrent cells, and the corrected backup stop/restore/healthy round-trip.
+
+**Clean installed snapshot:** same command with `base install-only`, artifacts
+`vm-artifacts/20260907-224639-phase-1/`, exit 0, three preparation checks (install,
+under-ten-minutes, healthy). This exits before deliberate drift/second-cell/backup mutations;
+it is explicitly not full acceptance. Replaced stale `installed` after that successful clean
+install, creation 15:49 PDT; base snapshot metadata hash unchanged. Dedicated VM stopped.
+
+**Hosted macOS attempt:** added `github-hosted` adapter plus a dedicated workflow in `88bbe26`.
+It requires the genuine Actions hosted-macOS environment, checkout match, no existing cells,
+and a one-use runner marker. Re-running on a dirty runner or using it on the development host
+fails closed (host rejection verified). Platform-specific assertions use launchd/lsof/BSD stat;
+Linux remains the Node-less install target. Both still enter through the VM harness.
+Only allowlisted structural artifacts are uploaded, not raw config/dotenv or LaunchAgent env.
+Run https://github.com/ControlStackAI/openclaw-os/actions/runs/34167820614 is **pending**.
+
+**CI:** `88bbe26` push/PR runs 34167820496 and 34167822735 passed; 92 unit tests and 12
+conformance TODOs. Shell syntax and both VM-bootstrap regressions passed for the harness.
+No Phase 1 merge/tag yet; macOS is the remaining gate. Review:
+https://github.com/ControlStackAI/openclaw-os/pull/1.
+
+
+## 2026-09-07 — Phase 1 acceptance complete
+
+**macOS full acceptance:** https://github.com/ControlStackAI/openclaw-os/actions/runs/34167820614,
+commit `88bbe26`, fresh GitHub-hosted macOS 14 VM through `scripts/vm/test.sh phase-1`.
+Downloaded artifact `20260907-224656-phase-1` verified: **exit 0, mode full, Darwin, 25/25**,
+install **65 seconds**, both cells healthy (firma port 18801), backup restore ready with
+Doctor exit 0, healthy after restore, zero error-severity lint findings, zero critical audit
+findings. Local copy: `vm-artifacts/github-macos-34167820614/` (ignored). Actions collection
+and artifact upload passed; no separate physical Mac is required for this criterion.
+
+**Ubuntu full acceptance:** `20260907-223901-phase-1`, exit 0, **25/25**, install 118 seconds.
+**Clean installed snapshot:** `20260907-224639-phase-1`, install-only exit 0, install 134 seconds;
+refreshed installed snapshot and stopped VM; base metadata unchanged.
+**CI:** 34167820496 and 34167822735 green at `88bbe26`; 92 unit tests, 12 conformance TODOs.
+The evidence-only changes after this revision do not change executable code.
+
+**Checkpoint:** all Phase 1 gates are satisfied. Close PR #1 with a merge commit naming
+Ubuntu/macOS evidence and annotate `phase-1`. No upstream edits or production deployment.
+The 12 kernel conformance TODOs remain for later phases; Phase 1 does not claim them.
+**Next project phase:** Phase 2, contracts and kit, from the completed Phase 1 main checkpoint.
