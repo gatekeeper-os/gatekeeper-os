@@ -4,14 +4,18 @@ Check a box only when the criterion passed in the VM (or, for host-only unit tes
 
 ## Phase 0 — Bootstrap and spikes
 
-- [ ] Monorepo skeleton per plan §8 committed; `AGENTS.md` and `REVIEW.md` created from `docs/agent-operating-rules.md` — evidence: commit hash
+- [x] Monorepo skeleton per plan §8 committed; `AGENTS.md` and `REVIEW.md` created from `docs/agent-operating-rules.md` — evidence: `7534893` (provided derived short forms)
 - [ ] `clawos.lock.json` pins `openclaw@<version>`; CI installs that version and prints `openclaw --version` — evidence: CI run URL
 - [ ] `scripts/dev-gateway.ts` starts and stops a throwaway cell with `openclaw gateway run` — evidence:
-- [ ] `scripts/vm/up.sh` creates the VM and takes snapshot `base` — evidence:
+- [x] `scripts/vm/up.sh` creates the VM and takes snapshot `base` — evidence: `18eb1d7`; `scripts/vm/.state/up-metadata-retry.log`; subsequent acceptance runs successfully restored `base`
 - [ ] `plans/spike-S1.md` answers every UNVERIFIED item in plan §2.2 and §5.1 with the command used — evidence:
 - [ ] Plan updated: no UNVERIFIED marker remains in §5 — evidence: commit hash
 - [ ] Three skills (`write-gatekeeper`, `clawos-operator`, `write-blueprint`) drafted under `.agents/skills/` — evidence:
 - [ ] Tag `phase-0`
+
+**Stopped in Phase 0, 2026-09-07:** latest acceptance exited 1. Required hook callbacks
+and tool narrowing absent; see `plans/PROGRESS.md` and `plans/spike-S1.md`. No phase
+tag, no live CI run, and no advancement past the failed acceptance gate.
 
 ## Phase 1 — Host layer and installer
 

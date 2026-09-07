@@ -172,3 +172,33 @@ directly from them:
 - `security.installPolicy` (operator config) runs a trusted local command that returns `allow` / `warn` / `block` for skill and plugin installs after staging; it is the primary install boundary and fails closed when enabled but unavailable. `before_install` is a secondary plugin-runtime hook that trusted/bundled install paths may skip. `plugins.installs`, `plugins.load`, and `security.installPolicy` changes: installPolicy hot-applies; `plugins.load`/`plugins.installs` need a restart.
 - `openclaw backup create` sources: the state directory (usually `~/.openclaw`, so `os/` is included), the active config path, `credentials/` if outside the state dir, and every configured agent directory.
 - Trusted sources for install are ClawHub packages and the bundled/official catalog; arbitrary npm/git/local sources warn and need `--force` non-interactively — which is why the OS installer passes `--force --pin --accept-capabilities` for `@clawos/*` until they are published to ClawHub.
+
+## 10. S-1 observations and blocking discrepancy (2026-09-07)
+
+Evidence and exact commands: `plans/spike-S1.md`; latest run
+`vm-artifacts/20260907-184712-phase-0/`, Ubuntu 24.04 / Node 24.20.0 /
+OpenClaw 2026.9.2, reset from `base`. Phase 0 has **not** passed.
+
+- **VERIFIED configuration prerequisite:** non-bundled plugins require
+  `plugins.entries.<id>.hooks.allowConversationAccess: true` for conversation hooks.
+  Source: pinned package `docs/plugins/hooks.md`, Permissions and scope. Missing
+  permission produced explicit registration diagnostics in the second run; the
+  third run had the opt-in and no such diagnostics.
+- **BLOCKING discrepancy:** `before_tool_call` and `llm_input` did not fire on the
+  scripted `openclaw agent` test path, although 20 plugin tool bodies executed.
+  The intended gate-hook and narrowing guarantees above are **not validated** for
+  this path. Root cause is unresolved; do not infer universal absence of these
+  hooks, and do not claim the capability mechanism works.
+- **VERIFIED S-1 h:** `node:sqlite` works through Node `createRequire()` inside the
+  lifecycle; a static import failed plugin loading. No upstream patch was used.
+- **VERIFIED S-1 i:** late registration returned successfully but its tool was
+  absent from all 40 model requests. Use the plan's existing catalog-cache path.
+- **VERIFIED S-1 m:** the absolute executable receives JSON `protocolVersion: 1`;
+  JSON results with `protocolVersion: 1` and `decision` are enforced. Block and
+  malformed results denied installation; allow succeeded. Pinned documentation:
+  `docs/tools/skills-config.md`, `security.installPolicy`.
+- **Observed, incomplete:** dotted and 64/65-character tool names reached the
+  local model; no universal maximum was established. Unknown `clawos` manifest
+  metadata did not prevent runtime loading; CLI validation is still pending.
+  CLI shared-auth clients had operator role/scopes but no paired device or
+  authenticated user ID; this does not answer the paired-client question.

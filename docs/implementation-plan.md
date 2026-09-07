@@ -597,9 +597,19 @@ export default definePluginEntry({
 
 Notes on the verified SDK shapes used above: `registerHttpRoute` takes `path`, `auth: "gateway" | "plugin"`, `match: "exact" | "prefix"`, optional `handleUpgrade`/`replaceExisting`, and a `handler(req, res)` that returns `true` when it handled the request; OAuth callbacks arrive unauthenticated from the browser, so the route uses `auth: "plugin"` and the kernel validates the nonce itself. `registerCli`'s registrar receives `{ program }` (the command object to configure) and `opts` may carry `commands`, `descriptors`, and `parentPath`. `registerGatewayMethod` opts include `profileAccess: "required" | "independent"`. `registerService` receives a `ctx` with a process-local `gatewayEvents` facade when a broadcaster is present.
 
-Whether a plugin can register tools whose definitions are only known at `gateway_start` (i.e. after other plugins load) is **UNVERIFIED** (S-1). If registration must happen inside `register()`, the kernel reads the gatekeeper catalog file `os/gatekeepers.json` (written by `clawos gatekeeper add`) at register time and registers tools from the catalog's cached `GatekeeperToolDef[]`; the live vendor object is attached at `gateway_start`. This is the same trick cloudflare-os uses with `getTypeScriptTypes()` — tool *shapes* are static metadata, only *execution* needs the live driver.
+**VERIFIED for the S-1 test path on 2026-09-07:** a `gateway_start` call to `registerTool()` returns successfully, but the late tool is absent from all 40 model requests across 20 fresh scripted sessions. Evidence: `vm-artifacts/20260907-184712-phase-0/{spike-S1.jsonl,model-tools.jsonl}` and `plans/spike-S1.md` item i. Use the already-planned catalog-cache design: the kernel reads `os/gatekeepers.json` (written by `clawos gatekeeper add`) at register time and registers the cached `GatekeeperToolDef[]`; the live vendor object is attached at `gateway_start`. This is the same trick cloudflare-os uses with `getTypeScriptTypes()` — tool *shapes* are static metadata, only *execution* needs the live driver.
 
 ### 5.2 Hook handlers — exact behavior
+
+**PHASE 0 BLOCKER (2026-09-07):** the behavior below is still the intended contract,
+not a working implementation. In the pinned VM, 20 registered tool executions
+produced zero `before_tool_call` and zero `llm_input` callbacks, despite explicit
+matchers and `plugins.entries.spike-probe.hooks.allowConversationAccess: true`.
+All 20 executions lacked hook correlation and tool narrowing was absent from 40
+model requests. Do not implement the identity stash or advance to Phase 1 until
+this discrepancy is resolved. See `plans/spike-S1.md` for commands and artifacts.
+Non-bundled conversation hooks require the explicit opt-in above (bundled
+`docs/plugins/hooks.md`, Permissions and scope); the original example omitted it.
 
 `onBeforeAgentRun(e, ctx)` — **Gate.** (1) If the cell is in `maintenance` (set during updates), block with a friendly message. (2) Extract URLs from `e.prompt`; for each URL matching a registered `SupportedResource.urlPattern`, if `ctx.senderId` is an operator of this cell, create an active grant (or reuse an existing one) and record an introduction note for this run. (3) Return pass. Must complete well under 15 s; URL matching is local, `getGatekeeperFor` is bounded to 5 s per URL with a cached negative result.
 
@@ -620,6 +630,13 @@ Gatekeeper tool `execute(toolCallId, params)` (registered by the kernel): fetch 
 `onBeforeInstall(e)` — **Gate, fail-closed (secondary).** Upstream's primary install boundary is the operator-owned `security.installPolicy` command (**VERIFIED**, §7.5); the OS binds it to `clawos install-policy`, which evaluates `clawos.install.allowSources` / `allowHashes` and returns allow/warn/block. `before_install` re-checks the same policy for Gateway-backed install flows and blocks with a reason on mismatch.
 
 ### 5.3 State store (`node:sqlite`)
+
+**VERIFIED S-1 h:** on Node 24.20.0 / OpenClaw 2026.9.2, Node's public
+`createRequire()` can load `node:sqlite` inside the plugin lifecycle and create,
+write, query and close `<stateDir>/os/probe.sqlite` while the Gateway runs. A
+static import prevented this probe from loading (`Cannot find module 'sqlite'`).
+Keep the public Node loader adaptation OS-owned; do not modify upstream. Evidence:
+`plans/spike-S1.md`, runs `20260907-183938` and `20260907-184712`.
 
 Tables: `grants`, `introductions`, `actions` (`id`, `gatekeeperInstance`, `actionId`, `descriptionJson`, `status`, `decidedBy`, `decidedAt`, `appliedAt`, `error`), `instances` (gatekeeper instance registry: vendor, resourceKey, operatorId, observer strategy, lockdown flag), `observers`, `audit_index`, `meta` (schema version). Migrations are forward-only and run at `gateway_start`; the schema version is written into `clawos.lock.json` so rollback tooling can refuse to downgrade past a schema bump (the same "schema-neutral rollback" rule upstream uses for its own updates).
 
@@ -749,6 +766,15 @@ Blueprints re-enable capabilities deliberately: a "coder" blueprint sets `agents
 OAuth client secrets and API keys enter via OpenClaw SecretRefs (`{source: "env"|"file"|"exec"}`, **VERIFIED**) referenced from `plugins.entries.gatekeeper-*.config`, never as literals in fragments. Per-operator tokens obtained by OAuth are stored in `os/gatekeepers/<vendor>/accounts/<operatorId>.json`, encrypted with a cell key at `os/cell.key` (mode `600`, generated at install; AES-256-GCM via `node:crypto`). The kernel never reads token files — only the owning gatekeeper does, through the kit. OAuth redirect URIs are `${gateway.publicOrigin}/os/gatekeeper/<vendor>/oauth/callback`; state parameters embed a nonce bound to the operator and expire in 10 minutes (two-stage nonce from cloudflare-os `SKELETON.md`). Because the baseline binds to loopback, OAuth callbacks need either `openclaw gateway` exposed via Tailscale (`gateway.bind: "tailnet"`, upstream-supported) or the operator completing the flow on the host's browser; `clawos gatekeeper connect` explains which applies.
 
 ### 7.5 Supply chain
+
+**VERIFIED S-1 m (2026-09-07):** configure `security.installPolicy.exec` with
+`source: "exec"`, an absolute regular-file `command`, static `args`, and explicit
+`passEnv` / `trustedDirs`; it is not a shell command string. Stdin is a JSON
+object with `protocolVersion: 1`; stdout must include `protocolVersion: 1` and
+`decision: "allow" | "warn" | "block"` (nonempty reason for warn/block).
+Live fixture results: block denied installation, `{}` denied installation,
+allow permitted installation; allow was evaluated twice. Only input key names,
+version, target type and fixture mode were retained. See `plans/spike-S1.md`.
 
 `security.installPolicy` (**VERIFIED** primary boundary: a trusted local command returning allow/warn/block after staging, applies to plugins and ClawHub skills, fails closed when unavailable) is set in `00-baseline.json5` to `clawos install-policy`, which enforces `clawos.install.allowSources` and optional hashes; `before_install` re-checks it; `plugins.deny` is authoritative (**VERIFIED**) and is populated with every plugin id not in the cell's allowlist at `clawos config apply` time; `openclaw plugins install --pin` is always used (with `--force` for `@clawos/*` npm sources until they are on ClawHub, since arbitrary npm sources warn — **VERIFIED**); `openclaw security audit --deep` runs after every install/update and its findings are stored for diffing.
 
