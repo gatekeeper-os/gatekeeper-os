@@ -154,3 +154,12 @@ recorded mode exits after source install and healthy status, before drift, secon
 backup scenarios. It is **not** full acceptance. Only after this clean install succeeds,
 replace the stale disposable `installed` snapshot (base stays immutable) using the driver's
 snapshot operation. A failed clean install never replaces the old snapshot.
+
+### GitHub-hosted macOS acceptance
+
+`github-hosted` is a disposable cloud-VM driver, used only in the macOS Actions workflow.
+The Actions job creates the fresh image; reset verifies the hosted-runner identity and absence
+of prior cells and refuses a second run on the same image. It does not pretend to restore a
+local snapshot or make a reusable installed snapshot. Source is the checked-out commit;
+acceptance still enters exclusively through `scripts/vm/test.sh phase-1`, and only allowlisted
+structural evidence is uploaded. Linux libvirt remains the Node-less clean-install criterion.

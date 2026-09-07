@@ -6,6 +6,8 @@
 # file modes, unit names, listening ports); none is an echo that would pass on a broken build.
 set -uo pipefail
 fails=0
+platform="$(uname -s)"
+hash_file() { node -e 'const fs=require("node:fs"), c=require("node:crypto"); console.log(c.createHash("sha256").update(fs.readFileSync(process.argv[1])).digest("hex"))' "$1"; }
 EV="$HOME/phase-1-evidence"; rm -rf "$EV"; mkdir -p "$EV"
 pass() { echo "PASS $1"; }
 fail() { echo "FAIL $1: ${2:-}"; fails=$((fails+1)); }
@@ -114,12 +116,12 @@ exit "$rc"
 SH
 chmod +x "$race_bin/openclaw"
 echo '{tools:{sessions:{visibility:"tree"}}}' > "$HOME/.openclaw/os/config.d/90-local.json5"
-before_lock="$(sha256sum "$HOME/.openclaw/os/clawos.lock.json" | cut -d' ' -f1)"
+before_lock="$(hash_file "$HOME/.openclaw/os/clawos.lock.json")"
 PATH="$race_bin:$PATH" CLAWOS_TEST_REAL_OPENCLAW="$real_openclaw" clawos config apply --force --json > "$EV/config-race.json" 2>&1
 race_rc=$?
 openclaw config get gateway.bind --json > "$EV/bind-after-race.json" 2>&1
 if [ "$race_rc" -ne 0 ] && grep -q lan "$EV/bind-after-race.json" \
-  && [ "$before_lock" = "$(sha256sum "$HOME/.openclaw/os/clawos.lock.json" | cut -d' ' -f1)" ]; then
+  && [ "$before_lock" = "$(hash_file "$HOME/.openclaw/os/clawos.lock.json")" ]; then
   pass config-apply-atomic-race-refusal
 else
   fail config-apply-atomic-race-refusal "exit $race_rc; concurrent edit or checkpoint was overwritten"
@@ -144,19 +146,22 @@ else
   fail second-cell "exit $cell_rc; $(head -c 300 "$EV/status-firma.json")"
 fi
 
-systemctl --user list-units 'openclaw-gateway*' --no-pager > "$EV/units.txt" 2>&1
-if systemctl --user is-active --quiet openclaw-gateway.service \
-  && systemctl --user is-active --quiet openclaw-gateway-firma.service; then
-  pass two-cells-concurrent
+if [ "$platform" = Darwin ]; then
+  launchctl print "gui/$(id -u)/ai.openclaw.gateway" | awk '/state =/{print}' > "$EV/units.txt"
+  launchctl print "gui/$(id -u)/ai.openclaw.firma" | awk '/state =/{print}' >> "$EV/units.txt"
+  if [ "$(grep -c 'state = running' "$EV/units.txt")" -eq 2 ]; then pass two-cells-concurrent
+  else fail two-cells-concurrent; fi
+  lsof -nP -iTCP:18789 -iTCP:18801 -sTCP:LISTEN > "$EV/listening-ports.txt"
+  if grep -q ':18789 ' "$EV/listening-ports.txt" && grep -q ':18801 ' "$EV/listening-ports.txt"; then pass two-cells-separate-ports
+  else fail two-cells-separate-ports; fi
 else
-  fail two-cells-concurrent "both units are not simultaneously active"
-fi
-
-ss -ltn 2>/dev/null | grep -E ':(18789|18801)\b' > "$EV/listening-ports.txt" 2>&1
-if [ "$(grep -c . "$EV/listening-ports.txt")" -ge 2 ]; then
-  pass two-cells-separate-ports
-else
-  fail two-cells-separate-ports "$(cat "$EV/listening-ports.txt")"
+  systemctl --user list-units 'openclaw-gateway*' --no-pager > "$EV/units.txt" 2>&1
+  if systemctl --user is-active --quiet openclaw-gateway.service \
+    && systemctl --user is-active --quiet openclaw-gateway-firma.service; then pass two-cells-concurrent
+  else fail two-cells-concurrent; fi
+  ss -ltn 2>/dev/null | grep -E ':(18789|18801)\b' > "$EV/listening-ports.txt" 2>&1
+  if [ "$(grep -c . "$EV/listening-ports.txt")" -ge 2 ]; then pass two-cells-separate-ports
+  else fail two-cells-separate-ports; fi
 fi
 
 if [ -d "$HOME/.openclaw/os" ] && [ -d "$HOME/.openclaw-firma/os" ]; then
@@ -207,6 +212,15 @@ if [ -n "$archive" ] && [ -f "$archive" ]; then
 fi
 
 # ---------------------------------------------------------------- drop-in and permissions
+if [ "$platform" = Darwin ]; then
+  plist="$HOME/Library/LaunchAgents/ai.openclaw.gateway.plist"
+  if grep -q '^OPENCLAW_NO_AUTO_UPDATE=1$' "$HOME/.openclaw/.env" && grep -q '^CLAWOS_CELL=default$' "$HOME/.openclaw/.env"; then
+    pass launchd-cell-environment
+  else fail launchd-cell-environment; fi
+  if [ -f "$plist" ] && plutil -lint "$plist" >/dev/null; then pass upstream-launchagent-present
+  else fail upstream-launchagent-present; fi
+  perm() { stat -f %Lp "$1" 2>/dev/null; }
+else
 dropin="$HOME/.config/systemd/user/openclaw-gateway.service.d/clawos.conf"
 if grep -q 'OPENCLAW_NO_AUTO_UPDATE=1' "$dropin" 2>/dev/null && grep -q 'CLAWOS_CELL=default' "$dropin" 2>/dev/null; then
   pass dropin-present
@@ -227,6 +241,8 @@ cp "$unit" "$EV/upstream-unit.service" 2>/dev/null || true
 cp "$dropin" "$EV/clawos.conf" 2>/dev/null || true
 
 perm() { stat -c %a "$1" 2>/dev/null; }
+fi
+
 {
   echo "openclaw.json $(perm "$HOME/.openclaw/openclaw.json")"
   echo "stateDir      $(perm "$HOME/.openclaw")"
@@ -260,11 +276,12 @@ cat > "$EV/scope.json" <<'JSON'
     "gatekeepers": "Phase 3+",
     "conformance": "12 conformance tests remain `todo`; Phase 1 asserts none of them",
     "curlInstaller": "the repository is private and no @clawos/* package is published; source install only",
-    "macos": "not exercised by this run - see plans/PROGRESS.md"
+    "macos": "platform-specific acceptance; see platform.txt for this run"
   }
 }
 JSON
 
+uname -s > "$EV/platform.txt"
 cp "$HOME/.openclaw/os/clawos.lock.json" "$EV/clawos.lock.json" 2>/dev/null || true
 openclaw --version > "$EV/openclaw-version.txt" 2>&1
 openclaw plugins list --json > "$EV/plugins.json" 2>&1

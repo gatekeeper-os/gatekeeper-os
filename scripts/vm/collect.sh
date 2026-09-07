@@ -10,8 +10,10 @@ elif [ "${3:-}" = phase-1 ]; then
   # Allowlisted structural evidence only: the per-check JSON the phase script wrote, plus service state. The raw
   # `openclaw.json` and the cell `.env` are never collected — those are the two files that hold credentials.
   vm_call pull /home/tester/phase-1-evidence/ "$out/" || exit 1
-  grab systemd-status.txt 'systemctl --user status "openclaw-gateway*" --no-pager'
-  grab journal.txt        "journalctl --user -u 'openclaw-gateway*' --since '$since' --no-pager"
+  if [ "$DRIVER" != github-hosted ]; then
+    grab systemd-status.txt 'systemctl --user status "openclaw-gateway*" --no-pager'
+    grab journal.txt        "journalctl --user -u 'openclaw-gateway*' --since '$since' --no-pager"
+  fi
 else
 grab openclaw-version.txt        'openclaw --version'
 grab plugins.json                'openclaw plugins list --json'

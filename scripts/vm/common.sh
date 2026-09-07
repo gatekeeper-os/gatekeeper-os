@@ -72,6 +72,8 @@ ssh_reset()  { vm_die "ssh driver has no snapshots; restore '$1' with your provi
 ssh_pull()   { rsync -az "$(ssh_target):$1" "$2"; }
 
 source "$REPO_ROOT/scripts/vm/libvirt.sh"
+source "$REPO_ROOT/scripts/vm/github-hosted.sh"
+if [ "$DRIVER" = github-hosted ]; then VM_SRC="$REPO_ROOT"; fi
 
 # ---- lima / vagrant: TODO(phase-0) implement if that is the hypervisor on the dev host ---
 nyi() { vm_die "driver '$DRIVER' not implemented yet — implement in scripts/vm/common.sh or use CLAWOS_VM_DRIVER=multipass|ssh"; }
@@ -82,6 +84,7 @@ vm_call() {  # vm_call <op> [args…]
     multipass) "mp_$op" "$@";;
     ssh)       "ssh_$op" "$@";;
     libvirt) "lv_$op" "$@";;
+    github-hosted) "ghvm_$op" "$@";;
     lima|vagrant) nyi;;
     *) vm_die "unknown driver $DRIVER";;
   esac
