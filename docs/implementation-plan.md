@@ -943,6 +943,13 @@ Each phase lists deliverables, steps, and acceptance criteria. Do not start a ph
 
 **Acceptance.** Unit tests: nonce replay is rejected; expired nonce rejected; token file round-trips encrypted; overlay reflects pending actions and forgets rejected ones; `defineGatekeeper` refuses a tool whose description contains "approv", "oauth", "cache", "queue" (case-insensitive) or whose `parameters` lack `grant`; refuses an action tool without `describe()`.
 
+**Phase 2 contract clarification (2026-09-07).** Wire schemas cover the JSON data shapes from §4.3–4.8, including
+credential-free account/vendor/resource summaries and the operator request payloads. Live vendors, accounts, sessions,
+queues and `SessionCallContext` are process-local interfaces, not serialized objects. Unknown wire fields are rejected;
+operator identity must come from trusted RPC context. Stored `descriptionJson` is parsed and validated separately with
+`ActionDescriptionSchema`. Grant handles use lowercase Crockford base32 (`0-9a-hjkmnp-tv-z`), preserving the example
+`grant:7k3m9q2p`; the initial all-alphanumeric regex did not implement the stated base32 contract. No live grants exist yet.
+
 ### Phase 3 — Kernel (5–8 days)
 
 **Deliverables:** `packages/clawos-kernel` per §5, with store, registry, policy pipeline, approval queue, drainer, audit, `os.*` RPC, `openclaw os` CLI, OAuth router; `gatekeeper-fs` as the first driver (no OAuth, strategy D, trivially testable); conformance suite tests `plugin-loads`, `hooks-fire`, `tool-narrowing`, `gate-blocks`, `rpc-methods`, `cli-mounted`, `health`, `fs-gatekeeper`, `install-gate`.

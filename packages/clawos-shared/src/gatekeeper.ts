@@ -12,7 +12,9 @@ export interface SupportedResource {
   urlPattern: string;
   /** Stable id for this resource type within the vendor, e.g. "repo". */
   type: string;
+  /** Human-readable label; never includes credentials. */
   title: string;
+  /** Human-readable explanation; never includes credentials. */
   description: string;
   /** If true, this type can be granted independently (scopes requested only for enabled types). */
   grantable: boolean;
@@ -24,6 +26,7 @@ export interface SupportedResource {
 
 /** Human-readable description of a read. Everything needed to decide, display, and audit. */
 export interface ObservationDescription {
+  /** Human-readable label; never includes credentials. */
   title: string;
   /** Markdown. Must include every detail relevant to approval. Never includes secrets. */
   description: string;
@@ -35,14 +38,19 @@ export interface ObservationDescription {
 
 /** Stable policy key; auto-approval rules match on `tag`. Treat as an enum. */
 export interface ActionKind {
+  /** Stable policy identifier; not a display label. */
   tag: string;
+  /** Operator-facing name for this action kind. */
   label: string;
 }
 
 /** Description of a side-effecting action, submitted before it is performed. */
 export interface ActionDescription {
+  /** Human-readable label; never includes credentials. */
   title: string;
+  /** Human-readable explanation; never includes credentials. */
   description: string;
+  /** Optional stable key for operator auto-approval policy. */
   actionKind?: ActionKind;
   /** Gatekeeper author's verdict that this specific action is safe to auto-apply if the user opted in for its kind. */
   autoApprovable?: boolean;
@@ -64,16 +72,23 @@ export interface ApprovalQueue {
 
 /** Result shape returned to the agent by gatekeeper tools. */
 export interface ToolResult {
+  /** Agent-visible text blocks. */
   content: Array<{ type: "text"; text: string }>;
+  /** Optional structured result data; never credential material. */
   details?: unknown;
 }
 
 /** Per-call context supplied by the kernel from its before_tool_call stash (plan §5.2). */
 export interface SessionCallContext {
+  /** Trusted agent identity supplied by the kernel. */
   agentId: string;
+  /** Trusted session identity supplied by the kernel. */
   sessionKey: string;
+  /** Upstream run identifier when available. */
   runId?: string;
+  /** Upstream call identifier used for correlation. */
   toolCallId?: string;
+  /** Kernel-owned approval queue; never supplied by tool parameters. */
   queue: ApprovalQueue;
   /** Present when the session has observers beyond its owner. */
   observers?: string[];
@@ -85,6 +100,7 @@ export interface SessionCallContext {
 export interface GatekeeperSession {
   /** Execute a tool of this resource type. `params` were validated against the tool schema by OpenClaw. */
   call(tool: string, params: Record<string, unknown>, ctx: SessionCallContext): Promise<ToolResult | DryRunResult>;
+  /** Revoke this live session and deny subsequent calls. */
   close(): Promise<void>;
 }
 
@@ -95,14 +111,19 @@ export type DryRunResult =
 
 /** Opaque to everyone but the gatekeeper that minted it. */
 export interface ObserverVerifier {
+  /** Vendor that minted this opaque verifier. */
   readonly vendor: string;
+  /** Private verifier material, not an agent-visible resource identifier. */
   readonly opaque: string;
 }
 
 /** Per-resource instance. Created by the kernel through resolveGrant(). */
 export interface Gatekeeper {
+  /** Describe this object without returning credentials. */
   describe(): Promise<{ resource: SupportedResource; title: string; suggestedName: string }>;
+  /** List action kinds eligible for an explicit operator policy. */
   getAutoApprovableActions(): Promise<ActionKind[]>;
+  /** Bind a kernel-owned queue to this resource session. */
   startSession(queue: ApprovalQueue): Promise<GatekeeperSession>;
   /** Perform a previously submitted action for real. Idempotent. */
   applyAction(actionId: number): Promise<void>;
@@ -112,18 +133,23 @@ export interface Gatekeeper {
   revertAction?(actionId: number): Promise<void | { message?: string; canRetry?: boolean }>;
   /** Throw if this observer may not see everything this instance has read. */
   addObserver(id: string, verifier: ObserverVerifier): Promise<void>;
+  /** Remove an observer from this resource instance. */
   removeObserver(id: string): Promise<void>;
 }
 
 /** Per-operator account (one OAuth identity or static credential). */
 export interface GatekeeperAccount {
+  /** Describe this object without returning credentials. */
   describe(): Promise<{ email?: string; displayName?: string; expiresAt?: number }>;
+  /** List the resource types supported by this account or vendor. */
   getSupportedResources(): Promise<SupportedResource[]>;
   /** Returns a Gatekeeper for the resource a URL denotes, with credentials bound. Called BEFORE any grant exists. */
   getGatekeeperFor(url: string): Promise<{ gatekeeper: Gatekeeper; resource: SupportedResource; resourceKey: string }>;
   /** Mint an opaque verifier that proves *this account's* access, for observer checks. */
   getVerifier(): Promise<ObserverVerifier>;
+  /** Revoke the account credentials and active access. */
   revoke(): Promise<void>;
+  /** Start account reconnection using a fresh authorization nonce. */
   reconnect(): Promise<{ url: string }>;
 }
 
@@ -133,24 +159,31 @@ export interface GatekeeperToolDef {
   name: string;
   /** Which SupportedResource.type it belongs to. */
   resourceType: string;
+  /** Whether this tool reads or changes the external resource. */
   kind: "observation" | "action";
   /** NEVER mentions approvals, queues, caching, OAuth, or simulation. */
   description: string;
   /** Must include `grant: Type.String()`. */
   parameters: TSchema;
+  /** Optional schema for structured agent-visible output. */
   outputSchema?: TSchema;
 }
 
 /** Top-level vendor entry. One per gatekeeper plugin. */
 export interface GatekeeperVendor {
+  /** Stable vendor namespace. */
   vendor: string;
+  /** Version of the OS gatekeeper contract. */
   apiVersion: 1;
+  /** Describe this object without returning credentials. */
   describe(): Promise<{ title: string; description: string; icon?: string; autoProvisionsAccount?: boolean }>;
   /** Start OAuth (or equivalent). The returned URL must embed a cryptographic nonce. */
   connectAccount(operatorId: string, opts?: { resourceTypes?: string[] }): Promise<{ url: string }>;
   /** For vendors that need no user auth (fs, mcp with static config). */
   createAccount?(operatorId: string): Promise<GatekeeperAccount>;
+  /** Return this operator’s account, or null when disconnected. */
   getAccount(operatorId: string): Promise<GatekeeperAccount | null>;
+  /** List the resource types supported by this account or vendor. */
   getSupportedResources(): Promise<SupportedResource[]>;
   /** Tool definitions for every tool this vendor exposes; the kernel registers them. */
   getTools(): Promise<GatekeeperToolDef[]>;
