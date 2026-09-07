@@ -459,3 +459,31 @@ All executable changes are accepted on Ubuntu and macOS, and the clean installed
 is refreshed. The phase completion merge is PR #1, annotated as `phase-1`; its merge message
 names Ubuntu run 20260907-223901 and macOS Actions run 34167820614. No acceptance criterion
 was waived. Worktree/evidence are preserved, and production remains untouched.
+
+## 2026-09-07 — Phase 2 contracts and kit: local acceptance complete
+
+- Branch/worktree: `phase/2-contracts`, `openclaw-os-worktrees/phase-2-contracts`; Phase 1 parent `ed09c80`.
+- Commits: `06ff79d` (shared contracts/evidence harness), `2218843` (kit and compatibility adaptations).
+- Built: documented `packages/clawos-shared/src/{gatekeeper,grant,schemas}.ts` and wire-boundary tests; kit
+  lifecycle builder, OAuthNonceMachine, TokenStore, OverlayStore, CacheMutationStore, ActionSequencer,
+  KitGatekeeper journal/session lifecycle, sanitizeError, TestApprovalQueue, tests and `SKELETON.md`.
+- Existing fs/GitHub scaffold entrypoints were adapted only to the kit's descriptor/action-id API. Their tool
+  surfaces and URL patterns are unchanged; implementation and operator reviews remain Phase 3/4 work.
+- Exact acceptance command: `scripts/vm/test.sh phase-2`. Explicit host-only exception from `docs/vm-testing.md`;
+  no VM reset or Gateway invocation. `vm-artifacts/20260907-232940-phase-2/`: **exit 0**, revision `2218843`,
+  Node `v22.23.2`, upstream pin `2026.9.2`, **86 library tests** (39 shared + 47 kit), typechecks, catalog and
+  secret checks pass. Command log, mode, revision, versions and exit code retained.
+- Additional commands: `pnpm typecheck` passed workspace-wide; `pnpm test` passed **168 tests**, with **12 TODO
+  conformance tests not counted as passes**; `python3 test/vm-bootstrap.test.py` passed 2 regressions;
+  `git diff --check` passed. Workspace logs copied into the acceptance artifact directory.
+- Acceptance status: all four Phase 2 implementation/library criteria pass; tag/merge still pending live CI.
+  Draft [PR #2](https://github.com/ControlStackAI/openclaw-os/pull/2);
+  [branch CI](https://github.com/ControlStackAI/openclaw-os/actions/runs/34170233623) running on `2218843`.
+- Clarifications recorded in the plan: JSON wire data vs. live callbacks; actual Crockford base32 alphabet;
+  definition-time pure action descriptors; observation dry-pass separation; exact trusted synchronous approval
+  binding; account/store-authenticated ciphertext; one resource owner per journal; uncertain remote outcomes
+  require reconciliation and never blind replay. These libraries do not establish live kernel authorization.
+- FORGE's editor denied the external worktree and the child settled without edits; implementation was completed
+  in the authorized parent workspace. No filesystem boundary bypass, host runtime install, or production change.
+- Open operator questions: none for Phase 2. Next: verify CI, close the phase/tag checkpoint; Phase 3 is kernel
+  integration and the reviewed filesystem driver.
