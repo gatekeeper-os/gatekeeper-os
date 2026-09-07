@@ -92,7 +92,7 @@ All rows **VERIFIED** unless marked.
 | Surface | What it gives us | Key facts |
 |---|---|---|
 | **Plugins** (`openclaw.plugin.json` + `register(api)`) | Tools, hooks, HTTP routes, gateway RPC methods, CLI subcommands, background services | Manifest `contracts` declares ownership without loading code. `package.json` → `openclaw.compat.pluginApi` and `minGatewayVersion` are the sanctioned version-gating mechanism. All plugin APIs are declared experimental. |
-| **Plugin hooks** (`api.on(name, handler, opts)`) | Gate/Modify/Claim/Observe points in the agent loop | `before_tool_call` (Modify/Gate; returns `{params?, block?, blockReason?, requireApproval?}`), `before_agent_run` (Gate), `before_prompt_build` (Modify; can narrow the turn's submitted tools with `requiresToolAuthority`), `before_install` (Gate, fail-closed), `message_sending` (Modify/Gate), `before_message_write` (sync Modify/Gate), `after_tool_call`, `agent_end`, `llm_input/llm_output`, `gateway_start/stop`. Gate hooks default to a 15 s budget and **fail closed**. `matcher: [toolIds]` and `priority` supported. `api.registerHook` is a different, internal system — do not use it for these names. |
+| **Plugin hooks** (`api.on(name, handler, opts)`) | Gate/Modify/Claim/Observe points in the agent loop | `before_tool_call` (Modify/Gate; returns `{params?, block?, blockReason?, requireApproval?}`), `before_agent_run` (Gate), `before_prompt_build` (Modify; can narrow the turn's submitted tools in the ordinary phase, without `requiresToolAuthority`), `before_install` (Gate, fail-closed), `message_sending` (Modify/Gate), `before_message_write` (sync Modify/Gate), `after_tool_call`, `agent_end`, `llm_input/llm_output`, `gateway_start/stop`. Gate hooks default to a 15 s budget and **fail closed**. `matcher: [toolIds]` and `priority` supported. `api.registerHook` is a different, internal system — do not use it for these names. |
 | **Trusted tool policy** | `api.registerTrustedToolPolicy()` runs before plugin policy | Privileged OS-level injection point. Manifest `contracts.trustedToolPolicies`. |
 | **Config** (`~/.openclaw/openclaw.json`, JSON5) | Declarative policy | `tools.profile/allow/deny/byProvider/toolsBySender`, `plugins.deny` (authoritative), `agents.defaults.sandbox.{mode,scope,backend,workspaceAccess}`, `gateway.auth`, `update.channel`, `update.auto.enabled`. `$include` supports single file (replaces containing object) or array (deep-merged in order, later wins, ≤10 levels); include paths must resolve under the directory holding `openclaw.json` or under `OPENCLAW_INCLUDE_ROOTS`. `${VAR}` substitution in string values. Invalid external edits are rejected without rewriting the file. |
 | **`openclaw config`** | Safe writes | `config patch --file/--stdin [--dry-run]`: objects merge recursively, arrays and scalars replace, `null` deletes; `--expect-current-json` / `--expect-current-absent` for conditional writes. `config validate`, `config schema`. |
@@ -112,7 +112,7 @@ Additional **VERIFIED** SDK facts used by the kernel: `api.registerTool` tools e
 
 **Settled from the published `openclaw@2026.9.2` package** (types + bundled docs; see `docs/upstream-reference.md` §9): the managed plugin root is `~/.openclaw/extensions`; `$include` sibling keys override included values, and root/array includes fail closed for OpenClaw-owned writes (so the OS reconciles rather than includes — §6.2); hook `matcher` lists are explicit tool ids, wildcards invalid; `before_prompt_build` narrows via `toolsAllow`; `before_agent_run` events carry `senderIsOwner`; `registerCli` hands a commander `Command`; `security.installPolicy` is the primary install boundary (§7.5); backups cover the whole state directory including `os/`.
 
-**UNVERIFIED items to resolve in Phase 0 (spike S-1):** (c) allowed characters and max length for plugin tool names; (d) whether the `openclaw.plugin.json` manifest tolerates unknown top-level keys (the manifest page is titled "strict config validation" — plan for the sibling-file fallback); (e) whether `toolsAllow` removes tool schemas from the model request (confirm via `llm_input`); (f) whether `toolCallId` is always present on `before_tool_call` for plugin tools (every identity field is optional in the types — the kernel fails closed when absent); (g) which `GatewayClient` identity fields are populated for a paired operator; (h) a plugin opening its own SQLite under `OPENCLAW_STATE_DIR`; (i) whether tools can be registered after `register()`; (j) how a plugin enumerates loaded plugin manifests; (m) the stdin/stdout contract of a `security.installPolicy` command.
+**S-1 question inventory (current answers and evidence in `plans/spike-S1.md`):** (c) allowed characters and max length for plugin tool names; (d) whether the `openclaw.plugin.json` manifest tolerates unknown top-level keys (the manifest page is titled "strict config validation" — plan for the sibling-file fallback); (e) whether `toolsAllow` removes tool schemas from the model request (confirm via `llm_input`); (f) whether `toolCallId` is always present on `before_tool_call` for plugin tools (every identity field is optional in the types — the kernel fails closed when absent); (g) which `GatewayClient` identity fields are populated for a paired operator; (h) a plugin opening its own SQLite under `OPENCLAW_STATE_DIR`; (i) whether tools can be registered after `register()`; (j) how a plugin enumerates loaded plugin manifests; (m) the stdin/stdout contract of a `security.installPolicy` command.
 
 ---
 
@@ -172,7 +172,7 @@ later, human:   clawos approvals list / apply / reject  (or /approve in chat)
 
 **`openclaw` (upstream, L2).** Installed globally from npm at a pinned version recorded in `clawos.lock.json`. The OS never writes inside its install root. Auto-update is disabled (`update.auto.enabled: false` and `OPENCLAW_NO_AUTO_UPDATE=1` in the service environment) because the OS owns the update lifecycle.
 
-**`clawos-kernel` (L3).** A single OpenClaw plugin. It owns: the capability store (grants, introductions, pending requests), the gatekeeper registry (built from plugin manifests at `gateway_start`), the policy pipeline (hooks listed above), the approval queue and simulation coordinator (the counterpart of Cloudflare OS's `ApprovalQueue` + `AutoApprovalDrainer`), the audit log, the `os.*` gateway RPC methods, and the `openclaw os …` CLI subcommands. It is the only OS component that makes security decisions.
+**`clawos-kernel` (L3).** A single OpenClaw plugin. It owns: the capability store (grants, introductions, pending requests), the gatekeeper registry (OS-owned catalog metadata plus lifecycle-owned live driver slots), the policy pipeline (hooks listed above), the approval queue and simulation coordinator (the counterpart of Cloudflare OS's `ApprovalQueue` + `AutoApprovalDrainer`), the audit log, the `os.*` gateway RPC methods, and the `openclaw os …` CLI subcommands. It is the only OS component that makes security decisions.
 
 **`clawos-shared` (L3, library).** TypeScript contracts: `Gatekeeper`, `GatekeeperVendor`, `GatekeeperAccount`, `Session`, `ApprovalQueue`, `ObservationDescription`, `ActionDescription`, `ActionKind`, `SupportedResource`, `Grant`. The kernel and every gatekeeper depend on it; it depends on nothing but TypeBox.
 
@@ -233,8 +233,8 @@ CLAWOS_CELL=<name>
 |---|---|---|
 | Kernel plugin id | `clawos-kernel` | — |
 | Gatekeeper plugin id | `gatekeeper-<vendor>` | Mirrors cloudflare-os package naming; the kernel discovers gatekeepers by this prefix **and** the manifest marker below. |
-| Gatekeeper manifest marker | `openclaw.plugin.json` → `"clawos": { "gatekeeper": { "vendor": "<vendor>", "apiVersion": 1 } }` | Extra top-level keys in the manifest are the portable analogue of the `GATEKEEPER_` binding prefix. (**UNVERIFIED** that upstream tolerates unknown manifest keys — S-1; fallback is a `clawos.gatekeeper.json` sibling file.) |
-| Gatekeeper tool names | `gk_<vendor>_<resource>_<verb>` e.g. `gk_github_repo_list_issues` | Kernel matcher on `gk_*`; unambiguous audit. |
+| Gatekeeper manifest marker | `openclaw.plugin.json` → `"clawos": { "gatekeeper": { "vendor": "<vendor>", "apiVersion": 1 } }` | Extra top-level keys in the manifest are the portable analogue of the `GATEKEEPER_` binding prefix. (**VERIFIED** for the S-1 probe on 2026.9.2: unknown `clawos` metadata permits actual load/RPC; `plugins validate` is an authoring-metadata validator, not an ordinary-plugin validator.) |
+| Gatekeeper tool names | `gk_<vendor>_<resource>_<verb>` e.g. `gk_github_repo_list_issues`; entire name ≤64 ASCII characters, lowercase letters/digits/underscores only | Kernel matcher lists explicit `gk_*` tool IDs; unambiguous audit. Provider-documentation intersection, not an upstream registration limit; reject overlong/invalid names instead of truncating. |
 | Kernel tools (agent-facing) | `os_request_access`, `os_list_grants` | The only two tools the kernel exposes to models. |
 | Gateway RPC methods | `os.grants.*`, `os.approvals.*`, `os.gatekeepers.*`, `os.audit.*`, `os.status` | Avoids reserved `config.*`, `exec.approvals.*`, `wizard.*`, `update.*`. |
 | CLI | `clawos <group> <cmd>` and `openclaw os <group> <cmd>` | Same code path. |
@@ -259,7 +259,13 @@ CLAWOS_CELL=<name>
 
 ### 4.2 Registration and discovery
 
-A gatekeeper is an ordinary OpenClaw plugin whose manifest carries the `clawos.gatekeeper` marker. On `gateway_start`, the kernel builds its registry by scanning loaded plugin manifests (via the metadata it can obtain from `api.runtime` / the plugin snapshot — **UNVERIFIED** exact accessor, S-1; fallback: gatekeepers call `os.gatekeepers.register` RPC from their own `gateway_start` handler, which the kernel accepts only from in-process callers). Installing a gatekeeper is therefore purely:
+A gatekeeper is an ordinary OpenClaw plugin whose manifest carries the `clawos.gatekeeper` marker. S-1 selects the OS-owned catalog fallback: the kernel reads configured, canonical package roots from `os/gatekeepers.json`, validates each manifest's plugin id/vendor/API version, and registers cached tool shapes synchronously (§5.1). A manifest on disk is metadata, **not** proof of a loaded driver.
+
+Live attachment uses the public `openclaw/plugin-sdk/runtime-store` object-form store keyed by plugin id. A gatekeeper's `registerService().start()` publishes its driver together with cell/root/API-version identity; `stop()` revokes retained handles and clears only its own current slot. The kernel resolves that live slot at use time and fails closed before startup, after stop, for disabled/missing entries, or for cell/root/version mismatch. Do not rely on service ordering or retain a stale driver across replacement. Discovery modes declare inert capabilities but never publish a driver. Kernel integration and its negative conformance remain Phase 3 work; S-1 tests the transport with a no-tool/no-session fixture.
+
+**Correction to the scaffold:** no documented startup manifest enumerator has been verified, and a network RPC cannot carry a live JavaScript vendor object or establish in-process provenance merely by omitting client fields. The guessed `api.runtime` accessor and RPC-only attachment fallback are removed; no upstream registry is mutated. The named SDK slot is transport between trusted native plugins, **not an authentication boundary** against malicious in-process code. Install policy and `resolveGrant()` remain required. Source: pinned SDK `runtime-store.d.ts`, `docs/plugins/sdk-runtime.md` (Storing runtime references / Gateway service events); acceptance evidence is recorded in S-1.
+
+Installing a gatekeeper is therefore purely:
 
 ```bash
 openclaw plugins install npm:@clawos/gatekeeper-github@1.2.0 --pin --accept-capabilities
@@ -502,6 +508,12 @@ Every observation, action submission, decision, grant change, and gatekeeper aut
 
 ### 5.1 Plugin skeleton
 
+This is the corrected design sketch, not a claim that the kernel scaffold below
+`packages/clawos-kernel/src/` implements these contracts. Phase 0 changes exercise
+the throwaway probe; kernel runtime integration and negative authorization
+conformance belong to Phase 3. The source scaffold still requires the registration
+mode, prompt-phase, and shared-state corrections verified by S-1.
+
 ```jsonc
 // packages/clawos-kernel/openclaw.plugin.json
 {
@@ -550,19 +562,18 @@ export default definePluginEntry({
   description: "Capability model, gatekeeper registry, approval queue, and audit for OpenClaw OS.",
   configSchema: () => import("./config-schema.js").then(m => m.schema),
   register(api) {
-    if (api.registrationMode !== "full") return;        // no runtime in setup-only / cli-metadata modes (VERIFIED)
-    const kernel = new Kernel(api);                       // opens <stateDir>/os/clawos.sqlite via node:sqlite
-
-    // --- lifecycle
-    api.on("gateway_start", () => kernel.start());        // build gatekeeper registry, open store, start drainer
-    api.on("gateway_stop",  () => kernel.stop());         // 5s budget (VERIFIED) — flush audit, close sessions
+    if (!["full", "discovery", "tool-discovery"].includes(api.registrationMode)) return;
+    // Design requirement: constructor is inert; no DB/client/service startup here.
+    // Hook/tool facades resolve the same process-local runtime via the object-form
+    // createPluginRuntimeStore({ pluginId: "clawos-kernel", errorMessage: ... }).
+    const kernel = new Kernel(api);
 
     // --- capability policy (runs before plugin policy)
     api.registerTrustedToolPolicy(kernel.capabilityPolicy());   // hides gk_* tools without active grants
 
     // --- policy pipeline
     api.on("before_agent_run",   (e, ctx) => kernel.onBeforeAgentRun(e, ctx),   { priority: 1000 });
-    api.on("before_prompt_build",(e, ctx) => kernel.onBeforePromptBuild(e, ctx),{ priority: 1000, requiresToolAuthority: true });
+    api.on("before_prompt_build",(e, ctx) => kernel.onBeforePromptBuild(e, ctx),{ priority: 1000 });
     api.on("before_tool_call",   (e, ctx) => kernel.onBeforeToolCall(e, ctx),   { priority: 1000, timeoutMs: 10_000 });   // matcher = explicit tool ids only (no wildcards, VERIFIED) → filter by name inside
     api.on("after_tool_call",    (e, ctx) => kernel.onAfterToolCall(e, ctx));
     api.on("before_agent_reply", (e, ctx) => kernel.onBeforeAgentReply(e, ctx)); // claims "/approvals", "/grants" commands
@@ -584,6 +595,11 @@ export default definePluginEntry({
     // --- gatekeeper tools are registered BY THE KERNEL on behalf of each gatekeeper (see §4.3)
     kernel.registerGatekeeperTools(api);
 
+    if (api.registrationMode !== "full") return;
+    // --- lifecycle (full only)
+    api.on("gateway_start", () => kernel.start());        // publish shared runtime, open store, start drainer
+    api.on("gateway_stop",  () => kernel.stop());         // flush, close, clear shared runtime
+
     // --- operator surfaces
     for (const [name, handler] of kernel.gatewayMethods())
       api.registerGatewayMethod(name, handler, { profileAccess: "required" });   // VERIFIED opt
@@ -597,17 +613,35 @@ export default definePluginEntry({
 
 Notes on the verified SDK shapes used above: `registerHttpRoute` takes `path`, `auth: "gateway" | "plugin"`, `match: "exact" | "prefix"`, optional `handleUpgrade`/`replaceExisting`, and a `handler(req, res)` that returns `true` when it handled the request; OAuth callbacks arrive unauthenticated from the browser, so the route uses `auth: "plugin"` and the kernel validates the nonce itself. `registerCli`'s registrar receives `{ program }` (the command object to configure) and `opts` may carry `commands`, `descriptors`, and `parentPath`. `registerGatewayMethod` opts include `profileAccess: "required" | "independent"`. `registerService` receives a `ctx` with a process-local `gatewayEvents` facade when a broadcaster is present.
 
-Whether a plugin can register tools whose definitions are only known at `gateway_start` (i.e. after other plugins load) is **UNVERIFIED** (S-1). If registration must happen inside `register()`, the kernel reads the gatekeeper catalog file `os/gatekeepers.json` (written by `clawos gatekeeper add`) at register time and registers tools from the catalog's cached `GatekeeperToolDef[]`; the live vendor object is attached at `gateway_start`. This is the same trick cloudflare-os uses with `getTypeScriptTypes()` — tool *shapes* are static metadata, only *execution* needs the live driver.
+**VERIFIED for the S-1 test path on 2026-09-07:** a `gateway_start` call to `registerTool()` returns successfully, but the late tool is absent from all 40 model requests across 20 fresh scripted sessions. Evidence: `vm-artifacts/20260907-184712-phase-0/{spike-S1.jsonl,model-tools.jsonl}` and `plans/spike-S1.md` item i. Use the already-planned catalog-cache design: the kernel reads `os/gatekeepers.json` (written by `clawos gatekeeper add`) at register time and registers the cached `GatekeeperToolDef[]`; the live vendor object is published by its lifecycle service and resolved through its checked runtime slot at use time (§4.2). This is the same trick cloudflare-os uses with `getTypeScriptTypes()` — tool *shapes* are static metadata, only *execution* needs the live driver.
 
 ### 5.2 Hook handlers — exact behavior
+
+**S-1 correction (2026-09-07):** the earlier zero-hook result came from the
+scaffold's full-only registration guard, not universal absence of upstream hooks.
+Agent turns select a discovery registry; inert hooks/tools must be declared there
+as well as at startup. Narrowing belongs in ordinary `before_prompt_build`;
+`requiresToolAuthority: true` is post-policy enrichment and cannot change tools.
+Non-bundled conversation hooks additionally require
+`plugins.entries.<id>.hooks.allowConversationAccess: true`.
+Fresh-base run `20260907-192654-phase-0` exited 0 with 20/20 correlated
+hook/tool calls and 40 narrowed model requests. The earlier interrupted run
+remains unknown overall. See `plans/spike-S1.md` for exact commands and verdicts.
+This is probe evidence, not acceptance of an implemented kernel or the entire phase.
+
+The call stash must be shared across registration instances through the public
+object-form `createPluginRuntimeStore`, scoped to the OS runtime/state and cleared
+on shutdown. A closure-local map is insufficient. Discovery must not open a DB,
+start services, or replace the full-mode runtime. Tool bodies still fail closed
+when the runtime or call identity is absent.
 
 `onBeforeAgentRun(e, ctx)` — **Gate.** (1) If the cell is in `maintenance` (set during updates), block with a friendly message. (2) Extract URLs from `e.prompt`; for each URL matching a registered `SupportedResource.urlPattern`, if `ctx.senderId` is an operator of this cell, create an active grant (or reuse an existing one) and record an introduction note for this run. (3) Return pass. Must complete well under 15 s; URL matching is local, `getGatekeeperFor` is bounded to 5 s per URL with a cached negative result.
 
 `onBeforePromptBuild(e, ctx)` — **Modify.** Narrow the turn's submitted tools to: all non-`gk_*` tools as-is, plus exactly the `gk_*` tools belonging to resource types for which this agent+session has an `active` grant with a compatible `audience`. Append the grant table and any introduction notes as a bounded system context block.
 
-`capabilityPolicy()` — **Trusted tool policy.** **VERIFIED:** trusted policies run before every `before_tool_call` hook, accept the same `matcher` list, and are intended for host-level gates (workspace policy, budgets, reserved-workflow safety) — not per-conversation logic. The kernel therefore registers one host-level rule with `matcher: ["gk_*"]`: *deny unless `params.grant` names an `active`, non-`lockdown` grant in the store.* This is a global check that cannot be bypassed by hook ordering or a misbehaving plugin; the agent/session-scoped check (is this grant valid for *this* agent and session, is the audience compatible) lives in `before_tool_call` below. Belt and braces: the trusted policy guarantees no ungranted gatekeeper call ever executes; the hook guarantees the right agent is using it.
+`capabilityPolicy()` — **Trusted tool policy.** **VERIFIED:** trusted policies run before every `before_tool_call` hook, accept the same `matcher` list, and are intended for host-level gates (workspace policy, budgets, reserved-workflow safety) — not per-conversation logic. The kernel therefore registers one host-level rule with an explicit matcher list of the registered `gk_*` tool IDs (no wildcard matching): *deny unless `params.grant` names an `active`, non-`lockdown` grant in the store.* This is a global check that cannot be bypassed by hook ordering or a misbehaving plugin; the agent/session-scoped check (is this grant valid for *this* agent and session, is the audience compatible) lives in `before_tool_call` below. Belt and braces: the trusted policy guarantees no ungranted gatekeeper call ever executes; the hook guarantees the right agent is using it.
 
-`onBeforeToolCall(e, ctx)` — **Gate/Modify.** For `gk_*`: parse `params.grant`; `resolveGrant(ctx.agentId, ctx.sessionKey, handle)` → else `{block: true, blockReason: "No such grant"}`. Check `audience` vs. observers. Dry-run the tool to obtain its `ObservationDescription` or `ActionDescription`; if an action has `awaitDecision`, return `requireApproval` with `onResolution` that records the decision; otherwise stash the resolved session on the call (keyed by `e.toolCallId`) and return `{}`. For `os_*`: stash `{agentId, sessionKey}` by `toolCallId` and pass. `toolCallId` is documented as optional on the event (**VERIFIED**); S-1 must confirm it is always present for plugin-registered tools — if it can be absent, the kernel blocks the call (fail closed) and logs a diagnostic, because without it the tool body cannot know who is calling.
+`onBeforeToolCall(e, ctx)` — **Gate/Modify.** For `gk_*`: parse `params.grant`; `resolveGrant(ctx.agentId, ctx.sessionKey, handle)` → else `{block: true, blockReason: "No such grant"}`. Check `audience` vs. observers. Dry-run the tool to obtain its `ObservationDescription` or `ActionDescription`; if an action has `awaitDecision`, return `requireApproval` with `onResolution` that records the decision; otherwise stash the resolved session on the call (keyed by `e.toolCallId`) and return `{}`. For `os_*`: stash `{agentId, sessionKey}` by `toolCallId` and pass. `toolCallId` is documented as optional on the event (**VERIFIED**); S-1 observed it on 20/20 calls on the tested path, not a universal guarantee — if it can be absent, the kernel blocks the call (fail closed) and logs a diagnostic, because without it the tool body cannot know who is calling.
 
 Gatekeeper tool `execute(toolCallId, params)` (registered by the kernel): fetch the stashed session by `toolCallId` (fail closed if missing); call `session.call(tool, params, ctx)`; the gatekeeper does the queue calls internally; return the result. Any thrown error is converted to a tool error whose text is the gatekeeper's *sanitized* message (the kit strips URLs, tokens, and vendor error bodies). Stash entries expire after `tools.exec.timeoutSeconds` or on `after_tool_call`, whichever comes first.
 
@@ -621,11 +655,32 @@ Gatekeeper tool `execute(toolCallId, params)` (registered by the kernel): fetch 
 
 ### 5.3 State store (`node:sqlite`)
 
+**VERIFIED S-1 h:** on Node 24.20.0 / OpenClaw 2026.9.2, Node's public
+`createRequire()` can load `node:sqlite` inside the plugin lifecycle and create,
+write, query and close `<stateDir>/os/probe.sqlite` while the Gateway runs. A
+static import prevented this probe from loading (`Cannot find module 'sqlite'`).
+Keep the public Node loader adaptation OS-owned; do not modify upstream. Evidence:
+`plans/spike-S1.md`, runs `20260907-183938` and `20260907-184712`.
+
 Tables: `grants`, `introductions`, `actions` (`id`, `gatekeeperInstance`, `actionId`, `descriptionJson`, `status`, `decidedBy`, `decidedAt`, `appliedAt`, `error`), `instances` (gatekeeper instance registry: vendor, resourceKey, operatorId, observer strategy, lockdown flag), `observers`, `audit_index`, `meta` (schema version). Migrations are forward-only and run at `gateway_start`; the schema version is written into `clawos.lock.json` so rollback tooling can refuse to downgrade past a schema bump (the same "schema-neutral rollback" rule upstream uses for its own updates).
 
 ### 5.4 Gateway RPC methods (`os.*`)
 
-All methods require an authenticated operator connection (OpenClaw's device pairing + gateway auth already guarantees the caller is a paired client; handlers "receive authenticated context" per the docs, but the exact field names for client identity/role are **UNVERIFIED** — S-1). Methods are registered with `profileAccess: "required"` (**VERIFIED** option) because they read and mutate durable state. Method payloads are TypeBox-validated. `os.status` returns cell id, upstream version, kernel version, gatekeeper list with health, pending approval count, and last update result — this is what `clawos status` prints.
+All methods require an authenticated operator connection. **VERIFIED S-1 g:**
+the public SDK paired client exposes `client.connect.role === "operator"`,
+`connect.scopes`, and `connect.device.id`; reconnecting with its issued device token
+sets `client.isDeviceTokenAuth === true`. Neither `pairedClientId` nor
+`authenticatedUserId` is populated on either connection in the tested path.
+Shared Gateway authentication alone can have operator role/scopes without a device,
+so it does **not** guarantee device pairing. Do not use optional absent fields or
+client-reported labels as authority. The operator authorization adapter must enforce
+role/scopes and the chosen paired-device requirement, failing closed when the
+required identity is absent; positive identity probes are not negative authorization
+conformance. Evidence: `plans/spike-S1.md`, paired-client structural observations.
+Methods use `profileAccess: "required"` (**VERIFIED** option), but this selects a
+profile and is not an operator authorization check. Payloads are TypeBox-validated.
+`os.status` returns cell id, upstream/kernel versions, gatekeeper health, pending
+approval count, and last update result for `clawos status`.
 
 ### 5.5 CLI (`openclaw os …` and `clawos …`)
 
@@ -750,6 +805,15 @@ OAuth client secrets and API keys enter via OpenClaw SecretRefs (`{source: "env"
 
 ### 7.5 Supply chain
 
+**VERIFIED S-1 m (2026-09-07):** configure `security.installPolicy.exec` with
+`source: "exec"`, an absolute regular-file `command`, static `args`, and explicit
+`passEnv` / `trustedDirs`; it is not a shell command string. Stdin is a JSON
+object with `protocolVersion: 1`; stdout must include `protocolVersion: 1` and
+`decision: "allow" | "warn" | "block"` (nonempty reason for warn/block).
+Live fixture results: block denied installation, `{}` denied installation,
+allow permitted installation; allow was evaluated twice. Only input key names,
+version, target type and fixture mode were retained. See `plans/spike-S1.md`.
+
 `security.installPolicy` (**VERIFIED** primary boundary: a trusted local command returning allow/warn/block after staging, applies to plugins and ClawHub skills, fails closed when unavailable) is set in `00-baseline.json5` to `clawos install-policy`, which enforces `clawos.install.allowSources` and optional hashes; `before_install` re-checks it; `plugins.deny` is authoritative (**VERIFIED**) and is populated with every plugin id not in the cell's allowlist at `clawos config apply` time; `openclaw plugins install --pin` is always used (with `--force` for `@clawos/*` npm sources until they are on ClawHub, since arbitrary npm sources warn — **VERIFIED**); `openclaw security audit --deep` runs after every install/update and its findings are stored for diffing.
 
 ---
@@ -791,7 +855,7 @@ openclaw-os/
 └── scripts/                       # dev-gateway.ts (spins a throwaway cell), release.ts
 ```
 
-**Tooling decisions:** pnpm workspaces with a `catalog:` (the starter's catalog-drift lesson: keep the `openclaw` peer range and `typebox` version byte-identical across packages — CI checks this); TypeScript strict; `tsup` for plugin bundles (single ESM file per plugin, no runtime deps beyond `typebox`, because OpenClaw loads plugins in-process and each extra dependency is startup cost and attack surface); vitest for unit tests; the conformance suite uses a real Gateway (no mocks of upstream — mocks are exactly what would hide drift). `openclaw plugins validate --entry ./dist/index.js` runs in CI for every plugin.
+**Tooling decisions:** pnpm workspaces with a `catalog:` (the starter's catalog-drift lesson: keep the `openclaw` peer range and `typebox` version byte-identical across packages — CI checks this); TypeScript strict; `tsup` for plugin bundles (single ESM file per plugin, no runtime deps beyond `typebox`, because OpenClaw loads plugins in-process and each extra dependency is startup cost and attack surface); vitest for unit tests; the conformance suite uses a real Gateway (no mocks of upstream — mocks are exactly what would hide drift). `pnpm validate:plugins` checks ordinary-plugin metadata in an isolated snapshot via `plugins inspect --all --json`; runtime conformance remains separate. The pinned `plugins validate` authoring command rejects ordinary `definePluginEntry` entries without generated authoring metadata (S-1).
 
 ### 8.1 `AGENTS.md` (contents, abbreviated)
 

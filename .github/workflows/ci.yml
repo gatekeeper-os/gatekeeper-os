@@ -16,9 +16,17 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm build
       - run: pnpm test
-      - name: Install pinned upstream and validate plugins
+      - name: Install pinned upstream and validate plugin metadata
+        env:
+          OPENCLAW_STATE_DIR: ${{ runner.temp }}/clawos-pin-check
+          OPENCLAW_CONFIG_PATH: ${{ runner.temp }}/clawos-pin-check/openclaw.json
+          OPENCLAW_NO_AUTO_UPDATE: "1"
         run: |
+          mkdir -p "$OPENCLAW_STATE_DIR"
+          printf '{}\n' > "$OPENCLAW_CONFIG_PATH"
           pin=$(node -p "require('./clawos.lock.json').upstream.version")
           npm install -g "openclaw@$pin" --allow-scripts=openclaw
-          openclaw --version | grep -q "$pin"
+          actual=$(openclaw --version)
+          printf '%s\n' "$actual"
+          [[ "$actual" == "OpenClaw $pin" || "$actual" == "OpenClaw $pin "* ]]
           pnpm run validate:plugins

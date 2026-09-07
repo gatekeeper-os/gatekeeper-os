@@ -2,7 +2,29 @@
   "id": "spike-probe",
   "name": "Spike Probe",
   "description": "Answers spike S-1 questions empirically. Not for production.",
-  "contracts": { "tools": ["probe_echo"], "gatewayMethodDispatch": ["os-spike.report"] },
-  "activation": { "onStartup": true },
-  "clawos": { "probeUnknownKeyTolerance": true }
+  "contracts": {
+    "tools": [
+      "probe_echo",
+      "gk_a_b_c",
+      "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn",
+      "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn",
+      "probe.dotted",
+      "probe_late"
+    ],
+    "gatewayMethodDispatch": [
+      "os-spike.report",
+      "os-spike.discovery"
+    ]
+  },
+  "activation": {
+    "onStartup": true
+  },
+  "clawos": {
+    "probeUnknownKeyTolerance": true
+  },
+  "configSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  }
 }

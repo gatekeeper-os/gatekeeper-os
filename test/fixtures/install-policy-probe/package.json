@@ -1,0 +1,1 @@
+{"name":"clawos-install-policy-probe","version":"0.0.0","type":"module","openclaw":{"extensions":["./index.js"],"compat":{"pluginApi":">=2026.9.2 <2026.11.0"}}}

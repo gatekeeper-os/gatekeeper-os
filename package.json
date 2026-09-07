@@ -17,7 +17,7 @@
     "dev:gateway": "tsx scripts/dev-gateway.ts",
     "vm:up": "bash scripts/vm/up.sh",
     "vm:test": "bash scripts/vm/test.sh",
-    "validate:plugins": "pnpm -r --filter './packages/clawos-kernel' --filter './packages/gatekeeper-*' run validate"
+    "validate:plugins": "node scripts/check-plugin-metadata.mjs"
   },
   "devDependencies": {
     "@types/node": "catalog:",

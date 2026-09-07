@@ -26,7 +26,8 @@ jobs:
       - run: pnpm conformance --gateway ws://127.0.0.1:19100 --token ci-token --verdict verdict-${{ matrix.tag }}.json
       - uses: actions/upload-artifact@v4
         if: always()
-        with: { name: verdict-${{ matrix.tag }}, path: "verdict-*.json" }
+        with: { name: "verdict-${{ matrix.tag }}", path: "verdict-*.json" }
       - name: Open upstream-drift issue on failure
         if: failure() && matrix.tag == 'beta'
-        run: echo "TODO(phase-7): gh issue create --label upstream-drift …"
+        run: |
+          echo "TODO(phase-7): gh issue create --label upstream-drift …"

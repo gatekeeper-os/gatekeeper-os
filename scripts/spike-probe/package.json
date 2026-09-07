@@ -6,7 +6,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": ["dist", "openclaw.plugin.json", "config.schema.json", "hooks", "README.md"],
-  "scripts": { "build": "tsup src/index.ts --format esm --dts --clean", "test": "vitest run", "typecheck": "tsc -p tsconfig.json --noEmit", "validate": "openclaw plugins validate --entry ./dist/index.js" },
+  "scripts": { "build": "tsup src/index.ts --format esm --dts --clean", "test": "vitest run", "typecheck": "tsc -p tsconfig.json --noEmit", "validate": "node ../check-plugin-metadata.mjs ." },
   "dependencies": { "typebox": "catalog:" },
   "peerDependencies": { "openclaw": "catalog:" },
   "devDependencies": { "tsup": "catalog:", "typescript": "catalog:", "vitest": "catalog:", "@types/node": "catalog:" },
