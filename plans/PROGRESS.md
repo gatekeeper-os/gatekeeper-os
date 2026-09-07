@@ -487,3 +487,20 @@ was waived. Worktree/evidence are preserved, and production remains untouched.
   in the authorized parent workspace. No filesystem boundary bypass, host runtime install, or production change.
 - Open operator questions: none for Phase 2. Next: verify CI, close the phase/tag checkpoint; Phase 3 is kernel
   integration and the reviewed filesystem driver.
+
+### Phase 2 CI and checkpoint verification
+
+- [Branch CI 34170233623](https://github.com/ControlStackAI/openclaw-os/actions/runs/34170233623) passed on
+  `2218843`, including typechecks/build/tests, the pinned upstream install and all workspace plugin metadata checks.
+  Subsequent branch changes are evidence-only. [PR CI 34170298843](https://github.com/ControlStackAI/openclaw-os/actions/runs/34170298843) also passed.
+- Built filesystem/GitHub placeholder modules both import successfully in a Node-only smoke check; no registration
+  callback or service was invoked. Their real resource implementations remain unavailable.
+- Phase 2 library acceptance remains `20260907-232940`; all required implementation criteria pass.
+
+### Phase 2 completion
+
+All Phase 2 gates are satisfied: recorded library acceptance, workspace checks, branch/PR CI, reviewed contracts and
+authoring documentation. Close with the acceptance-named merge and annotated `phase-2` tag. No criteria waived.
+Phases 0–2 are complete; next is Phase 3 kernel integration and gatekeeper-fs with its operator tool-surface review.
+The 12 unimplemented live conformance tests remain explicit later-phase work. Production and the installed VM snapshot
+were not modified. To inspect this checkpoint: `cat plans/PROGRESS.md` from the Phase 2 worktree.

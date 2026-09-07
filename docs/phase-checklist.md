@@ -52,7 +52,7 @@ Latest complete Ubuntu acceptance: `vm-artifacts/20260907-223901-phase-1/`, fres
 - [x] Kit unit tests: nonce replay/expiry, encrypted account-bound storage, pending/rejected overlays — host-only `scripts/vm/test.sh phase-2`, `vm-artifacts/20260907-232940-phase-2/`, exit 0, **86 library tests** (39 shared + 47 kit), Node 22.23.2, upstream pin 2026.9.2. Includes tamper/refresh/revocation, durable journal/cache/sequence and uncertainty regressions.
 - [x] `defineGatekeeper()` rejects forbidden descriptions, absent/optional/non-string grant and action without describe — same host-only acceptance; 18 builder tests including inert discovery and retained session revocation. No live Gateway conformance claimed.
 - [x] `SKELETON.md` written and included in the kit package — APIs, journal ownership/recovery, trusted approval binding, OAuth stages and later driver review gates documented.
-- [ ] Tag `phase-2`
+- [x] Phase 2 completion checkpoint `phase-2` — [PR #2](https://github.com/ControlStackAI/openclaw-os/pull/2); host-only acceptance `20260907-232940`, branch CI 34170233623 and PR CI 34170298843 passed.
 
 ## Phase 3 — Kernel and gatekeeper-fs
 
