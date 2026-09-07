@@ -145,3 +145,12 @@ files that hold credentials — are never collected. The token-like-string grep 
 `installer/install.sh` provisions Node only when `CLAWOS_ALLOW_NODE_PROVISION=1`, which `test/phase-1.sh` sets
 because it runs on a disposable VM. On any other host a missing Node is a hard failure with instructions, so the
 installer cannot silently mutate a development machine's toolchain.
+
+### Refreshing the installed snapshot after installer changes
+
+First pass full fresh-base `scripts/vm/test.sh phase-1`. Then run
+`scripts/vm/test.sh phase-1 base install-only` through the same driver. This explicitly
+recorded mode exits after source install and healthy status, before drift, second-cell, and
+backup scenarios. It is **not** full acceptance. Only after this clean install succeeds,
+replace the stale disposable `installed` snapshot (base stays immutable) using the driver's
+snapshot operation. A failed clean install never replaces the old snapshot.

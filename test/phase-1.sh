@@ -28,6 +28,15 @@ export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:/usr/local/bin:$PATH"; hash 
 clawos status --json > "$EV/status.json" 2>&1
 if jq -e '.healthy == true' "$EV/status.json" >/dev/null 2>&1; then pass status-healthy; else fail status-healthy "$(head -c 300 "$EV/status.json")"; fi
 
+# Snapshot refresh mode exits before the drift/second-cell/backup scenarios mutate the clean install.
+# It is NOT full Phase 1 acceptance; full acceptance must pass separately before this snapshot is used.
+if [ "${CLAWOS_TEST_INSTALL_ONLY:-0}" = 1 ]; then
+  echo '{"mode":"install-only","fullAcceptance":false}' > "$EV/scope.json"
+  [ "$fails" -eq 0 ] || exit 1
+  echo "phase-1: clean install ready for snapshot (not full acceptance)"
+  exit 0
+fi
+
 openclaw doctor --lint --json > "$EV/doctor-lint.json" 2>"$EV/doctor-lint.stderr"
 lint_rc=$?
 echo "$lint_rc" > "$EV/doctor-lint.exit"
