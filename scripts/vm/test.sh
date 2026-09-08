@@ -30,6 +30,7 @@ mode="${3:-full}"
 case "$phase:$mode" in
   *:full) install_only=0;;
   phase-1:install-only) install_only=1;;
+  phase-3:fs-boundary) install_only=0;;
   *) vm_die "unsupported acceptance mode: $phase $mode";;
 esac
 ts="$(date -u +%Y%m%d-%H%M%S)"
@@ -47,12 +48,12 @@ fi
 
 start_ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 set +e
-vm_call exec "cd $VM_SRC && env CLAWOS_TEST_INSTALL_ONLY=$install_only CLAWOS_TEST_START='$start_ts' bash test/$phase.sh" 2>&1 | tee "$out/run.log"
+vm_call exec "cd $VM_SRC && env CLAWOS_TEST_MODE=$mode CLAWOS_TEST_INSTALL_ONLY=$install_only CLAWOS_TEST_START='$start_ts' bash test/$phase.sh" 2>&1 | tee "$out/run.log"
 rc=${PIPESTATUS[0]}
 set -e
 echo "$rc" > "$out/exit-code"
 
-if ! bash "$REPO_ROOT/scripts/vm/collect.sh" "$out" "$start_ts" "$phase"; then
+if ! bash "$REPO_ROOT/scripts/vm/collect.sh" "$out" "$start_ts" "$phase" "$mode"; then
   rc=99
   echo "$rc" > "$out/exit-code"
 fi

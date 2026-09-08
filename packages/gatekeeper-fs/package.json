@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist", "openclaw.plugin.json", "config.schema.json", "hooks", "README.md"],
+  "files": ["dist", "openclaw.plugin.json", "deploy-inputs.json", "README.md"],
   "scripts": { "build": "tsup src/index.ts --format esm --dts --clean", "test": "vitest run", "typecheck": "tsc -p tsconfig.json --noEmit", "validate": "node ../../scripts/check-plugin-metadata.mjs ." },
   "dependencies": { "@clawos/shared": "workspace:*", "@clawos/gatekeeper-kit": "workspace:*", "typebox": "catalog:" },
   "peerDependencies": { "openclaw": "catalog:" },

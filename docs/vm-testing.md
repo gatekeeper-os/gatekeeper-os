@@ -171,3 +171,14 @@ shared/kit, runs their unit tests, and runs catalog/secret checks. It launches n
 and calls no VM driver. Evidence is retained under `vm-artifacts/<timestamp>-phase-2/` with `snapshot=host-only`,
 mode, revision, Node version, upstream pin, command log and exit code. This establishes library behavior only; lifecycle
 fixtures do not establish live Gateway authorization conformance, which remains Phase 3.
+
+
+## Phase 3 pre-STOP 2 filesystem boundary checkpoint
+
+`scripts/vm/test.sh phase-3 installed fs-boundary` restores the disposable `installed`
+snapshot, syncs source, builds shared/kit/fs, and runs filesystem account-boundary tests.
+It does not install a runtime plugin, invoke OpenClaw, or claim full Phase 3 acceptance.
+The collector copies only `phase-3-fs-boundary-evidence/` (scope, Node/pin, test verdict,
+exit code), with the harness log and explicit `mode=fs-boundary`. No Gateway config,
+credentials, file contents or journals are collected in this mode. The standard full
+Phase 3 conformance gate remains outstanding until kernel and data-plane implementation.

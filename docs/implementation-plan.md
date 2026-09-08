@@ -973,12 +973,15 @@ scaffold was one-stage despite its comment; both nonce stages now rotate/consume
 
 ### Phase 3 — Kernel (5–8 days)
 
-**2026-09-07 review preparation:** the existing filesystem scaffold is not an approved driver.
-The concrete three-tool metadata and local URL/path policy are in
-`packages/gatekeeper-fs/src/{tools,resources}.ts` and `plans/REVIEW-REQUESTED.md`.
-STOP 1 from §4.6 is pending; path containment, byte limits and action semantics in that
-request are proposed implementation requirements, not properties already enforced by metadata.
-The separate STOP 2 remains required. No Phase 3 runtime acceptance is claimed.
+**2026-09-07 authoring checkpoint:** the operator approved the concrete filesystem
+STOP 1 contract at `7642efb` with a subsequent “continuew” reply. The preserved contract
+is `plans/fs-contract.md`. Account/resource introduction validation is implemented for
+STOP 2 review in `plans/REVIEW-REQUESTED.md`; sessions and all file operations stay disabled.
+Introduction-time identity checks are not race-safe I/O and must not be reused as a
+check-then-open implementation. Confinement must be demonstrated before enabling data access.
+This pre-runtime authoring checkpoint resolves §4.6 responsibilities 1–3 without activating
+any capability; the ordered kernel runtime steps below remain outstanding and unchanged.
+Full Phase 3 acceptance is not claimed by the focused `fs-boundary` VM mode.
 
 **Deliverables:** `packages/clawos-kernel` per §5, with store, registry, policy pipeline, approval queue, drainer, audit, `os.*` RPC, `openclaw os` CLI, OAuth router; `gatekeeper-fs` as the first driver (no OAuth, strategy D, trivially testable); conformance suite tests `plugin-loads`, `hooks-fire`, `tool-narrowing`, `gate-blocks`, `rpc-methods`, `cli-mounted`, `health`, `fs-gatekeeper`, `install-gate`.
 

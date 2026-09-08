@@ -533,3 +533,21 @@ were not modified. To inspect this checkpoint: `cat plans/PROGRESS.md` from the 
 - Next: operator review of the linked contract; after approval continue the ordered kernel
   implementation and filesystem driver up to STOP 2. Phases 0–2 remain complete;
   every Phase 3 acceptance criterion remains open.
+
+
+## 2026-09-07 — Phase 3 STOP 1 approved; account/resource boundary prepared
+
+- Operator “continuew” follows the concrete approval request for `7642efb`; recorded as
+  STOP 1 approval, not a waiver of STOP 2. Contract preserved at `plans/fs-contract.md`.
+- Implemented `gatekeeper-fs/src/{paths,account,directory,vendor}.ts`: strict original URL
+  validation, copied explicit roots, directory identity binding, per-operator account
+  lifecycle and revocation. Missing/malformed roots and symlink components deny.
+- Existing kit lifecycle registration retained, deploy-inputs added, catalog/package
+  metadata connected. Runtime sessions, reads, writes, observers and actions all deny.
+- Host fs typecheck and **45 boundary tests pass**. These tests are not race-safe I/O
+  proof; no file-I/O primitives are implemented. Focused VM verification is pending.
+- Added explicit `scripts/vm/test.sh phase-3 installed fs-boundary` mode and allowlisted
+  evidence collection. This pre-runtime authoring checkpoint is not full Phase 3 acceptance.
+- Kernel runtime steps remain ordered and outstanding; no runtime plugin installation,
+  grant activation, production config change, phase merge or tag. STOP 2 review is concrete
+  in `plans/REVIEW-REQUESTED.md`; verify boundary first, then present it for approval.

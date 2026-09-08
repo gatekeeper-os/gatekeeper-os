@@ -4,7 +4,10 @@
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 out="${1:?outdir}"; since="${2:-1 hour ago}"
 grab() { local name="$1"; shift; vm_call exec "$*" > "$out/$name" 2>&1 || true; }
-if [ "${3:-}" = phase-0 ]; then
+if [ "${3:-}:${4:-}" = phase-3:fs-boundary ]; then
+  # Account/resource tests only: no Gateway/config/credential collection at this checkpoint.
+  vm_call pull /home/tester/phase-3-fs-boundary-evidence/ "$out/" || exit 1
+elif [ "${3:-}" = phase-0 ]; then
   vm_call pull /home/tester/phase-0-evidence/ "$out/" || exit 1
 elif [ "${3:-}" = phase-1 ]; then
   # Allowlisted structural evidence only: the per-check JSON the phase script wrote, plus service state. The raw

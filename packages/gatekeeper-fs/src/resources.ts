@@ -1,4 +1,4 @@
-/** Proposed resource metadata; matching is only a candidate, never authorization. */
+/** Approved resource metadata; matching is only a candidate, never authorization. */
 import type { SupportedResource } from "@clawos/shared";
 
 /** A directory at or below an explicit operator root; empty roots allow nothing. */

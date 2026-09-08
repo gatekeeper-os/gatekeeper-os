@@ -7,8 +7,8 @@ export default defineGatekeeper({
   vendor: "fs", apiVersion: 1, id: "gatekeeper-fs", name: "Filesystem Gatekeeper",
   description: "Mediates agent access to specific host directories.",
   createVendor: (ctx) => new FsVendor(ctx),
-  // Metadata-only placeholder: STOP 1 approval precedes driver implementation.
-  actions: { gk_fs_file_write: { describe() { throw new Error("Filesystem driver is not implemented."); } } },
+  // The account boundary is implemented; the data plane remains disabled at STOP 2.
+  actions: { gk_fs_file_write: { describe() { throw new Error("Filesystem resource unavailable."); } } },
   resources: fsResources,
   tools: fsTools,
 });

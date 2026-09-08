@@ -1,4 +1,4 @@
-/** Proposed filesystem metadata only; STOP 1 approval precedes driver implementation. */
+/** STOP 1-approved filesystem surface; file operations remain disabled pending STOP 2. */
 import { Type } from "typebox";
 import { GrantHandle, type GatekeeperToolDef } from "@clawos/shared";
 
