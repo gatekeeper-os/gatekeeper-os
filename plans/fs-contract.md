@@ -1,7 +1,7 @@
 # Phase 3 filesystem gatekeeper — approved STOP 1 contract
 
 Status: **approved by the operator’s “continuew” reply on 2026-09-07, following presentation of commit `7642efb`.**
-The account/resource boundary is now implemented; file operations remain disabled at STOP 2.
+STOP 2 was subsequently approved by “Approved continue”. See PROGRESS.md for implementation evidence and limits; this document preserves the originally reviewed surface.
 Base: `phase-2` / `a18d69e`. Branch: `phase/3-kernel`.
 
 ## Approved decision

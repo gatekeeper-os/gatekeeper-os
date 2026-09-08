@@ -2,6 +2,9 @@
 # Phase 3 acceptance — runs INSIDE the VM from snapshot "installed" via scripts/vm/test.sh phase-3.
 # Criteria: docs/phase-checklist.md → Phase 3. Each check prints "PASS <id>" or "FAIL <id>"; the script exits non-zero on any FAIL.
 set -uo pipefail
+if [ "${CLAWOS_TEST_MODE:-full}" = fs-enforcement ]; then
+  exec bash test/phase-3-fs-enforcement.sh
+fi
 if [ "${CLAWOS_TEST_MODE:-full}" = fs-boundary ]; then
   exec bash test/phase-3-fs-boundary.sh
 fi

@@ -570,3 +570,40 @@ were not modified. To inspect this checkpoint: `cat plans/PROGRESS.md` from the 
 - STOP 2 review is `plans/REVIEW-REQUESTED.md`. Approval is needed for the skill’s later
   responsibilities 4–7. Full kernel integration and Phase 3 conformance remain outstanding.
   No phase merge/tag or production change. Base/installed snapshots were not replaced.
+
+
+## 2026-09-07 — STOP 2 approved; Phase 3 enforcement resumed
+
+Operator explicitly approved the concrete STOP 2 at `fc8b33f`. Continuing authorization,
+simulation, caching, and observer enforcement in the existing worktree. Both authoring
+stops are satisfied; no production directory access or deployment authorized. Kernel
+integration is assigned to FORGE; parent owns filesystem implementation and acceptance.
+Unsafe replacement operations remain disabled unless atomic external-edit protection can
+be established; a check followed by rename does not satisfy the approved contract.
+
+
+## 2026-09-07 — restart recovery: filesystem enforcement checkpoint verified
+
+- Recovered the preserved worktree after a Gateway restart. Complete focused evidence
+  exists at `vm-artifacts/20260908-035125-phase-3/`: harness exit **0**, enforcement exit
+  **0**, JSON success **true**, **73 passed / 0 failed / 0 pending**. Node **24.20.0**,
+  upstream pin **2026.9.2**, snapshot **installed**. Exact acceptance command:
+  `CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state scripts/vm/test.sh phase-3 installed fs-enforcement`.
+- Built `gatekeeper-fs/src/{io,state,directory,account,paths,vendor}.ts`: Linux no-follow
+  descriptor reads/listing, byte bounds, linked/special-file refusal, private state,
+  persisted resource identity, per-call queue checks, pending overlays and rejection.
+  Concurrent symlink-swap and restart/revocation regressions are included. Focused VM
+  build/typecheck/catalog/secret checks passed; collection is allowlisted.
+- All real resource writes deny, including creation. There is no demonstrated atomic
+  confined compare-and-publish primitive. No apply/revert/auto-approval success is claimed;
+  this preserves the approved contract's explicit unsafe-operation denial requirement.
+  The implementation plan and VM guide now record this limit; acceptance is not waived.
+- Scope remains `fullPhaseAcceptance:false`, `liveKernelAcceptance:false`. No runtime
+  plugin install, live grants, production changes, phase merge/tag or new phase completion.
+- Kernel child remained active after restart; latest visible patch calls failed expected-line
+  matching and no kernel acceptance verdict was recovered. Parent review identified missing
+  retained-grant revocation checks, observer population, strict RPC validation/scopes and
+  call-stash binding; findings sent to the active child. Kernel edits stay separate and
+  unaccepted until corrected and verified. Interrupted/uncollected checks remain UNKNOWN.
+- Next: collect the kernel handoff, review corrections, then run integrated live VM
+  acceptance. Filesystem evidence alone cannot establish the kernel security boundary.

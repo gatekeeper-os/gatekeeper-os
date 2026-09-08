@@ -973,15 +973,21 @@ scaffold was one-stage despite its comment; both nonce stages now rotate/consume
 
 ### Phase 3 — Kernel (5–8 days)
 
-**2026-09-07 authoring checkpoint:** the operator approved the concrete filesystem
-STOP 1 contract at `7642efb` with a subsequent “continuew” reply. The preserved contract
-is `plans/fs-contract.md`. Account/resource introduction validation is implemented for
-STOP 2 review in `plans/REVIEW-REQUESTED.md`; sessions and all file operations stay disabled.
-Introduction-time identity checks are not race-safe I/O and must not be reused as a
-check-then-open implementation. Confinement must be demonstrated before enabling data access.
-This pre-runtime authoring checkpoint resolves §4.6 responsibilities 1–3 without activating
-any capability; the ordered kernel runtime steps below remain outstanding and unchanged.
-Full Phase 3 acceptance is not claimed by the focused `fs-boundary` VM mode.
+**2026-09-07 enforcement checkpoint:** both filesystem authoring stops are approved
+(STOP 1 after `7642efb`; STOP 2 by “Approved continue” after `fc8b33f`). The original
+contract remains in `plans/fs-contract.md`. Focused `fs-enforcement` VM evidence
+`20260908-035125-phase-3` passes 73/73 tests for Linux descriptor-confined bounded
+list/read, per-call authorization, persisted resource identity, cache/overlay recovery,
+revocation, and private-only observer refusal. Unsupported platforms deny data access.
+This is library/driver evidence, not live kernel or full Phase 3 acceptance.
+
+**Implementation limit:** all real granted-file creation and replacement remain
+unavailable. Node's pathname operations cannot atomically combine confinement with
+expected-version comparison; precheck followed by rename/publication is insufficient.
+The approved contract explicitly requires unsafe operations to deny. Simulated writes
+remain pending, can be read and rejected, and cannot be applied or auto-approved. No
+write-conformance criterion is waived, and no production root is granted. Kernel
+integration and the ordered live acceptance steps below remain outstanding.
 
 **Deliverables:** `packages/clawos-kernel` per §5, with store, registry, policy pipeline, approval queue, drainer, audit, `os.*` RPC, `openclaw os` CLI, OAuth router; `gatekeeper-fs` as the first driver (no OAuth, strategy D, trivially testable); conformance suite tests `plugin-loads`, `hooks-fire`, `tool-narrowing`, `gate-blocks`, `rpc-methods`, `cli-mounted`, `health`, `fs-gatekeeper`, `install-gate`.
 

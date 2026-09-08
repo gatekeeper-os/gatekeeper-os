@@ -182,3 +182,14 @@ The collector copies only `phase-3-fs-boundary-evidence/` (scope, Node/pin, test
 exit code), with the harness log and explicit `mode=fs-boundary`. No Gateway config,
 credentials, file contents or journals are collected in this mode. The standard full
 Phase 3 conformance gate remains outstanding until kernel and data-plane implementation.
+
+
+## Phase 3 post-STOP 2 filesystem enforcement checkpoint
+
+`scripts/vm/test.sh phase-3 installed fs-enforcement` restores `installed`, syncs source,
+builds shared/kit/fs, typechecks the driver and records its unit tests in the disposable
+VM. Collection is restricted to `phase-3-fs-enforcement-evidence/` plus the harness log.
+Scope explicitly records `fullPhaseAcceptance:false`, `liveKernelAcceptance:false`,
+and `hostWritesEnabled:false`. It neither installs plugins nor invokes a Gateway.
+The historical `fs-boundary` mode now refuses execution because the data plane is no
+longer disabled; reproduce its original evidence only from checkpoint `fc8b33f`.

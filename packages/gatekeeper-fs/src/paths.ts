@@ -1,4 +1,4 @@
-import { lstatSync } from "node:fs";
+import { lstatSync, type BigIntStats } from "node:fs";
 import { pathToFileURL } from "node:url";
 
 /** Fixed diagnostic: never expose host paths or native error messages. */
@@ -44,8 +44,8 @@ function identity(path: string): Identity {
 
 /**
  * Introduction-time directory identity only, NOT a race-safe file-I/O primitive.
- * Every ancestor must remain the same non-symlink directory. All data access stays disabled
- * until a confined use/apply implementation is available; a check-then-open would be unsafe.
+ * Every ancestor must remain the same non-symlink directory. Data reads additionally
+ * use ConfinedIO's no-follow descriptor walk; a check-then-open alone would be unsafe.
  */
 export class DirectoryBinding {
   private readonly chain: Identity[];
@@ -71,6 +71,13 @@ export class DirectoryBinding {
       }
     } catch { throw denied(); }
   }
+  /** Match a safely opened directory to the captured resource, not merely its current pathname. */
+  assertDescriptor(stat: BigIntStats): void {
+    const captured = this.chain.at(-1)!;
+    if (!stat.isDirectory() || stat.dev !== captured.dev || stat.ino !== captured.ino) throw denied();
+  }
+  /** Persistent instance identity includes every ancestor; replacement never inherits old pending actions. */
+  fingerprint(): string { return JSON.stringify(this.chain.map(({ path, dev, ino }) => [path, String(dev), String(ino)])); }
   /** Private kernel resource identity, never an agent-facing title or tool result. */
   key(): string { return pathToFileURL(this.path).href; }
 }

@@ -12,7 +12,7 @@ let base: string, root: string, project: string;
 const error = "Filesystem resource unavailable.";
 function vendor(pluginConfig: Record<string, unknown> = { roots: [root] }) {
   const logger = { debug() {}, info() {}, warn() {}, error() {} };
-  return new FsVendor({ pluginConfig, stateDir: base, logger } satisfies VendorContext);
+  return new FsVendor({ pluginConfig, stateDir: join(base, "state"), logger } satisfies VendorContext);
 }
 const url = (path: string) => pathToFileURL(path).href;
 beforeEach(() => {
@@ -109,7 +109,7 @@ describe("operator root boundary", () => {
   });
 });
 
-describe("account lifetime and disabled data plane", () => {
+describe("account lifetime and fail-closed application", () => {
   it("reuses live accounts/resources and permanently revokes retained objects", async () => {
     const v = vendor(), account = await v.createAccount("operator");
     expect(await v.createAccount("operator")).toBe(account);
@@ -125,16 +125,18 @@ describe("account lifetime and disabled data plane", () => {
     expect(await v.createAccount("operator")).not.toBe(account);
     await expect(result.gatekeeper.describe()).rejects.toThrow(error);
   });
-  it("offers metadata but no unguarded session, write, verifier, or observer path", async () => {
+  it("offers metadata and guarded sessions but no host application, verifier, or observer path", async () => {
     const v = vendor(), account = await v.createAccount("operator");
     expect((await v.getTools()).map(tool => tool.name)).toEqual(["gk_fs_dir_list", "gk_fs_file_read", "gk_fs_file_write"]);
     expect(await account.getSupportedResources()).toEqual(await v.getSupportedResources());
     const { gatekeeper } = await account.getGatekeeperFor(url(project));
     expect(await gatekeeper.getAutoApprovableActions()).toEqual([]);
     const queue = new TestApprovalQueue();
-    await expect(gatekeeper.startSession(queue)).rejects.toThrow(error);
+    const session = await gatekeeper.startSession(queue);
+    await session.close();
+    await expect(session.call("gk_fs_dir_list", { grant: "grant:01234567" }, queue.context())).rejects.toThrow();
     await expect(gatekeeper.applyAction(1)).rejects.toThrow(error);
-    await expect(gatekeeper.rejectAction(1)).rejects.toThrow(error);
+    await expect(gatekeeper.rejectAction(1)).rejects.toThrow();
     await expect(gatekeeper.revertAction!(1)).rejects.toThrow(error);
     await expect(gatekeeper.addObserver("other", { vendor: "fs", opaque: "forged" })).rejects.toThrow();
     await expect(account.getVerifier()).rejects.toThrow(error);

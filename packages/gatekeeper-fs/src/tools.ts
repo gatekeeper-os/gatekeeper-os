@@ -1,4 +1,4 @@
-/** STOP 1-approved filesystem surface; file operations remain disabled pending STOP 2. */
+/** STOP 1-approved filesystem surface; STOP 2 approved; host-file application remains fail closed. */
 import { Type } from "typebox";
 import { GrantHandle, type GatekeeperToolDef } from "@clawos/shared";
 
