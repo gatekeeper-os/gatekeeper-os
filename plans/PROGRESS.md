@@ -607,3 +607,20 @@ be established; a check followed by rename does not satisfy the approved contrac
   unaccepted until corrected and verified. Interrupted/uncollected checks remain UNKNOWN.
 - Next: collect the kernel handoff, review corrections, then run integrated live VM
   acceptance. Filesystem evidence alone cannot establish the kernel security boundary.
+
+
+### Kernel handoff recovery blocked
+
+Filesystem checkpoint saved as **`b0113a0`**. Scoped diff/shell checks, catalog/secret
+checks and both VM-bootstrap regressions passed; dedicated VM confirmed **shut off**.
+The uncommitted kernel/conformance handoff is not accepted: required hooks-fire,
+tool-narrowing, gate-blocks and fs-gatekeeper checks currently use `it.skip`, and the
+scripted-turn draft does not establish the claimed grant lifecycle.
+
+Restart recovery lists the kernel child as active, but yielding returned “No pending child
+completion is owned by this turn”; cancellation returned “Subagent task not found”, then
+“Task outside session tree” for the recovered identifier. No bypass attempted. Steering
+messages were accepted as queued, not proof of delivery or completion. Worker outcome is
+**UNKNOWN**. Do not concurrently replace its uncommitted work or accept skipped tests.
+Resume only after a settled handoff or restored worker ownership, then correct the security
+and evidence gaps and run live acceptance. No Phase 3 completion or tag.
