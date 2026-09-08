@@ -1,11 +1,12 @@
 // All traffic stays in the disposable VM. Only structural evidence leaves this process.
+import { spawnSync } from 'node:child_process';
 import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
-if (process.env.CLAWOS_KERNEL_VM !== '1' || process.env.OPENCLAW_STATE_DIR !== '/home/tester/clawos-kernel-state' || process.cwd() !== '/home/tester/src') throw new Error('VM required');
+if (process.env.CLAWOS_KERNEL_VM !== '1' || process.env.OPENCLAW_STATE_DIR !== '/home/tester/.openclaw-kernel-test' || process.cwd() !== '/home/tester/src') throw new Error('VM required');
 const require=createRequire(resolve('packages/clawos-conformance/package.json'));
 const {GatewayClient}=await import(pathToFileURL(require.resolve('openclaw/plugin-sdk/gateway-runtime')).href);
 const config=JSON.parse(readFileSync(process.env.OPENCLAW_CONFIG_PATH,'utf8'));
@@ -14,7 +15,7 @@ const report=phase==='normal'?{runId:process.env.CLAWOS_SCENARIO_RUN,checks:{},t
 let current, serial=0, paired, shared, restricted;
 const save=()=>writeFileSync(reportPath,JSON.stringify(report,null,2)+'\n',{mode:0o600});
 function check(id,ok){report.checks[id]=ok===true;save();if(!ok)throw new Error(id);console.log('PASS '+id);}
-const records=()=>{try{return readFileSync('/home/tester/clawos-kernel-state/os/hooks.jsonl','utf8').trim().split('\n').filter(Boolean).map(JSON.parse);}catch{return[];}};
+const records=()=>{try{return readFileSync('/home/tester/.openclaw-kernel-test/os/hooks.jsonl','utf8').trim().split('\n').filter(Boolean).map(JSON.parse);}catch{return[];}};
 const server=createServer(async(req,res)=>{
   try {
     if(req.method!=='POST'||!current){res.writeHead(400);res.end('{}');return;}
@@ -40,6 +41,11 @@ const server=createServer(async(req,res)=>{
   }catch{res.writeHead(400);res.end('{}');}
 });
 async function connect(auth,scopes=["operator.admin"]){let client,timer;try{const hello=await new Promise((resolve,reject)=>{timer=setTimeout(()=>reject(new Error('connect-timeout')),30_000);client=new GatewayClient({url:'ws://127.0.0.1:19100',...auth,env:process.env,clientName:'cli',mode:'cli',role:'operator',scopes,requestTimeoutMs:120_000,hostDeps:{logDebug(){},logError(){}},onHelloOk:resolve,onConnectError:()=>reject(new Error('connect-failed'))});client.start();});return{client,deviceToken:hello.auth?.deviceToken};}catch(error){await client?.stopAndWait({timeoutMs:5000});throw error;}finally{clearTimeout(timer);}}
+function cli(args, binary='clawos') {
+  const result=spawnSync(binary,args,{env:process.env,encoding:'utf8',timeout:90000,maxBuffer:4*1024*1024});
+  if(result.status!==0||result.error)return {ok:false,exit:result.status,error:result.error?.code};
+  try{return {ok:true,value:JSON.parse(result.stdout)};}catch{return {ok:false,exit:result.status,emptyStdout:!result.stdout.trim()};}
+}
 async function denied(client,method,params){try{await client.request(method,params);return false;}catch{return true;}}
 async function turn(id,{tool,params={},agentId='main',message='Run the test operation once.',client=paired.client}={}){
   current={id,tool,params,names:[],calls:0,sawResult:false,sawInside:false,sawOutside:false,sawListing:false,sawDenial:false};
@@ -70,7 +76,18 @@ try {
     check('untrusted-sender-not-owner',pasted.hooks.some(h=>h.hook==='before_agent_run'&&h.senderIsOwner===false));
     check('untrusted-url-no-grant',(await paired.client.request('os.grants.list',{agentId:'stranger'})).length===0);
     check('untrusted-url-narrowing',pasted.names.every(names=>!names.some(n=>n.startsWith('gk_'))));
-    const grant=await paired.client.request('os.grants.introduce',{agentId:'main',url:'file:///home/tester/kernel-resource/'});
+    const status=cli(['kernel','status','--cell','kernel-test','--json']);
+    check('cli-kernel-status',status.ok&&status.value.cell==='kernel-test'&&status.value.gatekeepers.some(g=>g.vendor==='fs'&&g.healthy));
+    const mounted=cli(['os','status','--json'],'openclaw');
+    report.cliMountedDiagnostics={ok:mounted.ok,exit:mounted.exit,emptyStdout:mounted.emptyStdout,error:mounted.error};save();
+    check('cli-upstream-mounted',mounted.ok&&mounted.value.cell==='kernel-test'&&mounted.value.healthy);
+    const added=cli(['grant','add','--cell','kernel-test','--agent','main','file:///home/tester/kernel-resource/','--json']);
+    check('cli-grant-add',added.ok&&added.value.status==='active');
+    const grant=added.value;
+    const grants=cli(['grant','list','--cell','kernel-test','--agent','main','--json']);
+    check('cli-grant-list',grants.ok&&grants.value.some(g=>g.handle===grant.handle));
+    check('cli-wrong-cell-denied',!cli(['grant','list','--cell','missing-kernel','--json']).ok);
+    check('cli-invalid-input-denied',!cli(['grant','add','--cell','kernel-test','--agent','main','--operatorId','forged','file:///home/tester/kernel-resource/','--json']).ok);
     check('operator-introduced',grant.status==='active'&&/^grant:/.test(grant.handle));
     const listed=await turn('valid-list',{tool:'gk_fs_dir_list',params:{grant:grant.handle}});
     check('valid-grant-narrowing',listed.names.every(names=>names.length===5&&['os_list_grants','os_request_access','gk_fs_dir_list','gk_fs_file_read','gk_fs_file_write'].every(n=>names.includes(n))));
@@ -88,9 +105,13 @@ try {
     check('successful-call-audited',audit.some(a=>a.kind==='tool'&&a.title==='gk_fs_dir_list'&&a.ok===true));
     check('observation-audited',audit.some(a=>a.kind==='observation'&&a.handle===grant.handle&&a.ok===true));
     check('unknown-policy-audited',audit.some(a=>a.kind==='tool'&&a.title==='Capability policy denied call'&&a.ok===false));
-    check('grant-revoked',(await paired.client.request('os.grants.revoke',{handle:grant.handle})).revoked===true);
+    const revokedCli=cli(['grant','revoke',grant.handle,'--cell','kernel-test','--json']);
+    check('cli-grant-revoke',revokedCli.ok&&revokedCli.value.revoked===true);
+    check('grant-revoked',revokedCli.ok&&revokedCli.value.revoked===true);
     const revoked=await turn('revoked-grant');
     check('revoked-tool-absent',revoked.names.every(names=>!names.some(n=>n.startsWith('gk_'))));
+    const auditCli=cli(['audit','tail','--cell','kernel-test','--limit','1000','--json']);
+    check('cli-audit-tail',auditCli.ok&&auditCli.value.some(a=>a.kind==='grant'&&a.handle===grant.handle&&a.decision==='revoked')&&auditCli.value.some(a=>a.kind==='observation'&&a.handle===grant.handle));
     check('revocation-audited',(await paired.client.request('os.audit.query',{limit:1000})).some(a=>a.kind==='grant'&&a.handle===grant.handle&&a.decision==='revoked'));
   } else {
     const unknown=await turn('hooks-disabled-unknown',{tool:'gk_fs_dir_list',params:{grant:'grant:zzzzzzzz'}});

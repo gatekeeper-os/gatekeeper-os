@@ -726,3 +726,66 @@ contract); remaining observer/egress and approval integration. Legacy full-test/
 other live-suite drafts are preserved but unaccepted. No full-phase green, merge/tag, push,
 production runtime invocation, production grants, upstream edits, or snapshot replacement.
 **Next:** installer/CLI integration and the remaining real Phase 3 acceptance gates.
+
+## 2026-09-08 — paired operator CLI checkpoint verified
+
+Continued from `f74cb24` in `phase/3-kernel`. Added strict `clawos` commands for
+kernel status, grant add/list/revoke, bounded audit tail, gatekeeper listing and
+approval decisions. The client resolves the installed public Gateway SDK in an
+explicitly cell-scoped subprocess, bootstraps device pairing, closes the shared
+connection, then sends operator RPCs over a separate device-authenticated connection.
+Structured parameters travel over stdin; raw upstream diagnostics and credentials
+never reach argv/output. No direct kernel database access or upstream modifications.
+Mounted `openclaw os` commands forward through this same installed client and reject
+cell/profile/state/config disagreement. Real filesystem writes stay disabled.
+
+The focused live harness now packs/installs the actual CLI, registers a canonical
+named guest cell at `/home/tester/.openclaw-kernel-test`, and drives the original
+read/revocation scenarios through real CLI grant mutation. Eight current-run CLI
+assertions join the existing live suites. Other legacy acceptance drafts remain
+unaccepted and are not included in this change.
+
+Failed runs retained (all `phase-3 installed kernel-live`, all exit 1):
+
+- `20260908-171213-phase-3`: source `bin/` PATH did not select a `clawos` executable;
+  the snapshot's old CLI ran. Harness now packs and globally installs the tarball.
+- `20260908-171403-phase-3`: direct paired CLI status passed; mounted `os` command
+  was unknown. Added documented `cliCommands` and runtime descriptors.
+- `20260908-171615-phase-3`: command still unknown; full-only CLI registration
+  excluded `cli-metadata`/`discovery`. Moved inert declarations before construction.
+- `20260908-171910-phase-3`: command discovered (`os --help` lists subcommands),
+  but the strict JSON assertion failed. Paused edits for read-only diagnostics:
+  isolated mounted status exited 0 with zero stdout bytes and output on stderr.
+  Corrected console logging to direct stdout plus the SDK machine-output resolver.
+  Diagnostic start/status/stop was not acceptance and collected only structural flags.
+
+Host CLI tests: **111/111**. CLI/kernel typechecks and catalog/secrecy/diff/syntax
+checks pass; VM bootstrap tests **2/2**. The metadata validator's host guard refused
+execution before any upstream import/invocation; no host metadata validation is claimed.
+The final live acceptance is recorded below. No phase acceptance, push, merge, tag,
+production state access, real filesystem write, or snapshot replacement.
+
+
+**Passing command:** `CLAWOS_VM_DRIVER=libvirt
+CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state
+scripts/vm/test.sh phase-3 installed kernel-live`.
+Artifacts `vm-artifacts/20260908-172236-phase-3/`: harness/live **exit 0**,
+OpenClaw **2026.9.2**, Node **24.20.0**. **31/31 live assertions**, zero skipped:
+hooks-fire 4, tool-narrowing 5, gate-blocks 7, fs-gatekeeper 7, cli-mounted 8.
+All **56 structural scenario checks** pass over eight real agent turns.
+Guest tests: CLI **111/111**, kernel **11/11** (including cell-selector refusal).
+The actual CLI creates the resource grant used for listing/reading, lists it,
+revokes it, and retrieves matching observation/revocation audit records. The
+mounted upstream command returns parseable JSON for the correct cell. Wrong-cell
+and forged-identity CLI inputs deny. Unknown-handle policy denial still passes
+with conversation hooks disabled. Catalog/secrets and allowlisted collection pass.
+
+**Scope still incomplete:** no installer plugin projection or live install-policy
+acceptance. The existing install hook still uses guessed source/hash fields instead
+of the typed `request`/`sourcePath` contract; do not call that gate verified. Channel
+URL introduction/ordering, observer/egress, approval decision integration and manual
+Telegram acceptance remain. Audit time filtering is not implemented. Approval CLI
+verbs have grammar coverage but their driver outcomes are not accepted by this run.
+No full Phase 3 green, phase tag, merge/push, production change, upstream edits or
+snapshot replacement. Next: installer/projection and the shared primary/secondary
+install-policy implementation, then the remaining Phase 3 gates.

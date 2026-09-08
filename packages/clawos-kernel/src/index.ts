@@ -2,6 +2,7 @@
 import { Type } from "typebox";
 import { buildJsonPluginConfigSchema, definePluginEntry } from "./upstream/sdk.js";
 import { schema as configSchemaJson } from "./config-schema.js";
+import { mountOperatorCli } from "./upstream/cli.js";
 import { Kernel } from "./kernel.js";
 
 export default definePluginEntry({
@@ -10,6 +11,10 @@ export default definePluginEntry({
   description: "Capability model, gatekeeper registry, approval queue, and audit for OpenClaw OS.",
   configSchema: buildJsonPluginConfigSchema(configSchemaJson),
   register(api) {
+    // CLI discovery must declare metadata without creating a kernel or reading its catalog.
+    if (["cli-metadata", "discovery", "full"].includes(api.registrationMode)) {
+      api.registerCli(({ program }) => mountOperatorCli(program), { descriptors: [{ name: "os", description: "OpenClaw OS kernel administration", hasSubcommands: true, machineOutput: ({ argv }) => argv.includes("--json") }] });
+    }
     if (!["full", "discovery", "tool-discovery"].includes(api.registrationMode)) return;
     const kernel = new Kernel(api);
 
@@ -57,7 +62,6 @@ export default definePluginEntry({
     // operator surfaces (shapes VERIFIED 2026.9.2)
     for (const [name, handler] of kernel.gatewayMethods()) api.registerGatewayMethod(name, handler, { profileAccess: "required" });
     api.registerHttpRoute({ path: "/os/gatekeeper/", match: "prefix", auth: "plugin", handler: (req, res) => kernel.oauthRouter(req, res) });
-    api.registerCli(({ program }) => kernel.mountCli(program), { commands: ["os"] });
     api.registerService({ id: "clawos-drainer", start: (ctx) => kernel.startDrainer(ctx), stop: () => kernel.stopDrainer() });
   },
 });

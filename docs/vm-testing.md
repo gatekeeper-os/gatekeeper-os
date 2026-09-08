@@ -220,3 +220,9 @@ by the harness. This is focused acceptance, not the full Phase 3 gate; file writ
 remain disabled. Live suites reject absent, stale, or failed scenario evidence.
 The `conformance-runner` checkpoint now tests missing live evidence rejection;
 its unit fixtures continue to cover skipped/empty/failed suite rejection.
+
+The live checkpoint also packs and installs the current CLI, registers the isolated
+`kernel-test` cell at `/home/tester/.openclaw-kernel-test`, and exercises real CLI
+status/grant/list/revoke/audit plus mounted `openclaw os status`. CLI unit verdicts
+and eight CLI-specific current-run conformance assertions join the allowlisted
+evidence. This does not test automatic installer plugin projection or install policy.

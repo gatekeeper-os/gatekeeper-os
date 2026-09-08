@@ -2,7 +2,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-if (process.env.CLAWOS_KERNEL_VM !== '1' || process.env.OPENCLAW_STATE_DIR !== '/home/tester/clawos-kernel-state' || process.env.OPENCLAW_CONFIG_PATH !== '/home/tester/clawos-kernel-state/openclaw.json' || process.cwd() !== '/home/tester/src') throw new Error('VM required');
+if (process.env.CLAWOS_KERNEL_VM !== '1' || process.env.OPENCLAW_STATE_DIR !== '/home/tester/.openclaw-kernel-test' || process.env.OPENCLAW_CONFIG_PATH !== '/home/tester/.openclaw-kernel-test/openclaw.json' || process.cwd() !== '/home/tester/src') throw new Error('VM required');
 const state=process.env.OPENCLAW_STATE_DIR, file=process.env.OPENCLAW_CONFIG_PATH;
 if (process.argv[2] === 'no-hooks') {
   const cfg=JSON.parse(readFileSync(file,'utf8'));
@@ -24,4 +24,9 @@ if (process.argv[2] === 'no-hooks') {
       'clawos-kernel-monitor':{enabled:true,hooks:{allowConversationAccess:true}},
     }}};
   writeFileSync(file,JSON.stringify(config),{mode:0o600});
+  mkdirSync('/home/tester/.clawos',{recursive:true,mode:0o700});
+  const registryPath='/home/tester/.clawos/cells.json';
+  const registry=JSON.parse(readFileSync(registryPath,'utf8')).filter(row=>row.name!=='kernel-test');
+  registry.push({name:'kernel-test',port:19100,stateDir:state,unit:'openclaw-gateway-kernel-test.service',createdAt:new Date().toISOString()});
+  writeFileSync(registryPath,JSON.stringify(registry),{mode:0o600});
 }

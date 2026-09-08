@@ -122,5 +122,12 @@
   "clawos": {
     "kernel": true,
     "apiVersion": 1
-  }
+  },
+  "cliCommands": [
+    {
+      "name": "os",
+      "description": "OpenClaw OS kernel administration",
+      "hasSubcommands": true
+    }
+  ]
 }

@@ -4,7 +4,7 @@ set -euo pipefail
 [ "$HOME" = /home/tester ] && [ "$PWD" = /home/tester/src ] || exit 1
 export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
 export CLAWOS_KERNEL_VM=1 CLAWOS_CELL=kernel-test OPENCLAW_NO_AUTO_UPDATE=1
-export OPENCLAW_STATE_DIR=/home/tester/clawos-kernel-state OPENCLAW_CONFIG_PATH=/home/tester/clawos-kernel-state/openclaw.json
+export OPENCLAW_STATE_DIR=/home/tester/.openclaw-kernel-test OPENCLAW_CONFIG_PATH=/home/tester/.openclaw-kernel-test/openclaw.json
 unset OPENCLAW_PROFILE OPENCLAW_GATEWAY_TOKEN
 evidence=/home/tester/phase-3-kernel-live-evidence
 mkdir -p "$evidence"
@@ -15,9 +15,13 @@ trap cleanup EXIT
 printf '%s\n' '{"mode":"kernel-live","fullPhaseAcceptance":false,"realFilesystemWritesEnabled":false}' > "$evidence/scope.json"
 node --version > "$evidence/node-version"
 pnpm install --frozen-lockfile --ignore-scripts > /home/tester/kernel-deps.log 2>&1
-pnpm --filter @clawos/kernel... --filter @clawos/gatekeeper-fs... --filter @clawos/conformance... build > /home/tester/kernel-build.log 2>&1
+pnpm --filter @clawos/kernel... --filter @clawos/gatekeeper-fs... --filter @clawos/conformance... --filter @clawos/cli build > /home/tester/kernel-build.log 2>&1
+mkdir -p /home/tester/kernel-cli-package
+pnpm --filter @clawos/cli pack --pack-destination /home/tester/kernel-cli-package > /home/tester/kernel-cli-pack.log 2>&1
+npm install -g /home/tester/kernel-cli-package/clawos-cli-0.1.0.tgz --ignore-scripts > /home/tester/kernel-cli-install.log 2>&1
 pnpm --filter @clawos/kernel typecheck
 pnpm --filter @clawos/kernel exec vitest run --reporter=default --reporter=json --outputFile="$evidence/kernel-tests.json"
+pnpm --filter @clawos/cli exec vitest run --reporter=default --reporter=json --outputFile="$evidence/cli-tests.json"
 pnpm exec tsx test/scripts/kernel-config.mjs
 openclaw --version > "$evidence/upstream-version"
 openclaw config validate > /home/tester/kernel-validation.log 2>&1
@@ -36,7 +40,7 @@ pnpm exec tsx test/scripts/kernel-config.mjs no-hooks
 openclaw config validate > /home/tester/kernel-validation.log 2>&1
 start_gateway
 node test/scripts/kernel-scenarios.mjs no-hooks
-pnpm conformance --only hooks-fire,tool-narrowing,gate-blocks,fs-gatekeeper --verdict "$evidence/live-verdict.json"
+pnpm conformance --only hooks-fire,tool-narrowing,gate-blocks,fs-gatekeeper,cli-mounted --verdict "$evidence/live-verdict.json"
 pnpm check:catalog
 pnpm check:secrets
 echo 'kernel-live: PASS (focused checkpoint; not full Phase 3 acceptance)'

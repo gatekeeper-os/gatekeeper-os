@@ -980,6 +980,21 @@ scaffold was one-stage despite its comment; both nonce stages now rotate/consume
 
 ### Phase 3 — Kernel (5–8 days)
 
+**2026-09-08 CLI integration correction:** plugin root command routing additionally
+requires manifest `cliCommands`, matching `registerCli` descriptors, and inert CLI
+registration in `cli-metadata`/`discovery`/`full` modes (pinned
+`docs/plugins/manifest.md` §cliCommands). Mounted `openclaw os` commands must use
+the live Gateway, not an unstarted local kernel store. Machine-readable output
+must use stdout directly, not console logging that upstream redirects to stderr
+in JSON mode. Explicit mounted-command selectors must agree on the registered
+canonical cell. `clawos` now supplies paired
+operator RPC commands for grants, bounded audit tail, status, gatekeeper listing,
+and approval decisions. Audit time filtering and approval driver outcomes remain
+separate acceptance work. The live checkpoint installs the actual packed CLI into
+the disposable guest and selects a registered named test cell; merely putting the
+source bin directory on PATH selected the snapshot's old CLI. Installer plugin
+projection and install-policy integration are still outstanding.
+
 **2026-09-08 live integration correction:** the pinned loader requires every tool
 registered by the kernel to appear in the kernel manifest's `contracts.tools`;
 reading catalog metadata alone does not authorize registration. The manifest now

@@ -377,3 +377,33 @@ and `20260908-163332-phase-3` establish those causes; corrected live evidence is
 `20260908-163653-phase-3`. No upstream changes. Runtime-store facades preserve the
 kit's exact queue identity, including across discovery/full registration instances.
 The kit's queue check was retained, not bypassed.
+
+## 2026-09-08 — paired operator CLI integration
+
+- **VERIFIED pinned docs/source:** `docs/plugins/manifest.md` §cliCommands requires
+  every plugin-owned root command in `cliCommands` (`name`, `description`,
+  `hasSubcommands`) for metadata-only routing. Register the same runtime descriptor
+  through `api.registerCli(..., { descriptors: [...] })`. `commands: ["os"]` alone
+  did not make `openclaw os` discoverable in the isolated installed guest.
+  `docs/plugins/sdk-entrypoints.md` additionally requires inert CLI declarations in
+  `cli-metadata`, `discovery`, and `full` modes; full-only registration was insufficient.
+  CLI declaration now precedes kernel construction and reads no catalog or runtime.
+- The CLI uses the already-verified public `openclaw/plugin-sdk/gateway-runtime`
+  `GatewayClient`, resolved from the installed binary in a separate cell process.
+  Shared-token handshake returns `hello.auth.deviceToken`; the client closes it
+  before explicitly reconnecting with device-token auth for kernel operator RPCs.
+  No caller identity fields or private SDK imports are used. Only the cell's fixed
+  loopback endpoint is accepted. CLI auth support currently covers local token
+  config and the installer's exact env SecretRef, not arbitrary SecretRef providers.
+- `openclaw os` commands forward to the installed `clawos` client instead of trying
+  to read a local kernel runtime that was never started by CLI discovery.
+
+- **Observed CLI output correction:** after metadata-mode registration, `openclaw
+  os status --json` returned exit 0 but no stdout. CLI JSON mode routes console
+  logging to stderr. The wrapper now writes parsed/validated machine output to
+  `process.stdout` and declares the documented pure `machineOutput({argv})`
+  resolver (`docs/plugins/sdk-overview.md`). Captured diagnostic output was
+  reduced to exit/byte counts and field-presence flags; no raw output was collected.
+- Mounted commands honor `OPENCLAW_PROFILE` when `CLAWOS_CELL` is absent and reject
+  disagreement between explicit cell/profile/state/config selectors. Noncanonical
+  custom state is not silently redirected to the default cell.

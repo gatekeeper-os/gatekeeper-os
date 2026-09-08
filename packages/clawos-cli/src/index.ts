@@ -1,11 +1,10 @@
 /**
  * `clawos` CLI entry point.
  *
- * Phase 1 mounts the host layer only: install, cell, status, doctor, config apply, backup. Grants, approvals,
- * gatekeepers, blueprints, update and rollback belong to later phases and are absent rather than stubbed, so an
- * operator cannot invoke a command that silently does nothing.
+ * Host layer: install, cell, status, doctor, config apply, backup. Kernel administration uses paired operator RPC. Blueprint, update and rollback remain later-phase work.
  */
 
+import { kernelCommand } from "./commands/kernel.js";
 import { backup } from "./commands/backup.js";
 import { cell } from "./commands/cell.js";
 import { configApply } from "./commands/config-apply.js";
@@ -18,6 +17,7 @@ import { StepError } from "./util/proc.js";
 type Command = (args: string[], globals: GlobalOptions) => Promise<number>;
 
 const COMMANDS: Record<string, Command> = {
+  ...Object.fromEntries(["grant", "audit", "approvals", "gatekeeper", "kernel"].map(name => [name, (args: string[], globals: GlobalOptions) => kernelCommand(name, args, globals)])),
   install,
   status,
   doctor,
@@ -43,7 +43,7 @@ function usage(): number {
       "  config apply               reconcile os/config.d/*.json5 into openclaw.json",
       "  backup create|restore      archive and roll back a cell",
       "",
-      "later phases: grant, approvals, gatekeeper, audit (3-5), blueprint (6), update, rollback (7)",
+      "grant add|list|revoke; audit tail; approvals list|apply|reject|revert; gatekeeper list; kernel status",
     ].join("\n"),
   );
   return 2;
