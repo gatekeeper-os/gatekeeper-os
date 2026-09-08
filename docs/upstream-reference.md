@@ -251,6 +251,11 @@ The paired-device probe uses `GatewayClient` from the documented public
 The SDK owns device identity generation, signing, pairing-token storage and the
 wire handshake; the probe supplies isolated config auth only in memory and stores
 only identity-presence flags. No upstream database is read by OS code.
+The conformance client reuses this public SDK path: constructor options `url`, `env`, `requestTimeoutMs`,
+`hostDeps`, handshake callbacks; `request(method, params)`; `stopAndWait({ timeoutMs })`.
+Verified against `2026.9.2` public `gateway-runtime.d.ts` and its exported GatewayClient declarations.
+No CLI credential/parameter interpolation or private SDK import is used. Live transport smoke evidence is
+recorded separately from kernel enforcement acceptance.
 
 Read-only diagnosis of the pinned distribution identifies the registration path:
 `runtime-plugins-BDPJ7y4t.js:82` loads a non-activated registry handle;

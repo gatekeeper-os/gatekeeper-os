@@ -76,6 +76,9 @@ importers:
       '@clawos/shared':
         specifier: workspace:*
         version: link:../clawos-shared
+      openclaw:
+        specifier: 'catalog:'
+        version: 2026.9.2
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

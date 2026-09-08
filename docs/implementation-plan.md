@@ -903,6 +903,13 @@ Each test starts (or attaches to) a Gateway and exercises one dependency:
 | `fs-gatekeeper` | Scoped directory grant: read inside allowed, read outside blocked |
 
 The suite prints a compatibility verdict for the upstream version it ran against, which the update pipeline consumes.
+The runner uses an explicit live-test workspace and exact suite inventory. Every selected suite must appear with
+at least one assertion, all assertions passed, no skips/TODOs and successful process termination; zero exit status
+alone is not acceptance. Missing/malformed reports, empty selections, unknown names and failed connectivity deny.
+Ordinary `pnpm test` runs offline runner regressions, not the live suites. SDK transport uses the already-verified
+public `gateway-runtime` client with explicit endpoint/state selectors; credentials and structured RPC parameters
+remain in memory. Structural verdicts exclude raw assertion errors and payloads. Runner fixture passes establish
+the verifier only, never the kernel or an unimplemented conformance criterion.
 
 ---
 

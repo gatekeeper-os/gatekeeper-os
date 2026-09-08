@@ -1,2 +1,3 @@
 import { defineConfig } from "vitest/config";
-export default defineConfig({ test: { include: ["src/tests/**/*.test.ts"], testTimeout: 120_000, hookTimeout: 120_000, fileParallelism: false } });
+// Ordinary workspace tests are offline; live acceptance is selected by conformance.workspace.ts only.
+export default defineConfig({ test: { include: ["src/unit/**/*.test.ts"] } });

@@ -624,3 +624,40 @@ messages were accepted as queued, not proof of delivery or completion. Worker ou
 **UNKNOWN**. Do not concurrently replace its uncommitted work or accept skipped tests.
 Resume only after a settled handoff or restored worker ownership, then correct the security
 and evidence gaps and run live acceptance. No Phase 3 completion or tag.
+
+
+## 2026-09-07 — next task: fail-closed conformance runner verified
+
+- The kernel worker settled, but its completion delivery failed/truncated. Its worktree draft is preserved;
+  settlement is not acceptance. Continued with the next prerequisite: repairing the acceptance runner.
+- Replaced the exit-code-only verdict with exact suite selection and JSON assertion validation. Missing,
+  empty, skipped/TODO, failed, duplicated, unknown or unreported selected suites cannot pass. Abnormal
+  process termination fails. Normal workspace tests now run offline verifier regressions; live suites
+  run only in the dedicated live workspace. Raw subprocess/assertion payloads are not put in verdicts.
+- Replaced the parameterless CLI RPC shim with the previously verified public SDK GatewayClient.
+  Explicit endpoint/state, structured in-memory params, bounded handshake/request lifecycle, sanitized
+  failures, cleanup and no exposed token field. The health test uses the requested endpoint.
+- Corrected stale checklist entries: both filesystem STOP reviews were already approved. No new approval
+  is required for this runner repair. No gatekeeper surface or filesystem data-path change.
+- Host: conformance build/typecheck, **36/36 regressions**, catalog/secrets, diff/shell checks and
+  **2/2 VM-bootstrap regressions** passed. Initial unit failures had clear fixture causes: asynchronous
+  SDK import before fake-timer advancement, and pnpm resolving the parent package instead of the fixture.
+  Both were corrected; real Vitest fixtures now distinguish pass, skip, failure and empty suite.
+- Exact acceptance command: `CLAWOS_VM_DRIVER=libvirt
+  CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state
+  scripts/vm/test.sh phase-3 installed conformance-runner`.
+  Evidence: `vm-artifacts/20260908-051842-phase-3/`; harness **exit 0**, **36 passed/0 failed/0 pending**,
+  Node **24.20.0**, upstream pin **2026.9.2**. Build/typecheck/catalog/secrets and allowlisted collection pass.
+- Real installed-guest SDK smoke: health RPC, parameterized `sessions.list`, wrong-endpoint refusal,
+  sanitized failed RPC all pass (`transport.json`). All three HTTP health endpoints pass (one test).
+  The deliberately selected still-skipped `hooks-fire` suite returns **exit 1 / ok:false** as required;
+  that rejection is runner evidence, **not** a passing hooks-fire conformance result.
+- Scope is `fullPhaseAcceptance:false`, `liveKernelAcceptance:false`, `hostWritesEnabled:false`.
+  No kernel plugin install, live grants, production change, upstream modification, merge, push or phase tag.
+  The SDK may maintain device identity in the disposable guest, as in S-1; no credentials are collected.
+  The VM is stopped after collection; base/installed snapshots are not replaced.
+- Kernel changes, the other unfinished live suites and scripted scenario remain a separate unaccepted draft.
+  Next task: implement real hooks/narrowing/unknown-grant scenarios, repair live plugin installation,
+  then verify kernel authorization/revocation/observer/RPC boundaries before full Phase 3 acceptance.
+  The earlier worker route was reported as `openai/gpt-5.6-sol` → `openai/gpt-5.3-codex-spark`;
+  this is a historical worker notice, not a claim about the current parent model.

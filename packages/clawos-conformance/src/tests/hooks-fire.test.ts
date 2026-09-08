@@ -1,3 +1,7 @@
 import { describe, it } from "vitest";
-// Asserts (plan §8.3 row "hooks-fire"). TODO(phase-3).
-describe("hooks-fire", () => { it.todo("implement against a live Gateway"); });
+
+describe("hooks-fire", () => {
+  it.skip("runs registered hook chain during a scripted turn", () => {
+    // Kept for later: scripted model tool calls are still being refactored for deterministic turns.
+  });
+});

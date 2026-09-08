@@ -30,7 +30,7 @@ mode="${3:-full}"
 case "$phase:$mode" in
   *:full) install_only=0;;
   phase-1:install-only) install_only=1;;
-  phase-3:fs-boundary|phase-3:fs-enforcement) install_only=0;;
+  phase-3:fs-boundary|phase-3:fs-enforcement|phase-3:conformance-runner) install_only=0;;
   *) vm_die "unsupported acceptance mode: $phase $mode";;
 esac
 ts="$(date -u +%Y%m%d-%H%M%S)"

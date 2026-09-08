@@ -4,7 +4,9 @@
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 out="${1:?outdir}"; since="${2:-1 hour ago}"
 grab() { local name="$1"; shift; vm_call exec "$*" > "$out/$name" 2>&1 || true; }
-if [ "${3:-}:${4:-}" = phase-3:fs-boundary ]; then
+if [ "${3:-}:${4:-}" = phase-3:conformance-runner ]; then
+  vm_call pull /home/tester/phase-3-conformance-runner-evidence/ "$out/" || exit 1
+elif [ "${3:-}:${4:-}" = phase-3:fs-boundary ]; then
   # Account/resource tests only: no Gateway/config/credential collection at this checkpoint.
   vm_call pull /home/tester/phase-3-fs-boundary-evidence/ "$out/" || exit 1
 elif [ "${3:-}:${4:-}" = phase-3:fs-enforcement ]; then

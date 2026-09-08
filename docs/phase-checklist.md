@@ -56,8 +56,8 @@ Latest complete Ubuntu acceptance: `vm-artifacts/20260907-223901-phase-1/`, fres
 
 ## Phase 3 — Kernel and gatekeeper-fs
 
-- [ ] Filesystem STOP 1: operator approves concrete tool surface and URL policy — pending `plans/REVIEW-REQUESTED.md`; metadata only.
-- [ ] Filesystem STOP 2: operator approves driver approval/caching/simulation/observer stage — not reached.
+- [x] Filesystem STOP 1: operator approved the presented contract after `7642efb` ("continuew"); contract: `plans/fs-contract.md`.
+- [x] Filesystem STOP 2: operator explicitly approved after `fc8b33f` ("Approved continue"); recorded in `plans/PROGRESS.md`.
 
 - [ ] Conformance tests pass in VM: `plugin-loads`, `hooks-fire`, `tool-narrowing`, `gate-blocks`, `rpc-methods`, `cli-mounted`, `health`, `fs-gatekeeper`, `install-gate` — evidence:
 - [ ] Operator pastes a `file://` path URL → agent lists files through `gk_fs_dir_list` — evidence:

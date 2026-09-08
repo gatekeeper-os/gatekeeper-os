@@ -193,3 +193,13 @@ Scope explicitly records `fullPhaseAcceptance:false`, `liveKernelAcceptance:fals
 and `hostWritesEnabled:false`. It neither installs plugins nor invokes a Gateway.
 The historical `fs-boundary` mode now refuses execution because the data plane is no
 longer disabled; reproduce its original evidence only from checkpoint `fc8b33f`.
+
+## Phase 3 conformance-runner checkpoint
+
+`scripts/vm/test.sh phase-3 installed conformance-runner` records offline runner/transport regressions,
+a real skipped-suite rejection and the existing installed guest Gateway's public SDK transport/health probes.
+It installs no kernel plugins, creates no grants, changes no Gateway config, and does not count as kernel or full
+Phase 3 acceptance. The SDK may maintain its own guest device identity as in S-1. Collection is restricted to
+`phase-3-conformance-runner-evidence/`, containing structural verdicts, fixture-test results, versions and scope.
+A skipped required live suite must produce nonzero conformance exit status; the checkpoint explicitly asserts
+that negative result rather than reclassifying the suite as passed.
