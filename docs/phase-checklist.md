@@ -64,8 +64,12 @@ Latest complete Ubuntu acceptance: `vm-artifacts/20260907-223901-phase-1/`, fres
 - [ ] Non-operator pastes the same URL → no grant created — evidence:
 - [ ] `clawos grant revoke` → tool absent on the next turn — evidence:
 - [ ] Every step above appears in `clawos audit tail` — evidence:
-- [ ] Trusted tool policy denies a `gk_*` call with an unknown handle even when hooks are disabled — evidence:
+- [x] Trusted tool policy denies a `gk_*` call with an unknown handle even when kernel conversation hooks are disabled — evidence: `20260908-163653-phase-3`, `disabled-hooks-policy-denied` and matching policy audit.
 - [ ] `before_install` blocks a plugin from a non-allowlisted source — evidence:
+- Focused live checkpoint `20260908-163653-phase-3`: hooks-fire 4/4, tool-narrowing 5/5,
+  gate-blocks 7/7, fs-gatekeeper 7/7; 48/48 structural checks across eight actual agent turns.
+  Paired device-token RPC introduction/revocation and non-owner RPC URL denial passed.
+  CLI and Telegram-channel paths are still unverified; the combined phase gate stays open.
 - [ ] Tag `phase-3`
 
 ## Phase 4 — gatekeeper-github

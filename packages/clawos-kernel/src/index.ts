@@ -10,12 +10,8 @@ export default definePluginEntry({
   description: "Capability model, gatekeeper registry, approval queue, and audit for OpenClaw OS.",
   configSchema: buildJsonPluginConfigSchema(configSchemaJson),
   register(api) {
-    if (api.registrationMode !== "full") return; // no runtime in setup-only / cli-metadata modes (VERIFIED)
+    if (!["full", "discovery", "tool-discovery"].includes(api.registrationMode)) return;
     const kernel = new Kernel(api);
-
-    // lifecycle
-    api.on("gateway_start", () => kernel.start());
-    api.on("gateway_stop", () => kernel.stop()); // 5 s budget (VERIFIED)
 
     // host-level capability policy: deny any gk_* call whose grant handle is not active (plan §5.2).
     // NOTE (VERIFIED 2026.9.2): `matcher` is a list of canonical tool ids — wildcards are invalid — so the kernel passes the
@@ -24,7 +20,7 @@ export default definePluginEntry({
 
     // policy pipeline (hook names and result shapes VERIFIED against the SDK types)
     api.on("before_agent_run", (e, ctx) => kernel.onBeforeAgentRun(e, ctx), { priority: 1000 });
-    api.on("before_prompt_build", (e, ctx) => kernel.onBeforePromptBuild(e, ctx), { priority: 1000, requiresToolAuthority: true });
+    api.on("before_prompt_build", (e, ctx) => kernel.onBeforePromptBuild(e, ctx), { priority: 1000 });
     api.on("before_tool_call", (e, ctx) => kernel.onBeforeToolCall(e, ctx), { priority: 1000, timeoutMs: 10_000 });
     api.on("after_tool_call", (e, ctx) => kernel.onAfterToolCall(e, ctx));
     api.on("before_agent_reply", (e, ctx) => kernel.onBeforeAgentReply(e, ctx));
@@ -52,6 +48,11 @@ export default definePluginEntry({
 
     // gatekeeper tools are registered by the kernel on behalf of each gatekeeper (plan §4.3)
     kernel.registerGatekeeperTools(api);
+
+    // Discovery declarations above are inert. Only full registration owns lifecycle and operator surfaces.
+    if (api.registrationMode !== "full") return;
+    api.on("gateway_start", () => kernel.start());
+    api.on("gateway_stop", () => kernel.stop());
 
     // operator surfaces (shapes VERIFIED 2026.9.2)
     for (const [name, handler] of kernel.gatewayMethods()) api.registerGatewayMethod(name, handler, { profileAccess: "required" });

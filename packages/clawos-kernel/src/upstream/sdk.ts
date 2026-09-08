@@ -10,6 +10,7 @@ export type {
   AnyAgentTool,
 } from "openclaw/plugin-sdk/plugin-entry";
 export { definePluginEntry, buildJsonPluginConfigSchema } from "openclaw/plugin-sdk/plugin-entry";
+export { createPluginRuntimeStore } from "openclaw/plugin-sdk/runtime-store";
 
 /** Handler options for api.registerGatewayMethod (VERIFIED 2026.9.2): { req, params, client, respond, context, … }. */
 export type GatewayMethodOptions = Parameters<Parameters<import("openclaw/plugin-sdk/plugin-entry").OpenClawPluginApi["registerGatewayMethod"]>[1]>[0];

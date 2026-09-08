@@ -980,6 +980,24 @@ scaffold was one-stage despite its comment; both nonce stages now rotate/consume
 
 ### Phase 3 — Kernel (5–8 days)
 
+**2026-09-08 live integration correction:** the pinned loader requires every tool
+registered by the kernel to appear in the kernel manifest's `contracts.tools`;
+reading catalog metadata alone does not authorize registration. The manifest now
+includes the three approved filesystem names. Additional catalog vendors require
+corresponding contract projection before reload. Manifest config schemas must be
+self-contained; a relative `$ref` to `config.schema.json` is rejected. No upstream
+modification is needed. A resolved driver session retains the exact queue object
+used at `startSession()` through both dry and real calls; a fresh equivalent queue
+is not the same authority. Call execution consumes its one-shot stash separately
+from the after-hook audit record. Revocation invalidates authority before awaiting
+session cleanup.
+
+`kernel-live` now provides focused real-agent evidence for hooks, tool narrowing,
+paired operator RPC introduction, non-owner URL refusal, bounded filesystem reads,
+path escapes, revocation and unknown-handle denial with conversation hooks disabled.
+This does **not** replace the remaining CLI/install-policy/channel acceptance or
+claim the Phase 3 deliverables complete. Real file writes remain disabled.
+
 **2026-09-07 enforcement checkpoint:** both filesystem authoring stops are approved
 (STOP 1 after `7642efb`; STOP 2 by “Approved continue” after `fc8b33f`). The original
 contract remains in `plans/fs-contract.md`. Focused `fs-enforcement` VM evidence

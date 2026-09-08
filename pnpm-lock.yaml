@@ -98,6 +98,9 @@ importers:
 
   packages/clawos-kernel:
     dependencies:
+      '@clawos/gatekeeper-kit':
+        specifier: workspace:*
+        version: link:../gatekeeper-kit
       '@clawos/shared':
         specifier: workspace:*
         version: link:../clawos-shared

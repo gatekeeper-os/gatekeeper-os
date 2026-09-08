@@ -365,3 +365,15 @@ state/config paths are supported when they match the canonical home/profile path
 **Backup lifecycle correction:** pinned `gateway stop` requires `--force` in a non-interactive shell (documented lifecycle flag and observed refusal in the VM).
 `clawos backup restore --yes` already authorizes that selected-cell interruption; its stop
 call now passes the upstream flag and still refuses all state moves on a failed stop.
+
+
+### Phase 3 live loader and session integration (2026-09-08)
+
+Pinned 2026.9.2 rejects manifest-local `$ref` configuration schemas and rejects
+kernel `registerTool()` calls missing from that kernel's `contracts.tools`.
+Use the self-contained schema and declare the approved catalog tool names on the
+registering kernel, not on the no-tool driver. VM failures `20260908-163205-phase-3`
+and `20260908-163332-phase-3` establish those causes; corrected live evidence is
+`20260908-163653-phase-3`. No upstream changes. Runtime-store facades preserve the
+kit's exact queue identity, including across discovery/full registration instances.
+The kit's queue check was retained, not bypassed.

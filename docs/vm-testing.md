@@ -203,3 +203,20 @@ Phase 3 acceptance. The SDK may maintain its own guest device identity as in S-1
 `phase-3-conformance-runner-evidence/`, containing structural verdicts, fixture-test results, versions and scope.
 A skipped required live suite must produce nonzero conformance exit status; the checkpoint explicitly asserts
 that negative result rather than reclassifying the suite as passed.
+
+
+### Focused live kernel checkpoint
+
+Run `scripts/vm/test.sh phase-3 installed kernel-live` using the configured libvirt
+state directory. This resets `installed`, builds the kernel and fs driver, loads
+them into an isolated foreground Gateway on guest loopback 19100, and runs a
+local deterministic provider on guest loopback 19101. These ports are not exposed
+by the VM and are separate from the installed cell at 18789. The passive monitor
+has no tools, policies or grant-mutating surfaces. Only structure/fixture-match
+booleans are collected; no config, device credentials, prompts or tool bodies.
+The second Gateway run disables the kernel's conversation hooks and proves the
+trusted capability policy still denies unknown handles. Both processes are stopped
+by the harness. This is focused acceptance, not the full Phase 3 gate; file writes
+remain disabled. Live suites reject absent, stale, or failed scenario evidence.
+The `conformance-runner` checkpoint now tests missing live evidence rejection;
+its unit fixtures continue to cover skipped/empty/failed suite rejection.

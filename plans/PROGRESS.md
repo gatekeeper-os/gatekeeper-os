@@ -661,3 +661,68 @@ and evidence gaps and run live acceptance. No Phase 3 completion or tag.
   then verify kernel authorization/revocation/observer/RPC boundaries before full Phase 3 acceptance.
   The earlier worker route was reported as `openai/gpt-5.6-sol` → `openai/gpt-5.3-codex-spark`;
   this is a historical worker notice, not a claim about the current parent model.
+
+
+## 2026-09-08 — live kernel enforcement checkpoint verified
+
+Continued from `9355b13`; the settled worker's kernel draft was reviewed and corrected
+in the authorized Phase 3 worktree. This is a focused checkpoint, not Phase 3 completion.
+Both filesystem authoring approvals remain satisfied; no new tool surface or URL policy.
+
+**Implementation:** shared full/discovery kernel runtime, validated static catalog/live
+attachment, current cell/agent/session grant checks, parameter-bound one-shot call stash,
+exact per-session approval queue identity, separate execution/audit lifetime, retained-session
+closure on revocation, scoped grants listing, strict paired device-token operator RPCs,
+observer-aware queues. The fs driver was not changed; all real filesystem writes still deny.
+An already-authorized no-credential account may be reconstituted when resolving a persisted
+grant; restart recovery of a live grant is not claimed by this run.
+
+**Loader corrections:** embedded the existing config schema because the pinned validator
+rejects unresolved manifest-local `$ref`. Declared the three already-approved fs tools on
+the registering kernel's `contracts.tools`. Static catalog registration without that contract
+was rejected by the host. Updated implementation plan/reference with both observed facts.
+
+**VM failures retained (all exit 1, clear causes):**
+- `20260908-163205-phase-3`: unresolved manifest schema ref; before Gateway startup.
+- `20260908-163332-phase-3`: fs tool registrations dropped for missing manifest contracts.
+- `20260908-163520-phase-3`: valid fs call denied by the kit's exact queue identity check;
+  kernel incorrectly constructed fresh queues for dry/real calls. Fixed the kernel; retained
+  the kit's authority check. No failure was treated as acceptance.
+
+**Passing live command:** `CLAWOS_VM_DRIVER=libvirt
+CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state
+scripts/vm/test.sh phase-3 installed kernel-live`.
+Artifacts `vm-artifacts/20260908-163653-phase-3/`: harness/live exit **0**, pinned
+OpenClaw **2026.9.2**, Node **24.20.0**, **6/6 kernel tests**, **48/48 structural checks**,
+eight real agent turns through the local deterministic provider. The four selected suites
+pass **23/23 assertions / zero skipped**: hooks-fire 4, tool-narrowing 5, gate-blocks 7,
+fs-gatekeeper 7. Grant creation/list/read, path escape refusal, hook-ID correlation,
+successful-call/observation/revocation audit, and next-turn removal after revocation pass.
+Shared Gateway auth alone and client-supplied operator identity cannot introduce grants.
+A separate write-scoped client is verified `senderIsOwner:false`; its pasted URL creates
+no grant. This is actual non-owner RPC traffic, not a claimed Telegram channel test.
+After Gateway restart with kernel conversation hooks disabled, fs tools are visible,
+the unknown-handle call is denied, and the independent trusted-policy audit confirms why.
+
+**Evidence integrity:** passive fixture registers no tools or policies and cannot create
+grants. All model traffic stays inside the VM; only names, call IDs, lifecycle flags and
+fixture-match booleans are collected. Raw configuration, prompts, credentials and tool
+bodies are excluded. Live conformance requires matching current-run evidence, all true
+checks and no scenario failure; missing/stale reports fail, not skip.
+
+**Runner follow-up:** updating hooks-fire required replacing the old deliberately skipped
+suite assertion in `conformance-runner` with missing-current-evidence refusal. Fresh
+`installed` run `20260908-163926-phase-3` exited **0**: **36/36 runner regressions** (including
+real Vitest skipped/empty/failed fixtures), actual SDK parameterized/error/endpoint smoke,
+health 1/1 and expected missing-evidence hooks-fire failure. Both runs pass build/typecheck,
+catalog and secret scans, and allowlisted collection. Host affected typechecks, diff check,
+catalog/secrets and **2/2 VM-bootstrap regressions** pass.
+
+**Remaining:** plugin installation/projection and CLI integration; CLI grant/audit commands;
+channel-origin operator URL introduction (before_prompt_build precedes before_agent_run
+on this RPC path, so same-turn introduction/narrowing ordering needs review); live install
+gate (draft reads guessed source/hash fields rather than the typed sourcePath/request
+contract); remaining observer/egress and approval integration. Legacy full-test/script and
+other live-suite drafts are preserved but unaccepted. No full-phase green, merge/tag, push,
+production runtime invocation, production grants, upstream edits, or snapshot replacement.
+**Next:** installer/CLI integration and the remaining real Phase 3 acceptance gates.

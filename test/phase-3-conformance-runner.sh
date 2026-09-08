@@ -13,16 +13,18 @@ pnpm install --frozen-lockfile --ignore-scripts
 pnpm --filter @clawos/conformance... build
 pnpm --filter @clawos/conformance typecheck
 pnpm --filter @clawos/conformance exec vitest run --reporter=default --reporter=json --outputFile="$evidence/runner-tests.json"
-# The currently unimplemented live suite must fail, even though Vitest exits zero for it.skip.
+# Real live suites must fail without evidence from a current isolated run.
+# Skipped-suite refusal remains covered by the runner unit fixtures.
+unset CLAWOS_KERNEL_VM CLAWOS_SCENARIO_RUN CLAWOS_SCENARIO_REPORT
 set +e
-pnpm conformance --only hooks-fire --verdict "$evidence/skipped-verdict.json"
+pnpm conformance --only hooks-fire --verdict "$evidence/missing-evidence-verdict.json"
 runner_rc=$?
 set -e
-[ "$runner_rc" -ne 0 ] || { echo 'FAIL skipped suite accepted'; exit 1; }
-node - "$evidence/skipped-verdict.json" <<'NODE'
+[ "$runner_rc" -ne 0 ] || { echo 'FAIL missing live evidence accepted'; exit 1; }
+node - "$evidence/missing-evidence-verdict.json" <<'NODE'
 const fs = require('node:fs');
 const v = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-if (v.ok !== false || !v.reasons.includes('ASSERTION_NOT_RUN') || v.tests.length !== 1 || v.tests[0].id !== 'hooks-fire') process.exit(1);
+if (v.ok !== false || !v.reasons.includes('ASSERTION_FAILED') || v.tests.length !== 1 || v.tests[0].id !== 'hooks-fire') process.exit(1);
 NODE
 # Existing installed guest Gateway only. No kernel plugin installation or config rewrite.
 export OPENCLAW_STATE_DIR=/home/tester/.openclaw
@@ -33,4 +35,4 @@ pnpm exec tsx test/scripts/conformance-transport.ts "$evidence/transport.json"
 pnpm conformance --only health --verdict "$evidence/health-verdict.json"
 pnpm check:catalog
 pnpm check:secrets
-echo 'conformance-runner: PASS (focused checkpoint; kernel enforcement remains unverified)'
+echo 'conformance-runner: PASS (focused checkpoint; this mode does not exercise kernel enforcement)'

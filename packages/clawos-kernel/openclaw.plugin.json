@@ -3,15 +3,124 @@
   "name": "OpenClaw OS Kernel",
   "description": "Capability model, gatekeeper registry, approval queue, and audit for OpenClaw OS.",
   "contracts": {
-    "tools": ["os_request_access", "os_list_grants"],
-    "trustedToolPolicies": ["clawos-capability-policy"],
+    "tools": [
+      "os_request_access",
+      "os_list_grants",
+      "gk_fs_dir_list",
+      "gk_fs_file_read",
+      "gk_fs_file_write"
+    ],
+    "trustedToolPolicies": [
+      "clawos-capability-policy"
+    ],
     "gatewayMethodDispatch": [
-      "os.status", "os.grants.list", "os.grants.introduce", "os.grants.revoke",
-      "os.approvals.list", "os.approvals.apply", "os.approvals.reject", "os.approvals.revert",
-      "os.gatekeepers.list", "os.gatekeepers.connect", "os.audit.query"
+      "os.status",
+      "os.grants.list",
+      "os.grants.introduce",
+      "os.grants.revoke",
+      "os.approvals.list",
+      "os.approvals.apply",
+      "os.approvals.reject",
+      "os.approvals.revert",
+      "os.gatekeepers.list",
+      "os.gatekeepers.connect",
+      "os.audit.query"
     ]
   },
-  "activation": { "onStartup": true },
-  "configSchema": { "$ref": "./config.schema.json" },
-  "clawos": { "kernel": true, "apiVersion": 1 }
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "operators": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "channel",
+            "senderId"
+          ],
+          "properties": {
+            "channel": {
+              "type": "string"
+            },
+            "senderId": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "autoApprove": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "install": {
+        "type": "object",
+        "properties": {
+          "allowSources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allowHashes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "egress": {
+        "type": "object",
+        "properties": {
+          "denyPatterns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "audit": {
+        "type": "object",
+        "properties": {
+          "llm": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "maintenance": {
+        "type": "boolean"
+      },
+      "notify": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "clawos": {
+    "kernel": true,
+    "apiVersion": 1
+  }
 }
