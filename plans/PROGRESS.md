@@ -504,3 +504,32 @@ authoring documentation. Close with the acceptance-named merge and annotated `ph
 Phases 0–2 are complete; next is Phase 3 kernel integration and gatekeeper-fs with its operator tool-surface review.
 The 12 unimplemented live conformance tests remain explicit later-phase work. Production and the installed VM snapshot
 were not modified. To inspect this checkpoint: `cat plans/PROGRESS.md` from the Phase 2 worktree.
+
+
+## 2026-09-07 — Phase 3 filesystem contract prepared; STOP 1 pending
+
+- Verified canonical `main` and `phase-2` at `a18d69e`, clean; no prior Phase 3 implementation
+  or worktree survived the interrupted turn. Created `phase/3-kernel` in
+  `openclaw-os-worktrees/phase-3-kernel` from that checkpoint.
+- Prepared inert filesystem definitions in `packages/gatekeeper-fs/src/{tools,resources}.ts`
+  and wired the placeholder entrypoint to them. Existing list/read/write names retained;
+  closed input schemas, canonical grant handles and structured output schemas added.
+- Concrete operator review: `plans/REVIEW-REQUESTED.md`. Includes local-only file URLs,
+  explicit roots, no ambient access, relative paths, no symlink escape, encoded byte limits,
+  bounded nonrecursive listing, external-edit refusal and owner-only audience requirements.
+  These runtime requirements are proposed, not implemented or tested by schema checks.
+- Checks passed: `pnpm install --frozen-lockfile --offline --ignore-scripts` (488 cached
+  packages, no downloads); `pnpm --filter @clawos/gatekeeper-fs... build`;
+  `pnpm --filter @clawos/gatekeeper-fs typecheck`; `pnpm check:catalog`;
+  `pnpm check:secrets`; `git diff --check`. A TypeBox metadata smoke check validated all
+  three definitions, representative inputs/outputs, resource mapping, malformed-handle
+  refusal, caller identity-field rejection and description rules.
+- No new persistent tests for this metadata-only preparation. No Phase 3 acceptance run,
+  no VM snapshot restore/change, no OpenClaw CLI invocation, no live driver or kernel
+  implementation, no merge/tag, and no production changes. Pin remains `2026.9.2`.
+- Stop source: `.agents/skills/write-gatekeeper/SKILL.md` step 3 explicitly requires tool
+  surface and URL-pattern operator review before driver implementation. Earlier Continue
+  requests did not review this concrete contract. STOP 2 is not reached or waived.
+- Next: operator review of the linked contract; after approval continue the ordered kernel
+  implementation and filesystem driver up to STOP 2. Phases 0–2 remain complete;
+  every Phase 3 acceptance criterion remains open.

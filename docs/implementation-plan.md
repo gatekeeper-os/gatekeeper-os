@@ -973,6 +973,13 @@ scaffold was one-stage despite its comment; both nonce stages now rotate/consume
 
 ### Phase 3 — Kernel (5–8 days)
 
+**2026-09-07 review preparation:** the existing filesystem scaffold is not an approved driver.
+The concrete three-tool metadata and local URL/path policy are in
+`packages/gatekeeper-fs/src/{tools,resources}.ts` and `plans/REVIEW-REQUESTED.md`.
+STOP 1 from §4.6 is pending; path containment, byte limits and action semantics in that
+request are proposed implementation requirements, not properties already enforced by metadata.
+The separate STOP 2 remains required. No Phase 3 runtime acceptance is claimed.
+
 **Deliverables:** `packages/clawos-kernel` per §5, with store, registry, policy pipeline, approval queue, drainer, audit, `os.*` RPC, `openclaw os` CLI, OAuth router; `gatekeeper-fs` as the first driver (no OAuth, strategy D, trivially testable); conformance suite tests `plugin-loads`, `hooks-fire`, `tool-narrowing`, `gate-blocks`, `rpc-methods`, `cli-mounted`, `health`, `fs-gatekeeper`, `install-gate`.
 
 **Steps** (in this order, each with tests): store + migrations → registry (from catalog + `gateway_start`) → `resolveGrant` → tool registration on behalf of gatekeepers → `before_prompt_build` narrowing + trusted policy → `before_tool_call` gate with dry-run → `os_request_access` / `os_list_grants` → URL introduction in `before_agent_run` → audit → RPC → CLI → `before_agent_reply` chat commands → `message_sending` egress → `before_install` gate → `gatekeeper-fs`.
