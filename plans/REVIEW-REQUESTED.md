@@ -1,6 +1,6 @@
 # Phase 3 filesystem gatekeeper — STOP 2 review
 
-Status: **account/resource implementation prepared; verification in progress**.
+Status: **account/resource implementation verified; awaiting STOP 2 approval**.
 Branch: `phase/3-kernel`. Phases 0–2 remain complete; Phase 3 is not complete or tagged.
 
 ## Approval already recorded
@@ -41,8 +41,10 @@ this driver. The focused VM boundary run is not a substitute for Phase 3 accepta
 
 ## Verification
 
-See the current checkpoint in [PROGRESS.md](PROGRESS.md). Host typechecking and 45
-boundary tests pass; focused installed-snapshot VM verification is being prepared.
+See the current checkpoint in [PROGRESS.md](PROGRESS.md). Host typechecking and 45 boundary tests pass. Focused VM run
+`vm-artifacts/20260908-031021-phase-3/` restored `installed` and exited **0** on
+`6ac764f`: **45/45 tests**, build/typecheck/catalog/secret checks passed. Scope is
+`fs-boundary`, with `fullPhaseAcceptance:false` and `fileOperationsEnabled:false`.
 
 ## Why this is a separate stop
 

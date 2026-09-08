@@ -551,3 +551,22 @@ were not modified. To inspect this checkpoint: `cat plans/PROGRESS.md` from the 
 - Kernel runtime steps remain ordered and outstanding; no runtime plugin installation,
   grant activation, production config change, phase merge or tag. STOP 2 review is concrete
   in `plans/REVIEW-REQUESTED.md`; verify boundary first, then present it for approval.
+
+
+### STOP 2 boundary verification
+
+- Implementation commit **`6ac764f`**. Exact command:
+  `CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state scripts/vm/test.sh phase-3 installed fs-boundary`.
+- `vm-artifacts/20260908-031021-phase-3/`, restored **installed**, harness and boundary
+  exit codes **0**; JSON report verified **45/45**, no failed/pending tests. Node
+  **v24.20.0**, upstream pin **2026.9.2**. Shared/kit/fs build, fs typecheck,
+  catalog and secret checks passed. Allowlisted artifact collection passed.
+- Explicit scope: `fullPhaseAcceptance:false`, `fileOperationsEnabled:false`.
+  This did not invoke OpenClaw or install/enable runtime plugins. Introduction metadata
+  and directory identity were exercised; race-confined list/read/write remain unimplemented.
+- Host checks: focused build/typecheck/45 tests, catalog/secrets, shell syntax, diff checks
+  and **2 VM-bootstrap regression tests** passed. No need to repeat full workspace tests
+  for this isolated disabled-data-plane checkpoint; earlier phase results are not new passes.
+- STOP 2 review is `plans/REVIEW-REQUESTED.md`. Approval is needed for the skill’s later
+  responsibilities 4–7. Full kernel integration and Phase 3 conformance remain outstanding.
+  No phase merge/tag or production change. Base/installed snapshots were not replaced.
