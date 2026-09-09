@@ -5,8 +5,10 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist", "openclaw.plugin.json", "config.schema.json", "hooks", "README.md"],
+  "files": ["LICENSE", "NOTICE", "dist", "openclaw.plugin.json", "config.schema.json", "hooks", "README.md"],
   "scripts": { "build": "tsup src/index.ts --format esm --dts --clean", "test": "vitest run", "typecheck": "tsc -p tsconfig.json --noEmit" },
   "dependencies": { "typebox": "catalog:" },
-  "devDependencies": { "tsup": "catalog:", "typescript": "catalog:", "vitest": "catalog:", "@types/node": "catalog:" }
+  "devDependencies": { "tsup": "catalog:", "typescript": "catalog:", "vitest": "catalog:", "@types/node": "catalog:" },
+  "license": "MIT",
+  "repository": {"type": "git", "url": "git+https://github.com/ControlStackAI/openclaw-os.git", "directory": "packages/clawos-shared"}
 }

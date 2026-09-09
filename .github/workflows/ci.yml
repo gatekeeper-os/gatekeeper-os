@@ -13,8 +13,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run check:catalog
       - run: pnpm run check:secrets
+      - run: node scripts/check-package-licenses.mjs
       - run: pnpm typecheck
       - run: pnpm build
+      - run: node scripts/check-package-licenses.mjs --pack
       - run: pnpm test
       - name: Install pinned upstream and validate plugin metadata
         env:

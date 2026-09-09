@@ -1,0 +1,11 @@
+OpenClaw OS
+Copyright (c) 2026 ControlStackAI
+Licensed under the MIT License; see LICENSE.
+
+This is an independent integration layer for upstream OpenClaw, not a fork or
+an upstream-endorsed product. OpenClaw is installed separately and retains its
+own license and notices. Other dependencies retain their respective licenses.
+
+The project's design is inspired by Cloudflare OS gatekeepers, as described in
+the implementation plan. This notice does not imply endorsement or change the
+licenses of third-party material.

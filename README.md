@@ -40,3 +40,10 @@ scripts/vm/test.sh phase-0  # run Phase 0 acceptance inside the VM
 ```
 
 Upstream pin: see `clawos.lock.json`. Never edit upstream; see `AGENTS.md` INVARIANT 1.
+
+## License and contributions
+
+[MIT License](LICENSE) · [Contributing](CONTRIBUTING.md) · [Security policy](SECURITY.md)
+
+This is an independent project; upstream OpenClaw and third-party dependencies
+retain their own licenses. See [NOTICE](NOTICE).
