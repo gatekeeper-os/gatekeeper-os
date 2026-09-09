@@ -1034,3 +1034,18 @@ directory, which is the documented shared-baseline override.
 Phase 3 remains incomplete and untagged: this is the install-hook checkpoint
 only. Next: channel URL ordering, observer/egress/approval integration, and the
 full Phase 3 and macOS gates.
+
+## 2026-09-09 — beta packaging reconciled onto Phase 3
+
+Reconciled the preserved package metadata against `release/beta-preparation`,
+retaining Phase 3's kernel→kit dependency and removing formatting-only churn.
+Restored the release branch's SECURITY.md and CONTRIBUTING.md to this branch.
+Runtime plugin staging now requires reviewed MIT metadata and copies mandatory
+LICENSE/NOTICE files without silently accepting their absence. Both bundled
+plugins and the standalone install-policy payload retain the TypeBox notice.
+
+Checks: `pnpm --filter @clawos/cli... build`,
+`node scripts/check-package-licenses.mjs --pack` (10/10 actual tarballs, including
+nested runtime artifacts), catalog, secret scan and diff whitespace checks pass.
+This is distribution preparation, not beta or full Phase 3 acceptance. No release
+or public-visibility change. Application integration work remains separate.

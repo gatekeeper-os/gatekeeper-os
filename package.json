@@ -26,5 +26,7 @@
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
-  }
+  },
+  "license": "MIT",
+  "repository": {"type": "git", "url": "git+https://github.com/ControlStackAI/openclaw-os.git"}
 }
