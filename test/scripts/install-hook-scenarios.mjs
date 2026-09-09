@@ -52,7 +52,8 @@ try{
   const {client}=await connect({deviceToken:shared.deviceToken});
   const status=await client.request('os.status',{});
   check(phase+'-kernel-healthy',status.healthy===true);
-  const target=state+'/workspace/skills/clawos-hook-fixture/SKILL.md';
+  // Skills install into the requesting agent's workspace, so the agent segment belongs in the path.
+  const agentId='main',target=state+'/workspace/'+agentId+'/skills/clawos-hook-fixture/SKILL.md';
   if(phase==='deny'){
     check('upload-opt-in-isolated',config.skills.install.allowUploadedArchives===true&&config.security.installPolicy.enabled===true&&config.plugins.entries['clawos-kernel'].config.install.allowSources.length===0);
     const archive=readFileSync('/home/tester/install-hook-fixture.zip'),sha256=createHash('sha256').update(archive).digest('hex');
@@ -69,7 +70,7 @@ try{
     };
     let {uploadId,committed}=await commitArchive();
     check('archive-committed-not-installed',committed.sha256===sha256&&!existsSync(target));
-    const params={source:'upload',uploadId,slug:begin.slug,force:false,sha256,agentId:'main'};
+    const params={source:'upload',uploadId,slug:begin.slug,force:false,sha256,agentId};
     let before=events().length;
     const primary=await attempt(client,'skills.install',params);
     let rows=events().slice(before);

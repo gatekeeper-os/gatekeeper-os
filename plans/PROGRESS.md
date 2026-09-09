@@ -993,3 +993,44 @@ check passed. Temporary archives were discarded. This checks license packaging,
 not built runtime completeness or beta acceptance. Bundled Phase 3 plugins and
 third-party TypeBox notices must still be verified on the integrated release tree.
 No npm publication, release tag or repository visibility change occurred.
+
+## 2026-09-09 05:03 UTC — install-hook suite complete (17/17)
+
+`installed-fixture-exact` was failing because the scenario's expected path was
+wrong, not because writes were disabled. Skills install into the requesting
+agent's workspace, so the real target is
+`<state>/workspace/main/skills/clawos-hook-fixture/SKILL.md`; the test looked in
+`<state>/workspace/skills/...`. Verified directly in the VM: the installed file
+was present at the agent-scoped path with byte-exact expected content (96 bytes,
+sha256 cbe1edf9…). `realFilesystemWritesEnabled:false` in `scope.json` is inert
+evidence metadata that nothing reads, and refers to gatekeeper-fs granted-file
+writes — it does not gate skill installation. An earlier reading of that flag as
+the cause was wrong.
+
+The wrong path also made six negative assertions vacuous: `archive-committed-not-
+installed`, `primary-denies-before-hook`, `replacement-archive-committed`,
+`secondary-denies-unlisted-upload`, `allow-archive-committed` and
+`secondary-exact-operator-rule` all assert `!existsSync(target)` against a path
+that could never exist. They now test the real install location and still pass.
+Because `check()` throws on failure, the abort had also prevented
+`install-mints-no-grants` and `consumed-upload-cannot-replay` from ever running;
+both now execute and pass, so the suite reaches the 17 ids the conformance test
+requires.
+
+Acceptance `20260909-050316-phase-3` from snapshot `installed`: **17/17 checks,
+exit 0**, hook-exit 0, verdict `{"ok":true,passed:17,failed:0,skipped:0}`,
+upstream 2026.9.2. Kernel typecheck, install-policy tests, catalog and secret
+checks all passed. No runtime kernel/shared code was changed — the fix is
+confined to the test scenario path.
+
+QEMU blocker resolved as intermittent, not fatal: `qemu-img snapshot -l` fails
+and succeeds across consecutive identical invocations (attempt 2 of 3 succeeded),
+and forcing `file.aio=threads` via `--image-opts` succeeds reliably, so the
+failure is shared uid-1000 io_uring contention rather than image or host damage.
+Both `base` and `installed` snapshots are intact and unchanged. Runs from this
+worktree require `CLAWOS_VM_STATE_DIR` pointed at the phase-0-bootstrap state
+directory, which is the documented shared-baseline override.
+
+Phase 3 remains incomplete and untagged: this is the install-hook checkpoint
+only. Next: channel URL ordering, observer/egress/approval integration, and the
+full Phase 3 and macOS gates.
