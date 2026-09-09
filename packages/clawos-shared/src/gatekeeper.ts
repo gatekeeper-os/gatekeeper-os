@@ -187,7 +187,16 @@ export interface GatekeeperVendor {
   /** Describe this object without returning credentials. */
   describe(): Promise<{ title: string; description: string; icon?: string; autoProvisionsAccount?: boolean }>;
   /** Start OAuth (or equivalent). The returned URL must embed a cryptographic nonce. */
-  connectAccount(operatorId: string, opts?: { resourceTypes?: string[] }): Promise<{ url: string }>;
+  connectAccount(operatorId: string, opts?: {
+    resourceTypes?: string[];
+    /** Kernel-minted callback nonce; preserve it as the authorization URL's exact state value. */
+    state?: string;
+    /** Fixed local callback path; resolve only against the vendor's configured public origin. */
+    callbackPath?: string;
+  }): Promise<{ url: string }>;
+  /** Exchange a nonce-validated code for the bound operator. Keep credentials within the vendor;
+   * preserve provider account/PKCE checks and store the result before resolving. The kernel never sees tokens. */
+  completeConnection?(operatorId: string, opts: { code: string; state: string; resourceTypes?: string[] }): Promise<void>;
   /** For vendors that need no user auth (fs, mcp with static config). */
   createAccount?(operatorId: string): Promise<GatekeeperAccount>;
   /** Return this operator’s account, or null when disconnected. */

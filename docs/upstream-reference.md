@@ -526,3 +526,14 @@ transport claim follows from these fixtures.
 `docs/gateway/protocol.md:678`: official catalog and ClawHub sources, admin scope,
 terminal policy blocks, restart required on successful install. A skill archive
 hook run does not prove this plugin route; do not substitute the two in acceptance.
+
+
+### Phase 3 operator-command authority correction (2026-09-09)
+
+On the pin, `before_agent_reply` receives only `cleanedBody` and an agent context;
+raw sender/channel labels are not trusted owner or audience proof. The kernel claims
+`/approvals` and `/grants` using its existing finalized `reply_dispatch` authority,
+then delivers through the public host dispatcher and respects send/suppression policy.
+The late Claim hook handles only denial fallthrough. `registerCommand.requiredScopes`
+is also host-enforced, but external handlers lack the complete finalized audience
+context; no raw-label shortcut or bundled-only `exposeSenderIsOwner` is used.

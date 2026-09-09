@@ -1,4 +1,10 @@
-# Original-plan fidelity audit — 2026-09-09
+# Original-plan fidelity audit — pre-closure checkpoint
+
+**Current reconciliation:** the final `20260909-231728-phase-3` candidate closes
+the Phase 3 implementation gaps and passes every automated gate, retaining only
+Matt’s explicit Telegram validation deferral. See [Phase 3 acceptance](phase-3-acceptance.md).
+The historical findings below describe `cf31e0c` before this closure; their
+"incomplete" and "remaining" labels are not the current milestone status.
 
 Basis: supplied `docs/implementation-plan.md` in the parent agent kit, the tracked
 living plan (§4.7, §5, §9), phase checklist, source code and actual saved artifacts.

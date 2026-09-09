@@ -7,22 +7,23 @@ import { Kernel } from "./kernel.js";
 
 // Driver and SDK transport are test doubles; kernel store, grants and hook handlers are real.
 // This does not claim live channel dispatch or upstream hook ordering acceptance.
-const fixture=vi.hoisted(()=>({call:vi.fn(),close:vi.fn(),introduce:vi.fn(),authority:vi.fn()}));
+const fixture=vi.hoisted(()=>({call:vi.fn(),close:vi.fn(),introduce:vi.fn(),authority:vi.fn(),apply:vi.fn(),reject:vi.fn(),notify:vi.fn()}));
 vi.mock("./upstream/sdk.js",()=>({createPluginRuntimeStore:()=>{let runtime:unknown;return{
   tryGetRuntime:()=>runtime,getRuntime:()=>{if(!runtime)throw new Error("Kernel unavailable");return runtime;},
   setRuntime:(value:unknown)=>{runtime=value;},clearRuntime:()=>{runtime=undefined;},
 };}}));
+vi.mock("./upstream/notify.js",()=>({sendOperatorDigest:fixture.notify}));
 vi.mock("./upstream/channel-authority.js",()=>({resolveChannelTurnAuthority:fixture.authority}));
 vi.mock("./registry.js",()=>({instanceId:()=>"fixture-instance",Registry:class{
   tools=[{name:"gk_test_read",description:"Read a fixture",parameters:{type:"object"}}];
   entries=new Map([["test",{tools:[{name:"gk_test_read",resourceType:"item"}],resources:[{type:"item",observerStrategy:"private-only"}]}]]);
   resources(){return[{entry:{vendor:"test"},resource:{urlPattern:"https://fixture.invalid/:id"}}];}
   introduce(...args:unknown[]){fixture.introduce(...args);return Promise.resolve({resource:{type:"item",title:"Fixture"},resourceKey:"fixture"});}
-  openSession(){return Promise.resolve({session:{call:fixture.call,close:fixture.close},instanceId:"fixture-instance"});}
+  openSession(){return Promise.resolve({session:{call:fixture.call,close:fixture.close},instanceId:"fixture-instance",gatekeeper:{applyAction:fixture.apply,rejectAction:fixture.reject}});}
   toolNames(){return["gk_test_read"];}
 }}));
 
-let kernel:Kernel;
+let kernel:Kernel;let api:Partial<OpenClawPluginApi>;
 const ctx={agentId:"agent-a",sessionKey:"agent:agent-a:private",runId:"run-a",channel:"fixture"};
 async function dispatch(senderId="owner",senderIsOwner=true){
   fixture.authority.mockReturnValue({...ctx,senderId,senderIsOwner,privateAudience:true,text:"Read https://fixture.invalid/item"});
@@ -39,9 +40,9 @@ beforeEach(async()=>{
   vi.stubEnv("OPENCLAW_STATE_DIR",mkdtempSync(join(tmpdir(),"clawos-kernel-hooks-")));
   vi.stubEnv("CLAWOS_CELL","hook-tests");
   fixture.call.mockReset();fixture.close.mockReset();fixture.introduce.mockReset();fixture.authority.mockReset();
-  fixture.close.mockResolvedValue(undefined);
+  fixture.close.mockResolvedValue(undefined);fixture.apply.mockReset().mockResolvedValue(undefined);fixture.reject.mockReset().mockResolvedValue(undefined);fixture.notify.mockReset().mockResolvedValue(undefined);
   fixture.call.mockImplementation(async(_tool,_params,call)=>call.dryRun?{kind:"observation",description:{title:"Read",description:""}}:{content:[{type:"text",text:"fixture"}]});
-  const api:Partial<OpenClawPluginApi>={pluginConfig:{operators:[{channel:"fixture",senderId:"owner"}],egress:{denyPatterns:["blocked-marker"]}}};
+  api={pluginConfig:{operators:[{channel:"fixture",senderId:"owner"}],egress:{denyPatterns:["blocked-marker"]}}};
   kernel=new Kernel(api as OpenClawPluginApi);
   await kernel.start();
 });
@@ -122,4 +123,34 @@ describe("kernel channel-policy regression boundaries",()=>{
     expect(await kernel.onMessageSending({to:"peer",content:"blocked-marker"},{channelId:"fixture",sessionKey:ctx.sessionKey})).toMatchObject({cancel:true});
     expect(await kernel.onMessageSending({to:"peer",content:"safe response"},{channelId:"fixture",sessionKey:ctx.sessionKey})).toBeUndefined();
   });
+});
+
+async function rpc(method:string,params:Record<string,unknown>={}){let output:unknown;let ok=false;const handler=kernel.gatewayMethods().find(([name])=>name===method)?.[1];if(!handler)throw new Error("Missing RPC");await handler({params,client:{connect:{role:"operator",scopes:["operator.admin"],device:{id:"paired-operator"}},isDeviceTokenAuth:true},respond:(success:boolean,value:unknown)=>{ok=success;output=value;}} as Parameters<typeof handler>[0]);return{ok,output};}
+it("binds action authority at submission and rechecks it on operator apply",async()=>{
+  const {handle}=await grant();const resolved=await kernel.resolveGrant(ctx.agentId,ctx.sessionKey,handle);
+  await resolved.queue.submitAction(1,{title:"Fixture",description:"",implementsRevert:false});
+  expect((await rpc("os.approvals.list")).output).toMatchObject({actions:[{id:1,status:"pending"}],requests:[]});
+  await rpc("os.grants.revoke",{handle});
+  expect((await rpc("os.approvals.apply",{ids:[1]})).ok).toBe(false);expect(fixture.apply).not.toHaveBeenCalled();
+});
+it("persists request target and grants only after a paired operator decision",async()=>{
+  const p={url:"https://fixture.invalid/item",reason:"Need fixture"};
+  await kernel.onBeforeToolCall({toolName:"os_request_access",toolCallId:"request",params:p},{...ctx,toolName:"os_request_access"});
+  await kernel.requestAccess("request",p);expect(fixture.introduce).not.toHaveBeenCalled();
+  expect((await rpc("os.approvals.list")).output).toMatchObject({actions:[],requests:[{id:1,agentId:ctx.agentId}]});
+  expect((await rpc("os.requests.approve",{ids:[1]})).ok).toBe(true);
+  expect((await kernel.onBeforePromptBuild({prompt:"Next",messages:[]},ctx)).appendContext).toContain("You now have access");
+  expect((await rpc("os.requests.approve",{ids:[1]})).ok).toBe(false);
+});
+it("denies shared grant minting even for paired operators",async()=>{
+  expect((await rpc("os.grants.introduce",{agentId:"agent-a",url:"https://fixture.invalid/item",audience:"shared"})).ok).toBe(false);
+  expect(fixture.introduce).not.toHaveBeenCalled();
+});
+it("batches an operator digest once per run, never sends resource descriptions",async()=>{
+  api.pluginConfig={...api.pluginConfig,notify:{channel:"fixture",target:"operator"}};
+  const {handle}=await grant();const resolved=await kernel.resolveGrant(ctx.agentId,ctx.sessionKey,handle);
+  await resolved.queue.submitAction(1,{title:"Private fixture",description:"private body",implementsRevert:false});
+  await resolved.queue.submitAction(2,{title:"Private fixture",description:"private body",implementsRevert:false});
+  await kernel.onAgentEnd({messages:[],success:true},ctx);await kernel.onAgentEnd({messages:[],success:true},ctx);
+  expect(fixture.notify).toHaveBeenCalledExactlyOnceWith({channel:"fixture",target:"operator"},2,0);
 });

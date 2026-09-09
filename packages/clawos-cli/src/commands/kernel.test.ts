@@ -8,7 +8,7 @@ describe('operator command boundary', () => {
   it.each([
     ['add', 'file:///example/'], ['add', '--agent', 'ops', '--agent', 'stranger', 'file:///example/'],
     ['add', '--agent', 'ops', 'https://user:password@example.org/'], ['add', '--agent', 'ops', 'https://example.org/?secret=value'],
-    ['add', '--agent', 'ops', '--audience', 'public', 'file:///example/'], ['revoke', 'grant:abcdefgh', 'grant:12345678'],
+    ['add', '--agent', 'ops', '--audience', 'public', 'file:///example/'], ['add', '--agent', 'ops', '--audience', 'shared', 'file:///example/'], ['revoke', 'grant:abcdefgh', 'grant:12345678'],
     ['revoke', 'not-a-grant'], ['list', '--title', 'ignored'], ['list', '--agent'],
   ])('rejects ambiguous or unsafe grant input %j', (...args) => { expect(() => kernelRequest('grant', args)).toThrow(); });
   it('keeps list filters and revocation exact', () => {
@@ -25,4 +25,11 @@ describe('operator command boundary', () => {
     expect(kernelRequest('approvals', ['reject', '1,2']).params).toEqual({ ids: [1, 2] });
     expect(() => kernelRequest('approvals', ['delete', 'all'])).toThrow();
   });
+});
+
+it('connects only a catalog vendor and keeps request decisions explicit',()=>{
+  expect(kernelRequest('gatekeeper',['connect','fs'])).toEqual({method:'os.gatekeepers.connect',params:{vendor:'fs'}});
+  expect(()=>kernelRequest('gatekeeper',['connect','https://attacker.invalid'])).toThrow();
+  expect(kernelRequest('approvals',['grant','1']).method).toBe('os.requests.approve');
+  expect(kernelRequest('approvals',['reject-request','all']).method).toBe('os.requests.reject');
 });

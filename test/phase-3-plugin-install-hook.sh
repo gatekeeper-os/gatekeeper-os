@@ -37,6 +37,7 @@ start_gateway(){
 }
 start_gateway
 node test/scripts/plugin-install-hook-scenarios.mjs
+pnpm conformance --only plugin-install-hook --verdict "$EV/hook-verdict.json"
 pnpm check:catalog
 pnpm check:secrets
-printf 'plugin-install-hook: PASS (actual Gateway plugins.install denial)\n'
+printf 'plugin-install-hook: PASS (actual nonofficial Gateway plugins.install denial)\n'

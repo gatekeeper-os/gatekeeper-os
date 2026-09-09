@@ -56,10 +56,12 @@ Latest complete Ubuntu acceptance: `vm-artifacts/20260907-223901-phase-1/`, fres
 
 ## Phase 3 — Kernel and gatekeeper-fs
 
-Latest combined regression: `vm-artifacts/20260909-214819-phase-3/`, installed snapshot,
-exit 0; 47/47 named-suite checks, 17/17 skill-hook checks, 51/51 ingress checks
-(nine actual turns), with all five structural source-report directories retained.
-This passes the combined suite set, **not all Phase 3 deliverables**.
+Final automated acceptance: `vm-artifacts/20260909-231728-phase-3/`, fresh installed
+snapshot, exit 0; **78/78 conformance**, **71/71 ingress/OAuth/chat/egress** and
+**98/98 kernel-live** checks, 23 actual model turns, all six checkpoint reports
+retained. Guest kernel93/CLI117 and host workspace410 tests pass. Phase 3 closes
+under the explicit Telegram-only validation deferral, after candidate CI/merge.
+[Full reconciliation and limits](../plans/phase-3-acceptance.md).
 
 - [x] Filesystem STOP 1: operator approved the presented contract after `7642efb` ("continuew"); contract: `plans/fs-contract.md`.
 - [x] Filesystem STOP 2: operator explicitly approved after `fc8b33f` ("Approved continue"); recorded in `plans/PROGRESS.md`.
@@ -73,7 +75,7 @@ This passes the combined suite set, **not all Phase 3 deliverables**.
 - [x] Fresh-base installer regression with bundled plugins: **25/25**, `vm-artifacts/20260909-002725-phase-1/`; two-cell isolation, backup/restore and post-restore health pass.
 - [x] Source-packaged kernel/fs project into cell-local state with no implicit grants; reinstall is a no-op — `vm-artifacts/20260909-001359-phase-3/`, install-again and scenario evidence, healthy paired kernel/fs status.
 - [x] Primary install policy blocks actual unlisted CLI installs, permits an explicitly reviewed source, and fails closed when unavailable — `vm-artifacts/20260909-003432-phase-3/`, `install-verdict.json` **8/8**, `scenarios.json` **12/12** structural checks; CLI114/policy4 guest tests pass. The outage case uses a fresh allowed fixture and verifies the policy error.
-- [ ] Secondary `before_install` blocks a **plugin** from a non-allowlisted source in a Gateway-backed flow. Prior `20260909-195747` / `20260909-201704` reports exercise `skills.install` only; their 17 passing checks do not satisfy this criterion.
+- [x] Secondary `before_install` blocks a **plugin** from a non-allowlisted source in a Gateway-backed flow: final combined `plugin-install-hook` 14/14 with community `mainctrl@1.1.0`, exact staged identity, terminal real kernel denial and no config/install/grant mutation. The separate skill fixture is not substituted.
 - Focused live checkpoint `20260908-163653-phase-3`: hooks-fire 4/4, tool-narrowing 5/5,
   gate-blocks 7/7, fs-gatekeeper 7/7; 48/48 structural checks across eight actual agent turns.
   Paired device-token RPC introduction/revocation and non-owner RPC URL denial passed.
@@ -82,8 +84,8 @@ This passes the combined suite set, **not all Phase 3 deliverables**.
   see [plan fidelity audit](../plans/plan-fidelity-audit.md) for remaining deliverables.
 - [ ] Real Slack transport deployment canary admits the owner and rejects an unallowlisted identity. This is an added deployment check, not an original-plan criterion or permission to reuse production ALINA credentials. Disposable test app/workspace not yet supplied.
 - [ ] Real Telegram manual scenario — **DEFERRED, not passed**, explicitly authorized 2026-09-09; [deferral](../plans/telegram-validation-deferred.md).
-- [ ] Remaining §9 Phase 3 deliverables and live observer/egress/approval integration verified — [audit](../plans/plan-fidelity-audit.md).
-- [ ] Tag `phase-3`
+- [x] Remaining §9 Phase 3 infrastructure delivered and its scoped integration verified — [acceptance](../plans/phase-3-acceptance.md). Real GitHub synchronous approval and Phase 5 UX retain their later-phase gates.
+- Milestone tag: [`phase-3`](https://github.com/ControlStackAI/openclaw-os/tree/phase-3), published only after required CI and merge.
 
 ## Phase 4 — gatekeeper-github
 

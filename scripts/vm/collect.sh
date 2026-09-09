@@ -8,7 +8,7 @@ if [ "${3:-}:${4:-}" = phase-3:full ]; then
   vm_call pull /home/tester/phase-3-combined-evidence/ "$out/" || exit 1
   # Keep the structural source reports, not just the aggregator's totals. Never
   # collect live cell state, credentials, model bodies, or raw Gateway logs.
-  for checkpoint in install conformance-runner kernel-live install-hook channel-ingress; do
+  for checkpoint in install conformance-runner kernel-live install-hook plugin-install-hook channel-ingress; do
     mkdir -p "$out/checkpoints/$checkpoint"
     vm_call pull "/home/tester/phase-3-$checkpoint-evidence/" "$out/checkpoints/$checkpoint/" || exit 1
   done

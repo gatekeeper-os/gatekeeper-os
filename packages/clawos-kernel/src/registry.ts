@@ -1,9 +1,10 @@
 /** Catalog-backed gatekeeper registry with checked live runtime attachment. */
 import { readFileSync, realpathSync } from "node:fs";
 import { Value } from "typebox/value";
-import { GatekeeperToolDefSchema, SupportedResourceSchema, type ApprovalQueue, type Gatekeeper, type GatekeeperSession, type GatekeeperToolDef, type Grant, type SupportedResource } from "@clawos/shared";
+import { GatekeeperToolDefSchema, SupportedResourceSchema, type ApprovalQueue, type Gatekeeper, type GatekeeperSession, type GatekeeperToolDef, type GatekeeperVendor, type Grant, type SupportedResource } from "@clawos/shared";
 import { gatekeeperRuntimeSlot } from "@clawos/gatekeeper-kit";
 
+/** Enabled gatekeeper identity and static, schema-checked catalog metadata. */
 export interface CatalogEntry { pluginId:string; vendor:string; apiVersion:1; root:string; tools:GatekeeperToolDef[]; resources:SupportedResource[]; enabled?:boolean; }
 interface CatalogFile { version:1; gatekeepers:CatalogEntry[]; }
 /** Runtime binding retained only for the duration of a resolved grant session. */
@@ -36,13 +37,14 @@ export class Registry {
     if(!runtime||runtime.pluginId!==entry.pluginId||runtime.vendor!==entry.vendor||runtime.apiVersion!==entry.apiVersion||realpathSync(runtime.root)!==entry.root||realpathSync(runtime.stateDir)!==realpathSync(this.stateDir))throw new Error("Gatekeeper unavailable.");
     return {entry,vendor:runtime.getVendor()};
   }
+  /** Resolve a live vendor for operator-only account setup, never for resource access. */
+  connection(vendorName:string):GatekeeperVendor{return this.live(vendorName).vendor;}
   /** Resolve account and resource afresh; this is called only by Kernel.resolveGrant. */
   async openSession(grant:Grant,queue:ApprovalQueue):Promise<OpenedSession>{
     const {vendor}=this.live(grant.vendor);const account=await vendor.getAccount(grant.operatorId)??await vendor.createAccount?.(grant.operatorId);if(!account)throw new Error("Gatekeeper unavailable.");
     const resolved=await account.getGatekeeperFor(grant.resourceKey);if(resolved.resource.type!==grant.resourceType||resolved.resourceKey!==grant.resourceKey)throw new Error("Gatekeeper unavailable.");
     return {session:await resolved.gatekeeper.startSession(queue),gatekeeper:resolved.gatekeeper,instanceId:instanceId(grant)};
   }
-  async resolveResource(grant:Grant):Promise<Gatekeeper>{const {vendor}=this.live(grant.vendor);const account=await vendor.getAccount(grant.operatorId)??await vendor.createAccount?.(grant.operatorId);if(!account)throw new Error("Gatekeeper unavailable.");const resolved=await account.getGatekeeperFor(grant.resourceKey);if(resolved.resourceKey!==grant.resourceKey||resolved.resource.type!==grant.resourceType)throw new Error("Gatekeeper unavailable.");return resolved.gatekeeper;}
   /** Validate an introduction through the operator's live account. */
   async introduce(vendorName:string,operatorId:string,url:string){
     const {entry,vendor}=this.live(vendorName);let account=await vendor.getAccount(operatorId);if(!account&&vendor.createAccount)account=await vendor.createAccount(operatorId);if(!account)throw new Error("Gatekeeper account unavailable.");
@@ -51,4 +53,5 @@ export class Registry {
   /** Return safe health metadata without exposing resource identities. */
   health(){return [...this.entries.values()].map(entry=>{try{this.live(entry.vendor);return {vendor:entry.vendor,healthy:true,accounts:0};}catch{return {vendor:entry.vendor,healthy:false,accounts:0};}});}
 }
+/** Stable cell-local resource/account key; never an authorization decision on its own. */
 export function instanceId(g:Grant):string{return `${g.vendor}\u0000${g.operatorId}\u0000${g.resourceKey}`;}

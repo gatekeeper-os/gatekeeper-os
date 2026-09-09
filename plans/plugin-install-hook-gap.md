@@ -1,3 +1,21 @@
+# Plugin-install hook evidence — gap closed
+
+The historical diagnostic below identified a fixture mismatch, not an upstream defect.
+The replacement community `mainctrl@1.1.0` fixture passes **14/14** actual Gateway
+scenarios and **14/14** conformance checks in the focused run
+`../phase-3-plugin-hook-fixture/vm-artifacts/20260909-225637-phase-3/`.
+It is also included in the successful six-checkpoint parent combined run
+`vm-artifacts/20260909-231055-phase-3/` (78 conformance + 71 channel checks, exit 0).
+The passive monitor verifies exact staged package/version/manifest/entrypoints;
+primary policy is independently allowed and the real kernel secondary policy denies.
+No plugin installation, grants, config mutation or execution occurs.
+
+See [fixture provenance and trust distinction](../test/fixtures/plugin-install-hook-monitor/README.md).
+Official-source exemption and nonofficial ClawHub source-confirmation trust are
+different decisions. No upstream patch, private API, repin or policy waiver was needed.
+
+## Retained earlier diagnostic
+
 # Plugin-specific install-hook evidence gap — 2026-09-09
 
 The original checklist requires a real plugin install denied by the secondary

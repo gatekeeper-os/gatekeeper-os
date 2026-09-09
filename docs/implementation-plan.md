@@ -474,7 +474,7 @@ Note the ordering subtlety: `before_tool_call` runs *before* the tool executes, 
 
 **Auto-approval.** An action is auto-applied only when *both* the operator has a rule for its `actionKind.tag` (`os/config.d/…` → `clawos.autoApprove: ["github.issue.comment"]`) *and* the gatekeeper marked that specific action `autoApprovable: true`. The `AutoApprovalDrainer` runs on `agent_end` and on a 30 s timer: per gatekeeper instance, it applies eligible pending actions in id order, single-flight, stopping at the first non-eligible action (so ordering is preserved).
 
-**Surfaces for the human.** `clawos approvals` (CLI/TUI table), a chat command `/approvals` handled by the kernel's `before_agent_reply` Claim hook (so it never reaches the model), and the OpenClaw Control UI via a `registerControlUiDescriptor()` panel in v1.1.
+**Surfaces for the human.** `clawos approvals` (CLI/TUI table), a chat command `/approvals` claimed by authenticated `reply_dispatch` (so it never reaches the model; the pinned `before_agent_reply` context has no trusted owner/audience facts, so it only denies command fallthrough), and the OpenClaw Control UI via a `registerControlUiDescriptor()` panel in v1.1.
 
 ### 4.6 Authoring a gatekeeper (the `write-gatekeeper` skill, ported)
 
@@ -598,7 +598,7 @@ export default definePluginEntry({
     api.on("before_prompt_build",(e, ctx) => kernel.onBeforePromptBuild(e, ctx),{ priority: 1000 });
     api.on("before_tool_call",   (e, ctx) => kernel.onBeforeToolCall(e, ctx),   { priority: 1000, timeoutMs: 10_000 });   // matcher = explicit tool ids only (no wildcards, VERIFIED) → filter by name inside
     api.on("after_tool_call",    (e, ctx) => kernel.onAfterToolCall(e, ctx));
-    api.on("before_agent_reply", (e, ctx) => kernel.onBeforeAgentReply(e, ctx)); // claims "/approvals", "/grants" commands
+    api.on("before_agent_reply", (e, ctx) => kernel.onBeforeAgentReply(e, ctx)); // denies untrusted command fallthrough; authenticated reply_dispatch claims commands
     api.on("message_sending",    (e, ctx) => kernel.onMessageSending(e, ctx));   // egress policy (DLP rules)
     api.on("before_install",     (e)      => kernel.onBeforeInstall(e));         // supply-chain allowlist
     api.on("agent_end",          (e, ctx) => kernel.onAgentEnd(e, ctx));         // audit + drain auto-approvals
@@ -1056,18 +1056,21 @@ integration and the ordered live acceptance steps below remain outstanding.
 
 **Deliverables:** `packages/clawos-kernel` per §5, with store, registry, policy pipeline, approval queue, drainer, audit, `os.*` RPC, `openclaw os` CLI, OAuth router; `gatekeeper-fs` as the first driver (no OAuth, strategy D, trivially testable); conformance suite tests `plugin-loads`, `hooks-fire`, `tool-narrowing`, `gate-blocks`, `rpc-methods`, `cli-mounted`, `health`, `fs-gatekeeper`, `install-gate`.
 
-**Steps** (in this order, each with tests): store + migrations → registry (from catalog + `gateway_start`) → `resolveGrant` → tool registration on behalf of gatekeepers → `before_prompt_build` narrowing + trusted policy → `before_tool_call` gate with dry-run → `os_request_access` / `os_list_grants` → URL introduction in authenticated `reply_dispatch` → audit → RPC → CLI → `before_agent_reply` chat commands → `message_sending` egress → `before_install` gate → `gatekeeper-fs`.
+**Steps** (in this order, each with tests): store + migrations → registry (from catalog + `gateway_start`) → `resolveGrant` → tool registration on behalf of gatekeepers → `before_prompt_build` narrowing + trusted policy → `before_tool_call` gate with dry-run → `os_request_access` / `os_list_grants` → URL introduction in authenticated `reply_dispatch` → audit → RPC → CLI → authenticated `reply_dispatch` chat commands (`before_agent_reply` denial fallback) → `message_sending` egress → `before_install` gate → `gatekeeper-fs`.
 
 **Acceptance.** Conformance tests above pass against the pinned upstream. Manual: in a Telegram DM to a dev cell, the operator pastes a path URL `file:///home/matt/projects/foo` → agent lists files via `gk_fs_dir_list`; a second, non-operator sender cannot introduce; `clawos grant revoke` makes the tool disappear next turn; every step appears in `clawos audit tail`.
 
-**2026-09-09 fidelity correction:** the original Telegram manual scenario above
-remains the specification, but Matt explicitly deferred its execution; it is not
-passed or replaced by synthetic ingress. Slack was added as a deployment canary,
-not an original Phase 3 requirement or a substitute waiver. The combined Linux
-suite verdict is not full phase acceptance: its secondary install fixture uses
-`skills.install`, not `plugins.install`, and OAuth/connect, drainer and chat-command
-entry points remain placeholders. See `plans/plan-fidelity-audit.md` for the
-source-to-evidence reconciliation; do not advance or tag on aggregate counts alone.
+**2026-09-09 fidelity closure:** the original Telegram manual scenario remains
+the specification, but Matt explicitly deferred its execution; it is not passed
+or replaced by synthetic ingress. The final automated Phase 3 candidate
+`20260909-231728-phase-3` passes 78 conformance, 71 channel/OAuth/chat/egress and
+98 kernel-live checks, including actual plugin secondary denial and filesystem
+simulation/rejection. OAuth/connect, drainer, approval decisions and command
+entry points are implemented, not placeholders. See `plans/phase-3-acceptance.md`
+for source-to-evidence reconciliation, explicit corrections and retained limits.
+Phase 3 may close under the Telegram deferral after candidate CI/merge/tag; real
+GitHub and Phase 5 UX acceptance remain in their original later phases. Slack was
+an added deployment canary, not an original Phase 3 gate.
 
 **Owner-only audience enforcement:** upstream owner authorization answers who is
 speaking, not who can read the reply. External channel turns must also have a

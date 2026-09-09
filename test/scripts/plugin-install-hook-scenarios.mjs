@@ -1,5 +1,5 @@
-// Known negative control: trusted official paths may skip the secondary hook.
-// Retained to reproduce the gap; a nonofficial fixture is still needed for acceptance.
+// Real nonofficial registry plugin through Gateway plugins.install.
+// Exact package/version is a fixture, not a floating registry selection.
 // Public SDK only. No direct hook invocation, upstream database access, or returned bodies in evidence.
 import { createRequire } from 'node:module';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
@@ -38,7 +38,7 @@ function shape(value){
 }
 function failedAttempt(value){
   const diagnostic=diagnosticFields(value).join(' ');
-  return{ok:false,policy:/policy/i.test(diagnostic),cellPolicy:/not authorized by cell policy/i.test(diagnostic),categories:Object.entries({unknownCatalog:/unknown official plugin catalog entry/i,network:/fetch|network|timed? ?out|ENOTFOUND|ECONN/i,compatibility:/incompatible|requires.*version|host version/i,consent:/capabilit|consent|acknowledg/i,config:/config|Nix mode|mutation/i,notFound:/not found|404/i}).filter(([,pattern])=>pattern.test(diagnostic)).map(([name])=>name),shape:shape(value)};
+  return{ok:false,policy:/policy/i.test(diagnostic),cellPolicy:/not authorized by cell policy/i.test(diagnostic),categories:Object.entries({unknownCatalog:/unknown official plugin catalog entry/i,network:/fetch|network|timed? ?out|ENOTFOUND|ECONN/i,compatibility:/incompatible|requires.*version|host version/i,packaging:/requires compiled runtime output|plugin packaging issue/i,consent:/capabilit|consent|acknowledg/i,config:/config|Nix mode|mutation/i,notFound:/not found|404/i}).filter(([,pattern])=>pattern.test(diagnostic)).map(([name])=>name),shape:shape(value)};
 }
 async function attempt(client,method,params){
   try{
@@ -54,13 +54,13 @@ try{
   check('plugin-secondary-deny-all',config.plugins.entries['clawos-kernel'].config.install.allowSources.length===0);
   const unchanged=()=>readFileSync(process.env.OPENCLAW_CONFIG_PATH,'utf8');
   const initial=unchanged();
+  const fixture=JSON.parse(readFileSync('test/fixtures/plugin-install-hook-monitor/candidate.json','utf8'));
   const catalog=await client.request('plugins.list',{});
-  const candidate=catalog.plugins?.find(p=>p.installed===false&&p.origin==='official'&&p.install?.source==='official'&&/^@openclaw\/[a-z0-9-]{1,80}$/.test(p.packageName??'')&&/^[a-z0-9-]{1,80}$/.test(p.id));
-  report.catalog={mutationAllowed:catalog.mutationAllowed===true,officialCandidates:(catalog.plugins??[]).filter(p=>p.installed===false&&p.origin==='official').length};save();
-  check('plugin-catalog-candidate',catalog.mutationAllowed===true&&!!candidate);
-  const version=JSON.parse(readFileSync('clawos.lock.json','utf8')).upstream.version;
-  const params={source:'clawhub',packageName:candidate.packageName,version};
-  report.pluginId=candidate.id;report.packageName=candidate.packageName;report.version=version;save();
+  const candidate={id:fixture.pluginId,packageName:fixture.packageName};
+  check('plugin-catalog-mutation-allowed',catalog.mutationAllowed===true);
+  check('plugin-initially-not-installed',!catalog.plugins.some(p=>p.id===candidate.id&&p.installed===true)&&!existsSync(state+'/extensions/'+candidate.id));
+  const params={source:'clawhub',packageName:candidate.packageName,version:fixture.version};
+  report.pluginId=candidate.id;report.packageName=candidate.packageName;report.version=fixture.version;report.fixtureArtifactSha256=fixture.artifactSha256;save();
   let before=events().length;
   const denied=await attempt(client,'plugins.install',params);
   let rows=events().slice(before);
@@ -72,13 +72,14 @@ try{
   before=events().length;
   const deniedSecondary=await attempt(client,'plugins.install',params);
   rows=events().slice(before);
-  report.secondary={ok:deniedSecondary.ok,policy:deniedSecondary.policy,cellPolicy:deniedSecondary.cellPolicy,shape:deniedSecondary.shape,categories:deniedSecondary.categories,stages:rows.map(r=>r.stage),pluginMaterial:rows.some(r=>r.targetPlugin)};save();
+  report.secondary={ok:deniedSecondary.ok,policy:deniedSecondary.policy,cellPolicy:deniedSecondary.cellPolicy,shape:deniedSecondary.shape,categories:deniedSecondary.categories,stages:rows.map(r=>r.stage),pluginMaterial:rows.some(r=>r.targetPlugin),exactMaterial:rows.some(r=>r.exactMaterial)};save();
   check('plugin-primary-allows',rows.some(r=>r.stage==='primary'&&r.allow)&&!rows.some(r=>r.stage==='primary'&&!r.allow));
   check('plugin-typed-before-install',rows.some(r=>r.stage==='before'&&r.targetPlugin&&r.pluginRequest));
+  check('plugin-exact-staged-material',rows.some(r=>r.stage==='before'&&r.exactMaterial));
   check('plugin-secondary-denies',!deniedSecondary.ok&&deniedSecondary.cellPolicy);
   check('plugin-block-terminal',!rows.some(r=>r.stage==='after'));
   check('plugin-secondary-no-config-mutation',unchanged()===initial);
-  check('plugin-not-installed',!(await client.request('plugins.list',{})).plugins.some(p=>p.id===candidate.id&&p.installed===true));
+  check('plugin-not-installed',!(await client.request('plugins.list',{})).plugins.some(p=>p.id===candidate.id&&p.installed===true)&&!existsSync(state+'/extensions/'+candidate.id));
   check('plugin-mints-no-grants',(await client.request('os.grants.list',{})).length===0);
 }catch(e){report.failure=/^[a-z-]+$/.test(e.message)?e.message:'scenario-failed';save();console.error('FAIL '+report.failure);process.exitCode=1;}
 finally{for(const client of clients)await client.stopAndWait({timeoutMs:5000});save();}

@@ -23,7 +23,7 @@ export function kernelRequest(command: string, args: string[]): Request {
   };
   if (command === 'grant' && action === 'add') {
     exact(['agent', 'title', 'audience'], 1);
-    if (!params.agent || (params.audience && !['owner-only', 'shared'].includes(String(params.audience)))) throw new StepError('grant add requires --agent and a valid audience');
+    if (!params.agent || (params.audience && params.audience !== 'owner-only')) throw new StepError('grant add requires --agent and a valid audience');
     try { const url = new URL(positional[0]!); if (url.username || url.password || url.search || url.hash) throw new Error(); }
     catch { throw new StepError('Resource URL must be absolute and contain no credentials, query or fragment'); }
     return { method: 'os.grants.introduce', params: { agentId: params.agent, url: positional[0], ...(params.title ? { title: params.title } : {}), ...(params.audience ? { audience: params.audience } : {}) } };
@@ -41,14 +41,15 @@ export function kernelRequest(command: string, args: string[]): Request {
     return { method: 'os.audit.query', params: { limit } };
   }
   if (command === 'approvals' && action === 'list') { exact([], 0); return { method: 'os.approvals.list', params: {} }; }
-  if (command === 'approvals' && ['apply', 'reject', 'revert'].includes(action ?? '')) {
+  if (command === 'approvals' && ['apply', 'reject', 'revert', 'grant', 'reject-request'].includes(action ?? '')) {
     exact([], 1); const ids = positional[0] === 'all' ? 'all' : positional[0]!.split(',').map(Number);
     if (ids !== 'all' && (ids.some(id => !Number.isSafeInteger(id) || id < 1) || new Set(ids).size !== ids.length)) throw new StepError('Use positive, distinct action IDs or all');
-    return { method: `os.approvals.${action}`, params: { ids } };
+    return { method: action === 'grant' ? 'os.requests.approve' : action === 'reject-request' ? 'os.requests.reject' : `os.approvals.${action}`, params: { ids } };
   }
+  if (command === 'gatekeeper' && action === 'connect') { exact([], 1); if (!/^[a-z][a-z0-9_]{0,63}$/.test(positional[0]!)) throw new StepError('Invalid vendor'); return { method: 'os.gatekeepers.connect', params: {vendor: positional[0]} }; }
   if (command === 'gatekeeper' && action === 'list') { exact([], 0); return { method: 'os.gatekeepers.list', params: {} }; }
   if (command === 'kernel' && action === 'status') { exact([], 0); return { method: 'os.status', params: {} }; }
-  throw new StepError('usage: clawos grant add|list|revoke; audit tail [--limit 1–1000]; approvals list|apply|reject|revert; gatekeeper list; kernel status');
+  throw new StepError('usage: clawos grant add|list|revoke; audit tail [--limit 1–1000]; approvals list|apply|reject|revert; gatekeeper list|connect; kernel status');
 }
 
 /** Execute one operator command and print only the kernel's credential-free response, never transport diagnostics. */

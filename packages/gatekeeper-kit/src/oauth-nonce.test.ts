@@ -23,3 +23,15 @@ describe("OAuthNonceMachine", () => {
   });
   it("sweeps expired records", () => { const m = new OAuthNonceMachine(-1); const n = m.issue("op"); m.sweep(); expect(m.advance(n)).toBeNull(); });
 });
+
+describe("OAuthNonceMachine trusted transition binding", () => {
+  it("returns the original operator only while atomically rotating stage one", () => {
+    const machine = new OAuthNonceMachine(), first = machine.issue("bound-operator");
+    const advanced = machine.advanceBound(first)!;
+    expect(advanced.operatorId).toBe("bound-operator");
+    expect(advanced.nonce).not.toBe(first);
+    expect(machine.advanceBound(first)).toBeNull();
+    expect(machine.consume(advanced.nonce)).toBe("bound-operator");
+    expect(machine.advanceBound(advanced.nonce)).toBeNull();
+  });
+});

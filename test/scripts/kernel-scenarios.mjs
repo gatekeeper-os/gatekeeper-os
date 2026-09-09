@@ -27,6 +27,7 @@ const server=createServer(async(req,res)=>{
     // Fixture contents are compared in memory, never copied into logs or evidence.
     for(const result of results){const body=typeof result.content==='string'?result.content:JSON.stringify(result.content);
       current.sawResult=true;
+      current.sawOverlay ||= body.includes('phase-three-overlay');
       current.sawInside ||= body.includes('inside-fixture-content');
       current.sawOutside ||= body.includes('outside-fixture-content');
       current.sawListing ||= body.includes('example.txt');
@@ -48,7 +49,7 @@ function cli(args, binary='clawos') {
 }
 async function denied(client,method,params){try{await client.request(method,params);return false;}catch{return true;}}
 async function turn(id,{tool,params={},agentId='main',message='Run the test operation once.',client=paired.client}={}){
-  current={id,tool,params,names:[],calls:0,sawResult:false,sawInside:false,sawOutside:false,sawListing:false,sawDenial:false};
+  current={id,tool,params,names:[],calls:0,sawResult:false,sawInside:false,sawOverlay:false,sawOutside:false,sawListing:false,sawDenial:false};
   const before=records().length;
   try { await client.request('agent',{agentId,sessionKey:`agent:${agentId}:kernel-${id}`,message,idempotencyKey:randomUUID()},{expectFinal:true,timeoutMs:120_000}); }
   catch { throw new Error('turn-'+id); }
@@ -76,7 +77,7 @@ try {
     const grantsRpc=await paired.client.request('os.grants.list',{});
     check('rpc-grants',Array.isArray(grantsRpc)&&grantsRpc.length===0);
     const approvalsRpc=await paired.client.request('os.approvals.list',{});
-    check('rpc-approvals',Array.isArray(approvalsRpc)&&approvalsRpc.length===0);
+    check('rpc-approvals',Array.isArray(approvalsRpc.actions)&&approvalsRpc.actions.length===0&&Array.isArray(approvalsRpc.requests)&&approvalsRpc.requests.length===0);
     const auditRpc=await paired.client.request('os.audit.query',{limit:10});
     check('rpc-audit',Array.isArray(auditRpc)&&auditRpc.length<=10);
     check('shared-auth-introduction-denied',await denied(shared.client,'os.grants.introduce',{agentId:'main',url:'file:///home/tester/kernel-resource/'}));
@@ -89,6 +90,14 @@ try {
     check('untrusted-sender-not-owner',pasted.hooks.some(h=>h.hook==='before_agent_run'&&h.senderIsOwner===false));
     check('untrusted-url-no-grant',(await paired.client.request('os.grants.list',{agentId:'stranger'})).length===0);
     check('untrusted-url-narrowing',pasted.names.every(names=>!names.some(n=>n.startsWith('gk_'))));
+    await turn('request-access',{agentId:'stranger',tool:'os_request_access',params:{url:'file:///home/tester/kernel-resource/',reason:'Inspect the fixture'}});
+    check('request-does-not-mint',(await paired.client.request('os.grants.list',{agentId:'stranger'})).length===0);
+    const requests=(await paired.client.request('os.approvals.list',{})).requests;
+    check('request-stored-bound-agent',requests.length===1&&requests[0].agentId==='stranger');
+    check('request-shared-token-denied',await denied(shared.client,'os.requests.approve',{ids:[requests[0].id]}));
+    check('request-operator-approved',(await paired.client.request('os.requests.approve',{ids:[requests[0].id]})).ids[0]===requests[0].id);
+    const requested=await turn('request-granted',{agentId:'stranger',tool:'os_list_grants'});
+    check('request-next-turn-tools',requested.names.every(names=>names.includes('gk_fs_dir_list')));
     const status=cli(['kernel','status','--cell','kernel-test','--json']);
     check('cli-kernel-status',status.ok&&status.value.cell==='kernel-test'&&status.value.gatekeepers.some(g=>g.vendor==='fs'&&g.healthy));
     const mounted=cli(['os','status','--json'],'openclaw');
@@ -118,6 +127,25 @@ try {
     check('successful-call-audited',audit.some(a=>a.kind==='tool'&&a.title==='gk_fs_dir_list'&&a.ok===true));
     check('observation-audited',audit.some(a=>a.kind==='observation'&&a.handle===grant.handle&&a.ok===true));
     check('unknown-policy-audited',audit.some(a=>a.kind==='tool'&&a.title==='Capability policy denied call'&&a.ok===false));
+    const pendingWrite=await turn('pending-write',{tool:'gk_fs_file_write',params:{grant:grant.handle,path:'example.txt',content:'phase-three-overlay'}});
+    check('simulated-write-succeeded',!pendingWrite.sawDenial);
+    const pending=(await paired.client.request('os.approvals.list',{})).actions;
+    check('write-pending-not-auto-applied',pending.length===1&&pending[0].status==='pending');
+    check('simulated-write-host-unchanged',readFileSync('/home/tester/kernel-resource/example.txt','utf8')==='inside-fixture-content\n');
+    const overlay=await turn('pending-read',{tool:'gk_fs_file_read',params:{grant:grant.handle,path:'example.txt'}});
+    check('pending-read-sees-overlay',overlay.sawOverlay&&!overlay.sawInside);
+    const rejection=cli(['approvals','reject',String(pending[0].id),'--cell','kernel-test','--json']);
+    check('cli-reject-action',rejection.ok&&rejection.value.ids[0]===pending[0].id);
+    const afterReject=await turn('rejected-read',{tool:'gk_fs_file_read',params:{grant:grant.handle,path:'example.txt'}});
+    check('rejected-overlay-gone',afterReject.sawInside&&!afterReject.sawOverlay);
+    check('rejection-audited',(await paired.client.request('os.audit.query',{limit:1000})).some(a=>a.kind==='action.decide'&&a.actionId===pending[0].id&&a.decision==='reject'&&a.ok));
+    await turn('unsafe-write',{tool:'gk_fs_file_write',params:{grant:grant.handle,path:'example.txt',content:'phase-three-overlay'}});
+    const unsafe=(await paired.client.request('os.approvals.list',{})).actions;
+    check('unsafe-write-pending',unsafe.length===1);
+    check('unsafe-write-apply-denied',await denied(paired.client,'os.approvals.apply',{ids:[unsafe[0].id]}));
+    check('unsafe-write-host-unchanged',readFileSync('/home/tester/kernel-resource/example.txt','utf8')==='inside-fixture-content\n');
+    check('unsafe-write-no-auto-retry',(await paired.client.request('os.approvals.list',{})).actions.length===0);
+    check('uncertain-action-audited',(await paired.client.request('os.audit.query',{limit:1000})).some(a=>a.kind==='action.decide'&&a.actionId===unsafe[0].id&&a.decision==='failed'&&a.ok===false));
     const revokedCli=cli(['grant','revoke',grant.handle,'--cell','kernel-test','--json']);
     check('cli-grant-revoke',revokedCli.ok&&revokedCli.value.revoked===true);
     check('grant-revoked',revokedCli.ok&&revokedCli.value.revoked===true);

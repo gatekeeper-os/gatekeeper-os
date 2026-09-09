@@ -1216,3 +1216,38 @@ phase tag, release, production credential use or real messaging. Unfinished Slac
 canary files and their pre-existing PROGRESS addition are excluded from this commit.
 Next: resolve the nonofficial plugin fixture and remaining original Phase 3
 implementation gates before advancing. No repeated approval for prior beta scope.
+
+
+## 2026-09-09 — Phase 3 automated acceptance closed; Telegram deferred
+
+Matt explicitly requested completing Phase 3 and preserving the original plan.
+The final candidate passes `scripts/vm/test.sh phase-3 installed full` with libvirt
+and the existing shared installed snapshot. Evidence:
+`vm-artifacts/20260909-231728-phase-3/`, run identity `2026-09-09T23:17:39Z`,
+harness/combined exit 0; **78/78 conformance**, **71/71 channel/OAuth/chat/egress**,
+**98/98 kernel-live**, and 23 actual model turns across the two live checkpoints.
+All six structural checkpoint directories were retained and inspected.
+Guest kernel **93/93**, CLI **117/117**, final host workspace **410/410**;
+full typecheck/build, catalog/secrecy and packed-license checks pass.
+
+Closed the missing OAuth/connect, drainer, command, request and approval lifecycle
+surfaces. Decisions are single-flight, bound to original grants/sessions, checked
+again after async resolution, and durably fail closed on uncertain effects. Live
+checks prove pending request -> operator approval -> tools, filesystem simulation
+and CLI rejection, unsafe real-write denial, and corresponding audit. Real paired
+Gateway `send` proves a safe synthetic delivery control and policy cancellation.
+The community `mainctrl@1.1.0` plugin fixture proves actual secondary denial; the
+separate skill and historical official-plugin fixtures are not substituted.
+
+Original-plan corrections and full evidence mapping are in
+`plans/phase-3-acceptance.md`. Commands use authenticated `reply_dispatch` because
+`before_agent_reply` lacks trusted owner/audience facts; the latter denies fallthrough.
+Both shared-grant creation and persisted shared-grant use are denied in beta.
+Telegram remains explicitly deferred, not passed. Slack was added later and is
+not an original Phase 3 gate; its unrelated draft/progress change remains unstaged.
+No other original Phase 3 gate is waived. Real GitHub effects/OAuth and Phase 5 UX
+retain their original later-phase acceptance; beta remains incomplete (Phases 4–7).
+
+**VM confirmed shut off; base/installed snapshots retained. Production untouched.**
+The accepted candidate is to be merged through PR4 and tagged `phase-3` only after
+green candidate CI; final remote merge/tag state is recorded by the orchestrator.

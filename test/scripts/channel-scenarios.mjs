@@ -22,9 +22,9 @@ const server=createServer(async(req,res)=>{
   let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>2000000)throw new Error();}
   const input=JSON.parse(raw);current.names.push((input.tools??[]).map(t=>t.function?.name??t.name));
   if(current.names.length===1)current.notice=JSON.stringify(input.messages??[]).includes('You now have access to fs');
-  const id='channel-probe';
-  if(input.stream){res.writeHead(200,{'Content-Type':'text/event-stream'});for(const part of [{delta:{role:'assistant',content:'scenario-complete'},finish_reason:null},{delta:{},finish_reason:'stop'}])res.write('data: '+JSON.stringify({id,object:'chat.completion.chunk',created:Math.floor(Date.now()/1000),model:'spike',choices:[{index:0,...part}]})+'\n\n');res.end('data: [DONE]\n\n');}
-  else{res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({id,object:'chat.completion',model:'spike',choices:[{index:0,message:{role:'assistant',content:'scenario-complete'},finish_reason:'stop'}],usage:{prompt_tokens:10,completion_tokens:10,total_tokens:20}}));}
+  const id='channel-probe',responseText=current.id==='egress'?'phase-three-denied-marker':'scenario-complete';
+  if(input.stream){res.writeHead(200,{'Content-Type':'text/event-stream'});for(const part of [{delta:{role:'assistant',content:responseText},finish_reason:null},{delta:{},finish_reason:'stop'}])res.write('data: '+JSON.stringify({id,object:'chat.completion.chunk',created:Math.floor(Date.now()/1000),model:'spike',choices:[{index:0,...part}]})+'\n\n');res.end('data: [DONE]\n\n');}
+  else{res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({id,object:'chat.completion',model:'spike',choices:[{index:0,message:{role:'assistant',content:responseText},finish_reason:'stop'}],usage:{prompt_tokens:10,completion_tokens:10,total_tokens:20}}));}
  }catch{res.writeHead(400);res.end('{}');}
 });
 async function connect(auth,scopes=["operator.admin"],identity={clientName:'cli',mode:'cli'}){let client,timer;try{const hello=await new Promise((resolve,reject)=>{timer=setTimeout(()=>reject(new Error('connect-timeout')),30_000);client=new GatewayClient({url:'ws://127.0.0.1:19100',...auth,env:process.env,...identity,role:'operator',scopes,requestTimeoutMs:120_000,hostDeps:{logDebug(){},logError(){}},onHelloOk:resolve,onConnectError:(error)=>{console.log('CONNECT '+(error?.code??error?.name??'error')+' '+String(error?.message??'').replace(/[A-Za-z0-9_-]{24,}/g,'[redacted]'));reject(new Error('connect-failed'));}});client.start();});return{client,deviceToken:hello.auth?.deviceToken};}catch(error){await client?.stopAndWait({timeoutMs:5000});throw error;}finally{clearTimeout(timer);}}
@@ -50,6 +50,22 @@ try {
  check('gateway-forged-label-no-notice',!current.notice);
  check('gateway-forged-label-no-grants',(await paired.client.request('os.grants.list',{agentId:'forged'})).length===0);
  report.turns.push(current);save();current=undefined;
+ for(const id of ['command-owner','command-outsider','command-group','command-forged']){
+  current={id,names:[],notice:false};
+  const result=await paired.client.request('vm.channel.dispatch',{scenario:id},{timeoutMs:120000});
+  check(id+'-dispatched',result.dispatched===true);
+  check(id+'-no-model',current.names.length===0);
+  check(id+'-private-authority',result.commandResult===(id==='command-owner'));
+  current=undefined;
+ }
+ const connection=await paired.client.request('os.gatekeepers.connect',{vendor:'fs'});
+ check('connect-local-once',/^\/os\/gatekeeper\/fs\/oauth\/start\?state=[A-Za-z0-9_-]{32}$/.test(connection.url));
+ const connected=await fetch(new URL(connection.url,'http://127.0.0.1:19100'));
+ check('connect-static-account',connected.status===200);
+ check('connect-private-headers',connected.headers.get('cache-control')==='no-store'&&connected.headers.get('referrer-policy')==='no-referrer');
+ check('connect-replay-denied',(await fetch(new URL(connection.url,'http://127.0.0.1:19100'))).status===400);
+ let sharedRejected=false;try{await paired.client.request('os.grants.introduce',{agentId:'egress',url:'file:///home/tester/kernel-resource/',audience:'shared'});}catch{sharedRejected=true;}
+ check('shared-grant-mint-denied',sharedRejected);
  for(const id of ['nonowner','forged','group-owner','owner','group-existing','group-return','observer']){
   current={id,names:[],notice:false};
   const result=await paired.client.request('vm.channel.dispatch',{scenario:id},{timeoutMs:120000});
@@ -63,5 +79,12 @@ try {
   check(id+'-notice',id==='owner'?current.notice===true:current.notice===false);
   report.turns.push(current);save();current=undefined;
  }
+ const before=(await paired.client.request('vm.channel.outbound-count',{})).count;
+ await paired.client.request('send',{channel:'vmchan',to:'fixture',agentId:'egress',sessionKey:'agent:egress:main',message:'safe-outbound-fixture',idempotencyKey:randomUUID()});
+ check('egress-positive-delivery',(await paired.client.request('vm.channel.outbound-count',{})).count===before+1);
+ try{await paired.client.request('send',{channel:'vmchan',to:'fixture',agentId:'egress',sessionKey:'agent:egress:main',message:'phase-three-denied-marker',idempotencyKey:randomUUID()});}catch{}
+ check('egress-blocked-delivery',(await paired.client.request('vm.channel.outbound-count',{})).count===before+1);
+ check('egress-audited',(await paired.client.request('os.audit.query',{limit:100})).some(r=>r.kind==='egress'&&r.decision==='deny'));
+
 }catch(error){report.failure=/^[a-z0-9-]+$/.test(error.message)?error.message:'scenario-error';process.exitCode=1;console.log('FAIL '+report.failure);}
 finally{save();await controlUi?.client.stopAndWait({timeoutMs:5000});await shared?.client.stopAndWait({timeoutMs:5000});await paired?.client.stopAndWait({timeoutMs:5000});await new Promise(resolve=>server.close(resolve));}

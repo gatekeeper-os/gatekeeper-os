@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 /** Explicit test inventory: a misspelled or empty selection is an error, not an empty pass. */
 export const testIds = [
   "plugin-loads", "hooks-fire", "tool-narrowing", "gate-blocks", "rpc-methods", "cli-mounted",
-  "health", "fs-gatekeeper", "install-gate", "install-hook", "config-reconcile", "deferred-approval", "require-approval-roundtrip",
+  "health", "fs-gatekeeper", "install-gate", "install-hook", "plugin-install-hook", "config-reconcile", "deferred-approval", "require-approval-roundtrip",
 ] as const;
 
 /** Requested acceptance suites and destination for their structural verdict. */

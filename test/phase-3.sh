@@ -20,9 +20,9 @@ export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
 combined="$HOME/phase-3-combined-evidence"
 mkdir -p "$combined"
 trap 'rc=$?; printf "%s\n" "$rc" > "$combined/combined-exit-code"' EXIT
-printf '%s\n' '{"mode":"full","fullPhaseAcceptance":false,"combinedConformanceAcceptance":true,"realSlackAcceptance":false,"realTelegramAcceptance":false,"controlUiGatewayAcceptance":true,"pluginSpecificInstallHookAcceptance":false}' > "$combined/scope.json"
+printf '%s\n' '{"mode":"full","fullPhaseAcceptance":false,"combinedConformanceAcceptance":true,"realSlackAcceptance":false,"realTelegramAcceptance":false,"controlUiGatewayAcceptance":true,"pluginSpecificInstallHookAcceptance":true}' > "$combined/scope.json"
 
-for checkpoint in phase-3-install-evidence phase-3-conformance-runner-evidence phase-3-kernel-live-evidence phase-3-install-hook-evidence phase-3-channel-ingress-evidence; do
+for checkpoint in phase-3-install-evidence phase-3-conformance-runner-evidence phase-3-kernel-live-evidence phase-3-install-hook-evidence phase-3-plugin-install-hook-evidence phase-3-channel-ingress-evidence; do
   rm -rf "$HOME/$checkpoint"
 done
 
@@ -35,6 +35,8 @@ fresh_kernel_state(){
 }
 fresh_kernel_state
 bash test/phase-3-install-hook.sh
+fresh_kernel_state
+bash test/phase-3-plugin-install-hook.sh
 fresh_kernel_state
 bash test/phase-3-channel-ingress.sh
 fresh_kernel_state

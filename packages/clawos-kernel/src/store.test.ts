@@ -34,3 +34,10 @@ describe("Store", () => {
     expect(s.consumeToolApproval("call-1","gk_test_item_set",{grant:"grant:aaaaaaaa",value:1})).toBe(false);
   });
 });
+
+it("refuses preexisting shared grants in beta and preserves original action binding",()=>{
+ const s=new Store(join(mkdtempSync(join(tmpdir(),"st-")),"clawos.sqlite"));s.migrate();
+ const g:Grant={handle:"grant:bbbbbbbb",agentId:"a",cellId:"c",vendor:"test",resourceType:"item",resourceKey:"one",operatorId:"owner",scope:"agent",audience:"shared",status:"active",createdAt:1,createdBy:"operator"};s.insertGrant(g);
+ expect(s.authorizeGrant(g,"a","session","c")).toBeNull();
+ s.bindAction(1,"original","a","session");s.bindAction(1,"replacement","b","other");expect(s.actionBinding(1)?.handle).toBe("original");s.close();
+});
