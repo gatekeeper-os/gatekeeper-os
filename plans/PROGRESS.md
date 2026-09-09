@@ -1078,3 +1078,16 @@ the actual order. This is a plan error, not an upstream compatibility regression
 Live channel/observer/egress/approval, plugin-specific hook, combined Phase3 and
 macOS gates remain open. The GitHub surface review and disposable service test
 identities remain pending from the prior requests. Full beta is not released.
+
+## 2026-09-09 — root-workspace CI RPC fixture repair
+
+CI34337770986 passed typecheck/build/packed licenses but failed four RPC tests:
+the fixture resolved `bin/gateway-rpc.mjs` relative to the monorepo cwd, not its
+package. Package-scoped VM tests therefore missed the defect. Resolve the helper
+relative to `import.meta.url` instead. Invalid-method/destination tests now require
+the helper's sanitized error and reject MODULE_NOT_FOUND false positives.
+
+Root invocation `pnpm exec vitest run packages/clawos-cli/src/util/kernel-rpc.test.ts`
+passes6/6; exact CI command `pnpm test` passes331/331 across26 files including its
+build. This is a test-location fix only; production RPC behavior is unchanged.
+Remote CI rerun remains required before reporting green.
