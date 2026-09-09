@@ -50,16 +50,16 @@ try {
  check('gateway-forged-label-no-notice',!current.notice);
  check('gateway-forged-label-no-grants',(await paired.client.request('os.grants.list',{agentId:'forged'})).length===0);
  report.turns.push(current);save();current=undefined;
- for(const id of ['nonowner','forged','owner','observer']){
+ for(const id of ['nonowner','forged','group-owner','owner','group-existing','group-return','observer']){
   current={id,names:[],notice:false};
   const result=await paired.client.request('vm.channel.dispatch',{scenario:id},{timeoutMs:120000});
   check(id+'-dispatched',result.dispatched===true);
   check(id+'-provider-owner-resolver',result.ownerResolverCalled===true);
   check(id+'-model-used',current.names.length===1);
-  const grants=await paired.client.request('os.grants.list',{agentId:id==='nonowner'?'stranger':id==='forged'?'forged':'main'});
+  const grants=await paired.client.request('os.grants.list',{agentId:id==='nonowner'?'stranger':id==='forged'?'forged':id==='group-owner'?'group-new':'main'});
   const first=current.names[0];
   check(id+'-first-request-tools',id==='owner'?first.includes('gk_fs_dir_list'):!first.some(n=>n.startsWith('gk_')));
-  check(id+'-grant-state',id==='owner'||id==='observer'?grants.length===1:grants.length===0);
+  check(id+'-grant-state',['owner','observer','group-existing','group-return'].includes(id)?grants.length===1:grants.length===0);
   check(id+'-notice',id==='owner'?current.notice===true:current.notice===false);
   report.turns.push(current);save();current=undefined;
  }

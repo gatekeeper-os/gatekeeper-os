@@ -509,3 +509,20 @@ The adapter requires an explicit routed agent or a parsed canonical agent key
 before `resolveSessionAgentIdStrict`: despite its name, the pinned resolver may
 fall back to a configured/default agent on unscoped keys. The guard avoids
 implicit grant targeting; strict resolution still rejects explicit/key conflicts.
+
+
+## 2026-09-09 — audience is distinct from sender authorization
+
+Pinned public SDK inbound context supplies `ChatType` (`direct`, `group`, `channel`)
+through `reply_dispatch`; `senderIsOwner` from the public owner resolver does not
+assert a private audience. The kernel now requires an explicit direct external
+transport for introductions; group/channel/unknown audiences lock owner-only
+access before model construction. Authenticated Control UI retains its separate
+host-owned device/scope path. Unit tests are adapter evidence; fresh VM SDK
+scenarios are recorded separately in the progress log. No real Slack/Telegram
+transport claim follows from these fixtures.
+
+`plugins.install` is documented separately from `skills.install` in pinned
+`docs/gateway/protocol.md:678`: official catalog and ClawHub sources, admin scope,
+terminal policy blocks, restart required on successful install. A skill archive
+hook run does not prove this plugin route; do not substitute the two in acceptance.

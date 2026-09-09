@@ -7,7 +7,7 @@ const sdk=vi.hoisted(()=>({authorize:vi.fn(),agent:vi.fn()}));
 vi.mock("openclaw/plugin-sdk/command-auth",()=>({resolveCommandAuthorization:sdk.authorize}));
 vi.mock("openclaw/plugin-sdk/agent-scope-runtime",()=>({resolveSessionAgentIdStrict:sdk.agent}));
 const event=():HookEvent<"reply_dispatch">=>({
-  ctx:{Provider:"slack",SenderId:"U123",SessionKey:"agent:main:slack:direct:U123",AgentId:"main",commandText:"https://example.invalid/user",agentText:"https://example.invalid/history",rawText:"https://example.invalid/user",CommandAuthorized:true},
+  ctx:{Provider:"slack",ChatType:"direct",SenderId:"U123",SessionKey:"agent:main:slack:direct:U123",AgentId:"main",commandText:"https://example.invalid/user",agentText:"https://example.invalid/history",rawText:"https://example.invalid/user",CommandAuthorized:true},
   sessionKey:"agent:main:slack:direct:U123",inboundAudio:false,shouldRouteToOriginating:false,shouldSendToolSummaries:false,shouldSendFullToolDetails:false,sendPolicy:"allow",
 });
 const context=():HookCtx<"reply_dispatch">=>({dispatchKind:"agent",cfg:{},dispatcher:{} as HookCtx<"reply_dispatch">["dispatcher"],recordProcessed:()=>{},markIdle:()=>{}});
@@ -18,6 +18,10 @@ describe("public channel-authority adapter",()=>{
     expect(resolveChannelTurnAuthority(e,c)).toMatchObject({senderIsOwner:true,text:e.ctx.commandText,agentId:"main"});
     expect(sdk.authorize).toHaveBeenCalledWith({ctx:e.ctx,cfg:c.cfg,commandAuthorized:true});
     expect(sdk.agent).toHaveBeenCalledWith({sessionKey:e.sessionKey,config:c.cfg,agentId:"main"});
+  });
+  it.each(["group","channel",undefined] as const)("does not treat owner identity as a private audience: %s",ChatType=>{
+    const e=event();if(ChatType)e.ctx.ChatType=ChatType;else delete e.ctx.ChatType;
+    expect(resolveChannelTurnAuthority(e,context())).toMatchObject({senderIsOwner:true,privateAudience:false});
   });
   it.each([
     {GatewayClientScopes:[]},{GatewayClientScopes:["operator.admin"]},

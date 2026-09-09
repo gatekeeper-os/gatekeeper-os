@@ -9,6 +9,8 @@ export interface ChannelTurnAuthority {
   channel: string;
   senderId: string;
   senderIsOwner: boolean;
+  /** True only for a direct transport or the authenticated private Control UI. */
+  privateAudience: boolean;
   agentId: string;
   sessionKey: string;
   text: string;
@@ -39,6 +41,7 @@ export function resolveChannelTurnAuthority(event: HookEvent<"reply_dispatch">, 
       const agentId = resolveSessionAgentIdStrict({ sessionKey, config: context.cfg, ...(inbound.AgentId ? { agentId: inbound.AgentId } : {}) });
       if (inbound.AgentId && agentId !== inbound.AgentId) return;
       return { channel, senderId: `gateway-device:${inbound.ApprovalReviewerDeviceId}`, senderIsOwner: true,
+        privateAudience: inbound.ChatType !== "group" && inbound.ChatType !== "channel",
         agentId, sessionKey, text: inbound.commandText };
     }
     const authorization = resolveCommandAuthorization({
@@ -51,6 +54,6 @@ export function resolveChannelTurnAuthority(event: HookEvent<"reply_dispatch">, 
     const agentId = resolveSessionAgentIdStrict({ sessionKey, config: context.cfg, ...(inbound.AgentId ? { agentId: inbound.AgentId } : {}) });
     if (inbound.AgentId && agentId !== inbound.AgentId) return;
     return { channel, senderId, senderIsOwner: authorization.senderIsOwner === true,
-      agentId, sessionKey, text: inbound.commandText };
+      privateAudience: inbound.ChatType === "direct", agentId, sessionKey, text: inbound.commandText };
   } catch { return; }
 }

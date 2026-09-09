@@ -1172,3 +1172,47 @@ freshness validator accepted all required reports from run
 revoke making the filesystem tool absent on the next model turn and matching
 audit evidence. Secret scanning remained clean. Real Slack transport is the
 only channel canary still open before the Phase 3 tag.
+
+
+## 2026-09-09 — original-plan audit and owner-first audience correction
+
+Matt requested continued execution with the original plan followed as closely as
+possible. Reconciled source and evidence in `plans/plan-fidelity-audit.md` without
+reducing the beta scope. Telegram remains explicitly deferred, not passed. The
+prior “only Slack remains” statement is superseded: OAuth/connect, drainer/chat
+commands, shared-grant reconciliation and other listed Phase 3 deliverables are
+still incomplete; later phases remain ordered and unaccepted.
+
+Fixed owner-only tools being offered on an owner's first group turn before any
+nonowner speaks. Finalized external audience must be direct; shared/unknown
+sessions acquire persistent observer lockdown before prompt construction. Existing
+grants, queued notices and retained preflight calls are denied in that audience.
+
+Fresh combined command:
+`CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state scripts/vm/test.sh phase-3 installed full`.
+Artifacts `vm-artifacts/20260909-214819-phase-3/`: harness/combined exit0,
+47/47 named-suite checks, 17/17 skill-hook checks, 51/51 ingress checks across
+nine actual model turns. All five detailed structural checkpoint directories
+collected and directly inspected; no retroactive reconstruction of old reports.
+Guest kernel48/CLI115; host typecheck/build,362/362 tests, catalog/secrets,
+10/10 actual packed-license checks and two VM-bootstrap regressions passed.
+Initial new unit-test typecheck lacked toolName in a test context; fixed before
+these passing runs. No production runtime or upstream source changes.
+
+Reopened the plugin-specific secondary-hook checkbox: historical evidence used
+`skills.install`, not plugins. Added a focused diagnostic through the standard
+VM harness. Runs215430/215615 failed catalog/pre-policy;215804 failed compatibility.
+Exact-version run215951 reached real primary deny/allow for
+`@openclaw/firecrawl-plugin@2026.9.2`, then succeeded with no secondary callbacks.
+This is the documented trusted-official bypass, **not an upstream defect**; the
+initial contrary interpretation was corrected. All four attempts remain exit1.
+Read-only post-run structural diagnostics confirmed the installed package bytes'
+name/version; no upstream SQLite read. `plans/plugin-install-hook-gap.md` records
+scope and the needed compatible nonofficial fixture. The official diagnostic is
+not a passing hook criterion and should not be retried expecting different behavior.
+
+Dedicated VM confirmed shut off; base/installed snapshots retained. No merge,
+phase tag, release, production credential use or real messaging. Unfinished Slack
+canary files and their pre-existing PROGRESS addition are excluded from this commit.
+Next: resolve the nonofficial plugin fixture and remaining original Phase 3
+implementation gates before advancing. No repeated approval for prior beta scope.

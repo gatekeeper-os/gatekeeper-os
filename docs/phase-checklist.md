@@ -56,6 +56,11 @@ Latest complete Ubuntu acceptance: `vm-artifacts/20260907-223901-phase-1/`, fres
 
 ## Phase 3 — Kernel and gatekeeper-fs
 
+Latest combined regression: `vm-artifacts/20260909-214819-phase-3/`, installed snapshot,
+exit 0; 47/47 named-suite checks, 17/17 skill-hook checks, 51/51 ingress checks
+(nine actual turns), with all five structural source-report directories retained.
+This passes the combined suite set, **not all Phase 3 deliverables**.
+
 - [x] Filesystem STOP 1: operator approved the presented contract after `7642efb` ("continuew"); contract: `plans/fs-contract.md`.
 - [x] Filesystem STOP 2: operator explicitly approved after `fc8b33f` ("Approved continue"); recorded in `plans/PROGRESS.md`.
 
@@ -68,19 +73,21 @@ Latest complete Ubuntu acceptance: `vm-artifacts/20260907-223901-phase-1/`, fres
 - [x] Fresh-base installer regression with bundled plugins: **25/25**, `vm-artifacts/20260909-002725-phase-1/`; two-cell isolation, backup/restore and post-restore health pass.
 - [x] Source-packaged kernel/fs project into cell-local state with no implicit grants; reinstall is a no-op — `vm-artifacts/20260909-001359-phase-3/`, install-again and scenario evidence, healthy paired kernel/fs status.
 - [x] Primary install policy blocks actual unlisted CLI installs, permits an explicitly reviewed source, and fails closed when unavailable — `vm-artifacts/20260909-003432-phase-3/`, `install-verdict.json` **8/8**, `scenarios.json` **12/12** structural checks; CLI114/policy4 guest tests pass. The outage case uses a fresh allowed fixture and verifies the policy error.
-- [x] Secondary `before_install` blocks a plugin from a non-allowlisted source in a Gateway-backed flow — evidence: `vm-artifacts/20260909-195747-phase-3/`, 17/17; repeated inside combined run `20260909-201704`.
+- [ ] Secondary `before_install` blocks a **plugin** from a non-allowlisted source in a Gateway-backed flow. Prior `20260909-195747` / `20260909-201704` reports exercise `skills.install` only; their 17 passing checks do not satisfy this criterion.
 - Focused live checkpoint `20260908-163653-phase-3`: hooks-fire 4/4, tool-narrowing 5/5,
   gate-blocks 7/7, fs-gatekeeper 7/7; 48/48 structural checks across eight actual agent turns.
   Paired device-token RPC introduction/revocation and non-owner RPC URL denial passed.
   The later `20260908-172236-phase-3` checkpoint verified CLI grant/list/revoke/audit
-  and mounted status (**31/31** live assertions). Combined Phase 3 is now green;
-  real Slack transport remains a separate deployment canary before tagging.
-- [ ] Real Slack transport from Nova's SOPS-backed ALINA app admits Matt and rejects an unallowlisted identity — evidence:
+  and mounted status (**31/31** live assertions). The combined suite set passed, but this is not full Phase 3 acceptance;
+  see [plan fidelity audit](../plans/plan-fidelity-audit.md) for remaining deliverables.
+- [ ] Real Slack transport deployment canary admits the owner and rejects an unallowlisted identity. This is an added deployment check, not an original-plan criterion or permission to reuse production ALINA credentials. Disposable test app/workspace not yet supplied.
+- [ ] Real Telegram manual scenario — **DEFERRED, not passed**, explicitly authorized 2026-09-09; [deferral](../plans/telegram-validation-deferred.md).
+- [ ] Remaining §9 Phase 3 deliverables and live observer/egress/approval integration verified — [audit](../plans/plan-fidelity-audit.md).
 - [ ] Tag `phase-3`
 
 ## Phase 4 — gatekeeper-github
 
-- [ ] STOP 1: tool surface reviewed and approved by operator (link to review) — evidence:
+- [x] STOP 1: concrete GitHub surface approved by later explicit beta-completion authorization, 2026-09-09 — [review record](../plans/REVIEW-REQUESTED.md#github-gatekeeper--concrete-stop-1-review). Implementation and live acceptance are not implied.
 - [ ] STOP 2: operator approved starting Phase 2 of the gatekeeper — evidence:
 - [ ] Conformance `deferred-approval` and `require-approval-roundtrip` pass with GitHub — evidence:
 - [ ] Scenario: comment (simulated) then summarize thread including the pending comment; `clawos approvals apply all` → comment live on GitHub — evidence:

@@ -25,7 +25,7 @@ vi.mock("./registry.js",()=>({instanceId:()=>"fixture-instance",Registry:class{
 let kernel:Kernel;
 const ctx={agentId:"agent-a",sessionKey:"agent:agent-a:private",runId:"run-a",channel:"fixture"};
 async function dispatch(senderId="owner",senderIsOwner=true){
-  fixture.authority.mockReturnValue({...ctx,senderId,senderIsOwner,text:"Read https://fixture.invalid/item"});
+  fixture.authority.mockReturnValue({...ctx,senderId,senderIsOwner,privateAudience:true,text:"Read https://fixture.invalid/item"});
   await kernel.onReplyDispatch({} as HookEvent<"reply_dispatch">,{} as HookCtx<"reply_dispatch">);
 }
 async function grant(){
@@ -67,7 +67,7 @@ describe("kernel channel-policy regression boundaries",()=>{
     expect((await kernel.onBeforePromptBuild({prompt:"Read",messages:[]},ctx)).toolsAllow).not.toContain("gk_test_read");
   });
   it("accepts an authenticated Control UI admin without a sender allowlist duplicate",async()=>{
-    fixture.authority.mockReturnValue({...ctx,channel:"webchat",senderId:"gateway-device:device-1",senderIsOwner:true,text:"Read https://fixture.invalid/item"});
+    fixture.authority.mockReturnValue({...ctx,privateAudience:true,channel:"webchat",senderId:"gateway-device:device-1",senderIsOwner:true,text:"Read https://fixture.invalid/item"});
     await kernel.onReplyDispatch({} as HookEvent<"reply_dispatch">,{} as HookCtx<"reply_dispatch">);
     expect(fixture.introduce).toHaveBeenCalledOnce();
     expect((await kernel.onBeforePromptBuild({prompt:"Read",messages:[]},ctx)).toolsAllow).toContain("gk_test_read");
@@ -92,6 +92,31 @@ describe("kernel channel-policy regression boundaries",()=>{
     await expect(tool.execute("call-a",event.params)).rejects.toThrow("Operation denied.");
     expect(fixture.call).toHaveBeenCalledTimes(1); // dry-run only: no resource read after audience changed
     expect((await kernel.onBeforePromptBuild({prompt:"Read",messages:[]},ctx)).toolsAllow).not.toContain("gk_test_read");
+  });
+  it("refuses an owner's first group introduction before anyone else speaks",async()=>{
+    fixture.authority.mockReturnValue({...ctx,senderId:"owner",senderIsOwner:true,privateAudience:false,text:"Read https://fixture.invalid/item"});
+    await kernel.onReplyDispatch({} as HookEvent<"reply_dispatch">,{} as HookCtx<"reply_dispatch">);
+    expect(fixture.introduce).not.toHaveBeenCalled();
+    expect((await kernel.onBeforePromptBuild({prompt:"Read",messages:[]},ctx)).toolsAllow).not.toContain("gk_test_read");
+  });
+  it("locks existing authority before a shared prompt and does not clear it on owner return",async()=>{
+    const {handle}=await grant();
+    const event={toolName:"gk_test_read",toolCallId:"group-race",params:{grant:handle}};
+    const tools:Parameters<OpenClawPluginApi["registerTool"]>[0][]=[];
+    kernel.registerGatekeeperTools({registerTool:tool=>{tools.push(tool);}} as OpenClawPluginApi);
+    expect(await kernel.onBeforeToolCall(event,{...ctx,toolName:event.toolName})).toEqual({});
+    fixture.authority.mockReturnValue({...ctx,senderId:"owner",senderIsOwner:true,privateAudience:false,text:"Read https://fixture.invalid/item"});
+    await kernel.onReplyDispatch({} as HookEvent<"reply_dispatch">,{} as HookCtx<"reply_dispatch">);
+    const narrowed=await kernel.onBeforePromptBuild({prompt:"Read",messages:[]},ctx);
+    expect(narrowed.toolsAllow).not.toContain("gk_test_read");
+    expect(narrowed.appendContext).toBeUndefined();
+    expect(kernel.capabilityPolicy().evaluate(event,{...ctx,toolName:event.toolName})).toMatchObject({block:true});
+    await expect(kernel.resolveGrant(ctx.agentId,ctx.sessionKey,handle)).rejects.toThrow("audience");
+    const tool=tools[0];if(!tool||typeof tool==="function"||Array.isArray(tool))throw new Error("Unexpected tool");
+    await expect(tool.execute(event.toolCallId,event.params)).rejects.toThrow("Operation denied");
+    await dispatch();
+    expect((await kernel.onBeforePromptBuild({prompt:"Read",messages:[]},ctx)).toolsAllow).not.toContain("gk_test_read");
+    expect(fixture.call).toHaveBeenCalledTimes(1);
   });
   it("blocks egress matches and permits safe content",async()=>{
     expect(await kernel.onMessageSending({to:"peer",content:"blocked-marker"},{channelId:"fixture",sessionKey:ctx.sessionKey})).toMatchObject({cancel:true});

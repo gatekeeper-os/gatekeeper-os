@@ -6,8 +6,16 @@ out="${1:?outdir}"; since="${2:-1 hour ago}"
 grab() { local name="$1"; shift; vm_call exec "$*" > "$out/$name" 2>&1 || true; }
 if [ "${3:-}:${4:-}" = phase-3:full ]; then
   vm_call pull /home/tester/phase-3-combined-evidence/ "$out/" || exit 1
+  # Keep the structural source reports, not just the aggregator's totals. Never
+  # collect live cell state, credentials, model bodies, or raw Gateway logs.
+  for checkpoint in install conformance-runner kernel-live install-hook channel-ingress; do
+    mkdir -p "$out/checkpoints/$checkpoint"
+    vm_call pull "/home/tester/phase-3-$checkpoint-evidence/" "$out/checkpoints/$checkpoint/" || exit 1
+  done
 elif [ "${3:-}:${4:-}" = phase-3:channel-ingress ]; then
   vm_call pull /home/tester/phase-3-channel-ingress-evidence/ "$out/" || exit 1
+elif [ "${3:-}:${4:-}" = phase-3:plugin-install-hook ]; then
+  vm_call pull /home/tester/phase-3-plugin-install-hook-evidence/ "$out/" || exit 1
 elif [ "${3:-}:${4:-}" = phase-3:install-hook ]; then
   vm_call pull /home/tester/phase-3-install-hook-evidence/ "$out/" || exit 1
 elif [ "${3:-}:${4:-}" = phase-3:install-integration ]; then

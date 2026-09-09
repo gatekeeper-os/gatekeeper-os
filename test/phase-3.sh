@@ -20,7 +20,7 @@ export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
 combined="$HOME/phase-3-combined-evidence"
 mkdir -p "$combined"
 trap 'rc=$?; printf "%s\n" "$rc" > "$combined/combined-exit-code"' EXIT
-printf '%s\n' '{"mode":"full","fullPhaseAcceptance":true,"realSlackAcceptance":false,"controlUiGatewayAcceptance":true}' > "$combined/scope.json"
+printf '%s\n' '{"mode":"full","fullPhaseAcceptance":false,"combinedConformanceAcceptance":true,"realSlackAcceptance":false,"realTelegramAcceptance":false,"controlUiGatewayAcceptance":true,"pluginSpecificInstallHookAcceptance":false}' > "$combined/scope.json"
 
 for checkpoint in phase-3-install-evidence phase-3-conformance-runner-evidence phase-3-kernel-live-evidence phase-3-install-hook-evidence phase-3-channel-ingress-evidence; do
   rm -rf "$HOME/$checkpoint"

@@ -39,12 +39,16 @@ export class Kernel{
   async onReplyDispatch(e:HookEvent<"reply_dispatch">,ctx:HookCtx<"reply_dispatch">){
     if(this.config().maintenance)return;
     const turn=resolveChannelTurnAuthority(e,ctx);if(!turn)return;
+    // Owner identity does not make a group private. Persist the audience denial
+    // before the first prompt, including when no other participant has spoken.
+    if(!turn.privateAudience){this.runtime().store.taintObserver(turn.sessionKey,"clawos:shared-audience");this.runtime().notes.delete(turn.sessionKey);return;}
     if(!turn.senderIsOwner){const r=this.runtime(),observers=new Set(r.store.observers(turn.sessionKey));observers.add(turn.senderId);r.store.setObservers(turn.sessionKey,[...observers]);return;}
     // External transports need the configured operator allowlist in addition
     // to upstream owner resolution. Control UI was already admitted from the
     // gateway-authenticated admin device and has no stable sender label to
     // duplicate in channel configuration.
     if(turn.channel!=="webchat"&&!this.operator(turn.channel,turn.senderId))return;
+    if(this.runtime().store.observers(turn.sessionKey).length)return;
     for(const url of urls(turn.text))await this.introduce(turn.agentId,turn.sessionKey,url,turn.senderId,"operator").catch(()=>{});
   }
   async onBeforeAgentRun(e:HookEvent<"before_agent_run">,ctx:HookCtx<"before_agent_run">){if(this.config().maintenance)return{outcome:"block"as const,reason:"maintenance",message:"OpenClaw OS is being maintained."};if(ctx.sessionKey&&e.senderId&&!e.senderIsOwner){const r=this.runtime(),observers=new Set(r.store.observers(ctx.sessionKey));observers.add(e.senderId);r.store.setObservers(ctx.sessionKey,[...observers]);}}

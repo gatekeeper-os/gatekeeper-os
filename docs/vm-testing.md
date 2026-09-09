@@ -259,3 +259,39 @@ First attempted run `20260909-021053-phase-3` failed in snapshot restoration:
 `qemu-img: Failed to initialize io_uring: Cannot allocate memory`. No guest test
 ran. Both the 15-assertion suite and its fixture remain unaccepted until the host
 VM blocker is resolved and a fresh run completes. Existing snapshots are retained.
+
+
+## Phase 3 combined evidence and plugin-specific hook (2026-09-09)
+
+`phase-3 installed full` runs the existing focused checkpoints in one reset VM,
+with a fresh isolated test cell between them. It establishes the combined suite
+set, not completion of every Phase 3 deliverable. `scope.json` explicitly records
+`fullPhaseAcceptance:false`; real transports and incomplete kernel surfaces are
+not implicitly accepted. The collector retains `checkpoints/{install,
+conformance-runner,install-hook,channel-ingress,kernel-live}/` alongside the
+aggregate verdict. Each contains only the focused harness's structural evidence;
+no live cell state, model bodies, credentials or raw Gateway log is collected.
+
+The older `install-hook` fixture remains a **skill** upload test. The separate
+`phase-3 installed plugin-install-hook` mode exercises public Gateway
+`plugins.install` for an uninstalled official plugin selected from the Gateway's own
+`plugins.list` package metadata, then requests its exact `clawos.lock.json` version
+through the supported ClawHub source. No account credentials or transport setup.
+Hardcoded Slack and ACPX selectors did not reach policy; ACPX returned an
+unknown-catalog error despite existing in the bundled fallback. The hosted runtime
+catalog is authoritative, so the fixture discovers its actual installable target. An independently controlled primary policy first denies, then
+allows staged material while the actual kernel's empty allowlist must still deny.
+The passive hook monitor must observe typed plugin material before terminal denial;
+config, installed plugin state and grants must remain unchanged. This tests plugin
+installation policy, not external messaging or an ACP runtime activation. A failed network/catalog/preflight is
+not a passing kernel denial; consult the explicit per-check verdict.
+
+
+**Current result:** this mode is a retained failing diagnostic, not an accepted
+plugin-hook fixture. Exact-version run `20260909-215951-phase-3` installed
+`@openclaw/firecrawl-plugin@2026.9.2` after the primary fixture allowed it, with no
+secondary hook observations. This is consistent with the documented trusted-official
+bypass in `docs/upstream-reference.md:203`, not proof of an upstream defect.
+A compatible **nonofficial** test package is needed to exercise the secondary
+hook criterion. Do not repeatedly run the official control expecting different
+behavior, weaken the primary policy, or relabel this failure as a pass.

@@ -6,5 +6,5 @@ cfg.plugins.allow.push('clawos-channel-ingress');cfg.plugins.load.paths.push(res
 cfg.plugins.entries['clawos-channel-ingress']={enabled:true,hooks:{allowConversationAccess:true}};
 cfg.plugins.entries['clawos-kernel'].config.operators=[{channel:'vmchan',senderId:'operator'}];
 cfg.commands={ownerAllowFrom:['vmchan:operator']};
-cfg.agents.list.push({id:'forged'},{id:'console'});
+cfg.agents.list.push({id:'forged'},{id:'console'},{id:'group-new'});
 writeFileSync(path,JSON.stringify(cfg),{mode:0o600});

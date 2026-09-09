@@ -9,11 +9,11 @@ export default definePluginEntry({id:'clawos-channel-ingress',name:'VM channel i
  api.registerGatewayMethod('vm.channel.last-dispatch-shape',async({respond})=>respond(true,lastDispatchShape??null),{scope:'operator.admin'});
  api.registerChannel({plugin:{id:'vmchan',meta:{id:'vmchan',label:'VM channel',selectionLabel:'VM channel',docsPath:'/vm',blurb:'VM fixture'},capabilities:{chatTypes:['direct','group']},gateway:{startAccount:async(ctx)=>{ctx.setStatus({...ctx.getStatus(),running:true,connected:true});await new Promise(resolve=>ctx.abortSignal.aborted?resolve():ctx.abortSignal.addEventListener('abort',resolve,{once:true}));}},config:{listAccountIds:()=>['default'],resolveAccount:()=>({accountId:'default',enabled:true}),resolveAllowFrom:()=>{ownerResolutions++;return ['operator'];}}}});
  api.registerGatewayMethod('vm.channel.dispatch',async({params,respond})=>{
-  const cases={owner:{sender:'operator',agent:'main'},nonowner:{sender:'outsider',agent:'stranger'},forged:{sender:'operator',agent:'forged',scopes:true},observer:{sender:'outsider',agent:'main',group:true}};
+  const cases={owner:{sender:'operator',agent:'main'},nonowner:{sender:'outsider',agent:'stranger'},forged:{sender:'operator',agent:'forged',scopes:true},observer:{sender:'outsider',agent:'main',group:true},'group-owner':{sender:'operator',agent:'group-new',group:true},'group-existing':{sender:'operator',agent:'main',group:true,sharedKey:true},'group-return':{sender:'operator',agent:'main',sharedKey:true}};
   const scenario=cases[params.scenario];if(!scenario){respond(false,undefined,{code:'INVALID_REQUEST',message:'Unknown scenario'});return;}
   const before=ownerResolutions;let delivered=0;
   const text='Inspect file:///home/tester/kernel-resource/';
-  const key='agent:'+scenario.agent+':vmchan:group:fixture';
+  const key='agent:'+scenario.agent+':vmchan:group:'+(scenario.sharedKey?'shared':'fixture');
   try{await dispatchInboundMessageWithDispatcher({cfg:api.config,ctx:{Body:text,BodyForAgent:text,BodyForCommands:text,From:'vmchan:'+scenario.sender,To:'vmchan:fixture',Provider:'vmchan',Surface:'vmchan',SenderId:scenario.sender,AgentId:scenario.agent,SessionKey:key,AccountId:'default',ChatType:scenario.group?'group':'direct',WasMentioned:true,CommandAuthorized:true,MessageSid:'vm-'+params.scenario,...(scenario.scopes?{GatewayClientScopes:['operator.admin']}: {})},dispatcherOptions:{deliver:async()=>{delivered++;}}});respond(true,{dispatched:true,ownerResolverCalled:ownerResolutions>before,delivered});}catch{respond(false,undefined,{code:'UNAVAILABLE',message:'Fixture dispatch failed'});}
  },{scope:'operator.admin'});
 }});

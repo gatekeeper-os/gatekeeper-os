@@ -1060,6 +1060,22 @@ integration and the ordered live acceptance steps below remain outstanding.
 
 **Acceptance.** Conformance tests above pass against the pinned upstream. Manual: in a Telegram DM to a dev cell, the operator pastes a path URL `file:///home/matt/projects/foo` → agent lists files via `gk_fs_dir_list`; a second, non-operator sender cannot introduce; `clawos grant revoke` makes the tool disappear next turn; every step appears in `clawos audit tail`.
 
+**2026-09-09 fidelity correction:** the original Telegram manual scenario above
+remains the specification, but Matt explicitly deferred its execution; it is not
+passed or replaced by synthetic ingress. Slack was added as a deployment canary,
+not an original Phase 3 requirement or a substitute waiver. The combined Linux
+suite verdict is not full phase acceptance: its secondary install fixture uses
+`skills.install`, not `plugins.install`, and OAuth/connect, drainer and chat-command
+entry points remain placeholders. See `plans/plan-fidelity-audit.md` for the
+source-to-evidence reconciliation; do not advance or tag on aggregate counts alone.
+
+**Owner-only audience enforcement:** upstream owner authorization answers who is
+speaking, not who can read the reply. External channel turns must also have a
+finalized `ChatType: "direct"` before URL introduction. Shared or unknown audiences
+are persistently locked before prompt construction, even if the owner speaks first;
+existing grants and preflighted calls are denied by the existing observer checks.
+This implements §4.7's original private-only beta boundary, not v1.1 sharing.
+
 ### Phase 4 — Reference gatekeeper: GitHub (4–6 days)
 
 **Deliverables:** `packages/gatekeeper-github` following §4.6 (with the two STOP reviews), resources `repo`, `issue`, `pull` (URL patterns exactly as cloudflare-os: `https://github.com/:owner/:repo`, `…/issues/:number`, `…/pull/:number`), tools (observations: `gk_github_repo_get`, `gk_github_repo_list_issues`, `gk_github_repo_list_pulls`, `gk_github_repo_read_file`, `gk_github_issue_get`, `gk_github_pull_get`, `gk_github_pull_diff`; actions: `gk_github_issue_create`, `gk_github_issue_comment`, `gk_github_pull_comment`, `gk_github_pull_review`), OAuth device/web flow, observer strategy B (`hasRepoAccess` distinguishing 403/404 → false from transient errors → throw), simulation for all four actions (overlay-at-read), `revertAction` for comments (delete) and issue create (close), `deploy-inputs.json`.
