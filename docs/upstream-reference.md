@@ -460,3 +460,17 @@ that directory. Tests should use an exact upload specifier, never a forged hash
 label. `block:true` terminates lower-priority handlers. These are source/doc
 findings, **not live acceptance**. Official/bundled plugin paths may skip the
 secondary hook; the skill fixture does not establish plugin-install coverage.
+
+
+## 2026-09-09 verified prompt ordering correction
+
+Pinned `openclaw@2026.9.2` bundled `docs/plugins/hooks.md` states at the prompt
+lifecycle section (line 774) that `agent_turn_prepare` precedes ordinary
+`before_prompt_build` and finalized tool policy; the `before_agent_run` section
+(line 838) explicitly places that gate **after prompt construction**. This
+corrects the OS plan's reversed sequence; it is not an upstream regression.
+The published `PluginHookBeforeAgentRunEvent` has optional `senderIsOwner`,
+whereas `PluginHookAgentContext`, `PluginHookBeforeAgentReplyEvent` and
+`PluginAgentTurnPrepareEvent` do not expose that trusted owner bit. Missing
+authority cannot be inferred from matching a sender label. First-turn channel
+URL granting remains unverified/blocked; existing RPC/CLI acceptance is narrower.

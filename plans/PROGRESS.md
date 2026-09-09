@@ -1049,3 +1049,32 @@ Checks: `pnpm --filter @clawos/cli... build`,
 nested runtime artifacts), catalog, secret scan and diff whitespace checks pass.
 This is distribution preparation, not beta or full Phase 3 acceptance. No release
 or public-visibility change. Application integration work remains separate.
+
+## 2026-09-09 — expanded live kernel checkpoint; channel ordering stop
+
+Built: kernel session-note lookup and post-preflight owner-only audience recheck;
+seven new unit regressions. Conformance plugin-loads now checks the actual CLI
+`plugins` envelope and loaded/enabled entries. Five operator RPC checks use the
+fixture's paired device-token transport and verify expected response shapes,
+not merely defined responses. Both suites consume only current-run evidence.
+
+Acceptance: `CLAWOS_VM_DRIVER=libvirt
+CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state
+scripts/vm/test.sh phase-3 installed kernel-live`, artifacts
+`vm-artifacts/20260909-095524-phase-3/`, harness/live/collection exit0.
+**38/38** conformance assertions, **63/63** structural flags, eight actual agent
+turns; **18/18** kernel and **114/114** CLI tests. QEMU snapshot restore, boot,
+sync and guest execution succeeded without new host changes. Guest stopped
+cleanly after collection. Conformance host regressions36/36 and typecheck pass.
+No runtime upstream changes, production access, grant-file writes, merge/tag.
+
+Plan correction / early stop: upstream's public hooks documentation explicitly
+places prompt construction before `before_agent_run`, contrary to our plan.
+Earlier hooks lack the trusted owner bit used for granting. First-turn channel
+introduction remains blocked; no sender-label shortcut or next-turn downgrade.
+See `plans/channel-ordering-blocker.md` for exact evidence and required identity
+proof. `docs/implementation-plan.md` and `docs/upstream-reference.md` now state
+the actual order. This is a plan error, not an upstream compatibility regression.
+Live channel/observer/egress/approval, plugin-specific hook, combined Phase3 and
+macOS gates remain open. The GitHub surface review and disposable service test
+identities remain pending from the prior requests. Full beta is not released.

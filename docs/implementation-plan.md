@@ -148,12 +148,18 @@ Additional **VERIFIED** SDK facts used by the kernel: `api.registerTool` tools e
 
 Data flow for one agent turn, showing where the OS intervenes (all hook names are **VERIFIED** OpenClaw plugin hooks):
 
+**2026-09-09 correction:** the pinned upstream builds the prompt before
+`before_agent_run` (bundled `docs/plugins/hooks.md`, prompt lifecycle and
+before-agent-run sections). The original reversed ordering was a plan error.
+First-turn channel URL introduction is **BLOCKED**, not accepted: creation at
+this later hook cannot update the already-narrowed initial tool surface. See
+[the concrete integration blocker](../plans/channel-ordering-blocker.md).
+
 ```
-inbound message ─► [before_agent_run: kernel]  ── URL introduction detection,
+inbound message ─► [before_prompt_build: kernel] ── narrow tools to existing grants;
+                                                  inject grant table as context
+                ─► [before_agent_run: kernel] ── trusted URL introduction,
                                                   cell policy, turn-level veto
-                ─► [before_prompt_build: kernel] ── narrow tools to granted
-                                                  gatekeeper tools; inject the
-                                                  agent's grant table as context
                 ─► model call
                 ─► tool call ─► [before_tool_call: kernel, matcher gk_*]
                                   ├─ no grant for handle → block
@@ -440,7 +446,7 @@ grant {
 
 Introductions happen in three ways, all creating a `pending` grant that only an operator can activate:
 
-1. **Operator pastes a URL** in a channel the agent is bound to. The kernel's `before_agent_run` handler extracts URLs from `event.prompt`, matches them against every registered `SupportedResource.urlPattern`, and for each match calls `account.getGatekeeperFor(url)` (which validates access using the operator's own credentials). If the sender is the operator (`ctx.senderId` is in the cell's operator list), the grant is created `active` immediately and a short system note is injected via `before_prompt_build` ("You now have access to GitHub repository owner/repo as grant:7k3m9q2p"). If the sender is not an operator, the URL is ignored (a non-operator cannot introduce resources — INVARIANT).
+1. **Operator pastes a URL** in a channel the agent is bound to. The current kernel extracts URLs at `before_agent_run` and requires both the trusted `event.senderIsOwner === true` and a configured channel/sender operator match before resolving the operator's account and creating an active grant. Non-operators cannot introduce resources. **Known integration gap:** upstream has already run `before_prompt_build`, so this cannot supply that new grant in the initial prompt/tool set. A later prompt build consumes the session-scoped notice. The first-turn acceptance requirement remains open; do not treat next-turn behavior or an RPC introduction as a substitute. Earlier hooks do not expose the same trusted owner bit. No authority weakening, pin change, or requirement reduction is approved by this correction.
 2. **Operator runs** `clawos grant add --agent ops https://github.com/owner/repo` (→ `os.grants.introduce`).
 3. **The agent requests access** with the kernel tool `os_request_access({ url, reason })`. The kernel records a `pending` grant, notifies operators (via `openclaw message` on the cell's notification channel, and in `clawos approvals list`), and returns "Access requested; you will be told when it is granted." The agent is never blocked waiting.
 

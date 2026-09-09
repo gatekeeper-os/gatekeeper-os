@@ -66,6 +66,19 @@ try {
   paired=await connect({deviceToken:shared.deviceToken});
   check(phase+'-kernel-ready',(await paired.client.request('os.status',{})).gatekeepers.some(g=>g.vendor==='fs'&&g.healthy));
   if(phase==='normal'){
+    const plugins=cli(['plugins','list','--json'],'openclaw');
+    const loaded=plugins.value?.plugins;
+    for(const id of ['clawos-kernel','gatekeeper-fs']) check('plugin-loaded-'+id,plugins.ok&&Array.isArray(loaded)&&loaded.some(p=>p.id===id&&p.enabled===true&&p.status==='loaded'));
+    const statusRpc=await paired.client.request('os.status',{});
+    check('rpc-status',statusRpc.cell==='kernel-test'&&statusRpc.healthy===true&&Number.isInteger(statusRpc.pendingApprovals));
+    const gatekeepersRpc=await paired.client.request('os.gatekeepers.list',{});
+    check('rpc-gatekeepers',Array.isArray(gatekeepersRpc)&&gatekeepersRpc.some(g=>g.vendor==='fs'&&g.healthy===true));
+    const grantsRpc=await paired.client.request('os.grants.list',{});
+    check('rpc-grants',Array.isArray(grantsRpc)&&grantsRpc.length===0);
+    const approvalsRpc=await paired.client.request('os.approvals.list',{});
+    check('rpc-approvals',Array.isArray(approvalsRpc)&&approvalsRpc.length===0);
+    const auditRpc=await paired.client.request('os.audit.query',{limit:10});
+    check('rpc-audit',Array.isArray(auditRpc)&&auditRpc.length<=10);
     check('shared-auth-introduction-denied',await denied(shared.client,'os.grants.introduce',{agentId:'main',url:'file:///home/tester/kernel-resource/'}));
     check('forged-identity-denied',await denied(paired.client,'os.grants.introduce',{agentId:'main',url:'file:///home/tester/kernel-resource/',operatorId:'forged'}));
     check('outside-introduction-denied',await denied(paired.client,'os.grants.introduce',{agentId:'main',url:'file:///home/tester/kernel-outside/'}));

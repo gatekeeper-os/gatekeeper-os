@@ -40,7 +40,7 @@ pnpm exec tsx test/scripts/kernel-config.mjs no-hooks
 openclaw config validate > /home/tester/kernel-validation.log 2>&1
 start_gateway
 node test/scripts/kernel-scenarios.mjs no-hooks
-pnpm conformance --only hooks-fire,tool-narrowing,gate-blocks,fs-gatekeeper,cli-mounted --verdict "$evidence/live-verdict.json"
+pnpm conformance --only plugin-loads,rpc-methods,hooks-fire,tool-narrowing,gate-blocks,fs-gatekeeper,cli-mounted --verdict "$evidence/live-verdict.json"
 pnpm check:catalog
 pnpm check:secrets
 echo 'kernel-live: PASS (focused checkpoint; not full Phase 3 acceptance)'
