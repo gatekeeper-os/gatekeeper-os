@@ -6,6 +6,8 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
+    "LICENSE",
+    "NOTICE",
     "dist",
     "openclaw.plugin.json",
     "config.schema.json",
@@ -29,5 +31,11 @@
   },
   "peerDependencies": {
     "openclaw": "catalog:"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ControlStackAI/openclaw-os.git",
+    "directory": "packages/clawos-conformance"
   }
 }

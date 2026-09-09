@@ -977,3 +977,19 @@ is unchanged, not rerun or newly claimed. Harness/runtime files untouched;
 older drafts preserved. Repository VM-failure STOP remains active; host-level
 resource remediation is needed before the exact saved acceptance can resume.
 Phase3 remains incomplete and untagged.
+
+## Beta distribution license checkpoint — 2026-09-08
+
+MIT was explicitly selected by the operator. Release-preparation PR #3 adds the
+root license, notice, contributor/security guidance and package metadata; its
+initial CI run 34307633867 passed. A follow-up includes exact root LICENSE and
+NOTICE copies in all ten workspace package file lists, with a CI consistency
+check (`node scripts/check-package-licenses.mjs`).
+
+Verification: ten actual local `npm pack --ignore-scripts` archives were opened
+without extraction and each package/LICENSE, package/NOTICE and metadata license
+were compared to the project text. All ten passed; secret scan and diff whitespace
+check passed. Temporary archives were discarded. This checks license packaging,
+not built runtime completeness or beta acceptance. Bundled Phase 3 plugins and
+third-party TypeBox notices must still be verified on the integrated release tree.
+No npm publication, release tag or repository visibility change occurred.
