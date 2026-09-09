@@ -236,3 +236,26 @@ reinstall and healthy empty-grant kernel/fs, then exercises actual pinned CLI
 plugin installs under deny, explicit operator allow, and unavailable-policy states.
 Only structural flags, test reports and safe install summaries are collected.
 This focused checkpoint does not close secondary Gateway hook or full Phase 3 acceptance.
+
+## Secondary Gateway install-hook fixture (not yet accepted)
+
+`scripts/vm/test.sh phase-3 installed install-hook` restores the dedicated VM,
+loads the real kernel into the isolated loopback Gateway at 19100, and stages an
+inert private skill zip through documented admin upload RPCs. No model/provider,
+registry, personal credentials or external messages are involved. The VM's primary
+command bundles the production install evaluator with independently controlled
+fixture rules; this intentionally distinguishes primary denial from secondary
+kernel denial and does not re-test installer projection. Passive high/low-priority
+hook handlers record only structural flags and never return policy decisions.
+
+The expected sequence is primary deny with no hook, primary allow plus secondary
+terminal deny, then a Gateway restart with an exact operator upload rule and a
+successful install. It additionally checks read-only scope denial, byte equality,
+no minted grants and consumed-upload replay refusal. Only structural evidence is
+collected from `phase-3-install-hook-evidence/`. This skill path does not close the
+checklist's plugin-specific hook criterion or full Phase 3 acceptance.
+
+First attempted run `20260909-021053-phase-3` failed in snapshot restoration:
+`qemu-img: Failed to initialize io_uring: Cannot allocate memory`. No guest test
+ran. Both the 15-assertion suite and its fixture remain unaccepted until the host
+VM blocker is resolved and a fresh run completes. Existing snapshots are retained.

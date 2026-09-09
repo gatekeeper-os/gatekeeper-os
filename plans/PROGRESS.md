@@ -912,3 +912,48 @@ and approval decision integration, full Phase3 gate and macOS remain unaccepted.
 No phase3 tag, merge, push or snapshot replacement. Existing unrelated full-phase
 conformance/test drafts remain unstaged and preserved. Next: the remaining
 Phase3 acceptance paths, beginning with secondary Gateway hook evidence.
+
+## 2026-09-08 — secondary Gateway install fixture drafted; VM restore blocked
+
+Continued from `f1e7a8f`. Added `install-hook` acceptance mode, a passive VM-only
+before/after install monitor, and public-SDK authenticated archive scenarios.
+The independent primary fixture bundles the existing production evaluator and
+uses test-only rules; the real kernel's hook is neither patched nor invoked
+directly. Draft assertions cover primary-before-hook ordering, terminal secondary
+denial, exact upload allowance after restart, read-scope denial, exact installed
+bytes, no grants, and consumed-upload replay. Upload archive contains only an
+inert test fixture, not a published reusable skill. No production policy change.
+This tests the skill upload path; **plugin-specific coverage remains separate**.
+No acceptance criterion is waived or checked off.
+
+Attempt: `CLAWOS_VM_DRIVER=libvirt
+CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state
+scripts/vm/test.sh phase-3 installed install-hook`, restart-resilient service
+`clawos-p3-install-hook`. `vm-artifacts/20260909-021053-phase-3/` contains selected
+mode/snapshot and separately captured host diagnostics. Service exit1 in
+`snapshot-revert`, before source sync or guest execution. The normal harness
+`exit-code`/collection was never reached; this is a **known bootstrap failure,
+not a failed hook assertion and not an unknown live result**.
+
+Read-only host journal gives exact cause: libvirt child `qemu-img snapshot -a
+installed .../tester.qcow2` failed initializing `io_uring` with `Cannot allocate
+memory`. Independent read-only `qemu-img snapshot -l` and even `qemu-img --help`
+fail identically. VM is shut off; libvirt lists original base/installed snapshots
+with unchanged dates. Host has ~7.1GiB available RAM, 8MiB memlock limits; the
+specific exhausted io_uring resource is **not established**. Do not guess a host
+limit change, kill sibling workloads, bypass VM acceptance, or claim corruption.
+Per repository VM-failure stop rule, no restore retry or host configuration change.
+
+Host checks: 36/36 conformance runner regressions, 2/2 VM-bootstrap tests,
+conformance typecheck, standalone primary fixture build, shell/JS syntax,
+catalog, secrecy and diff checks pass. First Python unittest module invocation
+and first Vitest config path were invalid; corrected repository test commands
+passed. These invocation failures are not VM/runtime evidence. The 15 new live
+assertions have **not run**. Runtime kernel/shared code unchanged; older full-phase
+and conformance drafts remain separately unstaged. No running script edited.
+
+Next: resolve the host qemu-img/io_uring initialization failure, rerun the exact
+fresh-snapshot command, inspect actual event ordering/verdict before accepting.
+Then plugin-specific hook coverage, channel URL ordering, observer/egress/approval
+integration and full Phase 3/macOS gates. Phase3 remains incomplete and untagged;
+no push/merge, snapshot replacement, real granted-file writes or production changes.

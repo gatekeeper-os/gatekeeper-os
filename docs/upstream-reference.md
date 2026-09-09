@@ -439,3 +439,24 @@ Gatekeeper catalog roots refer to those exact paths. OS reconciliation also owns
 `plugins.allow`, `plugins.load`, and `security.installPolicy`; local overrides merge
 last. Source install is the trust decision for these packaged first-party artifacts;
 third-party plugin/skill install commands remain subject to the primary policy.
+
+### Secondary install-hook fixture contract (2026-09-08, pinned source inspection)
+
+VERIFIED against installed pinned `openclaw@2026.9.2` documentation:
+`docs/gateway/protocol.md` skills RPC section and `docs/plugins/hooks.md` Install
+hooks. `skills.upload.begin({kind:"skill-archive",slug,sizeBytes,sha256?,force?})`,
+`skills.upload.chunk({uploadId,offset,dataBase64})`, and
+`skills.upload.commit({uploadId,sha256?})` are admin-only; commit stages but does
+not install. `skills.install({source:"upload",uploadId,slug,force?,sha256?})`
+requires explicit `skills.install.allowUploadedArchives:true`. Uploads contain a
+root `SKILL.md`. Production defaults remain unchanged.
+
+Read-only implementation confirmation: pinned `dist/skills-BnlEnM0m.js`
+`installUploadedSkillArchive` supplies `requestedSpecifier: upload:<uploadId>`;
+`dist/install-security-scan.runtime-DefQR--w.js` evaluates the operator policy
+before the loaded runtime's hook. Hook source material is an extracted directory,
+not the uploaded zip. An allow-hash rule for a regular file cannot alone authorize
+that directory. Tests should use an exact upload specifier, never a forged hash
+label. `block:true` terminates lower-priority handlers. These are source/doc
+findings, **not live acceptance**. Official/bundled plugin paths may skip the
+secondary hook; the skill fixture does not establish plugin-install coverage.
