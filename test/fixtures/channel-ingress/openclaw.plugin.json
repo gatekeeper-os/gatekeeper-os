@@ -1,0 +1,1 @@
+{"id":"clawos-channel-ingress","channels":["vmchan"],"activation":{"onStartup":true},"configSchema":{"type":"object","additionalProperties":false,"properties":{}}}

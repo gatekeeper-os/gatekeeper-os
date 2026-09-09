@@ -37,7 +37,8 @@ function usage(): number {
     [
       "usage: clawos <command> [--cell <name>] [--json] [--yes]",
       "",
-      "  install                    install or converge this cell (idempotent)",
+      "  install [--environment-file <absolute-path>]",
+      "                             install or converge this cell (idempotent)",
       "  status                     report cell health",
       "  doctor                     host-layer diagnostics with fix hints",
       "  cell create <name> --port  create an additional cell",

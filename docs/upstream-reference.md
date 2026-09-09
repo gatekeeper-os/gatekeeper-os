@@ -474,3 +474,38 @@ whereas `PluginHookAgentContext`, `PluginHookBeforeAgentReplyEvent` and
 `PluginAgentTurnPrepareEvent` do not expose that trusted owner bit. Missing
 authority cannot be inferred from matching a sender label. First-turn channel
 URL granting remains unverified/blocked; existing RPC/CLI acceptance is narrower.
+
+
+## 2026-09-09 public pre-prompt channel authority candidate
+
+Verified declarations/docs for the existing `openclaw@2026.9.2` pin:
+
+- `dist/plugin-sdk/command-auth.d.ts` publicly exports
+  `resolveCommandAuthorization({ctx, cfg, commandAuthorized})`; the returned
+  `CommandAuthorization` includes `providerId`, normalized `senderId`, and
+  `senderIsOwner`. No internal import is needed.
+- `dist/plugin-sdk/agent-scope-runtime.d.ts` publicly exports
+  `resolveSessionAgentIdStrict` for explicit/canonical routed agent authority.
+- Bundled `docs/plugins/hooks.md`, Message hooks, documents `reply_dispatch`
+  receiving the finalized message context and host dispatcher before the
+  ordinary runtime path. `eligibleDispatchKinds: ["agent"]` scopes the handler.
+- Read-only source inspection of `dispatch-from-config` confirms an unhandled
+  result continues ordinary dispatch; restricted runtime settings can omit
+  takeover hooks. `operator-role-policy` assembles Gateway chat with
+  `Provider: webchat` and host client scopes; the adapter rejects these even
+  when a channel delivery origin or sender label is present.
+- `inbound_claim` does expose an upstream-resolved owner bit, but only to the
+  conversation-binding owner. A declined claim terminates that bound turn;
+  it is not an appropriate global pre-routing observer.
+
+These are published-contract/source findings, **not live acceptance**. Unit
+adapter tests mock the public resolver, and kernel tests mock transport. A
+real ingress fixture must demonstrate owner/non-owner first-turn prompt
+ordering, Gateway identity spoof refusal, and effective routed agent identity.
+Real Telegram behavior still needs dedicated transport acceptance.
+
+Review correction: the public `routing` subpath exports `parseAgentSessionKey`.
+The adapter requires an explicit routed agent or a parsed canonical agent key
+before `resolveSessionAgentIdStrict`: despite its name, the pinned resolver may
+fall back to a configured/default agent on unscoped keys. The guard avoids
+implicit grant targeting; strict resolution still rejects explicit/key conflicts.

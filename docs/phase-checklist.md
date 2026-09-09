@@ -59,22 +59,23 @@ Latest complete Ubuntu acceptance: `vm-artifacts/20260907-223901-phase-1/`, fres
 - [x] Filesystem STOP 1: operator approved the presented contract after `7642efb` ("continuew"); contract: `plans/fs-contract.md`.
 - [x] Filesystem STOP 2: operator explicitly approved after `fc8b33f` ("Approved continue"); recorded in `plans/PROGRESS.md`.
 
-- [ ] Conformance tests pass in VM: `plugin-loads`, `hooks-fire`, `tool-narrowing`, `gate-blocks`, `rpc-methods`, `cli-mounted`, `health`, `fs-gatekeeper`, `install-gate` — evidence:
-- [ ] Operator pastes a `file://` path URL → agent lists files through `gk_fs_dir_list` — evidence:
-- [ ] Non-operator pastes the same URL → no grant created — evidence:
-- [ ] `clawos grant revoke` → tool absent on the next turn — evidence:
-- [ ] Every step above appears in `clawos audit tail` — evidence:
+- [x] Conformance tests pass in VM: `plugin-loads`, `hooks-fire`, `tool-narrowing`, `gate-blocks`, `rpc-methods`, `cli-mounted`, `health`, `fs-gatekeeper`, `install-gate` — evidence: combined fresh-run verdict `vm-artifacts/20260909-201704-phase-3/verdict.json`, 47/47 across the nine required suites; `install-hook` adds 17/17.
+- [x] Authenticated Control UI pastes a `file://` path URL → agent receives `gk_fs_dir_list` on the first request — evidence: same combined run, 33/33 ingress checks.
+- [x] Non-operator pastes the same URL → no grant created — evidence: same combined run, synthetic public-SDK provider with upstream owner resolution.
+- [x] `clawos grant revoke` → tool absent on the next turn — evidence: same combined run, `cli-grant-revoke`, `grant-revoked`, and `revoked-tool-absent` all pass.
+- [x] Every kernel grant/use/revoke step above appears in `clawos audit tail` — evidence: same combined run, `successful-call-audited`, `observation-audited`, `unknown-policy-audited`, `cli-audit-tail`, and `revocation-audited` pass.
 - [x] Trusted tool policy denies a `gk_*` call with an unknown handle even when kernel conversation hooks are disabled — evidence: `20260908-163653-phase-3`, `disabled-hooks-policy-denied` and matching policy audit.
 - [x] Fresh-base installer regression with bundled plugins: **25/25**, `vm-artifacts/20260909-002725-phase-1/`; two-cell isolation, backup/restore and post-restore health pass.
 - [x] Source-packaged kernel/fs project into cell-local state with no implicit grants; reinstall is a no-op — `vm-artifacts/20260909-001359-phase-3/`, install-again and scenario evidence, healthy paired kernel/fs status.
 - [x] Primary install policy blocks actual unlisted CLI installs, permits an explicitly reviewed source, and fails closed when unavailable — `vm-artifacts/20260909-003432-phase-3/`, `install-verdict.json` **8/8**, `scenarios.json` **12/12** structural checks; CLI114/policy4 guest tests pass. The outage case uses a fresh allowed fixture and verifies the policy error.
-- [ ] Secondary `before_install` blocks a plugin from a non-allowlisted source in a Gateway-backed flow — evidence:
+- [x] Secondary `before_install` blocks a plugin from a non-allowlisted source in a Gateway-backed flow — evidence: `vm-artifacts/20260909-195747-phase-3/`, 17/17; repeated inside combined run `20260909-201704`.
 - Focused live checkpoint `20260908-163653-phase-3`: hooks-fire 4/4, tool-narrowing 5/5,
   gate-blocks 7/7, fs-gatekeeper 7/7; 48/48 structural checks across eight actual agent turns.
   Paired device-token RPC introduction/revocation and non-owner RPC URL denial passed.
   The later `20260908-172236-phase-3` checkpoint verified CLI grant/list/revoke/audit
-  and mounted status (**31/31** live assertions). Telegram-channel paths remain
-  unverified; the combined phase gate stays open.
+  and mounted status (**31/31** live assertions). Combined Phase 3 is now green;
+  real Slack transport remains a separate deployment canary before tagging.
+- [ ] Real Slack transport from Nova's SOPS-backed ALINA app admits Matt and rejects an unallowlisted identity — evidence:
 - [ ] Tag `phase-3`
 
 ## Phase 4 — gatekeeper-github

@@ -86,6 +86,8 @@ export interface CellRecord {
   stateDir: string;
   unit: string;
   createdAt: string;
+  /** Optional host-managed secret environment attached to this cell's service. */
+  environmentFile?: string;
 }
 
 /** Read the host-level cell registry. Missing or unreadable registry means "no cells recorded yet". */

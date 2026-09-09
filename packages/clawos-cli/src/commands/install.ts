@@ -13,7 +13,7 @@ import { projectPlugins } from "../util/plugins.js";
 import { randomBytes } from "node:crypto";
 import { copyFileSync, existsSync, readdirSync, readFileSync } from "node:fs";
 import { homedir, userInfo } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, isAbsolute, join, normalize } from "node:path";
 import { CELLS_REGISTRY, readRegistry, resolveCell, type Cell, type CellRecord } from "../util/cell.js";
 import { ensureDir, modeOf, writeFileIfChanged, writeJson } from "../util/fsx.js";
 import { readLockfile, writeLockfile, type Lockfile } from "../util/lockfile.js";
@@ -64,7 +64,7 @@ function pinnedVersion(): string {
 }
 
 /** Render the systemd drop-in for a cell. A drop-in never modifies upstream's unit file (INVARIANT 1). */
-export function renderDropIn(cell: Cell): string {
+export function renderDropIn(cell: Cell, environmentFile?: string): string {
   const lines = [
     "# Written by `clawos install`. A drop-in never modifies upstream's unit file (INVARIANT 1).",
     "[Service]",
@@ -75,7 +75,9 @@ export function renderDropIn(cell: Cell): string {
     lines.push(`Environment=OPENCLAW_PROFILE=${cell.name}`, `Environment=OPENCLAW_GATEWAY_PORT=${cell.port}`);
   }
   // The Gateway token is referenced from config as ${CLAWOS_GATEWAY_TOKEN} and delivered by file, never by argv.
-  lines.push(`EnvironmentFile=-${join(cell.stateDir, ".env")}`, "OOMPolicy=continue", "");
+  lines.push(`EnvironmentFile=-${join(cell.stateDir, ".env")}`);
+  if (environmentFile) lines.push(`EnvironmentFile=${environmentFile}`);
+  lines.push("OOMPolicy=continue", "");
   return lines.join("\n");
 }
 
@@ -88,6 +90,8 @@ export async function install(args: string[], globals: GlobalOptions): Promise<n
   const started = Date.now();
   const port = Number(optional(args, "--port") ?? resolveCell(globals.cell).port);
   const cell = resolveCell(globals.cell, port);
+  const recordedCell = readRegistry().find((entry) => entry.name === cell.name);
+  const environmentFile = validateEnvironmentFile(optional(args, "--environment-file") ?? recordedCell?.environmentFile);
   const steps: StepResult[] = [];
   const record = (step: string, state: StepResult["state"], detail?: string) => steps.push({ step, state, detail });
 
@@ -199,7 +203,7 @@ export async function install(args: string[], globals: GlobalOptions): Promise<n
       serviceChanged = true;
     }
     ensureDir(cell.dropInDir, 0o700);
-    if (writeFileIfChanged(join(cell.dropInDir, "clawos.conf"), renderDropIn(cell), 0o644)) serviceChanged = true;
+    if (writeFileIfChanged(join(cell.dropInDir, "clawos.conf"), renderDropIn(cell, environmentFile), 0o644)) serviceChanged = true;
     if (serviceChanged && run("systemctl", ["--user", "daemon-reload"]).code !== 0) throw new StepError("systemd daemon-reload failed");
     run("loginctl", ["enable-linger", userInfo().username]);
     const enable = run("systemctl", ["--user", "enable", "--now", cell.unit]);
@@ -254,6 +258,7 @@ export async function install(args: string[], globals: GlobalOptions): Promise<n
     stateDir: cell.stateDir,
     unit: cell.unit,
     createdAt: existingLock?.upstream.installedAt ?? new Date().toISOString(),
+    ...(environmentFile ? { environmentFile } : {}),
   };
   ensureDir(dirname(CELLS_REGISTRY), 0o700);
   writeJson(CELLS_REGISTRY, [...registry, row].sort((a, b) => a.name.localeCompare(b.name)), 0o600);
@@ -279,6 +284,15 @@ export async function install(args: string[], globals: GlobalOptions): Promise<n
 function optional(args: string[], flag: string): string | undefined {
   const index = args.indexOf(flag);
   return index === -1 ? undefined : args[index + 1];
+}
+
+/** Validate a systemd EnvironmentFile path without opening or copying the secret-bearing file. */
+function validateEnvironmentFile(path: string | undefined): string | undefined {
+  if (path === undefined) return;
+  if (!isAbsolute(path) || normalize(path) !== path || /[\r\n\0]/u.test(path)) {
+    throw new StepError("--environment-file must be a normalized absolute path");
+  }
+  return path;
 }
 
 /** True when the `.env` file already defines a variable. The value is never read into a log or an argument vector. */

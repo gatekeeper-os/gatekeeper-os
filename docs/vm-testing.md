@@ -75,7 +75,7 @@ Inside the VM, the per-phase test scripts live at `test/phase-N.sh` in the repo 
 
 ## 6. Test credentials
 
-Never use personal accounts. Create: a throwaway GitHub account with one private test repository and a fine-grained PAT (for CI) plus an OAuth app (for the device/web flow test); a Telegram bot token for a test bot and a test chat (for channel, pairing, and digest tests); one model provider key with a spending cap (or use OpenClaw's local/OpenAI-compatible test provider from the conformance suite so most tests need no paid model). Provide them to the VM only through `scripts/vm/secrets.env` (git-ignored, mode 600), injected as environment variables for the duration of a run and never written to disk inside the VM except through OpenClaw's own SecretRef mechanism.
+Never use personal accounts in CI. Create: a throwaway GitHub account with one private test repository and a fine-grained PAT (for CI) plus an OAuth app (for the device/web flow test); a dedicated Slack app and test workspace identities (for channel, pairing, and digest tests); one model provider key with a spending cap (or use OpenClaw's local/OpenAI-compatible test provider from the conformance suite so most tests need no paid model). Local operator acceptance may reuse a host-managed SOPS environment only through protected stdin delivery into the test process. Never copy or interpolate its values into the repository, VM image, command arguments, or artifact bundle.
 
 ## 7. What "tested" means per phase
 

@@ -1091,3 +1091,84 @@ Root invocation `pnpm exec vitest run packages/clawos-cli/src/util/kernel-rpc.te
 passes6/6; exact CI command `pnpm test` passes331/331 across26 files including its
 build. This is a test-location fix only; production RPC behavior is unchanged.
 Remote CI rerun remains required before reporting green.
+
+
+## 2026-09-09 — full beta completion authorization resumed
+
+Operator explicitly authorized finishing all work needed for beta after the
+channel blocker and concrete GitHub surface had been presented. Resume design
+resolution and implementation within the unchanged capability/upstream
+invariants; the prior procedural stop is not a request to waive acceptance.
+GitHub review status updated to reflect this later authorization.
+
+Verified remote CI34338564129 is successful at ed76b4a; the earlier CI-pending
+note is superseded. Saved hook verdict20260909-050316 remains17/17, exit0,
+fullPhaseAcceptance:false. It does not close the plugin-specific install or
+combined Phase3 gate. No fresh VM acceptance or beta release claimed.
+
+## 2026-09-09 — interrupted channel candidate recovered and reviewed
+
+Recovered uncommitted early-dispatch adapter/kernel/tests from interrupted child;
+no child completion or live acceptance inferred. Published owner resolver plus
+configured operator match retained. Parent found strict agent resolver can still
+fall back to a default; public routing parser now requires an explicit routed
+agent or canonical session key before resolution. Updated stale plan paragraph.
+
+Kernel typecheck and38/38 kernel tests pass. Full root `pnpm test` build and
+351/351 tests across27 files pass. Catalog/secrecy and diff checks pass. These
+are host regressions, not channel transport acceptance. Dedicated native child
+prepares genuine public-SDK ingress VM checkpoint; no live result yet. No new
+commit/tag/release or production change. Full beta remains authorized and open.
+
+## 2026-09-09 — public SDK channel ingress checkpoint verified
+
+Focused command: `CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state scripts/vm/test.sh phase-3 installed channel-ingress`.
+Artifacts: `vm-artifacts/20260909-110033-phase-3/`; harness and live exit0,
+29/29 scenario checks, five actual model turns, pinned upstream2026.9.2,
+installed snapshot. Kernel38/38 and CLI114/114 tests pass.
+
+Parent directly inspected scenario/tool evidence, scope and exit files, runner
+wiring, and confirmed `virsh -c qemu:///session domstate clawos-test` is shut off.
+Owner first request includes filesystem tools and access notice; nonowner,
+scopes-bearing synthetic ingress and paired Gateway RPC with forged routing
+labels receive neither new grants nor filesystem tools/notice. Subsequent
+nonowner in the same session loses owner-only tools. Provider uses public SDK
+dispatch and loaded owner authorization; no direct kernel-hook acceptance.
+
+This resolves the focused SDK integration evidence, not real Telegram transport,
+full group isolation, or full Phase3 acceptance. Remaining live gates and beta
+release stay open. No commit, merge, tag or release in this checkpoint.
+
+## 2026-09-09 — combined Phase 3 attempt exposed stale orchestration
+
+The first `full` VM attempt (`20260909-195910-phase-3`) failed before product
+acceptance because `test/phase-3.sh` still invoked the removed `clawos dev
+install-plugins` command and omitted the explicit state/config environment now
+required by the fail-closed conformance runner. The already-passing focused
+checkpoints rule out a kernel or gatekeeper regression; the combined wrapper
+itself had not been kept in sync. The revised full path executes each focused
+live checkpoint in one freshly restored VM and accepts only fresh exit-zero
+reports whose conformance-suite union is complete.
+
+The revised attempt reached the secondary install scenario, then correctly
+failed `install-mints-no-grants`: the preceding kernel checkpoint had left its
+intentional grant in the same disposable state directory. Full mode now clears
+only `/home/tester/.openclaw-kernel-test` after each focused gateway has stopped,
+preserving the single VM reset while giving every checkpoint an independent
+cell. The directory is disposable and restored from the `installed` snapshot.
+The next attempt proved the isolation path but created that directory at the
+shell default mode; upstream correctly failed closed because the install-policy
+script's parent was too open. The reset helper now recreates it at `0700`,
+matching the installer and the focused snapshot baseline.
+
+## 2026-09-09 — combined Phase 3 gate passed
+
+Original failing case rerun from one restored `installed` snapshot:
+`vm-artifacts/20260909-201704-phase-3/`, harness and combined exit0. The
+freshness validator accepted all required reports from run
+`2026-09-09T20:17:14Z`: nine Phase 3 suites **47/47**, secondary install hook
+**17/17**, and authenticated Control UI plus synthetic public-SDK ingress
+**33/33**. The live kernel scenario also passed all 63 checks, including CLI
+revoke making the filesystem tool absent on the next model turn and matching
+audit evidence. Secret scanning remained clean. Real Slack transport is the
+only channel canary still open before the Phase 3 tag.

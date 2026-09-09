@@ -151,15 +151,19 @@ Data flow for one agent turn, showing where the OS intervenes (all hook names ar
 **2026-09-09 correction:** the pinned upstream builds the prompt before
 `before_agent_run` (bundled `docs/plugins/hooks.md`, prompt lifecycle and
 before-agent-run sections). The original reversed ordering was a plan error.
-First-turn channel URL introduction is **BLOCKED**, not accepted: creation at
-this later hook cannot update the already-narrowed initial tool surface. See
+First-turn channel URL introduction remains **UNACCEPTED**. The authorized
+correction moves admission to `reply_dispatch`, using the public command-owner
+resolver on the host-finalized channel context, before prompt construction.
+No sender-label-only fallback or upstream modification is permitted. See
 [the concrete integration blocker](../plans/channel-ordering-blocker.md).
 
 ```
-inbound message ─► [before_prompt_build: kernel] ── narrow tools to existing grants;
+inbound message ─► [reply_dispatch: kernel] ── channel owner + configured operator;
+                                             introduce current-message URLs
+                ─► [before_prompt_build: kernel] ── narrow tools to existing grants;
                                                   inject grant table as context
-                ─► [before_agent_run: kernel] ── trusted URL introduction,
-                                                  cell policy, turn-level veto
+                ─► [before_agent_run: kernel] ── cell policy, observer fallback,
+                                                  turn-level veto (no URL grants)
                 ─► model call
                 ─► tool call ─► [before_tool_call: kernel, matcher gk_*]
                                   ├─ no grant for handle → block
@@ -446,7 +450,7 @@ grant {
 
 Introductions happen in three ways, all creating a `pending` grant that only an operator can activate:
 
-1. **Operator pastes a URL** in a channel the agent is bound to. The current kernel extracts URLs at `before_agent_run` and requires both the trusted `event.senderIsOwner === true` and a configured channel/sender operator match before resolving the operator's account and creating an active grant. Non-operators cannot introduce resources. **Known integration gap:** upstream has already run `before_prompt_build`, so this cannot supply that new grant in the initial prompt/tool set. A later prompt build consumes the session-scoped notice. The first-turn acceptance requirement remains open; do not treat next-turn behavior or an RPC introduction as a substitute. Earlier hooks do not expose the same trusted owner bit. No authority weakening, pin change, or requirement reduction is approved by this correction.
+1. **Operator pastes a URL** in a channel the agent is bound to. The candidate kernel extracts current-message URLs at `reply_dispatch`, using the public `command-auth` owner resolver on finalized ingress plus its configured channel/sender operator match. Gateway-scoped, internal, provenance-bearing, missing-identity, and ambiguous-agent turns cannot introduce resources. The late `before_agent_run` gate no longer introduces URLs. **Acceptance pending:** prove first-request tools and notice through real public-SDK dispatch, followed by dedicated Telegram transport testing; unit mocks and RPC introductions do not establish channel acceptance. The earlier implementation incorrectly assumed that `before_agent_run` preceded prompt construction.
 2. **Operator runs** `clawos grant add --agent ops https://github.com/owner/repo` (→ `os.grants.introduce`).
 3. **The agent requests access** with the kernel tool `os_request_access({ url, reason })`. The kernel records a `pending` grant, notifies operators (via `openclaw message` on the cell's notification channel, and in `clawos approvals list`), and returns "Access requested; you will be told when it is granted." The agent is never blocked waiting.
 
@@ -653,7 +657,22 @@ on shutdown. A closure-local map is insufficient. Discovery must not open a DB,
 start services, or replace the full-mode runtime. Tool bodies still fail closed
 when the runtime or call identity is absent.
 
-`onBeforeAgentRun(e, ctx)` — **Gate.** (1) If the cell is in `maintenance` (set during updates), block with a friendly message. (2) Extract URLs from `e.prompt`; for each URL matching a registered `SupportedResource.urlPattern`, if `ctx.senderId` is an operator of this cell, create an active grant (or reuse an existing one) and record an introduction note for this run. (3) Return pass. Must complete well under 15 s; URL matching is local, `getGatekeeperFor` is bounded to 5 s per URL with a cached negative result.
+`onReplyDispatch(e, ctx)` — **Pre-prompt channel admission; no takeover.** Resolve
+upstream ownership with public `openclaw/plugin-sdk/command-auth` against the
+host-finalized message context and host configuration, then require the exact
+configured channel/operator match. Reject Gateway-originated, internal,
+inter-session, ambiguous-provider, or missing-identity turns. Resolve routed
+agent scope through public `agent-scope-runtime` rather than guessing from a
+sender. Parse only canonical `commandText`, not enriched prompt/history. Record
+non-owner observers before narrowing; return no handled result so ordinary
+upstream dispatch continues. Restricted runtime dispatch may omit this hook;
+that path receives no automatic grant. This implementation is a candidate until
+live SDK ingress, forged RPC, and real Telegram acceptance prove its contracts.
+
+`onBeforeAgentRun(e, ctx)` — **Gate.** Block maintenance and retain the trusted
+non-owner observer fallback. Never mint URL grants here: the initial prompt and
+tool policy have already been built. Operator RPC/CLI introduction remains the
+separate paired-device-authorized path.
 
 `onBeforePromptBuild(e, ctx)` — **Modify.** Narrow the turn's submitted tools to: all non-`gk_*` tools as-is, plus exactly the `gk_*` tools belonging to resource types for which this agent+session has an `active` grant with a compatible `audience`. Append the grant table and any introduction notes as a bounded system context block.
 
@@ -941,7 +960,7 @@ Each phase lists deliverables, steps, and acceptance criteria. Do not start a ph
 
 **Steps.**
 1. `preflight.sh`: detect OS (Linux w/ systemd, macOS, WSL2), Node ≥ 22.22.3 / 24.15 / 25.9 (install via upstream's installer if missing — `curl -fsSL https://openclaw.ai/install.sh | bash -s -- --no-onboard` provisions Node when needed, **VERIFIED**), Docker or Podman (optional; warn), free port, `umask`.
-2. `clawos install` (§10 has the operator-facing procedure): install upstream at the pin with `npm install -g openclaw@<pin> --allow-scripts=openclaw`; create `<stateDir>/os/` tree with `700`; generate `cell.key` and gateway token; copy fragment templates; write `openclaw.json` if absent (minimal, `600`); run `clawos config apply`; `openclaw gateway install` and enable the user unit; add a systemd drop-in `~/.config/systemd/user/openclaw-gateway.service.d/clawos.conf` with `Environment=OPENCLAW_NO_AUTO_UPDATE=1` and `Environment=CLAWOS_CELL=default` (a drop-in never modifies upstream's unit file — INVARIANT 1 at the host level); start; wait for `/readyz`; `openclaw doctor --lint --json`; `openclaw security audit`; write the lockfile.
+2. `clawos install` (§10 has the operator-facing procedure): install upstream at the pin with `npm install -g openclaw@<pin> --allow-scripts=openclaw`; create `<stateDir>/os/` tree with `700`; generate `cell.key` and gateway token; copy fragment templates; write `openclaw.json` if absent (minimal, `600`); run `clawos config apply`; `openclaw gateway install` and enable the user unit; add a systemd drop-in `~/.config/systemd/user/openclaw-gateway.service.d/clawos.conf` with `Environment=OPENCLAW_NO_AUTO_UPDATE=1` and `Environment=CLAWOS_CELL=default` (a drop-in never modifies upstream's unit file — INVARIANT 1 at the host level). On a SOPS-managed host, `--environment-file /run/secrets/<cell-env>` layers that host-owned file into the unit by reference and persists only its path in the cell registry; secret contents are never copied into cell state. Start; wait for `/readyz`; `openclaw doctor --lint --json`; `openclaw security audit`; write the lockfile.
 3. `clawos cell create <name> --port N [--user U]`: same as above under `OPENCLAW_PROFILE=<name>`; unit `openclaw-gateway-<name>.service`; register in `~/.clawos/cells.json` (host-level registry — the only OS file outside a state dir).
 4. `clawos config apply` per §6.2; `clawos backup create|restore`.
 5. `clawos doctor`: runs upstream doctor lint, checks perms (`600`/`700`), lockfile vs. installed version, unit status, health endpoints, disk space, and prints fix hints.
@@ -1037,7 +1056,7 @@ integration and the ordered live acceptance steps below remain outstanding.
 
 **Deliverables:** `packages/clawos-kernel` per §5, with store, registry, policy pipeline, approval queue, drainer, audit, `os.*` RPC, `openclaw os` CLI, OAuth router; `gatekeeper-fs` as the first driver (no OAuth, strategy D, trivially testable); conformance suite tests `plugin-loads`, `hooks-fire`, `tool-narrowing`, `gate-blocks`, `rpc-methods`, `cli-mounted`, `health`, `fs-gatekeeper`, `install-gate`.
 
-**Steps** (in this order, each with tests): store + migrations → registry (from catalog + `gateway_start`) → `resolveGrant` → tool registration on behalf of gatekeepers → `before_prompt_build` narrowing + trusted policy → `before_tool_call` gate with dry-run → `os_request_access` / `os_list_grants` → URL introduction in `before_agent_run` → audit → RPC → CLI → `before_agent_reply` chat commands → `message_sending` egress → `before_install` gate → `gatekeeper-fs`.
+**Steps** (in this order, each with tests): store + migrations → registry (from catalog + `gateway_start`) → `resolveGrant` → tool registration on behalf of gatekeepers → `before_prompt_build` narrowing + trusted policy → `before_tool_call` gate with dry-run → `os_request_access` / `os_list_grants` → URL introduction in authenticated `reply_dispatch` → audit → RPC → CLI → `before_agent_reply` chat commands → `message_sending` egress → `before_install` gate → `gatekeeper-fs`.
 
 **Acceptance.** Conformance tests above pass against the pinned upstream. Manual: in a Telegram DM to a dev cell, the operator pastes a path URL `file:///home/matt/projects/foo` → agent lists files via `gk_fs_dir_list`; a second, non-operator sender cannot introduce; `clawos grant revoke` makes the tool disappear next turn; every step appears in `clawos audit tail`.
 

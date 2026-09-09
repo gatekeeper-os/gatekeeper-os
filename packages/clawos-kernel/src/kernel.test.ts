@@ -2,16 +2,17 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawPluginApi } from "./upstream/sdk.js";
+import type { HookCtx, HookEvent, OpenClawPluginApi } from "./upstream/sdk.js";
 import { Kernel } from "./kernel.js";
 
 // Driver and SDK transport are test doubles; kernel store, grants and hook handlers are real.
 // This does not claim live channel dispatch or upstream hook ordering acceptance.
-const fixture=vi.hoisted(()=>({call:vi.fn(),close:vi.fn(),introduce:vi.fn()}));
+const fixture=vi.hoisted(()=>({call:vi.fn(),close:vi.fn(),introduce:vi.fn(),authority:vi.fn()}));
 vi.mock("./upstream/sdk.js",()=>({createPluginRuntimeStore:()=>{let runtime:unknown;return{
   tryGetRuntime:()=>runtime,getRuntime:()=>{if(!runtime)throw new Error("Kernel unavailable");return runtime;},
   setRuntime:(value:unknown)=>{runtime=value;},clearRuntime:()=>{runtime=undefined;},
 };}}));
+vi.mock("./upstream/channel-authority.js",()=>({resolveChannelTurnAuthority:fixture.authority}));
 vi.mock("./registry.js",()=>({instanceId:()=>"fixture-instance",Registry:class{
   tools=[{name:"gk_test_read",description:"Read a fixture",parameters:{type:"object"}}];
   entries=new Map([["test",{tools:[{name:"gk_test_read",resourceType:"item"}],resources:[{type:"item",observerStrategy:"private-only"}]}]]);
@@ -23,8 +24,12 @@ vi.mock("./registry.js",()=>({instanceId:()=>"fixture-instance",Registry:class{
 
 let kernel:Kernel;
 const ctx={agentId:"agent-a",sessionKey:"agent:agent-a:private",runId:"run-a",channel:"fixture"};
+async function dispatch(senderId="owner",senderIsOwner=true){
+  fixture.authority.mockReturnValue({...ctx,senderId,senderIsOwner,text:"Read https://fixture.invalid/item"});
+  await kernel.onReplyDispatch({} as HookEvent<"reply_dispatch">,{} as HookCtx<"reply_dispatch">);
+}
 async function grant(){
-  await kernel.onBeforeAgentRun({prompt:"Read https://fixture.invalid/item",messages:[],senderId:"owner",senderIsOwner:true},ctx);
+  await dispatch();
   const prompt=await kernel.onBeforePromptBuild({prompt:"Read",messages:[]},ctx);
   const handle=prompt.appendContext?.match(/grant:[a-z0-9]+/)?.[0];
   expect(handle).toBeTruthy();
@@ -33,7 +38,7 @@ async function grant(){
 beforeEach(async()=>{
   vi.stubEnv("OPENCLAW_STATE_DIR",mkdtempSync(join(tmpdir(),"clawos-kernel-hooks-")));
   vi.stubEnv("CLAWOS_CELL","hook-tests");
-  fixture.call.mockReset();fixture.close.mockReset();fixture.introduce.mockReset();
+  fixture.call.mockReset();fixture.close.mockReset();fixture.introduce.mockReset();fixture.authority.mockReset();
   fixture.close.mockResolvedValue(undefined);
   fixture.call.mockImplementation(async(_tool,_params,call)=>call.dryRun?{kind:"observation",description:{title:"Read",description:""}}:{content:[{type:"text",text:"fixture"}]});
   const api:Partial<OpenClawPluginApi>={pluginConfig:{operators:[{channel:"fixture",senderId:"owner"}],egress:{denyPatterns:["blocked-marker"]}}};
@@ -57,8 +62,22 @@ describe("kernel channel-policy regression boundaries",()=>{
     {senderId:"stranger",senderIsOwner:true},
     {senderIsOwner:true},
   ])("does not introduce a URL without both trusted owner and configured sender: %j",async sender=>{
-    await kernel.onBeforeAgentRun({prompt:"https://fixture.invalid/item",messages:[],...sender},ctx);
+    await dispatch(sender.senderId??"",sender.senderIsOwner===true);
     expect(fixture.introduce).not.toHaveBeenCalled();
+    expect((await kernel.onBeforePromptBuild({prompt:"Read",messages:[]},ctx)).toolsAllow).not.toContain("gk_test_read");
+  });
+  it("accepts an authenticated Control UI admin without a sender allowlist duplicate",async()=>{
+    fixture.authority.mockReturnValue({...ctx,channel:"webchat",senderId:"gateway-device:device-1",senderIsOwner:true,text:"Read https://fixture.invalid/item"});
+    await kernel.onReplyDispatch({} as HookEvent<"reply_dispatch">,{} as HookCtx<"reply_dispatch">);
+    expect(fixture.introduce).toHaveBeenCalledOnce();
+    expect((await kernel.onBeforePromptBuild({prompt:"Read",messages:[]},ctx)).toolsAllow).toContain("gk_test_read");
+  });
+  it("never introduces from the late model gate, even with a trusted owner bit",async()=>{
+    await kernel.onBeforeAgentRun({prompt:"https://fixture.invalid/item",messages:[],senderId:"owner",senderIsOwner:true},ctx);
+    expect(fixture.introduce).not.toHaveBeenCalled();
+  });
+  it("narrows owner-only grants before prompt construction when an observer arrives",async()=>{
+    await grant();await dispatch("observer",false);
     expect((await kernel.onBeforePromptBuild({prompt:"Read",messages:[]},ctx)).toolsAllow).not.toContain("gk_test_read");
   });
   it("blocks an owner-only call if a non-owner arrives after preflight",async()=>{

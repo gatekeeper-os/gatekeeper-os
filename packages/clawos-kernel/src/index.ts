@@ -24,6 +24,7 @@ export default definePluginEntry({
     api.registerTrustedToolPolicy(kernel.capabilityPolicy());
 
     // policy pipeline (hook names and result shapes VERIFIED against the SDK types)
+    api.on("reply_dispatch", (e, ctx) => kernel.onReplyDispatch(e, ctx), { priority: 1000, eligibleDispatchKinds: ["agent"] });
     api.on("before_agent_run", (e, ctx) => kernel.onBeforeAgentRun(e, ctx), { priority: 1000 });
     api.on("before_prompt_build", (e, ctx) => kernel.onBeforePromptBuild(e, ctx), { priority: 1000 });
     api.on("before_tool_call", (e, ctx) => kernel.onBeforeToolCall(e, ctx), { priority: 1000, timeoutMs: 10_000 });
