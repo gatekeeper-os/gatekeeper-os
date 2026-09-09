@@ -23,7 +23,28 @@ async function connect(auth,scopes=['operator.admin']){
     });return {client,deviceToken:hello.auth?.deviceToken};
   }finally{clearTimeout(timer);}
 }
-async function attempt(client,method,params){try{return{ok:true,value:await client.request(method,params)};}catch(e){return{ok:false,policy:/policy/i.test(e.message),cellPolicy:/not authorized by cell policy/i.test(e.message)};}}
+function diagnosticFields(value,depth=0){
+  if(depth>2||!value||typeof value!=='object')return[];
+  return['error','message','errorCode','code','reason','details'].flatMap(key=>{
+    const field=value[key];
+    return typeof field==='string'?[field]:diagnosticFields(field,depth+1);
+  }).slice(0,8);
+}
+function shape(value){
+  return value&&typeof value==='object'
+    ? {keys:Object.keys(value).sort(),fieldTypes:Object.fromEntries(['error','message','errorCode','code','reason','details'].filter(key=>key in value).map(key=>[key,typeof value[key]]))}
+    : {type:typeof value};
+}
+function failedAttempt(value){
+  const diagnostic=diagnosticFields(value).join(' ');
+  return{ok:false,policy:/policy/i.test(diagnostic),cellPolicy:/not authorized by cell policy/i.test(diagnostic),shape:shape(value)};
+}
+async function attempt(client,method,params){
+  try{
+    const value=await client.request(method,params);
+    return value&&typeof value==='object'&&value.ok===false?failedAttempt(value):{ok:true,value};
+  }catch(error){return failedAttempt(error);}
+}
 try{
   const shared=await connect({token:config.gateway.auth.token});
   if(!shared.deviceToken)throw new Error('device-token-required');
@@ -40,24 +61,38 @@ try{
     const blocked=await attempt(readOnly.client,'skills.upload.begin',begin);
     check('read-scope-cannot-upload',!blocked.ok);
     await readOnly.client.stopAndWait({timeoutMs:5000});
-    const {uploadId}=await client.request('skills.upload.begin',begin);
-    await client.request('skills.upload.chunk',{uploadId,offset:0,dataBase64:archive.toString('base64')});
-    const committed=await client.request('skills.upload.commit',{uploadId,sha256});
+    const commitArchive=async()=>{
+      const {uploadId}=await client.request('skills.upload.begin',begin);
+      await client.request('skills.upload.chunk',{uploadId,offset:0,dataBase64:archive.toString('base64')});
+      const committed=await client.request('skills.upload.commit',{uploadId,sha256});
+      return{uploadId,committed};
+    };
+    let {uploadId,committed}=await commitArchive();
     check('archive-committed-not-installed',committed.sha256===sha256&&!existsSync(target));
-    const params={source:'upload',uploadId,slug:begin.slug,force:false,sha256};
-    writeFileSync(root+'/upload-fixture.json',JSON.stringify(params),{mode:0o600});
+    const params={source:'upload',uploadId,slug:begin.slug,force:false,sha256,agentId:'main'};
     let before=events().length;
     const primary=await attempt(client,'skills.install',params);
     let rows=events().slice(before);
+    report.diagnostics={primary:{attemptOk:primary.ok,policy:primary.policy,responseShape:primary.shape,targetExists:existsSync(target),rowCount:rows.length,stages:rows.map(e=>e.stage),allows:rows.map(e=>e.allow)}};save();
     check('primary-denies-before-hook',!primary.ok&&primary.policy&&!existsSync(target)&&rows.length>0&&rows.every(e=>e.stage==='primary'&&e.allow===false));
+    ({uploadId,committed}=await commitArchive());
+    check('replacement-archive-committed',committed.sha256===sha256&&!existsSync(target));
+    Object.assign(params,{uploadId});
+    writeFileSync(root+'/upload-fixture.json',JSON.stringify(params),{mode:0o600});
     writeFileSync(root+'/primary-rules.json',JSON.stringify({allowSources:['upload:'+uploadId]}),{mode:0o600});
     before=events().length;
     const secondary=await attempt(client,'skills.install',params);
     rows=events().slice(before);
+    report.diagnostics.secondary={attemptOk:secondary.ok,policy:secondary.policy,cellPolicy:secondary.cellPolicy,responseShape:secondary.shape,targetExists:existsSync(target),rowCount:rows.length,stages:rows.map(e=>e.stage),allows:rows.map(e=>e.allow)};save();
     check('primary-allows-before-secondary',rows.some(e=>e.stage==='primary'&&e.allow===true)&&!rows.some(e=>e.stage==='primary'&&!e.allow));
     check('secondary-sees-typed-material',rows.some(e=>e.stage==='before'&&e.targetSkill&&e.directory&&e.upload));
     check('secondary-denies-unlisted-upload',!secondary.ok&&secondary.cellPolicy&&!existsSync(target));
     check('secondary-block-terminal',rows.some(e=>e.stage==='before')&&!rows.some(e=>e.stage==='after'));
+    ({uploadId,committed}=await commitArchive());
+    check('allow-archive-committed',committed.sha256===sha256&&!existsSync(target));
+    Object.assign(params,{uploadId});
+    writeFileSync(root+'/upload-fixture.json',JSON.stringify(params),{mode:0o600});
+    writeFileSync(root+'/primary-rules.json',JSON.stringify({allowSources:['upload:'+uploadId]}),{mode:0o600});
   }else if(phase==='allow'){
     const params=JSON.parse(readFileSync(root+'/upload-fixture.json','utf8'));
     check('secondary-exact-operator-rule',config.plugins.entries['clawos-kernel'].config.install.allowSources.length===1&&config.plugins.entries['clawos-kernel'].config.install.allowSources[0]==='upload:'+params.uploadId&&!existsSync(target));

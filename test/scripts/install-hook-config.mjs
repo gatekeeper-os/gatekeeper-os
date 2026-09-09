@@ -14,7 +14,7 @@ if(process.argv[2]==='allow'){
   delete cfg.plugins.entries['clawos-kernel-monitor'];cfg.plugins.entries['clawos-install-hook-monitor']={enabled:true};
   cfg.plugins.entries['gatekeeper-fs'].config.roots=[];
   copyFileSync('/home/tester/install-hook-build/install-hook-primary.js',state+'/os/install-hook-primary.mjs');chmodSync(state+'/os/install-hook-primary.mjs',0o600);
-  cfg.security={installPolicy:{enabled:true,exec:{source:'exec',command:process.execPath,args:[state+'/os/install-hook-primary.mjs']}}};
+  cfg.security={installPolicy:{enabled:true,exec:{source:'exec',command:process.execPath,args:[state+'/os/install-hook-primary.mjs'],passEnv:['HOME']}}};
   writeFileSync(state+'/os/primary-rules.json',JSON.stringify({allowSources:[]}),{mode:0o600});
 }
 writeFileSync(state+'/openclaw.json',JSON.stringify(cfg),{mode:0o600});

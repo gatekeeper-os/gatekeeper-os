@@ -26,8 +26,18 @@ clawos dev install-plugins --from "$PWD" --yes >/tmp/plugins.log 2>&1 || fail in
 openclaw gateway restart && sleep 5
 check plugins-enabled bash -c 'openclaw plugins list --json | jq -e "[.[] | select(.id==\"clawos-kernel\" or .id==\"gatekeeper-fs\") | select(.enabled)] | length == 2"'
 pnpm conformance --only plugin-loads,hooks-fire,tool-narrowing,gate-blocks,rpc-methods,cli-mounted,health,fs-gatekeeper,install-gate --verdict ~/.openclaw/os/logs/conformance-verdict.json || fail conformance
+
 # Scenario: operator introduces a directory by URL; non-operator cannot; revoke removes the tool; audit has every step
-# TODO(phase-3): drive scripted turns with `openclaw agent` and a test provider; assert via `openclaw os audit query --json`.
+if test/scripts/deterministic-agent-turn.sh "$HOME/phase-3-evidence"; then
+  pass scripted-turn
+else
+  fail scripted-turn "see $HOME/phase-3-evidence/*"
+fi
+if [ -s "$HOME/phase-3-evidence/model-summary.json" ]; then
+  pass scripted-evidence
+else
+  fail scripted-evidence
+fi
 
 
 echo "elapsed: $(( $(date +%s) - t0 ))s"

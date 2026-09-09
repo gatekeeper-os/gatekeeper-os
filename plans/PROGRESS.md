@@ -957,3 +957,23 @@ fresh-snapshot command, inspect actual event ordering/verdict before accepting.
 Then plugin-specific hook coverage, channel URL ordering, observer/egress/approval
 integration and full Phase 3/macOS gates. Phase3 remains incomplete and untagged;
 no push/merge, snapshot replacement, real granted-file writes or production changes.
+
+
+## 2026-09-09 02:26 UTC — QEMU blocker recheck
+
+Continued from `185dbd7`. Read-only `qemu-img --help` still exits1.
+A syscall trace shows one `io_uring_setup(128)` succeeds, then a second
+returns `ENOMEM`; this is not a disabled-io_uring (`EPERM`) failure.
+Visible UID1000 processes hold192 io_uring descriptors, all in production
+Gateway Node24.19 processes. Soft/hard memlock limits are8MiB. Gateway
+cgroup is below memory.high/max, with zero local OOM/max events; host has
+about7.3GiB available. Shared-user locked-memory/ring pressure is suspected,
+but descriptor counts alone do not establish exact charged bytes or root cause.
+No production process was stopped, no limits changed, and no VM restore retried.
+`clawos-test` remains shut off; base/installed snapshot metadata unchanged.
+Saved diagnostic: `vm-artifacts/20260909-022656-qemu-recheck/` (not an acceptance run).
+The15 secondary-hook live assertions remain unrun; prior38 host-test result
+is unchanged, not rerun or newly claimed. Harness/runtime files untouched;
+older drafts preserved. Repository VM-failure STOP remains active; host-level
+resource remediation is needed before the exact saved acceptance can resume.
+Phase3 remains incomplete and untagged.
