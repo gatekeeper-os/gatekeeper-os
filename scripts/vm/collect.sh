@@ -4,7 +4,32 @@
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 out="${1:?outdir}"; since="${2:-1 hour ago}"
 grab() { local name="$1"; shift; vm_call exec "$*" > "$out/$name" 2>&1 || true; }
-if [ "${3:-}" = phase-0 ]; then
+if [ "${3:-}:${4:-}" = phase-3:full ]; then
+  vm_call pull /home/tester/phase-3-combined-evidence/ "$out/" || exit 1
+  # Keep the structural source reports, not just the aggregator's totals. Never
+  # collect live cell state, credentials, model bodies, or raw Gateway logs.
+  for checkpoint in install conformance-runner kernel-live install-hook plugin-install-hook channel-ingress; do
+    mkdir -p "$out/checkpoints/$checkpoint"
+    vm_call pull "/home/tester/phase-3-$checkpoint-evidence/" "$out/checkpoints/$checkpoint/" || exit 1
+  done
+elif [ "${3:-}:${4:-}" = phase-3:channel-ingress ]; then
+  vm_call pull /home/tester/phase-3-channel-ingress-evidence/ "$out/" || exit 1
+elif [ "${3:-}:${4:-}" = phase-3:plugin-install-hook ]; then
+  vm_call pull /home/tester/phase-3-plugin-install-hook-evidence/ "$out/" || exit 1
+elif [ "${3:-}:${4:-}" = phase-3:install-hook ]; then
+  vm_call pull /home/tester/phase-3-install-hook-evidence/ "$out/" || exit 1
+elif [ "${3:-}:${4:-}" = phase-3:install-integration ]; then
+  vm_call pull /home/tester/phase-3-install-evidence/ "$out/" || exit 1
+elif [ "${3:-}:${4:-}" = phase-3:kernel-live ]; then
+  vm_call pull /home/tester/phase-3-kernel-live-evidence/ "$out/" || exit 1
+elif [ "${3:-}:${4:-}" = phase-3:conformance-runner ]; then
+  vm_call pull /home/tester/phase-3-conformance-runner-evidence/ "$out/" || exit 1
+elif [ "${3:-}:${4:-}" = phase-3:fs-boundary ]; then
+  # Account/resource tests only: no Gateway/config/credential collection at this checkpoint.
+  vm_call pull /home/tester/phase-3-fs-boundary-evidence/ "$out/" || exit 1
+elif [ "${3:-}:${4:-}" = phase-3:fs-enforcement ]; then
+  vm_call pull /home/tester/phase-3-fs-enforcement-evidence/ "$out/" || exit 1
+elif [ "${3:-}" = phase-0 ]; then
   vm_call pull /home/tester/phase-0-evidence/ "$out/" || exit 1
 elif [ "${3:-}" = phase-1 ]; then
   # Allowlisted structural evidence only: the per-check JSON the phase script wrote, plus service state. The raw

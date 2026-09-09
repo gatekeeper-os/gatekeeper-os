@@ -5,14 +5,49 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist", "openclaw.plugin.json", "config.schema.json", "hooks", "README.md"],
-  "scripts": { "build": "tsup src/index.ts --format esm --dts --clean", "test": "vitest run", "typecheck": "tsc -p tsconfig.json --noEmit", "validate": "node ../../scripts/check-plugin-metadata.mjs ." },
-  "dependencies": { "@clawos/shared": "workspace:*", "@clawos/gatekeeper-kit": "workspace:*", "typebox": "catalog:" },
-  "peerDependencies": { "openclaw": "catalog:" },
-  "devDependencies": { "tsup": "catalog:", "typescript": "catalog:", "vitest": "catalog:", "@types/node": "catalog:" },
+  "files": [
+    "LICENSE",
+    "NOTICE",
+    "dist",
+    "openclaw.plugin.json",
+    "deploy-inputs.json",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "validate": "node ../../scripts/check-plugin-metadata.mjs ."
+  },
+  "dependencies": {
+    "@clawos/shared": "workspace:*",
+    "@clawos/gatekeeper-kit": "workspace:*",
+    "typebox": "catalog:"
+  },
+  "peerDependencies": {
+    "openclaw": "catalog:"
+  },
+  "devDependencies": {
+    "tsup": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "@types/node": "catalog:"
+  },
   "openclaw": {
     "extensions": ["./dist/index.js"],
-    "compat": { "pluginApi": ">=2026.9.2 <2026.11.0", "minGatewayVersion": "2026.9.2" },
-    "build": { "openclawVersion": "2026.9.2", "pluginSdkVersion": "2026.9.2" }
+    "compat": {
+      "pluginApi": ">=2026.9.2 <2026.11.0",
+      "minGatewayVersion": "2026.9.2"
+    },
+    "build": {
+      "openclawVersion": "2026.9.2",
+      "pluginSdkVersion": "2026.9.2"
+    }
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ControlStackAI/openclaw-os.git",
+    "directory": "packages/gatekeeper-fs"
   }
 }

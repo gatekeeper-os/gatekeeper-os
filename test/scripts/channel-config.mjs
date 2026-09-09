@@ -1,0 +1,11 @@
+import './kernel-config.mjs';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {resolve} from 'node:path';
+const path=process.env.OPENCLAW_CONFIG_PATH,cfg=JSON.parse(readFileSync(path,'utf8'));
+cfg.plugins.allow.push('clawos-channel-ingress');cfg.plugins.load.paths.push(resolve('test/fixtures/channel-ingress'));
+cfg.plugins.entries['clawos-channel-ingress']={enabled:true,hooks:{allowConversationAccess:true}};
+cfg.plugins.entries['clawos-kernel'].config.operators=[{channel:'vmchan',senderId:'operator'}];
+cfg.plugins.entries['clawos-kernel'].config.egress={denyPatterns:['phase-three-denied-marker']};
+cfg.commands={ownerAllowFrom:['vmchan:operator']};
+cfg.agents.list.push({id:'forged'},{id:'console'},{id:'group-new'},{id:'command'},{id:'command-group'},{id:'command-forged'},{id:'egress'});
+writeFileSync(path,JSON.stringify(cfg),{mode:0o600});

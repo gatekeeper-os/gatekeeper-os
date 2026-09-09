@@ -75,7 +75,7 @@ Inside the VM, the per-phase test scripts live at `test/phase-N.sh` in the repo 
 
 ## 6. Test credentials
 
-Never use personal accounts. Create: a throwaway GitHub account with one private test repository and a fine-grained PAT (for CI) plus an OAuth app (for the device/web flow test); a Telegram bot token for a test bot and a test chat (for channel, pairing, and digest tests); one model provider key with a spending cap (or use OpenClaw's local/OpenAI-compatible test provider from the conformance suite so most tests need no paid model). Provide them to the VM only through `scripts/vm/secrets.env` (git-ignored, mode 600), injected as environment variables for the duration of a run and never written to disk inside the VM except through OpenClaw's own SecretRef mechanism.
+Never use personal accounts in CI. Create: a throwaway GitHub account with one private test repository and a fine-grained PAT (for CI) plus an OAuth app (for the device/web flow test); a dedicated Slack app and test workspace identities (for channel, pairing, and digest tests); one model provider key with a spending cap (or use OpenClaw's local/OpenAI-compatible test provider from the conformance suite so most tests need no paid model). Local operator acceptance may reuse a host-managed SOPS environment only through protected stdin delivery into the test process. Never copy or interpolate its values into the repository, VM image, command arguments, or artifact bundle.
 
 ## 7. What "tested" means per phase
 
@@ -171,3 +171,127 @@ shared/kit, runs their unit tests, and runs catalog/secret checks. It launches n
 and calls no VM driver. Evidence is retained under `vm-artifacts/<timestamp>-phase-2/` with `snapshot=host-only`,
 mode, revision, Node version, upstream pin, command log and exit code. This establishes library behavior only; lifecycle
 fixtures do not establish live Gateway authorization conformance, which remains Phase 3.
+
+
+## Phase 3 pre-STOP 2 filesystem boundary checkpoint
+
+`scripts/vm/test.sh phase-3 installed fs-boundary` restores the disposable `installed`
+snapshot, syncs source, builds shared/kit/fs, and runs filesystem account-boundary tests.
+It does not install a runtime plugin, invoke OpenClaw, or claim full Phase 3 acceptance.
+The collector copies only `phase-3-fs-boundary-evidence/` (scope, Node/pin, test verdict,
+exit code), with the harness log and explicit `mode=fs-boundary`. No Gateway config,
+credentials, file contents or journals are collected in this mode. The standard full
+Phase 3 conformance gate remains outstanding until kernel and data-plane implementation.
+
+
+## Phase 3 post-STOP 2 filesystem enforcement checkpoint
+
+`scripts/vm/test.sh phase-3 installed fs-enforcement` restores `installed`, syncs source,
+builds shared/kit/fs, typechecks the driver and records its unit tests in the disposable
+VM. Collection is restricted to `phase-3-fs-enforcement-evidence/` plus the harness log.
+Scope explicitly records `fullPhaseAcceptance:false`, `liveKernelAcceptance:false`,
+and `hostWritesEnabled:false`. It neither installs plugins nor invokes a Gateway.
+The historical `fs-boundary` mode now refuses execution because the data plane is no
+longer disabled; reproduce its original evidence only from checkpoint `fc8b33f`.
+
+## Phase 3 conformance-runner checkpoint
+
+`scripts/vm/test.sh phase-3 installed conformance-runner` records offline runner/transport regressions,
+a real skipped-suite rejection and the existing installed guest Gateway's public SDK transport/health probes.
+It installs no kernel plugins, creates no grants, changes no Gateway config, and does not count as kernel or full
+Phase 3 acceptance. The SDK may maintain its own guest device identity as in S-1. Collection is restricted to
+`phase-3-conformance-runner-evidence/`, containing structural verdicts, fixture-test results, versions and scope.
+A skipped required live suite must produce nonzero conformance exit status; the checkpoint explicitly asserts
+that negative result rather than reclassifying the suite as passed.
+
+
+### Focused live kernel checkpoint
+
+Run `scripts/vm/test.sh phase-3 installed kernel-live` using the configured libvirt
+state directory. This resets `installed`, builds the kernel and fs driver, loads
+them into an isolated foreground Gateway on guest loopback 19100, and runs a
+local deterministic provider on guest loopback 19101. These ports are not exposed
+by the VM and are separate from the installed cell at 18789. The passive monitor
+has no tools, policies or grant-mutating surfaces. Only structure/fixture-match
+booleans are collected; no config, device credentials, prompts or tool bodies.
+The second Gateway run disables the kernel's conversation hooks and proves the
+trusted capability policy still denies unknown handles. Both processes are stopped
+by the harness. This is focused acceptance, not the full Phase 3 gate; file writes
+remain disabled. Live suites reject absent, stale, or failed scenario evidence.
+The `conformance-runner` checkpoint now tests missing live evidence rejection;
+its unit fixtures continue to cover skipped/empty/failed suite rejection.
+
+The live checkpoint also packs and installs the current CLI, registers the isolated
+`kernel-test` cell at `/home/tester/.openclaw-kernel-test`, and exercises real CLI
+status/grant/list/revoke/audit plus mounted `openclaw os status`. CLI unit verdicts
+and eight CLI-specific current-run conformance assertions join the allowlisted
+evidence. This does not test automatic installer plugin projection or install policy.
+
+## Phase 3 installer checkpoint
+
+`CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state
+scripts/vm/test.sh phase-3 installed install-integration` restores the dedicated
+VM, runs the source installer with packed self-contained plugins, verifies a no-op
+reinstall and healthy empty-grant kernel/fs, then exercises actual pinned CLI
+plugin installs under deny, explicit operator allow, and unavailable-policy states.
+Only structural flags, test reports and safe install summaries are collected.
+This focused checkpoint does not close secondary Gateway hook or full Phase 3 acceptance.
+
+## Secondary Gateway install-hook fixture (not yet accepted)
+
+`scripts/vm/test.sh phase-3 installed install-hook` restores the dedicated VM,
+loads the real kernel into the isolated loopback Gateway at 19100, and stages an
+inert private skill zip through documented admin upload RPCs. No model/provider,
+registry, personal credentials or external messages are involved. The VM's primary
+command bundles the production install evaluator with independently controlled
+fixture rules; this intentionally distinguishes primary denial from secondary
+kernel denial and does not re-test installer projection. Passive high/low-priority
+hook handlers record only structural flags and never return policy decisions.
+
+The expected sequence is primary deny with no hook, primary allow plus secondary
+terminal deny, then a Gateway restart with an exact operator upload rule and a
+successful install. It additionally checks read-only scope denial, byte equality,
+no minted grants and consumed-upload replay refusal. Only structural evidence is
+collected from `phase-3-install-hook-evidence/`. This skill path does not close the
+checklist's plugin-specific hook criterion or full Phase 3 acceptance.
+
+First attempted run `20260909-021053-phase-3` failed in snapshot restoration:
+`qemu-img: Failed to initialize io_uring: Cannot allocate memory`. No guest test
+ran. Both the 15-assertion suite and its fixture remain unaccepted until the host
+VM blocker is resolved and a fresh run completes. Existing snapshots are retained.
+
+
+## Phase 3 combined evidence and plugin-specific hook (2026-09-09)
+
+`phase-3 installed full` runs the existing focused checkpoints in one reset VM,
+with a fresh isolated test cell between them. It establishes the combined suite
+set, not completion of every Phase 3 deliverable. `scope.json` explicitly records
+`fullPhaseAcceptance:false`; real transports and incomplete kernel surfaces are
+not implicitly accepted. The collector retains `checkpoints/{install,
+conformance-runner,install-hook,channel-ingress,kernel-live}/` alongside the
+aggregate verdict. Each contains only the focused harness's structural evidence;
+no live cell state, model bodies, credentials or raw Gateway log is collected.
+
+The older `install-hook` fixture remains a **skill** upload test. The separate
+`phase-3 installed plugin-install-hook` mode exercises public Gateway
+`plugins.install` for an uninstalled official plugin selected from the Gateway's own
+`plugins.list` package metadata, then requests its exact `clawos.lock.json` version
+through the supported ClawHub source. No account credentials or transport setup.
+Hardcoded Slack and ACPX selectors did not reach policy; ACPX returned an
+unknown-catalog error despite existing in the bundled fallback. The hosted runtime
+catalog is authoritative, so the fixture discovers its actual installable target. An independently controlled primary policy first denies, then
+allows staged material while the actual kernel's empty allowlist must still deny.
+The passive hook monitor must observe typed plugin material before terminal denial;
+config, installed plugin state and grants must remain unchanged. This tests plugin
+installation policy, not external messaging or an ACP runtime activation. A failed network/catalog/preflight is
+not a passing kernel denial; consult the explicit per-check verdict.
+
+
+**Current result:** this mode is a retained failing diagnostic, not an accepted
+plugin-hook fixture. Exact-version run `20260909-215951-phase-3` installed
+`@openclaw/firecrawl-plugin@2026.9.2` after the primary fixture allowed it, with no
+secondary hook observations. This is consistent with the documented trusted-official
+bypass in `docs/upstream-reference.md:203`, not proof of an upstream defect.
+A compatible **nonofficial** test package is needed to exercise the secondary
+hook criterion. Do not repeatedly run the official control expecting different
+behavior, weaken the primary policy, or relabel this failure as a pass.

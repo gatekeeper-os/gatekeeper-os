@@ -75,6 +75,12 @@ describe("renderDropIn", () => {
     expect(conf).toContain("EnvironmentFile=-");
     expect(conf).not.toMatch(/Environment=CLAWOS_GATEWAY_TOKEN=/);
   });
+
+  it("can layer a host-managed SOPS environment without copying its contents", () => {
+    const conf = renderDropIn(resolveCell("default"), "/run/secrets/openclaw_env");
+    expect(conf).toContain("EnvironmentFile=/run/secrets/openclaw_env");
+    expect(conf.match(/^EnvironmentFile=/gmu)).toHaveLength(2);
+  });
 });
 
 describe("fsx", () => {

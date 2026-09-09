@@ -58,6 +58,15 @@ importers:
 
   packages/clawos-cli:
     devDependencies:
+      '@clawos/gatekeeper-fs':
+        specifier: workspace:*
+        version: link:../gatekeeper-fs
+      '@clawos/kernel':
+        specifier: workspace:*
+        version: link:../clawos-kernel
+      '@clawos/shared':
+        specifier: workspace:*
+        version: link:../clawos-shared
       '@types/node':
         specifier: 'catalog:'
         version: 22.18.0
@@ -76,6 +85,9 @@ importers:
       '@clawos/shared':
         specifier: workspace:*
         version: link:../clawos-shared
+      openclaw:
+        specifier: 'catalog:'
+        version: 2026.9.2
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -95,6 +107,9 @@ importers:
 
   packages/clawos-kernel:
     dependencies:
+      '@clawos/gatekeeper-kit':
+        specifier: workspace:*
+        version: link:../gatekeeper-kit
       '@clawos/shared':
         specifier: workspace:*
         version: link:../clawos-shared

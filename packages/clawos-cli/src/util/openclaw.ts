@@ -29,6 +29,9 @@ export const OWNED_PATHS = [
   "plugins.entries.clawos-kernel",
   "plugins.entries.gatekeeper-fs",
   "plugins.deny",
+  "plugins.allow",
+  "plugins.load",
+  "security.installPolicy",
   "agents.defaults.sandbox",
   "update",
   "hooks.internal.entries.clawos-bootstrap",
@@ -36,13 +39,13 @@ export const OWNED_PATHS = [
 ] as const;
 
 /**
- * Top-level roots covering {@link OWNED_PATHS}. Reading these six is enough to evaluate every owned path, which
- * keeps a reconciliation to six upstream invocations instead of one per path.
+ * Top-level roots covering {@link OWNED_PATHS}. Reading these seven is enough to evaluate every owned path, which
+ * keeps a reconciliation to seven upstream invocations instead of one per path.
  */
-const OWNED_ROOTS = ["gateway", "tools", "plugins", "agents", "update", "hooks"] as const;
+const OWNED_ROOTS = ["gateway", "tools", "plugins", "agents", "update", "hooks", "security"] as const;
 
 /** Config keys whose change requires a Gateway restart; everything else hot-applies under `gateway.reload.mode`. */
-export const RESTART_REQUIRING = ["gateway.port", "gateway.bind", "gateway.auth", "gateway.tls", "gateway.mode"];
+export const RESTART_REQUIRING = ["gateway.port", "gateway.bind", "gateway.auth", "gateway.tls", "gateway.mode", "plugins"];
 
 /** Run the upstream CLI for a cell. Secrets are passed through `env`, never through `args`. */
 export function openclaw(cell: Cell, args: string[], extraEnv?: NodeJS.ProcessEnv): RunResult {

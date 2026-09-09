@@ -148,12 +148,22 @@ Additional **VERIFIED** SDK facts used by the kernel: `api.registerTool` tools e
 
 Data flow for one agent turn, showing where the OS intervenes (all hook names are **VERIFIED** OpenClaw plugin hooks):
 
+**2026-09-09 correction:** the pinned upstream builds the prompt before
+`before_agent_run` (bundled `docs/plugins/hooks.md`, prompt lifecycle and
+before-agent-run sections). The original reversed ordering was a plan error.
+First-turn channel URL introduction remains **UNACCEPTED**. The authorized
+correction moves admission to `reply_dispatch`, using the public command-owner
+resolver on the host-finalized channel context, before prompt construction.
+No sender-label-only fallback or upstream modification is permitted. See
+[the concrete integration blocker](../plans/channel-ordering-blocker.md).
+
 ```
-inbound message ─► [before_agent_run: kernel]  ── URL introduction detection,
-                                                  cell policy, turn-level veto
-                ─► [before_prompt_build: kernel] ── narrow tools to granted
-                                                  gatekeeper tools; inject the
-                                                  agent's grant table as context
+inbound message ─► [reply_dispatch: kernel] ── channel owner + configured operator;
+                                             introduce current-message URLs
+                ─► [before_prompt_build: kernel] ── narrow tools to existing grants;
+                                                  inject grant table as context
+                ─► [before_agent_run: kernel] ── cell policy, observer fallback,
+                                                  turn-level veto (no URL grants)
                 ─► model call
                 ─► tool call ─► [before_tool_call: kernel, matcher gk_*]
                                   ├─ no grant for handle → block
@@ -440,7 +450,7 @@ grant {
 
 Introductions happen in three ways, all creating a `pending` grant that only an operator can activate:
 
-1. **Operator pastes a URL** in a channel the agent is bound to. The kernel's `before_agent_run` handler extracts URLs from `event.prompt`, matches them against every registered `SupportedResource.urlPattern`, and for each match calls `account.getGatekeeperFor(url)` (which validates access using the operator's own credentials). If the sender is the operator (`ctx.senderId` is in the cell's operator list), the grant is created `active` immediately and a short system note is injected via `before_prompt_build` ("You now have access to GitHub repository owner/repo as grant:7k3m9q2p"). If the sender is not an operator, the URL is ignored (a non-operator cannot introduce resources — INVARIANT).
+1. **Operator pastes a URL** in a channel the agent is bound to. The candidate kernel extracts current-message URLs at `reply_dispatch`, using the public `command-auth` owner resolver on finalized ingress plus its configured channel/sender operator match. Gateway-scoped, internal, provenance-bearing, missing-identity, and ambiguous-agent turns cannot introduce resources. The late `before_agent_run` gate no longer introduces URLs. **Acceptance pending:** prove first-request tools and notice through real public-SDK dispatch, followed by dedicated Telegram transport testing; unit mocks and RPC introductions do not establish channel acceptance. The earlier implementation incorrectly assumed that `before_agent_run` preceded prompt construction.
 2. **Operator runs** `clawos grant add --agent ops https://github.com/owner/repo` (→ `os.grants.introduce`).
 3. **The agent requests access** with the kernel tool `os_request_access({ url, reason })`. The kernel records a `pending` grant, notifies operators (via `openclaw message` on the cell's notification channel, and in `clawos approvals list`), and returns "Access requested; you will be told when it is granted." The agent is never blocked waiting.
 
@@ -464,7 +474,7 @@ Note the ordering subtlety: `before_tool_call` runs *before* the tool executes, 
 
 **Auto-approval.** An action is auto-applied only when *both* the operator has a rule for its `actionKind.tag` (`os/config.d/…` → `clawos.autoApprove: ["github.issue.comment"]`) *and* the gatekeeper marked that specific action `autoApprovable: true`. The `AutoApprovalDrainer` runs on `agent_end` and on a 30 s timer: per gatekeeper instance, it applies eligible pending actions in id order, single-flight, stopping at the first non-eligible action (so ordering is preserved).
 
-**Surfaces for the human.** `clawos approvals` (CLI/TUI table), a chat command `/approvals` handled by the kernel's `before_agent_reply` Claim hook (so it never reaches the model), and the OpenClaw Control UI via a `registerControlUiDescriptor()` panel in v1.1.
+**Surfaces for the human.** `clawos approvals` (CLI/TUI table), a chat command `/approvals` claimed by authenticated `reply_dispatch` (so it never reaches the model; the pinned `before_agent_reply` context has no trusted owner/audience facts, so it only denies command fallthrough), and the OpenClaw Control UI via a `registerControlUiDescriptor()` panel in v1.1.
 
 ### 4.6 Authoring a gatekeeper (the `write-gatekeeper` skill, ported)
 
@@ -588,7 +598,7 @@ export default definePluginEntry({
     api.on("before_prompt_build",(e, ctx) => kernel.onBeforePromptBuild(e, ctx),{ priority: 1000 });
     api.on("before_tool_call",   (e, ctx) => kernel.onBeforeToolCall(e, ctx),   { priority: 1000, timeoutMs: 10_000 });   // matcher = explicit tool ids only (no wildcards, VERIFIED) → filter by name inside
     api.on("after_tool_call",    (e, ctx) => kernel.onAfterToolCall(e, ctx));
-    api.on("before_agent_reply", (e, ctx) => kernel.onBeforeAgentReply(e, ctx)); // claims "/approvals", "/grants" commands
+    api.on("before_agent_reply", (e, ctx) => kernel.onBeforeAgentReply(e, ctx)); // denies untrusted command fallthrough; authenticated reply_dispatch claims commands
     api.on("message_sending",    (e, ctx) => kernel.onMessageSending(e, ctx));   // egress policy (DLP rules)
     api.on("before_install",     (e)      => kernel.onBeforeInstall(e));         // supply-chain allowlist
     api.on("agent_end",          (e, ctx) => kernel.onAgentEnd(e, ctx));         // audit + drain auto-approvals
@@ -647,7 +657,22 @@ on shutdown. A closure-local map is insufficient. Discovery must not open a DB,
 start services, or replace the full-mode runtime. Tool bodies still fail closed
 when the runtime or call identity is absent.
 
-`onBeforeAgentRun(e, ctx)` — **Gate.** (1) If the cell is in `maintenance` (set during updates), block with a friendly message. (2) Extract URLs from `e.prompt`; for each URL matching a registered `SupportedResource.urlPattern`, if `ctx.senderId` is an operator of this cell, create an active grant (or reuse an existing one) and record an introduction note for this run. (3) Return pass. Must complete well under 15 s; URL matching is local, `getGatekeeperFor` is bounded to 5 s per URL with a cached negative result.
+`onReplyDispatch(e, ctx)` — **Pre-prompt channel admission; no takeover.** Resolve
+upstream ownership with public `openclaw/plugin-sdk/command-auth` against the
+host-finalized message context and host configuration, then require the exact
+configured channel/operator match. Reject Gateway-originated, internal,
+inter-session, ambiguous-provider, or missing-identity turns. Resolve routed
+agent scope through public `agent-scope-runtime` rather than guessing from a
+sender. Parse only canonical `commandText`, not enriched prompt/history. Record
+non-owner observers before narrowing; return no handled result so ordinary
+upstream dispatch continues. Restricted runtime dispatch may omit this hook;
+that path receives no automatic grant. This implementation is a candidate until
+live SDK ingress, forged RPC, and real Telegram acceptance prove its contracts.
+
+`onBeforeAgentRun(e, ctx)` — **Gate.** Block maintenance and retain the trusted
+non-owner observer fallback. Never mint URL grants here: the initial prompt and
+tool policy have already been built. Operator RPC/CLI introduction remains the
+separate paired-device-authorized path.
 
 `onBeforePromptBuild(e, ctx)` — **Modify.** Narrow the turn's submitted tools to: all non-`gk_*` tools as-is, plus exactly the `gk_*` tools belonging to resource types for which this agent+session has an `active` grant with a compatible `audience`. Append the grant table and any introduction notes as a bounded system context block.
 
@@ -663,7 +688,7 @@ Gatekeeper tool `execute(toolCallId, params)` (registered by the kernel): fetch 
 
 `onMessageSending` — **Modify/Gate.** Apply cell egress rules from config (`clawos.egress.denyPatterns`, e.g. secrets-looking strings, grant handles, resource keys marked private). Redact or cancel with reason.
 
-`onBeforeInstall(e)` — **Gate, fail-closed (secondary).** Upstream's primary install boundary is the operator-owned `security.installPolicy` command (**VERIFIED**, §7.5); the OS binds it to `clawos install-policy`, which evaluates `clawos.install.allowSources` / `allowHashes` and returns allow/warn/block. `before_install` re-checks the same policy for Gateway-backed install flows and blocks with a reason on mismatch.
+`onBeforeInstall(e)` — **Gate, fail-closed (secondary).** Upstream's primary install boundary is the operator-owned `security.installPolicy` command (**VERIFIED**, §7.5); the OS projects a protected standalone build of `clawos install-policy`, which evaluates `plugins.entries.clawos-kernel.config.install.allowSources` / `allowHashes` and returns a versioned allow/block verdict. `before_install` re-checks the same policy for Gateway-backed install flows and blocks with a reason on mismatch.
 
 ### 5.3 State store (`node:sqlite`)
 
@@ -832,7 +857,7 @@ Live fixture results: block denied installation, `{}` denied installation,
 allow permitted installation; allow was evaluated twice. Only input key names,
 version, target type and fixture mode were retained. See `plans/spike-S1.md`.
 
-`security.installPolicy` (**VERIFIED** primary boundary: a trusted local command returning allow/warn/block after staging, applies to plugins and ClawHub skills, fails closed when unavailable) is set in `00-baseline.json5` to `clawos install-policy`, which enforces `clawos.install.allowSources` and optional hashes; `before_install` re-checks it; `plugins.deny` is authoritative (**VERIFIED**) and is populated with every plugin id not in the cell's allowlist at `clawos config apply` time; `openclaw plugins install --pin` is always used (with `--force` for `@clawos/*` npm sources until they are on ClawHub, since arbitrary npm sources warn — **VERIFIED**); `openclaw security audit --deep` runs after every install/update and its findings are stored for diffing.
+`security.installPolicy` (**VERIFIED** primary boundary: a trusted local command after staging, covering plugins and skills and failing closed when unavailable) is generated in `15-runtime.json` with `enabled:true` and a protected standalone policy script invoked through an absolute Node executable. It evaluates `plugins.entries.clawos-kernel.config.install`; `before_install` re-checks the same rules. `plugins.allow` positively selects enabled first-party plugins; explicit `plugins.deny` entries remain authoritative. The source installer deploys bundled first-party artifacts to cell-local `plugins.load.paths`; it does not fetch nonexistent npm releases. Third-party CLI installation still uses upstream's policy/provenance checks (`--force` never bypasses the policy). `openclaw security audit --deep` runs after source installation, and missing/invalid verdicts or critical findings fail installation.
 
 ---
 
@@ -899,10 +924,17 @@ Each test starts (or attaches to) a Gateway and exercises one dependency:
 | `cli-mounted` | `openclaw os status --json` works |
 | `config-reconcile` | `clawos config apply` is idempotent (second run = no diff) and doctor lint is clean |
 | `health` | `/healthz`, `/startupz`, `/readyz` respond |
-| `install-gate` | `before_install` blocks a plugin from a non-allowlisted source |
+| `install-gate` | Primary install policy blocks a real non-allowlisted CLI install; explicit operator allow succeeds and unavailable policy fails closed. Secondary Gateway hook evidence is separate. |
 | `fs-gatekeeper` | Scoped directory grant: read inside allowed, read outside blocked |
 
 The suite prints a compatibility verdict for the upstream version it ran against, which the update pipeline consumes.
+The runner uses an explicit live-test workspace and exact suite inventory. Every selected suite must appear with
+at least one assertion, all assertions passed, no skips/TODOs and successful process termination; zero exit status
+alone is not acceptance. Missing/malformed reports, empty selections, unknown names and failed connectivity deny.
+Ordinary `pnpm test` runs offline runner regressions, not the live suites. SDK transport uses the already-verified
+public `gateway-runtime` client with explicit endpoint/state selectors; credentials and structured RPC parameters
+remain in memory. Structural verdicts exclude raw assertion errors and payloads. Runner fixture passes establish
+the verifier only, never the kernel or an unimplemented conformance criterion.
 
 ---
 
@@ -928,7 +960,7 @@ Each phase lists deliverables, steps, and acceptance criteria. Do not start a ph
 
 **Steps.**
 1. `preflight.sh`: detect OS (Linux w/ systemd, macOS, WSL2), Node ≥ 22.22.3 / 24.15 / 25.9 (install via upstream's installer if missing — `curl -fsSL https://openclaw.ai/install.sh | bash -s -- --no-onboard` provisions Node when needed, **VERIFIED**), Docker or Podman (optional; warn), free port, `umask`.
-2. `clawos install` (§10 has the operator-facing procedure): install upstream at the pin with `npm install -g openclaw@<pin> --allow-scripts=openclaw`; create `<stateDir>/os/` tree with `700`; generate `cell.key` and gateway token; copy fragment templates; write `openclaw.json` if absent (minimal, `600`); run `clawos config apply`; `openclaw gateway install` and enable the user unit; add a systemd drop-in `~/.config/systemd/user/openclaw-gateway.service.d/clawos.conf` with `Environment=OPENCLAW_NO_AUTO_UPDATE=1` and `Environment=CLAWOS_CELL=default` (a drop-in never modifies upstream's unit file — INVARIANT 1 at the host level); start; wait for `/readyz`; `openclaw doctor --lint --json`; `openclaw security audit`; write the lockfile.
+2. `clawos install` (§10 has the operator-facing procedure): install upstream at the pin with `npm install -g openclaw@<pin> --allow-scripts=openclaw`; create `<stateDir>/os/` tree with `700`; generate `cell.key` and gateway token; copy fragment templates; write `openclaw.json` if absent (minimal, `600`); run `clawos config apply`; `openclaw gateway install` and enable the user unit; add a systemd drop-in `~/.config/systemd/user/openclaw-gateway.service.d/clawos.conf` with `Environment=OPENCLAW_NO_AUTO_UPDATE=1` and `Environment=CLAWOS_CELL=default` (a drop-in never modifies upstream's unit file — INVARIANT 1 at the host level). On a SOPS-managed host, `--environment-file /run/secrets/<cell-env>` layers that host-owned file into the unit by reference and persists only its path in the cell registry; secret contents are never copied into cell state. Start; wait for `/readyz`; `openclaw doctor --lint --json`; `openclaw security audit`; write the lockfile.
 3. `clawos cell create <name> --port N [--user U]`: same as above under `OPENCLAW_PROFILE=<name>`; unit `openclaw-gateway-<name>.service`; register in `~/.clawos/cells.json` (host-level registry — the only OS file outside a state dir).
 4. `clawos config apply` per §6.2; `clawos backup create|restore`.
 5. `clawos doctor`: runs upstream doctor lint, checks perms (`600`/`700`), lockfile vs. installed version, unit status, health endpoints, disk space, and prints fix hints.
@@ -973,11 +1005,79 @@ scaffold was one-stage despite its comment; both nonce stages now rotate/consume
 
 ### Phase 3 — Kernel (5–8 days)
 
+**2026-09-08 CLI integration correction:** plugin root command routing additionally
+requires manifest `cliCommands`, matching `registerCli` descriptors, and inert CLI
+registration in `cli-metadata`/`discovery`/`full` modes (pinned
+`docs/plugins/manifest.md` §cliCommands). Mounted `openclaw os` commands must use
+the live Gateway, not an unstarted local kernel store. Machine-readable output
+must use stdout directly, not console logging that upstream redirects to stderr
+in JSON mode. Explicit mounted-command selectors must agree on the registered
+canonical cell. `clawos` now supplies paired
+operator RPC commands for grants, bounded audit tail, status, gatekeeper listing,
+and approval decisions. Audit time filtering and approval driver outcomes remain
+separate acceptance work. The live checkpoint installs the actual packed CLI into
+the disposable guest and selects a registered named test cell; merely putting the
+source bin directory on PATH selected the snapshot's old CLI. Installer plugin
+projection and install-policy integration are still outstanding.
+
+**2026-09-08 live integration correction:** the pinned loader requires every tool
+registered by the kernel to appear in the kernel manifest's `contracts.tools`;
+reading catalog metadata alone does not authorize registration. The manifest now
+includes the three approved filesystem names. Additional catalog vendors require
+corresponding contract projection before reload. Manifest config schemas must be
+self-contained; a relative `$ref` to `config.schema.json` is rejected. No upstream
+modification is needed. A resolved driver session retains the exact queue object
+used at `startSession()` through both dry and real calls; a fresh equivalent queue
+is not the same authority. Call execution consumes its one-shot stash separately
+from the after-hook audit record. Revocation invalidates authority before awaiting
+session cleanup.
+
+`kernel-live` now provides focused real-agent evidence for hooks, tool narrowing,
+paired operator RPC introduction, non-owner URL refusal, bounded filesystem reads,
+path escapes, revocation and unknown-handle denial with conversation hooks disabled.
+This does **not** replace the remaining CLI/install-policy/channel acceptance or
+claim the Phase 3 deliverables complete. Real file writes remain disabled.
+
+**2026-09-07 enforcement checkpoint:** both filesystem authoring stops are approved
+(STOP 1 after `7642efb`; STOP 2 by “Approved continue” after `fc8b33f`). The original
+contract remains in `plans/fs-contract.md`. Focused `fs-enforcement` VM evidence
+`20260908-035125-phase-3` passes 73/73 tests for Linux descriptor-confined bounded
+list/read, per-call authorization, persisted resource identity, cache/overlay recovery,
+revocation, and private-only observer refusal. Unsupported platforms deny data access.
+This is library/driver evidence, not live kernel or full Phase 3 acceptance.
+
+**Implementation limit:** all real granted-file creation and replacement remain
+unavailable. Node's pathname operations cannot atomically combine confinement with
+expected-version comparison; precheck followed by rename/publication is insufficient.
+The approved contract explicitly requires unsafe operations to deny. Simulated writes
+remain pending, can be read and rejected, and cannot be applied or auto-approved. No
+write-conformance criterion is waived, and no production root is granted. Kernel
+integration and the ordered live acceptance steps below remain outstanding.
+
 **Deliverables:** `packages/clawos-kernel` per §5, with store, registry, policy pipeline, approval queue, drainer, audit, `os.*` RPC, `openclaw os` CLI, OAuth router; `gatekeeper-fs` as the first driver (no OAuth, strategy D, trivially testable); conformance suite tests `plugin-loads`, `hooks-fire`, `tool-narrowing`, `gate-blocks`, `rpc-methods`, `cli-mounted`, `health`, `fs-gatekeeper`, `install-gate`.
 
-**Steps** (in this order, each with tests): store + migrations → registry (from catalog + `gateway_start`) → `resolveGrant` → tool registration on behalf of gatekeepers → `before_prompt_build` narrowing + trusted policy → `before_tool_call` gate with dry-run → `os_request_access` / `os_list_grants` → URL introduction in `before_agent_run` → audit → RPC → CLI → `before_agent_reply` chat commands → `message_sending` egress → `before_install` gate → `gatekeeper-fs`.
+**Steps** (in this order, each with tests): store + migrations → registry (from catalog + `gateway_start`) → `resolveGrant` → tool registration on behalf of gatekeepers → `before_prompt_build` narrowing + trusted policy → `before_tool_call` gate with dry-run → `os_request_access` / `os_list_grants` → URL introduction in authenticated `reply_dispatch` → audit → RPC → CLI → authenticated `reply_dispatch` chat commands (`before_agent_reply` denial fallback) → `message_sending` egress → `before_install` gate → `gatekeeper-fs`.
 
 **Acceptance.** Conformance tests above pass against the pinned upstream. Manual: in a Telegram DM to a dev cell, the operator pastes a path URL `file:///home/matt/projects/foo` → agent lists files via `gk_fs_dir_list`; a second, non-operator sender cannot introduce; `clawos grant revoke` makes the tool disappear next turn; every step appears in `clawos audit tail`.
+
+**2026-09-09 fidelity closure:** the original Telegram manual scenario remains
+the specification, but Matt explicitly deferred its execution; it is not passed
+or replaced by synthetic ingress. The final automated Phase 3 candidate
+`20260909-231728-phase-3` passes 78 conformance, 71 channel/OAuth/chat/egress and
+98 kernel-live checks, including actual plugin secondary denial and filesystem
+simulation/rejection. OAuth/connect, drainer, approval decisions and command
+entry points are implemented, not placeholders. See `plans/phase-3-acceptance.md`
+for source-to-evidence reconciliation, explicit corrections and retained limits.
+Phase 3 may close under the Telegram deferral after candidate CI/merge/tag; real
+GitHub and Phase 5 UX acceptance remain in their original later phases. Slack was
+an added deployment canary, not an original Phase 3 gate.
+
+**Owner-only audience enforcement:** upstream owner authorization answers who is
+speaking, not who can read the reply. External channel turns must also have a
+finalized `ChatType: "direct"` before URL introduction. Shared or unknown audiences
+are persistently locked before prompt construction, even if the owner speaks first;
+existing grants and preflighted calls are denied by the existing observer checks.
+This implements §4.7's original private-only beta boundary, not v1.1 sharing.
 
 ### Phase 4 — Reference gatekeeper: GitHub (4–6 days)
 
@@ -1073,11 +1173,12 @@ clawos status
 [3/12] state dir            mkdir -p ~/.openclaw/os/{config.d,audit,gatekeepers,blueprints,backups,logs} (700)
 [4/12] keys                 os/cell.key (600) ; CLAWOS_GATEWAY_TOKEN → ~/.openclaw/.env (600)
 [5/12] config               write minimal openclaw.json if absent (600) ; copy config/config.d/* → os/config.d/
-[6/12] plugins              DEFERRED to Phase 3 — the kernel and gatekeeper-fs do not exist yet and nothing is
-                            published, so this step installs nothing and reports state "deferred" rather than
-                            claiming a postcondition it cannot meet. When Phase 3 lands it becomes:
-                              openclaw plugins install npm:@clawos/kernel@<ver> --pin --accept-capabilities
-                              openclaw plugins install npm:@clawos/gatekeeper-fs@<ver> --pin --accept-capabilities
+[6/12] plugins              Install the CLI's bundled first-party kernel/fs artifacts under
+                            <stateDir>/os/plugins/<content-hash>/; generate gatekeepers.json
+                            and 15-runtime.json with exact roots, explicit plugin allow/load
+                            entries and the primary install-policy executable. No npm packages
+                            are published; source installation authorizes these artifacts.
+                            Defaults grant no directories and allow no third-party installs.
 [7/12] hooks                (none to install — internal hooks are plugin-declared by the kernel; enabled by config)
 [8/12] reconcile            clawos config apply  (patch → doctor --lint → fingerprint)
 [9/12] service              openclaw gateway install ; systemd drop-in with OPENCLAW_NO_AUTO_UPDATE=1, CLAWOS_CELL=default
@@ -1241,3 +1342,21 @@ export class IssueGatekeeper extends KitGatekeeper<IssueState> {
 Cloudflare OS: `README.md`, `AGENTS.md`, `REVIEW.md`, `.agents/skills/write-gatekeeper/SKILL.md` and `SKELETON.md`, `packages/workshop-shared/src/gatekeeper.ts`, `packages/workshop-backend/src/{auth/auth-vendors.ts,auto-approval.ts,overseer.ts,env.d.ts}`, `packages/gatekeeper-github/src/github.ts`, `docs/observers.md`, `docs/oauth-signin.md`, `plans/gatekeeper-kit.md`, `plans/multi-gadget.md` — https://github.com/cloudflare/cloudflare-os. Starter: `README.md`, `docs/customization.md`, `deployment.jsonc`, `scripts/deploy.ts`, `pnpm-workspace.yaml`, `packages/custom-gatekeeper/` — https://github.com/cloudflare/cloudflare-os-starter.
 
 OpenClaw docs (https://docs.openclaw.ai): `concepts/architecture`, `concepts/multi-agent`, `concepts/agent-workspace`, `gateway/configuration`, `gateway/configuration-reference`, `gateway/config-tools`, `gateway/security`, `gateway/sandboxing`, `gateway/doctor`, `tools`, `tools/plugin`, `tools/skills`, `tools/exec-approvals`, `plugins/building-plugins`, `plugins/sdk-overview`, `plugins/sdk-entrypoints`, `plugins/hooks`, `plugins/manage-plugins`, `plugins/architecture`, `automation/hooks`, `cli`, `cli/config`, `cli/plugins`, `cli/cron`, `install`, `install/updating`, `install/development-channels`, `install/docker`, `platforms/linux`, `help/environment`; npm registry metadata for `openclaw` (dist-tags `latest=2026.9.2`, `beta=2026.9.1`, `extended-stable=2026.6.34`).
+
+### Phase 3 install-policy correction (2026-09-08)
+
+The source-distributed CLI now bundles first-party plugins and projects cell-local
+runtime/catalog paths. `15-runtime.json` is generated; operator overrides stay in
+`90-local.json5`. No registry publication or upstream-directory write is needed.
+The primary config is `security.installPolicy.enabled` plus `exec.source="exec"`,
+an absolute regular Node command and protected cell-local policy script, with static cell
+selection; the earlier unqualified `command` examples are superseded. Both policy
+paths share the documented `request.requestedSpecifier` / staged-material evaluator,
+not guessed `source` and `hash` fields. Empty allowlists fail closed; optional
+`sha256:` rules apply to measured regular staged files <=16 MiB only, never directory
+labels. `plugins.allow` is an explicit positive allowlist; do not enumerate an
+unbounded universe of absent plugin ids into `plugins.deny`. Existing explicit deny
+entries continue to take precedence. Filesystem roots remain empty by default.
+Primary live CLI install acceptance, shared evaluator regressions and the
+secondary hook typecheck are separate; no hook-backed Gateway install claim
+follows from CLI evidence.

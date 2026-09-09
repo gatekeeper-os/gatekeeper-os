@@ -1,95 +1,90 @@
-/**
- * The kernel object (plan §5). One instance per Gateway process. TODO(phase-3): implement in the order given in §9 Phase 3:
- * store + migrations → registry → resolveGrant → tool registration → prompt narrowing + trusted policy → before_tool_call gate
- * with dry pass → os_* tools → URL introduction → audit → RPC → CLI → chat commands → egress → before_install → gatekeeper-fs.
- */
+/** OpenClaw OS capability kernel. Discovery facades are inert and share one full-mode runtime. */
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { GatekeeperSession, Grant } from "@clawos/shared";
-import type { GatewayMethodOptions, HookCtx, HookEvent, OpenClawPluginApi, OpenClawPluginServiceContext, PluginTrustedToolPolicyRegistration } from "./upstream/sdk.js";
+import { randomBytes } from "node:crypto";
+import { join } from "node:path";
+import type { ApprovalQueue, DryRunResult, GatekeeperSession, Grant, ToolResult } from "@clawos/shared";
+import { evaluateInstall, ApprovalDecisionParams, ConnectGatekeeperParams, IntroduceParams, ListGrantsParams, RevokeGrantParams } from "@clawos/shared";
+import { Type, type TSchema } from "typebox";
+import { Value } from "typebox/value";
+import type { GatewayMethodOptions, HookCtx, HookEvent, HookResult, OpenClawPluginApi, OpenClawPluginServiceContext, PluginTrustedToolPolicyRegistration } from "./upstream/sdk.js";
+import { createPluginRuntimeStore } from "./upstream/sdk.js";
 import { Store } from "./store.js";
-import { Registry } from "./registry.js";
+import { Registry, instanceId } from "./registry.js";
 import { AuditLog } from "./audit.js";
+import { OAuthRouter } from "./oauth.js";
+import { sendOperatorDigest } from "./upstream/notify.js";
+import { operatorCommand } from "./commands.js";
+import { enqueueRejectionNote, finishOperatorCommand } from "./upstream/lifecycle.js";
+import { ActionCoordinator } from "./actions.js";
 import { ApprovalQueueImpl } from "./approvals.js";
+import { resolveChannelTurnAuthority } from "./upstream/channel-authority.js";
 import { osPaths } from "./upstream/paths.js";
+interface CallStash{agentId:string;sessionKey:string;runId?:string;session?:GatekeeperSession;queue?:ApprovalQueue;grant?:Grant;tool?:string;paramsJson?:string;expiresAt:number;startedAt:number;}
+interface Runtime{store:Store;registry:Registry;audit:AuditLog;approvals:ApprovalQueueImpl;actions:ActionCoordinator;oauth:OAuthRouter;timer?:ReturnType<typeof setInterval>;stash:Map<string,CallStash>;inflight:Map<string,CallStash>;notes:Map<string,string[]>;sessions:Map<string,Map<GatekeeperSession,string>>;}
+type GatewayMethod=(opts:GatewayMethodOptions)=>Promise<void>|void;
+const slot=createPluginRuntimeStore<Runtime>({pluginId:"clawos-kernel",errorMessage:"Kernel unavailable."});
+const text=(value:string)=>({content:[{type:"text" as const,text:value}],details:{}});
+const EmptyParams=Type.Object({},{additionalProperties:false});
+const AuditQueryParams=Type.Object({limit:Type.Optional(Type.Integer({minimum:1,maximum:1000}))},{additionalProperties:false});
 
-interface CallStash { agentId: string; sessionKey: string; runId?: string; session?: GatekeeperSession; expiresAt: number; }
-type GatewayMethod = (opts: GatewayMethodOptions) => Promise<void> | void;
-const text = (t: string) => ({ content: [{ type: "text" as const, text: t }], details: {} });
-
-export class Kernel {
-  readonly paths = osPaths();
-  readonly store = new Store(this.paths.sqlite);
-  readonly registry = new Registry();
-  readonly audit = new AuditLog(this.paths.auditDir);
-  readonly approvals = new ApprovalQueueImpl(this.store, this.audit);
-  private stash = new Map<string, CallStash>();
-
-  constructor(private api: OpenClawPluginApi) {}
-
-  async start() { this.store.migrate(); await this.registry.build(this.api); /* TODO(phase-3): maintenance flag, drainer */ }
-  async stop() { await this.audit.flush(); }
-
-  /**
-   * THE enforcement chokepoint (plan §4.2). Every path that lets an agent reach a gatekeeper goes through here.
-   * Reviewers flag any new path that mints or uses a gatekeeper session without it.
-   */
-  async resolveGrant(agentId: string, sessionKey: string, handle: string): Promise<{ grant: Grant; session: GatekeeperSession }> {
-    const grant = this.store.getGrant(handle);
-    if (!grant || grant.status !== "active") throw new Error("No such grant");
-    if (grant.agentId !== agentId) throw new Error("Grant belongs to another agent");
-    if (grant.scope !== "agent" && grant.scope !== `session:${sessionKey}`) throw new Error("Grant not valid in this session");
-    const session = await this.registry.openSession(grant, this.approvals.forGrant(grant, sessionKey));
-    return { grant, session };
+export class Kernel{
+  readonly paths=osPaths();
+  private readonly catalog=new Registry(process.env.CLAWOS_GATEKEEPER_CATALOG??join(this.paths.os,"gatekeepers.json"),this.paths.stateDir);
+  constructor(private readonly api:OpenClawPluginApi){}
+  async start():Promise<void>{if(slot.tryGetRuntime())throw new Error("Kernel runtime already started.");const store=new Store(this.paths.sqlite);store.migrate();const audit=new AuditLog(this.paths.auditDir);slot.setRuntime({store,registry:this.catalog,audit,oauth:new OAuthRouter(this.catalog),approvals:new ApprovalQueueImpl(store,audit,cell()),actions:new ActionCoordinator(store,audit,cell(),async action=>{const binding=store.actionBinding(action.id);if(!binding)throw new Error("Action has no authority.");const resolved=await this.resolveGrant(binding.agentId,binding.sessionKey,binding.handle);return{gatekeeper:resolved.gatekeeper,authorize:()=>{if(!store.authorizeGrant(resolved.grant,binding.agentId,binding.sessionKey,cell())||store.observers(binding.sessionKey).length||store.getInstance(action.gatekeeperInstance)?.lockdown||instanceId(resolved.grant)!==action.gatekeeperInstance)throw new Error("Action authority changed.");},close:async()=>{this.runtime().sessions.get(binding.sessionKey)?.delete(resolved.session);await resolved.session.close();}};},async action=>{const b=store.actionBinding(action.id);if(b)await enqueueRejectionNote(this.api,b,action.id);}),stash:new Map(),inflight:new Map(),notes:new Map(),sessions:new Map()});this.startDrainer();}
+  async stop():Promise<void>{const r=slot.tryGetRuntime();if(!r)return;this.stopDrainer();r.oauth.clear();await r.actions.stop();for(const sessions of r.sessions.values())for(const session of sessions.keys())await session.close().catch(()=>{});await r.audit.flush();r.store.close();if(slot.tryGetRuntime()===r)slot.clearRuntime();}
+  private runtime():Runtime{return slot.getRuntime();}
+  private config(){return(this.api.pluginConfig??{})as{operators?:Array<{channel:string;senderId:string}>;maintenance?:boolean;autoApprove?:string[];notify?:{channel:string;target:string};egress?:{denyPatterns?:string[]};install?:{allowSources?:string[];allowHashes?:string[]}};}
+  private operator(channel:string|undefined,sender:string|undefined){return!!channel&&!!sender&&this.config().operators?.some(x=>x.channel===channel&&x.senderId===sender)===true;}
+  async resolveGrant(agentId:string,sessionKey:string,handle:string){const r=this.runtime(),candidate=r.store.getGrant(handle),grant=candidate&&r.store.authorizeGrant(candidate,agentId,sessionKey,cell());if(!grant||r.store.getInstance(instanceId(grant))?.lockdown)throw new Error("No such grant.");if(grant.audience==="owner-only"&&r.store.observers(sessionKey).length)throw new Error("Grant unavailable for this audience.");const queue=r.approvals.forGrant(grant,sessionKey);const opened={...await r.registry.openSession(grant,queue),queue};r.store.upsertInstance({id:opened.instanceId,vendor:grant.vendor,resourceKey:grant.resourceKey,operatorId:grant.operatorId,observerStrategy:r.registry.entries.get(grant.vendor)?.resources.find(x=>x.type===grant.resourceType)?.observerStrategy??"private-only",lockdown:0});let sessions=r.sessions.get(sessionKey);if(!sessions){sessions=new Map();r.sessions.set(sessionKey,sessions);}sessions.set(opened.session,grant.handle);return{grant,...opened};}
+  capabilityPolicy():PluginTrustedToolPolicyRegistration{return{id:"clawos-capability-policy",description:"Deny gatekeeper calls without an active capability.",...(this.catalog.toolNames().length?{matcher:this.catalog.toolNames()as[string,...string[]]}:{}),evaluate:(event,ctx)=>{if(!event.toolName.startsWith("gk_"))return;const r=slot.tryGetRuntime();const grant=typeof event.params.grant==="string"?r?.store.getGrant(event.params.grant):null;if(r&&grant&&ctx.agentId&&ctx.sessionKey&&r.store.authorizeGrant(grant,ctx.agentId,ctx.sessionKey,cell())&&(grant.audience==="shared"||!r.store.observers(ctx.sessionKey).length))return;r?.audit.write({ts:new Date().toISOString(),cell:cell(),...(ctx.agentId?{agentId:ctx.agentId}:{}),...(ctx.sessionKey?{sessionKey:ctx.sessionKey}:{}),kind:"tool",title:"Capability policy denied call",decision:"deny",ok:false});return{block:true,blockReason:"No such grant."};}};}
+  registerGatekeeperTools(api:OpenClawPluginApi):void{for(const d of this.catalog.tools)api.registerTool({name:d.name,label:d.name,description:d.description,parameters:d.parameters,execute:async(id,p)=>toolResult(await this.exec(id,d.name,p as Record<string,unknown>))});}
+  private async exec(id:string,tool:string,params:Record<string,unknown>){const r=this.runtime(),s=r.stash.get(id);r.stash.delete(id);if(!s||s.expiresAt<Date.now()||!s.session||!s.queue||s.tool!==tool||s.paramsJson!==JSON.stringify(params)||!s.grant||!r.store.authorizeGrant(s.grant,s.agentId,s.sessionKey,cell())||(s.grant.audience==="owner-only"&&r.store.observers(s.sessionKey).length))throw new Error("Operation denied.");r.inflight.set(id,s);try{const approved=r.store.consumeToolApproval(id,tool,params);return await s.session.call(tool,params,{agentId:s.agentId,sessionKey:s.sessionKey,...(s.runId?{runId:s.runId}:{}),toolCallId:id,queue:s.queue,observers:r.store.observers(s.sessionKey),...(approved?{actionApproval:{toolCallId:id,tool,params:structuredClone(params)}}:{})});}catch{throw new Error("Operation denied.");}}
+  /** Admit operator URLs before prompt construction, without taking over reply dispatch. */
+  async onReplyDispatch(e:HookEvent<"reply_dispatch">,ctx:HookCtx<"reply_dispatch">):Promise<Awaited<HookResult<"reply_dispatch">>>{
+    if(this.config().maintenance)return;
+    const turn=resolveChannelTurnAuthority(e,ctx);if(!turn)return;
+    // Owner identity does not make a group private. Persist the audience denial
+    // before the first prompt, including when no other participant has spoken.
+    if(!turn.privateAudience){this.runtime().store.taintObserver(turn.sessionKey,"clawos:shared-audience");this.runtime().notes.delete(turn.sessionKey);return;}
+    if(!turn.senderIsOwner){const r=this.runtime(),observers=new Set(r.store.observers(turn.sessionKey));observers.add(turn.senderId);r.store.setObservers(turn.sessionKey,[...observers]);return;}
+    // External transports need the configured operator allowlist in addition
+    // to upstream owner resolution. Control UI was already admitted from the
+    // gateway-authenticated admin device and has no stable sender label to
+    // duplicate in channel configuration.
+    if(turn.channel!=="webchat"&&!this.operator(turn.channel,turn.senderId))return;
+    if(this.runtime().store.observers(turn.sessionKey).length)return;
+    if(/^\/(approvals|grants)(?:\s|$)/u.test(turn.text)){let reply="Operation denied.";try{const c=operatorCommand(turn.text)!;const r=this.runtime();const result=c.surface==="grants"?(c.verb==="list"?r.store.allGrants(turn.agentId):await this.revoke(c.handle!,turn.senderId)):c.verb==="list"?this.pending():c.verb==="grant"||c.verb==="reject-request"?await this.decideRequests({ids:c.ids!},c.verb==="grant",turn.senderId):await this.decide({ids:c.ids},c.verb as "apply"|"reject"|"revert",turn.senderId);reply=JSON.stringify(result);}catch{}return finishOperatorCommand(e,ctx,reply);}
+    for(const url of urls(turn.text))await this.introduce(turn.agentId,turn.sessionKey,url,turn.senderId,"operator").catch(()=>{});
   }
-
-  /** Host-level rule: a gk_* call whose `grant` is not an active handle never executes, regardless of hook ordering. */
-  capabilityPolicy(): PluginTrustedToolPolicyRegistration {
-    const gkTools = this.registry.toolNames();
-    return {
-      id: "clawos-capability-policy",
-      description: "Deny gatekeeper tool calls without an active grant handle.",
-      ...(gkTools.length ? { matcher: gkTools as [string, ...string[]] } : {}),   // wildcards are invalid (VERIFIED); explicit ids or match-all
-      evaluate: (event) => {
-        if (!event.toolName.startsWith("gk_")) return;
-        return this.store.isActiveHandle(event.params.grant) ? undefined : { block: true, blockReason: "No such grant" };
-      },
-    };
-  }
-
-  registerGatekeeperTools(_api: OpenClawPluginApi) { /* TODO(phase-3): for each registry tool def → api.registerTool({ …, execute: (id, p) => this.execGatekeeperTool(id, p) }) */ }
-  gatewayMethods(): Array<[string, GatewayMethod]> {
-    return [["os.status", async ({ respond }) => { respond(true, await this.status()); }]];
-  }
-  mountCli(_program: unknown) { /* TODO(phase-3): grants, approvals, gatekeepers, audit, status subcommands under `openclaw os` */ }
-  oauthRouter(_req: IncomingMessage, _res: ServerResponse): boolean { return false; /* TODO(phase-4): /os/gatekeeper/<vendor>/oauth/* */ }
-  startDrainer(_ctx: OpenClawPluginServiceContext) { /* TODO(phase-5) */ }
-  stopDrainer() {}
-
-  async onBeforeAgentRun(_e: HookEvent<"before_agent_run">, _ctx: HookCtx<"before_agent_run">) { /* TODO(phase-3): maintenance gate; URL introductions when e.senderIsOwner / operator list */ return undefined; }
-  async onBeforePromptBuild(_e: HookEvent<"before_prompt_build">, _ctx: HookCtx<"before_prompt_build">) { /* TODO(phase-3): return { toolsAllow: […granted gk_* tools], appendContext: grantTable } */ return undefined; }
-  async onBeforeToolCall(e: HookEvent<"before_tool_call">, ctx: HookCtx<"before_tool_call">) {
-    if (!e.toolName.startsWith("gk_") && !e.toolName.startsWith("os_")) return undefined;
-    const id = e.toolCallId;
-    if (!id || !ctx.agentId || !ctx.sessionKey) return { block: true, blockReason: "missing call identity (fail closed)" };
-    this.stash.set(id, { agentId: ctx.agentId, sessionKey: ctx.sessionKey, ...(ctx.runId ? { runId: ctx.runId } : {}), expiresAt: Date.now() + 1_800_000 });
-    // TODO(phase-3): for gk_*: resolveGrant, audience check, dry pass → requireApproval when awaitDecision
-    return {};
-  }
-  async onAfterToolCall(e: HookEvent<"after_tool_call">, _ctx: HookCtx<"after_tool_call">) { if (e.toolCallId) this.stash.delete(e.toolCallId); /* TODO: audit */ }
-  async onBeforeAgentReply(_e: HookEvent<"before_agent_reply">, _ctx: HookCtx<"before_agent_reply">) { /* TODO(phase-5): claim /approvals, /approve, /reject, /grants, /grant */ return undefined; }
-  async onMessageSending(_e: HookEvent<"message_sending">, _ctx: HookCtx<"message_sending">) { /* TODO(phase-3): egress denyPatterns */ return undefined; }
-  async onBeforeInstall(_e: HookEvent<"before_install">, _ctx: HookCtx<"before_install">) { /* TODO(phase-3): allowSources / allowHashes; fail closed */ return undefined; }
-  async onAgentEnd(_e: HookEvent<"agent_end">, _ctx: HookCtx<"agent_end">) { /* TODO: audit; drainer.kick */ }
-  async onSessionEnd(_e: HookEvent<"session_end">, _ctx: HookCtx<"session_end">) { /* TODO: close sessions */ }
-
-  async requestAccess(toolCallId: string, p: { url: string; reason: string }) {
-    const s = this.stash.get(toolCallId); if (!s) throw new Error("fail closed: unknown tool call");
-    // TODO(phase-3): record a pending introduction; notify operators
-    return text(`Access requested for ${p.url}; you will be told when it is granted.`);
-  }
-  async listGrantsForCall(toolCallId: string) {
-    const s = this.stash.get(toolCallId); if (!s) throw new Error("fail closed: unknown tool call");
-    return text(JSON.stringify(this.store.listGrants(s.agentId).map((g) => ({ handle: g.handle, vendor: g.vendor, type: g.resourceType, title: g.title }))));
-  }
-  async status() { return { cell: process.env.CLAWOS_CELL ?? "default", healthy: true, maintenance: false, pendingApprovals: this.store.countPending() }; }
+  async onBeforeAgentRun(e:HookEvent<"before_agent_run">,ctx:HookCtx<"before_agent_run">){if(this.config().maintenance)return{outcome:"block"as const,reason:"maintenance",message:"OpenClaw OS is being maintained."};if(ctx.sessionKey&&e.senderId&&!e.senderIsOwner){const r=this.runtime(),observers=new Set(r.store.observers(ctx.sessionKey));observers.add(e.senderId);r.store.setObservers(ctx.sessionKey,[...observers]);}}
+  async onBeforePromptBuild(_e:HookEvent<"before_prompt_build">,ctx:HookCtx<"before_prompt_build">){const r=slot.tryGetRuntime();if(!r||!ctx.agentId||!ctx.sessionKey)return{toolsAllow:["os_request_access","os_list_grants"]};const sessionKey=ctx.sessionKey;const grants=r.store.listGrants(ctx.agentId).filter(g=>r.store.authorizeGrant(g,ctx.agentId!,sessionKey,cell())&&(g.scope==="agent"||g.scope===`session:${sessionKey}`)&&(g.audience==="shared"||!r.store.observers(sessionKey).length));const allowed=new Set(["os_request_access","os_list_grants"]);for(const g of grants)for(const t of r.registry.entries.get(g.vendor)?.tools??[])if(t.resourceType===g.resourceType)allowed.add(t.name);const rows=grants.slice(0,100).map(g=>`${g.handle} ${g.vendor}/${g.resourceType}${g.title?` ${g.title}`:""}`);const notes=r.store.observers(sessionKey).length?[]:r.notes.get(sessionKey)??[];r.notes.delete(sessionKey);const context=[...notes,rows.length?`Available grants:\n${rows.join("\n")}`:""].filter(Boolean).join("\n").slice(0,8192);return{toolsAllow:[...allowed],...(context?{appendContext:context}:{})};}
+  async onBeforeToolCall(e:HookEvent<"before_tool_call">,ctx:HookCtx<"before_tool_call">){if(!e.toolName.startsWith("gk_")&&!e.toolName.startsWith("os_"))return;const id=e.toolCallId;if(!id||!ctx.agentId||!ctx.sessionKey)return{block:true,blockReason:"Missing call identity."};const r=this.runtime();for(const [key,value]of r.stash)if(value.expiresAt<Date.now())r.stash.delete(key);const base={agentId:ctx.agentId,sessionKey:ctx.sessionKey,...(ctx.runId?{runId:ctx.runId}:{}),expiresAt:Date.now()+1_800_000,startedAt:Date.now()};if(e.toolName.startsWith("os_")){r.stash.set(id,{...base,tool:e.toolName,paramsJson:JSON.stringify(e.params)});return{};}try{const params=e.params as Record<string,unknown>;if(typeof params.grant!=="string")throw new Error();const resolved=await this.resolveGrant(ctx.agentId,ctx.sessionKey,params.grant);const dry=await resolved.session.call(e.toolName,params,{agentId:ctx.agentId,sessionKey:ctx.sessionKey,...(ctx.runId?{runId:ctx.runId}:{}),toolCallId:id,queue:resolved.queue,observers:r.store.observers(ctx.sessionKey),dryRun:true})as DryRunResult;r.stash.set(id,{...base,session:resolved.session,queue:resolved.queue,grant:resolved.grant,tool:e.toolName,paramsJson:JSON.stringify(params)});if(dry.kind==="action"&&dry.description.awaitDecision)return{requireApproval:{title:dry.description.title,description:dry.description.description,severity:"critical"as const,allowedDecisions:["allow-once","deny"] as Array<"allow-once"|"deny"|"allow-always">,onResolution:(decision:string)=>r.store.recordToolDecision(id,e.toolName,params,decision)}};return{};}catch{return{block:true,blockReason:"No such grant."};}}
+  async onAfterToolCall(e:HookEvent<"after_tool_call">,_ctx:HookCtx<"after_tool_call">){if(!e.toolCallId)return;const r=slot.tryGetRuntime(),s=r?.inflight.get(e.toolCallId)??r?.stash.get(e.toolCallId);if(!r||!s)return;r.stash.delete(e.toolCallId);r.inflight.delete(e.toolCallId);r.audit.write({ts:new Date().toISOString(),cell:cell(),agentId:s.agentId,sessionKey:s.sessionKey,kind:"tool",...(s.grant?{vendor:s.grant.vendor,resourceType:s.grant.resourceType,handle:s.grant.handle}:{}),title:s.tool??"kernel tool",durationMs:Date.now()-s.startedAt,ok:!e.error});}
+  async requestAccess(id:string,p:{url:string;reason:string}){const r=this.runtime(),s=this.consumeStash(id,"os_request_access",p);const url=new URL(p.url);if(p.url.length>4096||p.reason.length>4096||url.username||url.password||url.search||url.hash)throw new Error("Invalid resource request.");r.store.addIntroduction({agentId:s.agentId,sessionKey:s.sessionKey,url:p.url,reason:p.reason,requestedBy:"agent"});return text("Access requested; you will be told when it is granted.");}
+  async listGrantsForCall(id:string){const r=this.runtime(),s=this.consumeStash(id,"os_list_grants",{});return text(JSON.stringify(r.store.listGrants(s.agentId).filter(g=>r.store.authorizeGrant(g,s.agentId,s.sessionKey,cell())&&(g.audience==="shared"||!r.store.observers(s.sessionKey).length)).map(g=>({handle:g.handle,vendor:g.vendor,type:g.resourceType,title:g.title}))));}
+  private consumeStash(id:string,tool:string,params:Record<string,unknown>):CallStash{const r=this.runtime(),s=r.stash.get(id);r.stash.delete(id);if(!s||s.tool!==tool||s.expiresAt<Date.now()||s.paramsJson!==JSON.stringify(params))throw new Error("Operation denied.");r.inflight.set(id,s);return s;}
+  private async introduce(agentId:string,sessionKey:string,url:string,operatorId:string,createdBy:"operator"|"agent-request",title?:string,audience:"owner-only"|"shared"="owner-only"){if(!agentId||!sessionKey||audience!=="owner-only")throw new Error("Shared grants are unavailable in beta.");const r=this.runtime();for(const{entry,resource}of r.registry.resources()){if(!matches(resource.urlPattern,url))continue;const resolved=await r.registry.introduce(entry.vendor,operatorId,url);const grant=r.store.insertGrant({handle:newHandle(),agentId,cellId:cell(),vendor:entry.vendor,resourceType:resolved.resource.type,resourceKey:resolved.resourceKey,operatorId,scope:"agent",audience,status:"active",createdAt:Date.now(),createdBy,title:title??resolved.resource.title});r.audit.write({ts:new Date().toISOString(),cell:cell(),agentId,sessionKey,kind:"grant",vendor:grant.vendor,resourceType:grant.resourceType,handle:grant.handle,title:"Grant activated",decision:"active",by:operatorId,ok:true});r.notes.set(sessionKey,[...(r.notes.get(sessionKey)??[]),`You now have access to ${grant.vendor} ${grant.resourceType} as ${grant.handle}.`]);return grant;}throw new Error();}
+  gatewayMethods():Array<[string,GatewayMethod]>{const wrap=<T>(schema:TSchema,scopes:readonly string[],fn:(params:T,operator:string)=>Promise<unknown>|unknown):GatewayMethod=>async o=>{try{const params=checked<T>(schema,o.params??{}),operator=operatorIdentity(o,scopes);o.respond(true,await fn(params,operator));}catch{o.respond(false,undefined,{code:"UNAUTHORIZED",message:"Operator authorization required."});}};const read=["operator.read","operator.write","operator.admin"],write=["operator.write","operator.admin"],approvals=["operator.approvals","operator.admin"];return[["os.status",wrap(EmptyParams,read,()=>this.status())],["os.grants.list",wrap<{agentId?:string}>(ListGrantsParams,read,p=>this.runtime().store.allGrants(p.agentId))],["os.grants.introduce",wrap<{agentId:string;url:string;title?:string;audience?:"owner-only"|"shared"}>(IntroduceParams,write,(p,op)=>this.introduce(p.agentId,`rpc:${p.agentId}`,p.url,op,"operator",p.title,p.audience))],["os.grants.revoke",wrap<{handle:string}>(RevokeGrantParams,write,(p,op)=>this.revoke(p.handle,op))],["os.approvals.list",wrap(EmptyParams,read,()=>this.pending())],["os.approvals.apply",wrap(ApprovalDecisionParams,approvals,(p,op)=>this.decide(p,"apply",op))],["os.approvals.reject",wrap(ApprovalDecisionParams,approvals,(p,op)=>this.decide(p,"reject",op))],["os.approvals.revert",wrap(ApprovalDecisionParams,approvals,(p,op)=>this.decide(p,"revert",op))],["os.requests.approve",wrap<{ids:number[]|"all"}>(ApprovalDecisionParams,approvals,(p,op)=>this.decideRequests(p,true,op))],["os.requests.reject",wrap<{ids:number[]|"all"}>(ApprovalDecisionParams,approvals,(p,op)=>this.decideRequests(p,false,op))],["os.gatekeepers.list",wrap(EmptyParams,read,()=>this.runtime().registry.health())],["os.gatekeepers.connect",wrap<{vendor:string;resourceTypes?:string[]}>(ConnectGatekeeperParams,write,(p,op)=>this.runtime().oauth.connect(p.vendor,op,p.resourceTypes))],["os.audit.query",wrap<{limit?:number}>(AuditQueryParams,read,p=>this.runtime().audit.query(p.limit))]];}
+  /** Revoke authority before awaiting cleanup; no retained session may continue using it. */
+  private async revoke(handle:string,operator:string){const r=this.runtime(),grant=r.store.getGrant(handle);if(!grant)throw new Error();r.store.setGrantStatus(handle,"revoked");for(const [id,call]of r.stash)if(call.grant?.handle===handle)r.stash.delete(id);for(const sessions of r.sessions.values())for(const [session,boundHandle]of sessions)if(boundHandle===handle){sessions.delete(session);await session.close().catch(()=>{});}r.audit.write({ts:new Date().toISOString(),cell:cell(),agentId:grant.agentId,kind:"grant",handle,title:"Grant revoked",decision:"revoked",by:operator,ok:true});return{revoked:true};}
+  private pending(){const r=this.runtime();return{actions:r.store.listActions().slice(0,100),requests:r.store.listIntroductions()};}
+  private async decideRequests(params:{ids:number[]|"all"},allow:boolean,operator:string){const r=this.runtime(),pending=r.store.listIntroductions(),ids=params.ids==="all"?pending.map(p=>p.id):[...params.ids].sort((a,b)=>a-b);for(const id of ids){const request=pending.find(p=>p.id===id);if(!request||!r.store.claimIntroduction(id))throw new Error("Request unavailable.");try{if(allow){if(!request.sessionKey||r.store.observers(request.sessionKey).length)throw new Error();await this.introduce(request.agentId,request.sessionKey,request.url,operator,"agent-request");}r.store.finishIntroduction(id,allow?"granted":"rejected");}catch{r.store.finishIntroduction(id,"failed");throw new Error("Request could not be resolved.");}}return{ids};}
+  private async decide(params:unknown,verb:"apply"|"reject"|"revert",operator:string){return this.runtime().actions.decide((params as{ids:number[]|"all"}).ids,verb,operator);}
+  async oauthRouter(req:IncomingMessage,res:ServerResponse):Promise<boolean>{const r=slot.tryGetRuntime();if(!r){res.statusCode=503;res.end("Kernel unavailable.");return true;}return r.oauth.handle(req,res);}
+  /** Start one shared-runtime timer; lifecycle order does not grant authority. */
+  startDrainer(_ctx?:OpenClawPluginServiceContext):void{const r=slot.tryGetRuntime();if(!r||r.timer)return;r.timer=setInterval(()=>{void r.actions.drain(this.config().maintenance?[]:this.config().autoApprove??[]);},30_000);r.timer.unref();}
+  /** Stop timer immediately; stop() subsequently awaits in-flight effects. */
+  stopDrainer():void{const r=slot.tryGetRuntime();if(r?.timer){clearInterval(r.timer);delete r.timer;}}
+  /** This late hook carries no trustworthy owner authority; only deny command fallthrough here. */
+  async onBeforeAgentReply(e:HookEvent<"before_agent_reply">,_ctx:HookCtx<"before_agent_reply">){if(/^\/(approvals|grants)(?:\s|$)/u.test(e.cleanedBody))return{handled:true,reply:{text:"Use an authorized private operator conversation or the operator CLI."},reason:"clawos command requires trusted dispatch"};}
+  async onMessageSending(e:HookEvent<"message_sending">,ctx:HookCtx<"message_sending">){for(const source of this.config().egress?.denyPatterns??[]){let re:RegExp;try{re=new RegExp(source,"iu");}catch{return{cancel:true,cancelReason:"Invalid egress policy."};}if(re.test(typeof e.content==="string"?e.content:"")){this.runtime().audit.write({ts:new Date().toISOString(),cell:cell(),...(ctx.sessionKey?{sessionKey:ctx.sessionKey}:{}),kind:"egress",title:"Outbound message blocked",decision:"deny",ok:false});return{cancel:true,cancelReason:"Outbound policy denied this message."};}}if(ctx.sessionKey)for(const id of this.runtime().store.observers(ctx.sessionKey))this.runtime().store.taintObserver(ctx.sessionKey,id);}
+  async onBeforeInstall(e:HookEvent<"before_install">,_ctx:HookCtx<"before_install">){const verdict=evaluateInstall(this.config().install,e);return verdict.decision==="allow"?undefined:{block:true,blockReason:verdict.reason!};}
+  async onAgentEnd(_e:HookEvent<"agent_end">,ctx:HookCtx<"agent_end">){const r=slot.tryGetRuntime();if(!r)return;await r.actions.drain(this.config().maintenance?[]:this.config().autoApprove??[]);const notify=this.config().notify,actions=r.store.countPending(),requests=r.store.countPendingRequests();if(!notify||!ctx.runId||!(actions+requests)||!r.store.claimNotification(ctx.runId))return;try{await sendOperatorDigest(notify,actions,requests);}catch{r.audit.write({ts:new Date().toISOString(),cell:cell(),kind:"tool",title:"Operator digest delivery unconfirmed",ok:false});}}
+  async onSessionEnd(_e:HookEvent<"session_end">,ctx:HookCtx<"session_end">){if(!ctx.sessionKey)return;const r=slot.tryGetRuntime(),sessions=r?.sessions.get(ctx.sessionKey);if(!sessions)return;for(const session of sessions.keys())await session.close().catch(()=>{});r!.sessions.delete(ctx.sessionKey);}
+  async status(){const r=this.runtime();return{cell:cell(),upstreamVersion:"2026.9.2",kernelVersion:"0.1.0",healthy:true,maintenance:this.config().maintenance===true,gatekeepers:r.registry.health(),pendingApprovals:r.store.countPending(),pendingRequests:r.store.countPendingRequests()};}
 }
+function toolResult(result:ToolResult|DryRunResult){if("content" in result)return{content:result.content,details:result.details??{}};return text(JSON.stringify(result));}
+function checked<T>(schema:TSchema,value:unknown):T{if(!Value.Check(schema,value))throw new Error();return value as T;}
+function operatorIdentity(o:GatewayMethodOptions,allowedScopes:readonly string[]):string{const c=o.client;if(!c||c.connect?.role!=="operator"||!Array.isArray(c.connect.scopes)||!c.connect.scopes.some(scope=>allowedScopes.includes(scope))||!c.connect.device?.id||c.isDeviceTokenAuth!==true)throw new Error();return c.connect.device.id;}
+function cell(){return process.env.CLAWOS_CELL??"default";}function urls(v:string){return v.match(/(?:https?:\/\/|file:\/\/\/)[^\s<>"']+/gu)??[];}function matches(pattern:string,url:string){if(pattern.startsWith("file:///"))return url.startsWith("file:///");try{return new URL(url).protocol===new URL(pattern.replace(/:[a-z][a-z0-9_]*[+]?/gi,"x")).protocol;}catch{return false;}}function newHandle(){const a="0123456789abcdefghjkmnpqrstvwxyz",b=randomBytes(8);let out="grant:";for(const x of b)out+=a[x%a.length];return out;}

@@ -91,8 +91,7 @@ owns each instance; they are not a cross-process transactional database. The ker
 
 ## Authentication and helpers
 
-- `OAuthNonceMachine`: `issue(operator)` → `advance(firstNonce)` → `consume(callbackNonce)`. Both stages are single use;
-  the original ten-minute expiry is preserved. Keep authorization redirects private and redact them from logs.
+- The kernel OAuth router owns `OAuthNonceMachine`: `issue(binding)` → `advanceBound(firstNonce)` → `consume(callbackNonce)`. Both stages are single use, and the original ten-minute expiry is preserved. Do not create a parallel nonce store in a vendor. `connectAccount` receives the kernel state and fixed callback path; `completeConnection` performs provider account/PKCE checks, exchanges the code, and stores encrypted credentials before returning. The vendor resolves its callback only against its configured public origin. Keep authorization redirects private and out of logs. Real provider integration is Phase 4.
 - `TokenStore(dir, cellKey)`: atomic AES-256-GCM files with hashed account filenames and account/store-bound authentication.
   `get` returns null for absence, throws a fixed error for corruption. `refresh` coalesces; `remove`/`put` invalidate stale
   refreshes. Moving the encrypted store to a different canonical path requires explicit re-encryption or reconnection.

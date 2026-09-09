@@ -1,3 +1,9 @@
-import { describe, it } from "vitest";
-// Asserts (plan §8.3 row "hooks-fire"). TODO(phase-3).
-describe("hooks-fire", () => { it.todo("implement against a live Gateway"); });
+import { describe, expect, it } from "vitest";
+import { liveScenario } from "../live-scenario.js";
+
+describe('hooks-fire', () => {
+  it('hook-call-correlation', () => { expect(liveScenario().checks['hook-call-correlation']).toBe(true); });
+  it('lifecycle-hooks-fired', () => { expect(liveScenario().checks['lifecycle-hooks-fired']).toBe(true); });
+  it('successful-call-audited', () => { expect(liveScenario().checks['successful-call-audited']).toBe(true); });
+  it('observation-audited', () => { expect(liveScenario().checks['observation-audited']).toBe(true); });
+});

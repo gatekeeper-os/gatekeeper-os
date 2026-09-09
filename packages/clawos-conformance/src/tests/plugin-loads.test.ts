@@ -1,3 +1,8 @@
-import { describe, it } from "vitest";
-// Asserts (plan §8.3 row "plugin-loads"). TODO(phase-3).
-describe("plugin-loads", () => { it.todo("implement against a live Gateway"); });
+import { describe, expect, it } from 'vitest';
+import { liveScenario } from '../live-scenario.js';
+
+describe('plugin-loads', () => {
+  for (const id of ['plugin-loaded-clawos-kernel', 'plugin-loaded-gatekeeper-fs']) {
+    it(id, () => { expect(liveScenario().checks[id]).toBe(true); });
+  }
+});

@@ -202,7 +202,7 @@ directly from them:
 - Also on the API: `registerToolMetadata`, `registerControlUiDescriptor`, `registerRuntimeLifecycle`, `registerSecurityAuditCollector`, `registerConfigMigration`, `registerReload({ restartPrefixes, hotPrefixes })`, `enqueueNextTurnInjection`, `api.source`, `api.rootDir`.
 - `security.installPolicy` (operator config) runs a trusted local command that returns `allow` / `warn` / `block` for skill and plugin installs after staging; it is the primary install boundary and fails closed when enabled but unavailable. `before_install` is a secondary plugin-runtime hook that trusted/bundled install paths may skip. `plugins.installs`, `plugins.load`, and `security.installPolicy` changes: installPolicy hot-applies; `plugins.load`/`plugins.installs` need a restart.
 - `openclaw backup create` sources: the state directory (usually `~/.openclaw`, so `os/` is included), the active config path, `credentials/` if outside the state dir, and every configured agent directory.
-- Trusted sources for install are ClawHub packages and the bundled/official catalog; arbitrary npm/git/local sources warn and need `--force` non-interactively — which is why the OS installer passes `--force --pin --accept-capabilities` for `@clawos/*` until they are published to ClawHub.
+- Trusted sources for install are ClawHub packages and the bundled/official catalog; arbitrary npm/git/local sources warn and need `--force` non-interactively. The OS source installer now projects its bundled first-party artifacts through `plugins.load.paths`; there are no published `@clawos/*` packages to install from npm.
 
 ## 10. Historical S-1 observations and discrepancy (2026-09-07)
 
@@ -251,6 +251,11 @@ The paired-device probe uses `GatewayClient` from the documented public
 The SDK owns device identity generation, signing, pairing-token storage and the
 wire handshake; the probe supplies isolated config auth only in memory and stores
 only identity-presence flags. No upstream database is read by OS code.
+The conformance client reuses this public SDK path: constructor options `url`, `env`, `requestTimeoutMs`,
+`hostDeps`, handshake callbacks; `request(method, params)`; `stopAndWait({ timeoutMs })`.
+Verified against `2026.9.2` public `gateway-runtime.d.ts` and its exported GatewayClient declarations.
+No CLI credential/parameter interpolation or private SDK import is used. Live transport smoke evidence is
+recorded separately from kernel enforcement acceptance.
 
 Read-only diagnosis of the pinned distribution identifies the registration path:
 `runtime-plugins-BDPJ7y4t.js:82` loads a non-activated registry handle;
@@ -360,3 +365,175 @@ state/config paths are supported when they match the canonical home/profile path
 **Backup lifecycle correction:** pinned `gateway stop` requires `--force` in a non-interactive shell (documented lifecycle flag and observed refusal in the VM).
 `clawos backup restore --yes` already authorizes that selected-cell interruption; its stop
 call now passes the upstream flag and still refuses all state moves on a failed stop.
+
+
+### Phase 3 live loader and session integration (2026-09-08)
+
+Pinned 2026.9.2 rejects manifest-local `$ref` configuration schemas and rejects
+kernel `registerTool()` calls missing from that kernel's `contracts.tools`.
+Use the self-contained schema and declare the approved catalog tool names on the
+registering kernel, not on the no-tool driver. VM failures `20260908-163205-phase-3`
+and `20260908-163332-phase-3` establish those causes; corrected live evidence is
+`20260908-163653-phase-3`. No upstream changes. Runtime-store facades preserve the
+kit's exact queue identity, including across discovery/full registration instances.
+The kit's queue check was retained, not bypassed.
+
+## 2026-09-08 — paired operator CLI integration
+
+- **VERIFIED pinned docs/source:** `docs/plugins/manifest.md` §cliCommands requires
+  every plugin-owned root command in `cliCommands` (`name`, `description`,
+  `hasSubcommands`) for metadata-only routing. Register the same runtime descriptor
+  through `api.registerCli(..., { descriptors: [...] })`. `commands: ["os"]` alone
+  did not make `openclaw os` discoverable in the isolated installed guest.
+  `docs/plugins/sdk-entrypoints.md` additionally requires inert CLI declarations in
+  `cli-metadata`, `discovery`, and `full` modes; full-only registration was insufficient.
+  CLI declaration now precedes kernel construction and reads no catalog or runtime.
+- The CLI uses the already-verified public `openclaw/plugin-sdk/gateway-runtime`
+  `GatewayClient`, resolved from the installed binary in a separate cell process.
+  Shared-token handshake returns `hello.auth.deviceToken`; the client closes it
+  before explicitly reconnecting with device-token auth for kernel operator RPCs.
+  No caller identity fields or private SDK imports are used. Only the cell's fixed
+  loopback endpoint is accepted. CLI auth support currently covers local token
+  config and the installer's exact env SecretRef, not arbitrary SecretRef providers.
+- `openclaw os` commands forward to the installed `clawos` client instead of trying
+  to read a local kernel runtime that was never started by CLI discovery.
+
+- **Observed CLI output correction:** after metadata-mode registration, `openclaw
+  os status --json` returned exit 0 but no stdout. CLI JSON mode routes console
+  logging to stderr. The wrapper now writes parsed/validated machine output to
+  `process.stdout` and declares the documented pure `machineOutput({argv})`
+  resolver (`docs/plugins/sdk-overview.md`). Captured diagnostic output was
+  reduced to exit/byte counts and field-presence flags; no raw output was collected.
+- Mounted commands honor `OPENCLAW_PROFILE` when `CLAWOS_CELL` is absent and reject
+  disagreement between explicit cell/profile/state/config selectors. Noncanonical
+  custom state is not silently redirected to the default cell.
+
+## Phase 3 installer policy contract correction (2026-09-08)
+
+**VERIFIED from pinned 2026.9.2** bundled `docs/tools/skills-config.md` (Operator
+Install Policy), `docs/plugins/hooks.md` (Install hooks), and published hook types:
+`security.installPolicy` uses `{ enabled:true, exec:{ source:"exec", command,
+args, timeoutMs, maxOutputBytes } }`, not `command:"clawos install-policy"`.
+`command` must be an absolute, direct regular executable; interpreter script
+arguments and parents must pass trusted ownership/permission checks. The cell
+projection uses the real Node executable and a standalone bundled policy script
+under the cell's content-addressed `os/plugins/` tree (file 600, directories 700),
+with static `--cell <name>` arguments. The ordinary `clawos install-policy` verb
+uses the same implementation. npm tree permissions are not assumed trustworthy. No inherited secrets are passed.
+
+Primary input/output both require `protocolVersion:1`. Common material fields are
+`targetType`, `sourcePath`, `sourcePathKind`, and `request:{kind,mode,
+requestedSpecifier?}`. Primary `source` is structured provenance, not a specifier;
+secondary `before_install` has no `source` or `hash` strings. Decisions are
+`allow|warn|block`; a block requires a reason. The shared OS evaluator matches the
+entire requested specifier or computes `sha256:<hex>` for a regular staged file
+(maximum 16 MiB); symlinks and hash-only directories deny. Upstream staging owns
+publication after a policy decision; this is not an OS atomic-publication claim.
+Missing policy, malformed input and unavailable execution deny, including `--force`.
+
+First-party source deployment uses documented `plugins.load.paths` with explicit
+`plugins.allow` and plugin entries, not nonexistent npm releases. The CLI bundles
+workspace libraries into reviewed artifacts, keeps public SDK imports external,
+and copies them into content-addressed `<stateDir>/os/plugins/` directories.
+Gatekeeper catalog roots refer to those exact paths. OS reconciliation also owns
+`plugins.allow`, `plugins.load`, and `security.installPolicy`; local overrides merge
+last. Source install is the trust decision for these packaged first-party artifacts;
+third-party plugin/skill install commands remain subject to the primary policy.
+
+### Secondary install-hook fixture contract (2026-09-08, pinned source inspection)
+
+VERIFIED against installed pinned `openclaw@2026.9.2` documentation:
+`docs/gateway/protocol.md` skills RPC section and `docs/plugins/hooks.md` Install
+hooks. `skills.upload.begin({kind:"skill-archive",slug,sizeBytes,sha256?,force?})`,
+`skills.upload.chunk({uploadId,offset,dataBase64})`, and
+`skills.upload.commit({uploadId,sha256?})` are admin-only; commit stages but does
+not install. `skills.install({source:"upload",uploadId,slug,force?,sha256?})`
+requires explicit `skills.install.allowUploadedArchives:true`. Uploads contain a
+root `SKILL.md`. Production defaults remain unchanged.
+
+Read-only implementation confirmation: pinned `dist/skills-BnlEnM0m.js`
+`installUploadedSkillArchive` supplies `requestedSpecifier: upload:<uploadId>`;
+`dist/install-security-scan.runtime-DefQR--w.js` evaluates the operator policy
+before the loaded runtime's hook. Hook source material is an extracted directory,
+not the uploaded zip. An allow-hash rule for a regular file cannot alone authorize
+that directory. Tests should use an exact upload specifier, never a forged hash
+label. `block:true` terminates lower-priority handlers. These are source/doc
+findings, **not live acceptance**. Official/bundled plugin paths may skip the
+secondary hook; the skill fixture does not establish plugin-install coverage.
+
+
+## 2026-09-09 verified prompt ordering correction
+
+Pinned `openclaw@2026.9.2` bundled `docs/plugins/hooks.md` states at the prompt
+lifecycle section (line 774) that `agent_turn_prepare` precedes ordinary
+`before_prompt_build` and finalized tool policy; the `before_agent_run` section
+(line 838) explicitly places that gate **after prompt construction**. This
+corrects the OS plan's reversed sequence; it is not an upstream regression.
+The published `PluginHookBeforeAgentRunEvent` has optional `senderIsOwner`,
+whereas `PluginHookAgentContext`, `PluginHookBeforeAgentReplyEvent` and
+`PluginAgentTurnPrepareEvent` do not expose that trusted owner bit. Missing
+authority cannot be inferred from matching a sender label. First-turn channel
+URL granting remains unverified/blocked; existing RPC/CLI acceptance is narrower.
+
+
+## 2026-09-09 public pre-prompt channel authority candidate
+
+Verified declarations/docs for the existing `openclaw@2026.9.2` pin:
+
+- `dist/plugin-sdk/command-auth.d.ts` publicly exports
+  `resolveCommandAuthorization({ctx, cfg, commandAuthorized})`; the returned
+  `CommandAuthorization` includes `providerId`, normalized `senderId`, and
+  `senderIsOwner`. No internal import is needed.
+- `dist/plugin-sdk/agent-scope-runtime.d.ts` publicly exports
+  `resolveSessionAgentIdStrict` for explicit/canonical routed agent authority.
+- Bundled `docs/plugins/hooks.md`, Message hooks, documents `reply_dispatch`
+  receiving the finalized message context and host dispatcher before the
+  ordinary runtime path. `eligibleDispatchKinds: ["agent"]` scopes the handler.
+- Read-only source inspection of `dispatch-from-config` confirms an unhandled
+  result continues ordinary dispatch; restricted runtime settings can omit
+  takeover hooks. `operator-role-policy` assembles Gateway chat with
+  `Provider: webchat` and host client scopes; the adapter rejects these even
+  when a channel delivery origin or sender label is present.
+- `inbound_claim` does expose an upstream-resolved owner bit, but only to the
+  conversation-binding owner. A declined claim terminates that bound turn;
+  it is not an appropriate global pre-routing observer.
+
+These are published-contract/source findings, **not live acceptance**. Unit
+adapter tests mock the public resolver, and kernel tests mock transport. A
+real ingress fixture must demonstrate owner/non-owner first-turn prompt
+ordering, Gateway identity spoof refusal, and effective routed agent identity.
+Real Telegram behavior still needs dedicated transport acceptance.
+
+Review correction: the public `routing` subpath exports `parseAgentSessionKey`.
+The adapter requires an explicit routed agent or a parsed canonical agent key
+before `resolveSessionAgentIdStrict`: despite its name, the pinned resolver may
+fall back to a configured/default agent on unscoped keys. The guard avoids
+implicit grant targeting; strict resolution still rejects explicit/key conflicts.
+
+
+## 2026-09-09 — audience is distinct from sender authorization
+
+Pinned public SDK inbound context supplies `ChatType` (`direct`, `group`, `channel`)
+through `reply_dispatch`; `senderIsOwner` from the public owner resolver does not
+assert a private audience. The kernel now requires an explicit direct external
+transport for introductions; group/channel/unknown audiences lock owner-only
+access before model construction. Authenticated Control UI retains its separate
+host-owned device/scope path. Unit tests are adapter evidence; fresh VM SDK
+scenarios are recorded separately in the progress log. No real Slack/Telegram
+transport claim follows from these fixtures.
+
+`plugins.install` is documented separately from `skills.install` in pinned
+`docs/gateway/protocol.md:678`: official catalog and ClawHub sources, admin scope,
+terminal policy blocks, restart required on successful install. A skill archive
+hook run does not prove this plugin route; do not substitute the two in acceptance.
+
+
+### Phase 3 operator-command authority correction (2026-09-09)
+
+On the pin, `before_agent_reply` receives only `cleanedBody` and an agent context;
+raw sender/channel labels are not trusted owner or audience proof. The kernel claims
+`/approvals` and `/grants` using its existing finalized `reply_dispatch` authority,
+then delivers through the public host dispatcher and respects send/suppression policy.
+The late Claim hook handles only denial fallthrough. `registerCommand.requiredScopes`
+is also host-enforced, but external handlers lack the complete finalized audience
+context; no raw-label shortcut or bundled-only `exposeSenderIsOwner` is used.

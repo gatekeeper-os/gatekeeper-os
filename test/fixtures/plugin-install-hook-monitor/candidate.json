@@ -1,0 +1,9 @@
+{
+  "packageName": "mainctrl",
+  "version": "1.1.0",
+  "pluginId": "mainctrl",
+  "channel": "community",
+  "isOfficial": false,
+  "pluginApiRange": ">=2026.6.6",
+  "artifactSha256": "a4a0beaa6c77eacd72be680885152086663b1b44e71d39f39c06d2feb7fe53cc"
+}

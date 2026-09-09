@@ -1,8 +1,17 @@
-// Orchestrates vitest against a live Gateway and writes the verdict. TODO(phase-3).
-import { writeFileSync } from "node:fs";
-const args = process.argv.slice(2);
-const verdictPath = args[args.indexOf("--verdict") + 1] || "conformance-verdict.json";
-const only = args.includes("--only") ? args[args.indexOf("--only") + 1]!.split(",") : null;
-console.log(`conformance: only=${only?.join(",") ?? "all"} (TODO(phase-3): run vitest with these filters)`);
-writeFileSync(verdictPath, JSON.stringify({ upstreamVersion: null, ok: false, tests: {}, todo: "phase-3" }, null, 2));
-process.exit(1);
+/** CLI entrypoint for live conformance. No suppressed connectivity failures or skipped-test passes. */
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { parseArgs, runConformance } from "./runner.js";
+
+try {
+  const options = parseArgs(process.argv.slice(2));
+  const lock: unknown = JSON.parse(readFileSync(new URL("../../../clawos.lock.json", import.meta.url), "utf8"));
+  const version = (lock as { upstream?: { version?: unknown } }).upstream?.version;
+  if (typeof version !== "string" || !version) throw new Error();
+  const verdict = runConformance(options, fileURLToPath(new URL("../", import.meta.url)), version);
+  console.log(JSON.stringify(verdict));
+  process.exitCode = verdict.ok ? 0 : 1;
+} catch {
+  console.error("CONFORMANCE_RUN_FAILED");
+  process.exitCode = 1;
+}

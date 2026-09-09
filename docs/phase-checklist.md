@@ -56,18 +56,40 @@ Latest complete Ubuntu acceptance: `vm-artifacts/20260907-223901-phase-1/`, fres
 
 ## Phase 3 — Kernel and gatekeeper-fs
 
-- [ ] Conformance tests pass in VM: `plugin-loads`, `hooks-fire`, `tool-narrowing`, `gate-blocks`, `rpc-methods`, `cli-mounted`, `health`, `fs-gatekeeper`, `install-gate` — evidence:
-- [ ] Operator pastes a `file://` path URL → agent lists files through `gk_fs_dir_list` — evidence:
-- [ ] Non-operator pastes the same URL → no grant created — evidence:
-- [ ] `clawos grant revoke` → tool absent on the next turn — evidence:
-- [ ] Every step above appears in `clawos audit tail` — evidence:
-- [ ] Trusted tool policy denies a `gk_*` call with an unknown handle even when hooks are disabled — evidence:
-- [ ] `before_install` blocks a plugin from a non-allowlisted source — evidence:
-- [ ] Tag `phase-3`
+Final automated acceptance: `vm-artifacts/20260909-231728-phase-3/`, fresh installed
+snapshot, exit 0; **78/78 conformance**, **71/71 ingress/OAuth/chat/egress** and
+**98/98 kernel-live** checks, 23 actual model turns, all six checkpoint reports
+retained. Guest kernel93/CLI117 and host workspace410 tests pass. Phase 3 closes
+under the explicit Telegram-only validation deferral, after candidate CI/merge.
+[Full reconciliation and limits](../plans/phase-3-acceptance.md).
+
+- [x] Filesystem STOP 1: operator approved the presented contract after `7642efb` ("continuew"); contract: `plans/fs-contract.md`.
+- [x] Filesystem STOP 2: operator explicitly approved after `fc8b33f` ("Approved continue"); recorded in `plans/PROGRESS.md`.
+
+- [x] Conformance tests pass in VM: `plugin-loads`, `hooks-fire`, `tool-narrowing`, `gate-blocks`, `rpc-methods`, `cli-mounted`, `health`, `fs-gatekeeper`, `install-gate` — evidence: combined fresh-run verdict `vm-artifacts/20260909-201704-phase-3/verdict.json`, 47/47 across the nine required suites; `install-hook` adds 17/17.
+- [x] Authenticated Control UI pastes a `file://` path URL → agent receives `gk_fs_dir_list` on the first request — evidence: same combined run, 33/33 ingress checks.
+- [x] Non-operator pastes the same URL → no grant created — evidence: same combined run, synthetic public-SDK provider with upstream owner resolution.
+- [x] `clawos grant revoke` → tool absent on the next turn — evidence: same combined run, `cli-grant-revoke`, `grant-revoked`, and `revoked-tool-absent` all pass.
+- [x] Every kernel grant/use/revoke step above appears in `clawos audit tail` — evidence: same combined run, `successful-call-audited`, `observation-audited`, `unknown-policy-audited`, `cli-audit-tail`, and `revocation-audited` pass.
+- [x] Trusted tool policy denies a `gk_*` call with an unknown handle even when kernel conversation hooks are disabled — evidence: `20260908-163653-phase-3`, `disabled-hooks-policy-denied` and matching policy audit.
+- [x] Fresh-base installer regression with bundled plugins: **25/25**, `vm-artifacts/20260909-002725-phase-1/`; two-cell isolation, backup/restore and post-restore health pass.
+- [x] Source-packaged kernel/fs project into cell-local state with no implicit grants; reinstall is a no-op — `vm-artifacts/20260909-001359-phase-3/`, install-again and scenario evidence, healthy paired kernel/fs status.
+- [x] Primary install policy blocks actual unlisted CLI installs, permits an explicitly reviewed source, and fails closed when unavailable — `vm-artifacts/20260909-003432-phase-3/`, `install-verdict.json` **8/8**, `scenarios.json` **12/12** structural checks; CLI114/policy4 guest tests pass. The outage case uses a fresh allowed fixture and verifies the policy error.
+- [x] Secondary `before_install` blocks a **plugin** from a non-allowlisted source in a Gateway-backed flow: final combined `plugin-install-hook` 14/14 with community `mainctrl@1.1.0`, exact staged identity, terminal real kernel denial and no config/install/grant mutation. The separate skill fixture is not substituted.
+- Focused live checkpoint `20260908-163653-phase-3`: hooks-fire 4/4, tool-narrowing 5/5,
+  gate-blocks 7/7, fs-gatekeeper 7/7; 48/48 structural checks across eight actual agent turns.
+  Paired device-token RPC introduction/revocation and non-owner RPC URL denial passed.
+  The later `20260908-172236-phase-3` checkpoint verified CLI grant/list/revoke/audit
+  and mounted status (**31/31** live assertions). The combined suite set passed, but this is not full Phase 3 acceptance;
+  see [plan fidelity audit](../plans/plan-fidelity-audit.md) for remaining deliverables.
+- [ ] Real Slack transport deployment canary admits the owner and rejects an unallowlisted identity. This is an added deployment check, not an original-plan criterion or permission to reuse production ALINA credentials. Disposable test app/workspace not yet supplied.
+- [ ] Real Telegram manual scenario — **DEFERRED, not passed**, explicitly authorized 2026-09-09; [deferral](../plans/telegram-validation-deferred.md).
+- [x] Remaining §9 Phase 3 infrastructure delivered and its scoped integration verified — [acceptance](../plans/phase-3-acceptance.md). Real GitHub synchronous approval and Phase 5 UX retain their later-phase gates.
+- Milestone tag: [`phase-3`](https://github.com/ControlStackAI/openclaw-os/tree/phase-3), published only after required CI and merge.
 
 ## Phase 4 — gatekeeper-github
 
-- [ ] STOP 1: tool surface reviewed and approved by operator (link to review) — evidence:
+- [x] STOP 1: concrete GitHub surface approved by later explicit beta-completion authorization, 2026-09-09 — [review record](../plans/REVIEW-REQUESTED.md#github-gatekeeper--concrete-stop-1-review). Implementation and live acceptance are not implied.
 - [ ] STOP 2: operator approved starting Phase 2 of the gatekeeper — evidence:
 - [ ] Conformance `deferred-approval` and `require-approval-roundtrip` pass with GitHub — evidence:
 - [ ] Scenario: comment (simulated) then summarize thread including the pending comment; `clawos approvals apply all` → comment live on GitHub — evidence:

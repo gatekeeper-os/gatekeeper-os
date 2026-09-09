@@ -265,16 +265,15 @@ doctor_rc=$?
 if [ "$doctor_rc" -eq 0 ]; then pass clawos-doctor; else fail clawos-doctor "exit $doctor_rc; $(head -c 300 "$EV/clawos-doctor.json")"; fi
 
 # ---------------------------------------------------------------- honest scope
-# Phase 1 does not implement the kernel, so the conformance suite's tests are still `todo`. Record that in the
-# evidence rather than letting a green Phase 1 imply conformance coverage that does not exist.
+# This installer regression includes packaged kernel/fs health, not full Phase 3 conformance.
 cat > "$EV/scope.json" <<'JSON'
 {
   "phase": 1,
   "implemented": ["installer/preflight", "clawos install", "cell", "status", "doctor", "config apply", "backup"],
   "notImplemented": {
-    "kernel": "Phase 3 - no clawos-kernel plugin is installed; `clawos install` reports step 6 as deferred",
-    "gatekeepers": "Phase 3+",
-    "conformance": "12 conformance tests remain `todo`; Phase 1 asserts none of them",
+    "kernelAcceptance": "Bundled kernel/fs health is checked by install; full Phase 3 acceptance is separate",
+    "gatekeeperAcceptance": "No resource grants or gatekeeper operations are exercised by this installer regression",
+    "conformance": "This installer regression does not run the Phase 3 conformance suites",
     "curlInstaller": "the repository is private and no @clawos/* package is published; source install only",
     "macos": "platform-specific acceptance; see platform.txt for this run"
   }
