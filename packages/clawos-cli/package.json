@@ -6,7 +6,7 @@
   "bin": { "clawos": "./bin/clawos.js" },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist", "bin", "templates", "README.md"],
+  "files": ["LICENSE", "NOTICE", "dist", "bin", "templates", "README.md"],
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean && node scripts/stage-templates.mjs",
     "test": "vitest run",
