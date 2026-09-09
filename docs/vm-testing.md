@@ -226,3 +226,13 @@ The live checkpoint also packs and installs the current CLI, registers the isola
 status/grant/list/revoke/audit plus mounted `openclaw os status`. CLI unit verdicts
 and eight CLI-specific current-run conformance assertions join the allowlisted
 evidence. This does not test automatic installer plugin projection or install policy.
+
+## Phase 3 installer checkpoint
+
+`CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state
+scripts/vm/test.sh phase-3 installed install-integration` restores the dedicated
+VM, runs the source installer with packed self-contained plugins, verifies a no-op
+reinstall and healthy empty-grant kernel/fs, then exercises actual pinned CLI
+plugin installs under deny, explicit operator allow, and unavailable-policy states.
+Only structural flags, test reports and safe install summaries are collected.
+This focused checkpoint does not close secondary Gateway hook or full Phase 3 acceptance.

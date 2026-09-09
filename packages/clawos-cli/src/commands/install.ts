@@ -5,12 +5,11 @@
  * and reports `changed: false` overall, which is what `test/phase-1.sh` asserts. `--json` prints one object with
  * the per-step verdicts so the acceptance run has structural evidence rather than an echo.
  *
- * The plugin step is a deliberate, reported no-op in this phase: `@clawos/kernel` and `@clawos/gatekeeper-fs` do
- * not exist yet (the kernel is Phase 3 and nothing is published), so the installer neither installs them nor
- * pretends to. It records `deferred` with the phase that will own it. Reporting a step as satisfied when the
- * artefact does not exist would make a later "green" install meaningless.
+ * Reviewed first-party plugins are bundled with the CLI and projected into each cell.
  */
 
+import { kernelRpcForCell } from "../util/kernel-rpc.js";
+import { projectPlugins } from "../util/plugins.js";
 import { randomBytes } from "node:crypto";
 import { copyFileSync, existsSync, readdirSync, readFileSync } from "node:fs";
 import { homedir, userInfo } from "node:os";
@@ -154,11 +153,12 @@ export async function install(args: string[], globals: GlobalOptions): Promise<n
   }
   record("config", configChanged ? "changed" : "ok");
 
-  // [6/12] plugins — Phase 3 owns the kernel and gatekeeper-fs. Nothing is published; nothing is installed.
-  record("plugins", "deferred", "clawos-kernel and gatekeeper-fs are Phase 3; no @clawos/* package is published yet");
+  // [6/12] reviewed source artifacts, installed without mutating upstream or granting resources.
+  const plugins = projectPlugins(cell, templateRoot());
+  record("plugins", plugins.changed ? "changed" : "ok", "cell-local kernel and filesystem artifacts");
 
   // [7/12] hooks — internal hooks are plugin-declared by the kernel and enabled by config; nothing to install.
-  record("hooks", "ok", "internal hooks are declared by the kernel plugin (Phase 3)");
+  record("hooks", "ok", "internal hooks are declared by the kernel plugin");
 
   // [8/12] reconcile
   const reconciled = await reconcile(cell.name, { skipRestart: true, port: cell.port });
@@ -191,6 +191,7 @@ export async function install(args: string[], globals: GlobalOptions): Promise<n
     }
     const start = openclaw(cell, ["gateway", "start"]);
     if (start.code !== 0) throw new StepError("upstream LaunchAgent start failed");
+    if ((serviceChanged || reconciled.changed || plugins.changed) && openclaw(cell, ["gateway", "restart"]).code !== 0) throw new StepError("upstream LaunchAgent restart failed");
   } else {
     if (!existsSync(join(homedir(), ".config", "systemd", "user", cell.unit))) {
       const gatewayInstall = openclaw(cell, ["gateway", "install"]);
@@ -203,24 +204,30 @@ export async function install(args: string[], globals: GlobalOptions): Promise<n
     run("loginctl", ["enable-linger", userInfo().username]);
     const enable = run("systemctl", ["--user", "enable", "--now", cell.unit]);
     if (enable.code !== 0) throw new StepError(`systemctl --user enable --now ${cell.unit} failed: ${enable.stderr}`);
-    if (serviceChanged && run("systemctl", ["--user", "restart", cell.unit]).code !== 0) throw new StepError("systemd restart failed");
+    if ((serviceChanged || reconciled.changed || plugins.changed) && run("systemctl", ["--user", "restart", cell.unit]).code !== 0) throw new StepError("systemd restart failed");
   }
   record("service", serviceChanged ? "changed" : "ok", cell.unit);
 
   // [10/12] verify: startup then readiness, within the plan's 60 s budget.
   if (!(await waitForEndpoint(cell.port, "/startupz", 60_000))) throw new StepError("/startupz never became ready");
   if (!(await waitForEndpoint(cell.port, "/readyz", 60_000))) throw new StepError("/readyz never became ready");
-  record("verify", "ok", `/readyz on ${cell.port}`);
+  const kernel = kernelRpcForCell(cell, "os.status", {}) as { cell?: string; healthy?: boolean; gatekeepers?: Array<{vendor?: string; healthy?: boolean}> };
+  if (kernel?.cell !== cell.name || kernel.healthy !== true || !kernel.gatekeepers?.some(g => g.vendor === "fs" && g.healthy === true)) throw new StepError("installed kernel/filesystem runtime is not healthy");
+  record("verify", "ok", `kernel and filesystem healthy on ${cell.port}`);
 
   // [11/12] audit: keep the structural verdict, not the raw report, out of harm's way at 600.
   const auditPath = join(cell.osDir, "logs", `security-audit.${new Date().toISOString().replace(/[:.]/g, "-")}.json`);
   const audit = openclaw(cell, ["security", "audit", "--deep", "--json"]);
   if (audit.stdout.trim()) writeFileIfChanged(auditPath, audit.stdout, 0o600);
-  record("audit", "ok", `exit ${audit.code}`);
+  let auditOk = false;
+  try { const report = JSON.parse(audit.stdout) as {summary?: {critical?: number}}; auditOk = audit.code <= 1 && report.summary?.critical === 0; } catch { /* fail closed */ }
+  if (!auditOk) throw new StepError("security audit failed or reported critical findings; install not accepted");
+  record("audit", "ok", "no critical findings");
 
   // [12/12] lockfile and the host-level cell registry
   const existingLock = readLockfile(cell);
-  const stashed = readJson<{ configFingerprint?: string; ownedDigests?: Record<string, string> }>(
+  // config.state.json is a first-install handoff only; a later reconcile has already updated the lock.
+  const stashed = existingLock ? undefined : readJson<{ configFingerprint?: string; ownedDigests?: Record<string, string> }>(
     join(cell.osDir, "config.state.json"),
   );
   const lock: Lockfile = {
@@ -234,8 +241,8 @@ export async function install(args: string[], globals: GlobalOptions): Promise<n
       nodeVersion: process.version,
     },
     lastKnownGood: existingLock?.lastKnownGood ?? { version: pin, verifiedAt: new Date().toISOString() },
-    plugins: existingLock?.plugins ?? {},
-    kernelSchema: existingLock?.kernelSchema ?? 0,
+    plugins: { ...existingLock?.plugins, ...plugins.versions },
+    kernelSchema: 1,
     configFingerprint: stashed?.configFingerprint ?? existingLock?.configFingerprint,
     ownedDigests: stashed?.ownedDigests ?? existingLock?.ownedDigests,
   };

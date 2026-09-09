@@ -1,21 +1,4 @@
-// OS plugins and their configuration.
-//
-// Phase 1 ships this fragment EMPTY on purpose. The kernel (`clawos-kernel`) and `gatekeeper-fs` do not exist
-// until Phase 3 and nothing is published, so declaring `entries.clawos-kernel: { enabled: true }` here would
-// (a) make upstream report a stale config entry for a plugin it cannot find, and (b) assert an enablement the
-// system cannot actually honour. Phase 3 adds the entries in the same change that adds the plugins.
-//
-// The Phase 3 shape, for reference:
-//   plugins: { entries: {
-//     "clawos-kernel": { enabled: true, config: {
-//       operators: [], autoApprove: [],
-//       install: { allowSources: ["npm:@clawos/*", "clawhub:@clawos/*"] },
-//       egress: { denyPatterns: ["(?i)api[_-]?key\\s*[:=]", "grant:[a-z0-9]{8}"] },
-//       audit: { llm: false },
-//     } },
-//     "gatekeeper-fs": { enabled: true, config: { roots: [] } },
-//   } },
-//   hooks: { internal: { entries: {
-//     "clawos-bootstrap": { enabled: true }, "clawos-lifecycle": { enabled: true },
-//   } } },
+// First-party plugin paths, empty-root filesystem configuration and the primary install boundary
+// are generated per cell in 15-runtime.json by clawos install. No source package is published.
+// Operator changes belong in 90-local.json5, which merges last. No resource is granted by installation.
 {}

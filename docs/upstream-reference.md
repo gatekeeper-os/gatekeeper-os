@@ -202,7 +202,7 @@ directly from them:
 - Also on the API: `registerToolMetadata`, `registerControlUiDescriptor`, `registerRuntimeLifecycle`, `registerSecurityAuditCollector`, `registerConfigMigration`, `registerReload({ restartPrefixes, hotPrefixes })`, `enqueueNextTurnInjection`, `api.source`, `api.rootDir`.
 - `security.installPolicy` (operator config) runs a trusted local command that returns `allow` / `warn` / `block` for skill and plugin installs after staging; it is the primary install boundary and fails closed when enabled but unavailable. `before_install` is a secondary plugin-runtime hook that trusted/bundled install paths may skip. `plugins.installs`, `plugins.load`, and `security.installPolicy` changes: installPolicy hot-applies; `plugins.load`/`plugins.installs` need a restart.
 - `openclaw backup create` sources: the state directory (usually `~/.openclaw`, so `os/` is included), the active config path, `credentials/` if outside the state dir, and every configured agent directory.
-- Trusted sources for install are ClawHub packages and the bundled/official catalog; arbitrary npm/git/local sources warn and need `--force` non-interactively — which is why the OS installer passes `--force --pin --accept-capabilities` for `@clawos/*` until they are published to ClawHub.
+- Trusted sources for install are ClawHub packages and the bundled/official catalog; arbitrary npm/git/local sources warn and need `--force` non-interactively. The OS source installer now projects its bundled first-party artifacts through `plugins.load.paths`; there are no published `@clawos/*` packages to install from npm.
 
 ## 10. Historical S-1 observations and discrepancy (2026-09-07)
 
@@ -407,3 +407,35 @@ The kit's queue check was retained, not bypassed.
 - Mounted commands honor `OPENCLAW_PROFILE` when `CLAWOS_CELL` is absent and reject
   disagreement between explicit cell/profile/state/config selectors. Noncanonical
   custom state is not silently redirected to the default cell.
+
+## Phase 3 installer policy contract correction (2026-09-08)
+
+**VERIFIED from pinned 2026.9.2** bundled `docs/tools/skills-config.md` (Operator
+Install Policy), `docs/plugins/hooks.md` (Install hooks), and published hook types:
+`security.installPolicy` uses `{ enabled:true, exec:{ source:"exec", command,
+args, timeoutMs, maxOutputBytes } }`, not `command:"clawos install-policy"`.
+`command` must be an absolute, direct regular executable; interpreter script
+arguments and parents must pass trusted ownership/permission checks. The cell
+projection uses the real Node executable and a standalone bundled policy script
+under the cell's content-addressed `os/plugins/` tree (file 600, directories 700),
+with static `--cell <name>` arguments. The ordinary `clawos install-policy` verb
+uses the same implementation. npm tree permissions are not assumed trustworthy. No inherited secrets are passed.
+
+Primary input/output both require `protocolVersion:1`. Common material fields are
+`targetType`, `sourcePath`, `sourcePathKind`, and `request:{kind,mode,
+requestedSpecifier?}`. Primary `source` is structured provenance, not a specifier;
+secondary `before_install` has no `source` or `hash` strings. Decisions are
+`allow|warn|block`; a block requires a reason. The shared OS evaluator matches the
+entire requested specifier or computes `sha256:<hex>` for a regular staged file
+(maximum 16 MiB); symlinks and hash-only directories deny. Upstream staging owns
+publication after a policy decision; this is not an OS atomic-publication claim.
+Missing policy, malformed input and unavailable execution deny, including `--force`.
+
+First-party source deployment uses documented `plugins.load.paths` with explicit
+`plugins.allow` and plugin entries, not nonexistent npm releases. The CLI bundles
+workspace libraries into reviewed artifacts, keeps public SDK imports external,
+and copies them into content-addressed `<stateDir>/os/plugins/` directories.
+Gatekeeper catalog roots refer to those exact paths. OS reconciliation also owns
+`plugins.allow`, `plugins.load`, and `security.installPolicy`; local overrides merge
+last. Source install is the trust decision for these packaged first-party artifacts;
+third-party plugin/skill install commands remain subject to the primary policy.

@@ -3,15 +3,30 @@
   "version": "0.1.0",
   "description": "The clawos binary: install, cells, status, doctor, config apply, backups.",
   "type": "module",
-  "bin": { "clawos": "./bin/clawos.js" },
+  "bin": {
+    "clawos": "./bin/clawos.js"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist", "bin", "templates", "README.md"],
+  "files": [
+    "dist",
+    "bin",
+    "templates",
+    "README.md"
+  ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --clean && node scripts/stage-templates.mjs",
+    "build": "tsup src/index.ts --format esm --dts --clean && node scripts/stage-templates.mjs && node scripts/stage-plugins.mjs",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {},
-  "devDependencies": { "tsup": "catalog:", "typescript": "catalog:", "vitest": "catalog:", "@types/node": "catalog:" }
+  "devDependencies": {
+    "tsup": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "@types/node": "catalog:",
+    "@clawos/kernel": "workspace:*",
+    "@clawos/gatekeeper-fs": "workspace:*",
+    "@clawos/shared": "workspace:*"
+  }
 }

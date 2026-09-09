@@ -22,7 +22,5 @@
   update: { channel: "stable", auto: { enabled: false } },
   plugins: { deny: [] },
   hooks: { internal: { enabled: true } },
-  // Primary install boundary (VERIFIED 2026.9.2): a trusted local command returning allow | warn | block for plugin and skill
-  // installs. Bound to the OS policy command in Phase 3; exact invocation contract is spike S-1 item (m).
-  // security: { installPolicy: { command: "clawos install-policy" } },
+  // The primary install boundary is projected with an absolute executable path in 15-runtime.json.
 }

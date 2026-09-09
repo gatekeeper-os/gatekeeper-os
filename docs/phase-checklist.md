@@ -65,11 +65,16 @@ Latest complete Ubuntu acceptance: `vm-artifacts/20260907-223901-phase-1/`, fres
 - [ ] `clawos grant revoke` → tool absent on the next turn — evidence:
 - [ ] Every step above appears in `clawos audit tail` — evidence:
 - [x] Trusted tool policy denies a `gk_*` call with an unknown handle even when kernel conversation hooks are disabled — evidence: `20260908-163653-phase-3`, `disabled-hooks-policy-denied` and matching policy audit.
-- [ ] `before_install` blocks a plugin from a non-allowlisted source — evidence:
+- [x] Fresh-base installer regression with bundled plugins: **25/25**, `vm-artifacts/20260909-002725-phase-1/`; two-cell isolation, backup/restore and post-restore health pass.
+- [x] Source-packaged kernel/fs project into cell-local state with no implicit grants; reinstall is a no-op — `vm-artifacts/20260909-001359-phase-3/`, install-again and scenario evidence, healthy paired kernel/fs status.
+- [x] Primary install policy blocks actual unlisted CLI installs, permits an explicitly reviewed source, and fails closed when unavailable — `vm-artifacts/20260909-003432-phase-3/`, `install-verdict.json` **8/8**, `scenarios.json` **12/12** structural checks; CLI114/policy4 guest tests pass. The outage case uses a fresh allowed fixture and verifies the policy error.
+- [ ] Secondary `before_install` blocks a plugin from a non-allowlisted source in a Gateway-backed flow — evidence:
 - Focused live checkpoint `20260908-163653-phase-3`: hooks-fire 4/4, tool-narrowing 5/5,
   gate-blocks 7/7, fs-gatekeeper 7/7; 48/48 structural checks across eight actual agent turns.
   Paired device-token RPC introduction/revocation and non-owner RPC URL denial passed.
-  CLI and Telegram-channel paths are still unverified; the combined phase gate stays open.
+  The later `20260908-172236-phase-3` checkpoint verified CLI grant/list/revoke/audit
+  and mounted status (**31/31** live assertions). Telegram-channel paths remain
+  unverified; the combined phase gate stays open.
 - [ ] Tag `phase-3`
 
 ## Phase 4 — gatekeeper-github

@@ -663,7 +663,7 @@ Gatekeeper tool `execute(toolCallId, params)` (registered by the kernel): fetch 
 
 `onMessageSending` — **Modify/Gate.** Apply cell egress rules from config (`clawos.egress.denyPatterns`, e.g. secrets-looking strings, grant handles, resource keys marked private). Redact or cancel with reason.
 
-`onBeforeInstall(e)` — **Gate, fail-closed (secondary).** Upstream's primary install boundary is the operator-owned `security.installPolicy` command (**VERIFIED**, §7.5); the OS binds it to `clawos install-policy`, which evaluates `clawos.install.allowSources` / `allowHashes` and returns allow/warn/block. `before_install` re-checks the same policy for Gateway-backed install flows and blocks with a reason on mismatch.
+`onBeforeInstall(e)` — **Gate, fail-closed (secondary).** Upstream's primary install boundary is the operator-owned `security.installPolicy` command (**VERIFIED**, §7.5); the OS projects a protected standalone build of `clawos install-policy`, which evaluates `plugins.entries.clawos-kernel.config.install.allowSources` / `allowHashes` and returns a versioned allow/block verdict. `before_install` re-checks the same policy for Gateway-backed install flows and blocks with a reason on mismatch.
 
 ### 5.3 State store (`node:sqlite`)
 
@@ -832,7 +832,7 @@ Live fixture results: block denied installation, `{}` denied installation,
 allow permitted installation; allow was evaluated twice. Only input key names,
 version, target type and fixture mode were retained. See `plans/spike-S1.md`.
 
-`security.installPolicy` (**VERIFIED** primary boundary: a trusted local command returning allow/warn/block after staging, applies to plugins and ClawHub skills, fails closed when unavailable) is set in `00-baseline.json5` to `clawos install-policy`, which enforces `clawos.install.allowSources` and optional hashes; `before_install` re-checks it; `plugins.deny` is authoritative (**VERIFIED**) and is populated with every plugin id not in the cell's allowlist at `clawos config apply` time; `openclaw plugins install --pin` is always used (with `--force` for `@clawos/*` npm sources until they are on ClawHub, since arbitrary npm sources warn — **VERIFIED**); `openclaw security audit --deep` runs after every install/update and its findings are stored for diffing.
+`security.installPolicy` (**VERIFIED** primary boundary: a trusted local command after staging, covering plugins and skills and failing closed when unavailable) is generated in `15-runtime.json` with `enabled:true` and a protected standalone policy script invoked through an absolute Node executable. It evaluates `plugins.entries.clawos-kernel.config.install`; `before_install` re-checks the same rules. `plugins.allow` positively selects enabled first-party plugins; explicit `plugins.deny` entries remain authoritative. The source installer deploys bundled first-party artifacts to cell-local `plugins.load.paths`; it does not fetch nonexistent npm releases. Third-party CLI installation still uses upstream's policy/provenance checks (`--force` never bypasses the policy). `openclaw security audit --deep` runs after source installation, and missing/invalid verdicts or critical findings fail installation.
 
 ---
 
@@ -899,7 +899,7 @@ Each test starts (or attaches to) a Gateway and exercises one dependency:
 | `cli-mounted` | `openclaw os status --json` works |
 | `config-reconcile` | `clawos config apply` is idempotent (second run = no diff) and doctor lint is clean |
 | `health` | `/healthz`, `/startupz`, `/readyz` respond |
-| `install-gate` | `before_install` blocks a plugin from a non-allowlisted source |
+| `install-gate` | Primary install policy blocks a real non-allowlisted CLI install; explicit operator allow succeeds and unavailable policy fails closed. Secondary Gateway hook evidence is separate. |
 | `fs-gatekeeper` | Scoped directory grant: read inside allowed, read outside blocked |
 
 The suite prints a compatibility verdict for the upstream version it ran against, which the update pipeline consumes.
@@ -1129,11 +1129,12 @@ clawos status
 [3/12] state dir            mkdir -p ~/.openclaw/os/{config.d,audit,gatekeepers,blueprints,backups,logs} (700)
 [4/12] keys                 os/cell.key (600) ; CLAWOS_GATEWAY_TOKEN → ~/.openclaw/.env (600)
 [5/12] config               write minimal openclaw.json if absent (600) ; copy config/config.d/* → os/config.d/
-[6/12] plugins              DEFERRED to Phase 3 — the kernel and gatekeeper-fs do not exist yet and nothing is
-                            published, so this step installs nothing and reports state "deferred" rather than
-                            claiming a postcondition it cannot meet. When Phase 3 lands it becomes:
-                              openclaw plugins install npm:@clawos/kernel@<ver> --pin --accept-capabilities
-                              openclaw plugins install npm:@clawos/gatekeeper-fs@<ver> --pin --accept-capabilities
+[6/12] plugins              Install the CLI's bundled first-party kernel/fs artifacts under
+                            <stateDir>/os/plugins/<content-hash>/; generate gatekeepers.json
+                            and 15-runtime.json with exact roots, explicit plugin allow/load
+                            entries and the primary install-policy executable. No npm packages
+                            are published; source installation authorizes these artifacts.
+                            Defaults grant no directories and allow no third-party installs.
 [7/12] hooks                (none to install — internal hooks are plugin-declared by the kernel; enabled by config)
 [8/12] reconcile            clawos config apply  (patch → doctor --lint → fingerprint)
 [9/12] service              openclaw gateway install ; systemd drop-in with OPENCLAW_NO_AUTO_UPDATE=1, CLAWOS_CELL=default
@@ -1297,3 +1298,21 @@ export class IssueGatekeeper extends KitGatekeeper<IssueState> {
 Cloudflare OS: `README.md`, `AGENTS.md`, `REVIEW.md`, `.agents/skills/write-gatekeeper/SKILL.md` and `SKELETON.md`, `packages/workshop-shared/src/gatekeeper.ts`, `packages/workshop-backend/src/{auth/auth-vendors.ts,auto-approval.ts,overseer.ts,env.d.ts}`, `packages/gatekeeper-github/src/github.ts`, `docs/observers.md`, `docs/oauth-signin.md`, `plans/gatekeeper-kit.md`, `plans/multi-gadget.md` — https://github.com/cloudflare/cloudflare-os. Starter: `README.md`, `docs/customization.md`, `deployment.jsonc`, `scripts/deploy.ts`, `pnpm-workspace.yaml`, `packages/custom-gatekeeper/` — https://github.com/cloudflare/cloudflare-os-starter.
 
 OpenClaw docs (https://docs.openclaw.ai): `concepts/architecture`, `concepts/multi-agent`, `concepts/agent-workspace`, `gateway/configuration`, `gateway/configuration-reference`, `gateway/config-tools`, `gateway/security`, `gateway/sandboxing`, `gateway/doctor`, `tools`, `tools/plugin`, `tools/skills`, `tools/exec-approvals`, `plugins/building-plugins`, `plugins/sdk-overview`, `plugins/sdk-entrypoints`, `plugins/hooks`, `plugins/manage-plugins`, `plugins/architecture`, `automation/hooks`, `cli`, `cli/config`, `cli/plugins`, `cli/cron`, `install`, `install/updating`, `install/development-channels`, `install/docker`, `platforms/linux`, `help/environment`; npm registry metadata for `openclaw` (dist-tags `latest=2026.9.2`, `beta=2026.9.1`, `extended-stable=2026.6.34`).
+
+### Phase 3 install-policy correction (2026-09-08)
+
+The source-distributed CLI now bundles first-party plugins and projects cell-local
+runtime/catalog paths. `15-runtime.json` is generated; operator overrides stay in
+`90-local.json5`. No registry publication or upstream-directory write is needed.
+The primary config is `security.installPolicy.enabled` plus `exec.source="exec"`,
+an absolute regular Node command and protected cell-local policy script, with static cell
+selection; the earlier unqualified `command` examples are superseded. Both policy
+paths share the documented `request.requestedSpecifier` / staged-material evaluator,
+not guessed `source` and `hash` fields. Empty allowlists fail closed; optional
+`sha256:` rules apply to measured regular staged files <=16 MiB only, never directory
+labels. `plugins.allow` is an explicit positive allowlist; do not enumerate an
+unbounded universe of absent plugin ids into `plugins.deny`. Existing explicit deny
+entries continue to take precedence. Filesystem roots remain empty by default.
+Primary live CLI install acceptance, shared evaluator regressions and the
+secondary hook typecheck are separate; no hook-backed Gateway install claim
+follows from CLI evidence.

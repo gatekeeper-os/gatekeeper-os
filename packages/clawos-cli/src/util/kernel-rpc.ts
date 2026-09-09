@@ -2,12 +2,16 @@
 import { spawnSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { resolveCellFromRegistry } from './cell.js';
+import { resolveCellFromRegistry, type Cell } from './cell.js';
 import { run, StepError } from './proc.js';
 
 /** Send structured parameters through stdin; select destination exclusively from the chosen cell. */
 export function kernelRpc(cellName: string, method: string, params: Record<string, unknown>): unknown {
-  const cell = resolveCellFromRegistry(cellName);
+  return kernelRpcForCell(resolveCellFromRegistry(cellName), method, params);
+}
+
+/** Installer health checks use the explicit new cell before its registry entry is committed. */
+export function kernelRpcForCell(cell: Cell, method: string, params: Record<string, unknown>): unknown {
   if (!Number.isInteger(cell.port) || cell.port < 1 || cell.port > 65535) throw new StepError('Invalid cell Gateway port');
   const binary = run('sh', ['-c', 'command -v openclaw']);
   if (binary.code !== 0) throw new StepError('openclaw is not on PATH');

@@ -9,6 +9,7 @@ import { backup } from "./commands/backup.js";
 import { cell } from "./commands/cell.js";
 import { configApply } from "./commands/config-apply.js";
 import { doctor } from "./commands/doctor.js";
+import { installPolicy } from "./commands/install-policy.js";
 import { install } from "./commands/install.js";
 import { status } from "./commands/status.js";
 import { parseGlobals, type GlobalOptions } from "./options.js";
@@ -19,6 +20,7 @@ type Command = (args: string[], globals: GlobalOptions) => Promise<number>;
 const COMMANDS: Record<string, Command> = {
   ...Object.fromEntries(["grant", "audit", "approvals", "gatekeeper", "kernel"].map(name => [name, (args: string[], globals: GlobalOptions) => kernelCommand(name, args, globals)])),
   install,
+  "install-policy": installPolicy,
   status,
   doctor,
   cell,

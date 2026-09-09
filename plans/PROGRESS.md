@@ -789,3 +789,126 @@ verbs have grammar coverage but their driver outcomes are not accepted by this r
 No full Phase 3 green, phase tag, merge/push, production change, upstream edits or
 snapshot replacement. Next: installer/projection and the shared primary/secondary
 install-policy implementation, then the remaining Phase 3 gates.
+
+## 2026-09-08 — installer/policy integration in progress
+
+Continued from `a9ba4ba`. The CLI now builds and ships self-contained first-party
+kernel/fs plugins, their static catalog and a standalone primary-policy script.
+`clawos install` deploys content-addressed artifacts beneath the selected cell's
+`os/plugins/`, with empty fs roots and empty third-party install allowlists, then
+projects native plugin allow/load configuration and a trusted absolute Node policy
+command. The primary executable and typed secondary hook share one fail-closed
+evaluator over `request.requestedSpecifier` and measured staged-file bytes.
+No published npm package, upstream modification or implicit resource grant.
+
+Installer postconditions now require paired kernel/fs health and a parsed deep
+audit with zero critical findings. The first-install `config.state.json` handoff
+no longer overwrites ownership digests refreshed in an existing lockfile.
+Linux and launchd restart paths account for changed plugin/config artifacts.
+
+Failed focused VM runs (all restored original Phase 1 `installed` snapshot):
+
+- `20260909-000036-phase-3`, exit 1: packaged kernel lacked `config.schema.json`.
+  Safe read-only audit inspection confirmed the exact missing asset. Required
+  asset copying and actual kernel/audit postconditions added.
+- `20260909-000335-phase-3`, exit 1: kernel/fs healthy and audit zero critical,
+  but repeat install refused the kernel/fs owned paths. The installer replaced
+  current lock digests with stale first-install handoff digests; precedence fixed.
+- `20260909-000544-phase-3`, exit 1: repeat install and healthy no-grant runtime
+  passed. Real plugin installation was refused before evaluating OS policy:
+  npm had installed the CLI script and parent directories group-writable (775).
+  Upstream correctly rejected that interpreter script. Replaced the npm-script
+  policy target with a mode-600 self-contained payload under mode-700 OS state;
+  no trusted-exec guard was weakened and no upstream file was altered.
+
+Host checks so far: CLI 114/114, shared install-policy 3/3, affected typechecks,
+VM-bootstrap 2/2, catalog, secrecy and diff checks. Legacy full-phase/other live
+suite drafts remain preserved. Primary live acceptance is still pending at this
+entry; secondary Gateway hook and full Phase 3 acceptance remain separate.
+
+- `20260909-000926-phase-3`, exit 1: protected standalone policy worked;
+  unlisted source denied and operator policy reconciliation passed. The explicitly
+  allowed inert fixture reached installation but upstream required its separate
+  capability consent. The VM fixture install now supplies documented
+  `--accept-capabilities`; neither consent nor `--force` bypasses primary policy.
+
+**Passing primary-policy command:** `CLAWOS_VM_DRIVER=libvirt
+CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state
+scripts/vm/test.sh phase-3 installed install-integration`.
+Artifacts `vm-artifacts/20260909-001359-phase-3/`, harness/install exit **0**,
+OpenClaw **2026.9.2**, Node **24.20.0**. Primary `install-gate` conformance
+**8/8**, zero skipped; **11/11 structural scenario flags** true. Source install,
+repeat no-op install, healthy bundled kernel/fs and zero default grants passed.
+Real native local-plugin install denies an unlisted source even with force and
+capability consent, installs after exact operator allowance, and fails closed
+when the policy executable is unavailable. Forged source/hash labels, malformed
+JSON and invalid protocol deny; normal ownership-aware policy restoration passes.
+Guest CLI **114/114**, shared policy **3/3**, kernel/CLI typechecks and catalog/
+secrecy checks pass. Artifact collection is allowlisted and exited successfully.
+
+Full fresh-base installer regression is running separately; no phase-completion,
+secondary Gateway-hook, macOS integration or new snapshot claim yet.
+
+
+## 2026-09-08 — gateway restart recovery
+
+Fresh-base regression `20260909-001807-phase-1` was interrupted by the host
+gateway restart. The host log ends after 11 passing checks; no exit-code or
+collection result exists. Guest recovery JSON reports success, but no guest
+harness remains running. Overall outcome **UNKNOWN**, not pass or failure.
+The prior primary-policy report remains intact. No running script was edited.
+A fresh-base rerun will establish the full regression result. The older Phase 1
+scope text was corrected to describe bundled kernel/fs health without claiming
+full Phase 3 conformance.
+
+Recovery review strengthened the policy-outage scenario to use a fresh, exactly
+allowlisted fixture and require an install-policy diagnostic plus no installed
+target. The earlier outage flag alone could also have meant “already installed”;
+it is superseded by the strengthened rerun, not standalone proof of this criterion.
+Shared evaluator now also rejects registry namespace URL/file/npm-alias overrides;
+current host package-scoped tests pass CLI114/114 and policy4/4. An initial
+root-workspace test invocation failed four RPC fixture checks because its cwd
+resolved bin/gateway-rpc.mjs at the repository root; corrected package-scoped
+invocation passes. Affected typechecks, catalog/secrecy, shell syntax, diff and
+VM bootstrap2/2 pass. No runtime code change during the clean-base run.
+
+
+**Fresh-base regression PASS:** `CLAWOS_VM_DRIVER=libvirt
+CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state
+scripts/vm/test.sh phase-1 base`. Restart-resilient service
+`clawos-p3-fresh-recovery`, artifacts `vm-artifacts/20260909-002725-phase-1/`,
+harness/collection exit0, **25/25** checks, zero failures. Install179s (under600s),
+entire suite371s, OpenClaw2026.9.2 (3928bad), Node24.20.0. Healthy source install,
+zero-critical audit (one warning/one info), repeat install, reconciliation no-op,
+concurrent-edit/atomic-race refusal and recovery, two live cells with separate
+ports/state/keys, OS-inclusive backup and restore, post-restore health, upstream
+unit/drop-in separation and permissions all passed. Original base/installed
+snapshots are retained; no replacement snapshot or full Phase3 acceptance.
+Strengthened focused policy acceptance is running next from original installed.
+
+
+**Strengthened primary-policy PASS:** `CLAWOS_VM_DRIVER=libvirt
+CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state
+scripts/vm/test.sh phase-3 installed install-integration`, independent service
+`clawos-p3-policy-recovery`. Artifacts `vm-artifacts/20260909-003432-phase-3/`,
+harness/install/collection exit0; **8/8 live conformance assertions**, no skips;
+**12/12 structural flags**, including the fresh-fixture outage precondition.
+Real unlisted source denies; exact operator allowance installs the inert fixture;
+a distinct allowed/not-yet-installed fixture denies with an install-policy error
+when the executable is unavailable. CLI114/114 and shared policy4/4 guest tests
+pass; affected typechecks, catalog/secrecy checks pass. Node24.20.0, pinned
+OpenClaw2026.9.2(3928bad), original installed snapshot. This supersedes the earlier
+outage-only assertion weakness; no failed acceptance was silently relabeled.
+
+Dedicated `clawos-test` confirmed **shut off** after collection. Immutable base
+(2026-09-07 11:38 PDT) and installed (15:49 PDT) snapshots unchanged. No upstream
+modifications, production config/state access or real granted-file writes.
+
+**Checkpoint scope:** installer projection and shared primary/secondary install
+policy implementation complete; primary live acceptance verified. Secondary hook
+is typechecked and shares the tested evaluator, but a live Gateway-backed hook
+installation is still unverified. Channel URL introduction/order, observer/egress
+and approval decision integration, full Phase3 gate and macOS remain unaccepted.
+No phase3 tag, merge, push or snapshot replacement. Existing unrelated full-phase
+conformance/test drafts remain unstaged and preserved. Next: the remaining
+Phase3 acceptance paths, beginning with secondary Gateway hook evidence.

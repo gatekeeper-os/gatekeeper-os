@@ -99,7 +99,7 @@ log "pnpm $(pnpm --version)"
   # Fail closed. A frozen install that fell back to resolving a fresh lockfile would silently install dependency
   # versions nobody reviewed, which defeats the point of committing a lockfile (plan §7.5).
   pnpm install --frozen-lockfile
-  pnpm --filter @clawos/cli run build
+  pnpm --filter @clawos/cli... run build
 )
 
 pack_dir="$(mktemp -d)"
