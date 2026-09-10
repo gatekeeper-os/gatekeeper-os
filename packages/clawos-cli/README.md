@@ -9,10 +9,11 @@ Implemented commands:
 clawos install [--yes]                 clawos cell create|list
 clawos status                         clawos doctor
 clawos config apply [--dry-run]        clawos backup create|restore
-clawos kernel status                  clawos gatekeeper list
-clawos grant add --agent <id> <url> [--title <title>] [--audience owner-only|shared]
+clawos kernel status                  clawos gatekeeper list|connect <vendor>
+clawos grant add --agent <id> <url> [--title <title>] [--audience owner-only]
 clawos grant list [--agent <id>]        clawos grant revoke <handle>
 clawos approvals list                  clawos approvals apply|reject|revert <id,id|all>
+clawos approvals grant|reject-request <id,id|all>
 clawos audit tail [--limit 1–1000]
 ```
 
@@ -38,5 +39,14 @@ With the kernel plugin enabled, `openclaw os status|grants|approvals|audit --jso
 forwards to this same client. Both the CLI package and a registered cell are required.
 Static plugin manifest metadata owns the `os` root command discovery.
 
-Plugin installation/projection, install policy, gatekeeper connection, blueprints,
-updates and rollback are still pending; they are not exposed as successful stubs.
+The source installer projects the bundled kernel/filesystem plugins and configures
+the cell-local install policy. `clawos install-policy` evaluates installation
+requests for upstream; it is not a general plugin-management interface.
+
+`clawos gatekeeper connect <vendor>` starts the kernel's single-use connection
+flow. Static filesystem account connection has live Phase 3 evidence; real GitHub
+OAuth and effects require Phase 4 acceptance. No connection grants resources by
+itself. Shared grants are rejected under the owner-only beta boundary.
+
+Blueprint application, the full update/rollback pipeline and general gatekeeper
+installation commands remain later-phase work; they are not successful stubs.

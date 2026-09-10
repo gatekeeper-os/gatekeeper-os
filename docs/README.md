@@ -1,16 +1,22 @@
-# OpenClaw OS — Agent Kit
+# OpenClaw OS documentation
 
-This folder is everything an autonomous coding agent needs to build OpenClaw OS: an operating-system layer over upstream OpenClaw (unmodified), modeled on Cloudflare OS and its gatekeeper concept. Hand the agent `KICKOFF_PROMPT.md` (one level up) and the `repo-skeleton/openclaw-os/` directory (which contains a copy of this `docs/` folder plus the generated scaffold); nothing else is required to start.
+Start with the [project introduction](../README.md) for current capabilities,
+limitations, development setup and acknowledgments. The repository originated
+as an agent implementation kit; these documents now travel with the implementation.
 
-| File | What it is | When the agent reads it |
-|---|---|---|
-| `../KICKOFF_PROMPT.md` | The prompt that starts the engagement: mission, invariants, working method, VM-testing rule, reporting format, definition of done. | Given to the agent as its first message. |
-| `agent-operating-rules.md` | Binding rules: the two invariants, capability and secrecy invariants, the kernel review bar, review priority, git and reporting conventions, when to stop. Becomes the repo's `AGENTS.md` and `REVIEW.md`. | Second, before any code. |
-| `implementation-plan.md` | The full plan (v1.0): principles, verified foundations, architecture, gatekeeper contracts, kernel design, config/pin/update strategy, security model, repo layout, ten phases with acceptance criteria, installation, operations, open questions, appendices. | Third; kept open throughout. |
-| `upstream-reference.md` | Verified OpenClaw and Cloudflare OS facts — CLI, paths, config keys, plugin SDK, hook signatures — with the remaining UNVERIFIED items flagged for Phase 0. | Fourth; consulted whenever touching upstream surfaces. |
-| `vm-testing.md` | How to provision, snapshot, reset, and drive the Ubuntu 24.04 test VM; per-phase test scripts; test credentials; what "tested" means. | Fifth; before Phase 0's first VM run. |
-| `phase-checklist.md` | Every acceptance criterion as a checkbox with an evidence slot; filled in as phases complete. | Continuously. |
+| Document | Purpose |
+|---|---|
+| [Implementation plan](implementation-plan.md) | Architecture, capability contracts, ordered phases and acceptance criteria; future-state design is not evidence of completion |
+| [Phase checklist](phase-checklist.md) | Passed, deferred and outstanding acceptance gates with evidence |
+| [Phase 3 acceptance](../plans/phase-3-acceptance.md) | Kernel milestone reconciliation and retained limitations |
+| [Upstream reference](upstream-reference.md) | Verified interfaces and explicit unresolved assumptions |
+| [VM testing](vm-testing.md) | Disposable-machine setup, snapshots, runtime checks and evidence collection |
+| [Agent operating rules](agent-operating-rules.md) | Review standards and repository invariants |
+| [CLI reference](../packages/clawos-cli/README.md) | Implemented host and operator command behavior |
+| [Acknowledgments and provenance](acknowledgments.md) | OpenClaw, Cloudflare OS, adaptation scope and upstream licenses |
+| [Open-source release](open-source-release.md) | License rationale, beta publication checks and possible organization transfer |
+| [Progress](../plans/PROGRESS.md) | Historical implementation checkpoints; later evidence supersedes earlier state |
 
-The repo skeleton (`../repo-skeleton/openclaw-os/`, index in `../repo-skeleton/README.md`) already places these docs at `docs/` and derives `AGENTS.md`/`REVIEW.md` from `agent-operating-rules.md`. Keep them version-controlled alongside the code and update them in the same commits that change behavior.
-
-Provenance: the plan and reference were researched on 2026-09-06 against `openclaw@2026.9.2` and the `cloudflare/cloudflare-os` and `cloudflare-os-starter` repositories at `main`. Upstream moves quickly; the first thing the agent does (Phase 0, spike S-1) is confirm the pinned version still installs and that the flagged UNVERIFIED items resolve as expected.
+The original plan was researched on 2026-09-06 against `openclaw@2026.9.2`,
+Cloudflare OS and Cloudflare OS Starter. Runtime facts are updated with acceptance
+evidence; the lockfile remains authoritative for the current upstream pin.
