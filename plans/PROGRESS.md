@@ -1251,3 +1251,23 @@ retain their original later-phase acceptance; beta remains incomplete (Phases 4�
 **VM confirmed shut off; base/installed snapshots retained. Production untouched.**
 The accepted candidate is to be merged through PR4 and tagged `phase-3` only after
 green candidate CI; final remote merge/tag state is recorded by the orchestrator.
+
+## 2026-09-09 — open-source introduction and attribution preparation
+
+- User intends an open-source beta and is considering a dedicated GitHub organization.
+  No organization, transfer or visibility change performed; current repository private.
+- Added thorough root README, current documentation index, acknowledgment/provenance
+  map and beta-publication checklist. Explicitly separates Phase3 evidence from
+  unfinished Phase4–7 and later functionality; Telegram deferral remains not passed.
+- Retained previously approved MIT license for original contributions. Verified
+  pinned OpenClaw MIT text and Cloudflare OS/Starter Apache2.0 licenses from upstream.
+  Preserved full Apache2.0 text with adaptation notices in root and all10 package
+  NOTICE files. Original source revisions/provenance require final release review;
+  later license-check commits are not represented as original source revisions.
+- Verification: cached offline frozen-lockfile install (0 downloads), full workspace
+  build, catalog and secrecy checks, git diff whitespace check, 42 local documentation
+  links, actual npm packed-license checks **10/10** including nested CLI plugin bundles.
+  No runtime behavior changed; no VM rerun, release or new phase acceptance claimed.
+- Phase4 GitHub implementation proceeds in an independent worktree. Real-service
+  acceptance still requires a disposable test repository/identity/OAuth app, requested
+  by name/link only; no credentials borrowed from production.
