@@ -73,7 +73,7 @@ export abstract class KitGatekeeper<State = unknown> implements Gatekeeper {
     return impl;
   }
   async describe() { return { resource: this.resource, title: this.resource.title, suggestedName: this.resource.type.toUpperCase() }; }
-  async getAutoApprovableActions() { return []; }
+  async getAutoApprovableActions(): Promise<import("@clawos/shared").ActionKind[]> { return []; }
   /** Bind a kernel queue; dry passes never read vendors, reserve ids, submit actions or modify overlays. */
   async startSession(queue: ApprovalQueue): Promise<GatekeeperSession> {
     await this.sequence.run(() => this.recoverOverlay());

@@ -1,13 +1,30 @@
 {
   "inputs": [
-    { "id": "GITHUB_OAUTH_CLIENT_ID", "kind": "string", "title": "GitHub OAuth App client ID" },
-    { "id": "GITHUB_OAUTH_CLIENT_SECRET", "kind": "secret", "title": "GitHub OAuth App client secret" }
+    {
+      "id": "GITHUB_OAUTH_CLIENT_ID",
+      "kind": "string",
+      "title": "GitHub OAuth App client ID"
+    },
+    {
+      "id": "GITHUB_OAUTH_CLIENT_SECRET",
+      "kind": "secret",
+      "title": "GitHub OAuth App client secret"
+    },
+    {
+      "id": "PUBLIC_BASE_URL",
+      "kind": "string",
+      "title": "Trusted browser-reachable Gateway origin (HTTPS or loopback HTTP)"
+    }
   ],
   "consoleUrl": "https://github.com/settings/developers",
   "setupSteps": [
-    "Create an OAuth App (or use Device Flow with a client ID only).",
-    "Set the callback URL to the redirect URI below.",
-    "Copy the client ID and secret into `clawos gatekeeper add github`."
+    "Create a disposable GitHub OAuth App for acceptance; configure its callback URL exactly as below. This implementation uses the supported web flow with S256 PKCE, not device flow or PAT import.",
+    "Map GITHUB_OAUTH_CLIENT_ID to plugins.entries.gatekeeper-github.config.clientId (public app identifier).",
+    "Provision GITHUB_OAUTH_CLIENT_SECRET through host-owned masked entry or a private service environment file. Set config.clientSecret to {source: env, provider: default, id: GITHUB_OAUTH_CLIENT_SECRET}; never put the value in config or chat.",
+    "Map PUBLIC_BASE_URL to config.publicOrigin. HTTPS is required except for localhost/127.0.0.1/[::1] HTTP. This is the exact origin, without a trailing slash.",
+    "Enable the installed plugin and its kernel catalog entry using normal supported OpenClaw configuration, validate config, then restart the disposable Gateway.",
+    "Run clawos gatekeeper connect github and open its single-use local start URL privately. No gatekeeper-add configuration wizard or PAT option is claimed.",
+    "Introduce only the disposable repository/issue/pull URLs after connection; connected OAuth repo scope never creates ambient grants."
   ],
   "redirectUriTemplate": "{PUBLIC_BASE_URL}/os/gatekeeper/github/oauth/callback"
 }

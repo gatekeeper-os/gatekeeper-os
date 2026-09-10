@@ -2,6 +2,7 @@ import { defineGatekeeper } from "@clawos/gatekeeper-kit";
 import { GitHubVendor } from "./vendor.js";
 import { resources } from "./resources.js";
 import { tools } from "./tools.js";
+import { describeAction } from "./resource.js";
 
 export default defineGatekeeper({
   vendor: "github", apiVersion: 1, id: "gatekeeper-github", name: "GitHub Gatekeeper",
@@ -9,8 +10,8 @@ export default defineGatekeeper({
   createVendor: (ctx) => new GitHubVendor(ctx),
   resources,
   tools,
-  // Existing tool surface only; Phase 4 reviews and implementation remain outstanding.
+  // Reviewed pure descriptions; the kernel alone registers and dispatches tools.
   actions: Object.fromEntries(tools.filter(tool => tool.kind === "action").map(tool => [tool.name, {
-    describe() { throw new Error("GitHub driver is not implemented."); },
+    describe(params) { return describeAction(tool.name, params); },
   }])),
 });

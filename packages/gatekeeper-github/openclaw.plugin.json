@@ -2,9 +2,58 @@
   "id": "gatekeeper-github",
   "name": "GitHub Gatekeeper",
   "description": "Mediates agent access to GitHub repositories, issues, and pull requests.",
-  "contracts": { "tools": [] },
-  "activation": { "onStartup": true },
-  "configSchema": { "type": "object", "additionalProperties": false, "properties": {
-    "clientId": { "type": "string" }, "clientSecret": { "type": "object" }, "apiBase": { "type": "string", "default": "https://api.github.com" } } },
-  "clawos": { "gatekeeper": { "vendor": "github", "apiVersion": 1 } }
+  "contracts": {
+    "tools": []
+  },
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "clientId": {
+        "type": "string"
+      },
+      "clientSecret": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source",
+          "provider",
+          "id"
+        ],
+        "properties": {
+          "source": {
+            "const": "env"
+          },
+          "provider": {
+            "const": "default"
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Z_][A-Z0-9_]*$"
+          }
+        }
+      },
+      "apiBase": {
+        "type": "string",
+        "const": "https://api.github.com"
+      },
+      "publicOrigin": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "clientId",
+      "clientSecret",
+      "publicOrigin"
+    ]
+  },
+  "clawos": {
+    "gatekeeper": {
+      "vendor": "github",
+      "apiVersion": 1
+    }
+  }
 }

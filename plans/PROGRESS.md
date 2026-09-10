@@ -1251,3 +1251,43 @@ retain their original later-phase acceptance; beta remains incomplete (Phases 4�
 **VM confirmed shut off; base/installed snapshots retained. Production untouched.**
 The accepted candidate is to be merged through PR4 and tagged `phase-3` only after
 green candidate CI; final remote merge/tag state is recorded by the orchestrator.
+
+## 2026-09-09 — Phase 4 implementation candidate; live acceptance open
+
+Implemented the approved eleven-tool GitHub surface in `packages/gatekeeper-github`:
+strict account-bound repo/issue/pull introductions, OAuth App web flow with S256
+PKCE and kernel nonce binding, encrypted credentials/refresh/revocation, seven
+authorized observations, four deferred action kinds, durable overlays, stable
+GraphQL node-ID effects, comment deletion/created-issue closure reverts, and
+observer ACL checks. Reviews deliberately have no generic revert. Deployment
+inputs ship with the package; the public client ID is not classified as a secret.
+Both original STOP artifacts and the existing completion authorization are
+preserved in `REVIEW-REQUESTED.md`; no repeat approval or acceptance waiver.
+
+Parent review read the implementation and corrected unbounded query cache growth:
+at most 32 memory/disk slots per resource, exact query-key matching on collisions,
+with a restart/collision regression. The kit change is only the explicit
+`Promise<ActionKind[]>` annotation on its existing empty default method.
+
+Host verification: full workspace build/typecheck pass; `pnpm test` **474/474**
+across 33 files, including **64 GitHub** and **48 kit** tests. Catalog, secrecy and
+diff checks pass. These are offline tests, not live-provider or VM evidence.
+No VM command was run, no upstream pin/snapshot changed, no production access or
+real GitHub login/effect occurred for this candidate. Upstream remains pinned to
+2026.9.2; Phase 3 acceptance and the Telegram-only deferral remain unchanged.
+
+**Phase 4 is NOT accepted.** Still required:
+
+- Named disposable GitHub repository, identity and OAuth App; app client ID and
+  trusted callback origin. The existing names/links request is unanswered. No
+  personal `gh` credential may be silently reused as an acceptance fixture.
+- Host-owned private credential provisioning and supported private web login.
+  Device flow, PAT import and a configuration wizard are not implemented/claimed.
+- Implement/run live Phase 4 VM scenarios through `scripts/vm/test.sh`, including
+  GitHub-backed `deferred-approval` and `require-approval-roundtrip`, actual model
+  simulation/readback, real apply/reject/revert, remote verification and audit/log
+  secrecy evidence. Mock assertions are not substitutes for these gates.
+- Candidate CI and live acceptance review before merge or `phase-4` tagging.
+
+The original Phase 5–7 scope remains outstanding; no beta release, public
+visibility change, organization creation or repository transfer is performed.
