@@ -809,9 +809,9 @@ as a control, uses Node 24, and checks declared compatibility before installatio
 Supported releases must pass ordinary-plugin metadata inspection and a fresh hosted
 Ubuntu VM smoke: actual kernel/filesystem startup, three health endpoints,
 authenticated `os.status`, healthy fs driver, zero grants and empty approval queues.
-An out-of-range tag is **unsupported / not tested**, never a conformance pass;
-resolution errors and any supported-release check failure still fail CI. The pin
-must always be supported. Structural verdicts and job summaries preserve this distinction.
+An out-of-range extended-stable tag is **unsupported / not tested**, never a
+conformance pass; resolution errors, pin/latest/beta escaping the declared range,
+and any supported-release check failure still fail CI. Structural verdicts and job summaries preserve this distinction.
 This is deliberately **compatibility smoke, not full conformance**. Full scenario,
 agent-turn, hook, approval and update/rollback matrix integration remains Phase 7;
 existing Phase 3 VM acceptance evidence is unchanged. No upstream pin/range is widened.

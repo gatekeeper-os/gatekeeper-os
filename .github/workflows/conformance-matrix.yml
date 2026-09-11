@@ -34,12 +34,15 @@ jobs:
         run: node scripts/ci/resolve-upstream.mjs
       - if: steps.upstream.outputs.supported == 'true'
         run: pnpm install --frozen-lockfile && pnpm build
+      - if: steps.upstream.outputs.supported == 'true'
+        run: pnpm exec tsc --noEmit --target ES2023 --module NodeNext --moduleResolution NodeNext --skipLibCheck scripts/ci/live-smoke.ts
       - name: Install exact resolved upstream in disposable runner
         if: steps.upstream.outputs.supported == 'true'
         env:
           UPSTREAM_VERSION: ${{ steps.upstream.outputs.version }}
         run: |
-          mkdir -m 700 -p "$OPENCLAW_STATE_DIR"
+          umask 077
+          mkdir -p "$OPENCLAW_STATE_DIR"
           printf '{}\n' > "$OPENCLAW_CONFIG_PATH"
           chmod 600 "$OPENCLAW_CONFIG_PATH"
           npm install -g "openclaw@$UPSTREAM_VERSION" --allow-scripts=openclaw

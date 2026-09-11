@@ -20,5 +20,7 @@ writeFileSync('verdict-compatibility.json', JSON.stringify({ tag, version, range
   status: supported ? 'pending' : 'unsupported', scope: 'compatibility-smoke', fullConformance: false,
   reason: supported ? 'Live checks required' : 'Outside declared plugin API range; live checks not run',
 }, null, 2) + '\n');
-if (tag === 'pinned' && !supported) throw new Error('PIN_OUTSIDE_DECLARED_RANGE');
+// Only the deliberately older maintenance channel is an informational exclusion.
+// A moving latest/beta channel escaping our supported range must still alert.
+if (tag !== 'extended-stable' && !supported) throw new Error('UPSTREAM_OUTSIDE_DECLARED_RANGE');
 appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\nsupported=${supported}\n`);
