@@ -295,3 +295,15 @@ bypass in `docs/upstream-reference.md:203`, not proof of an upstream defect.
 A compatible **nonofficial** test package is needed to exercise the secondary
 hook criterion. Do not repeatedly run the official control expecting different
 behavior, weaken the primary policy, or relabel this failure as a pass.
+
+## Nightly compatibility smoke (2026-09-11)
+
+The nightly Actions job runs `scripts/ci/live-smoke.ts` only on a fresh GitHub-hosted
+Ubuntu VM (`GITHUB_ACTIONS`, `RUNNER_ENVIRONMENT`, `RUNNER_OS` guards), with explicit
+state/config selectors under `RUNNER_TEMP`. This is a read-only runtime compatibility
+probe, not a phase acceptance run or a substitute for `scripts/vm/test.sh`. It starts
+real kernel/fs plugins via supported `plugins.load.paths`, performs health and operator
+RPC checks, then closes the SDK client and stops the Gateway. Random throwaway auth
+stays in the private config/in-memory SDK call; no raw Gateway output is uploaded.
+Only structural verdict JSON leaves the runner. All full phase acceptance continues
+through the snapshot/reset/sync/collect harness above.
