@@ -1271,3 +1271,26 @@ green candidate CI; final remote merge/tag state is recorded by the orchestrator
 - Phase4 GitHub implementation proceeds in an independent worktree. Real-service
   acceptance still requires a disposable test repository/identity/OAuth app, requested
   by name/link only; no credentials borrowed from production.
+
+## 2026-09-11 — repair scheduled CI scaffold (candidate)
+
+Investigated failing nightly runs 34589038215 and 34465773220. Latest/beta require
+Node >=24.16 but the scaffold selected Node 22; extended-stable 2026.6.35 rejects
+`--accept-capabilities` and is outside our declared >=2026.9.2 <2026.11.0 range.
+The scaffold also used unsupported `--gateway`/`--token` conformance arguments,
+never generated the VM scenario evidence required by the current suites, and scoped
+state/auth exports to only one Actions step. These are CI plumbing defects, not
+new evidence that the previously accepted Phase 3 scenarios failed.
+
+Replaced the scaffold with explicitly scoped compatibility smoke (plan §6.5):
+Node 24, exact-version resolution, pinned control, supported-range classification,
+ordinary plugin metadata, real kernel/fs startup and authenticated read-only RPCs.
+Unsupported is recorded separately from passed; supported-version failures remain
+fatal. Full phase acceptance remains separate and Phase 7 is not claimed complete.
+Production runtime, upstream pin, plugin ranges, and existing acceptance tests unchanged.
+
+Local verification: workspace build passed; new smoke helper typecheck passed;
+6 verdict-integrity tests passed (missing/failed evidence cannot pass; unsupported
+is not passed); catalog/secret checks and diff whitespace checks passed. Running
+the helper outside a hosted VM was correctly refused before config/runtime mutation.
+GitHub-hosted live results pending; no local VM phase acceptance run is claimed.
