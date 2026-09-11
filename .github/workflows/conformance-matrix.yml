@@ -15,8 +15,6 @@ jobs:
       fail-fast: false
       matrix: { tag: [pinned, latest, beta, extended-stable] }
     env:
-      OPENCLAW_STATE_DIR: ${{ runner.temp }}/clawos-nightly
-      OPENCLAW_CONFIG_PATH: ${{ runner.temp }}/clawos-nightly/openclaw.json
       OPENCLAW_NO_AUTO_UPDATE: "1"
     steps:
       - uses: actions/checkout@v4
@@ -24,6 +22,10 @@ jobs:
       - uses: actions/setup-node@v4
         # Rolling upstream requires >=24.16; pinned build CI retains Node 22 coverage.
         with: { node-version: "24", cache: pnpm }
+      - name: Select isolated runner state
+        run: |
+          printf 'OPENCLAW_STATE_DIR=%s/clawos-nightly\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'OPENCLAW_CONFIG_PATH=%s/clawos-nightly/openclaw.json\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - run: node --test scripts/ci/report.test.mjs
       - name: Resolve upstream and declared compatibility
         id: upstream
