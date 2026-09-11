@@ -91,6 +91,25 @@ refresh token requires reconnection. Revocation invalidates retained account,
 resource, session and verifier objects. No credential or raw provider error is
 logged or included in tool results.
 
+## Optional native synchronous decisions
+
+`config.synchronousActions` is an operator-configured array containing a subset
+of the four existing action tool names. It defaults to `[]`, preserving deferred
+simulation for every action. Example:
+
+```json
+{ "synchronousActions": ["gk_github_issue_comment"] }
+```
+
+Selected actions return `awaitDecision:true` on the instance-bound dry pass,
+disable auto-approval eligibility and use the kernel's native plugin approval
+flow. The agent cannot choose this policy in tool parameters. Without an exact
+allow-once decision, no provider write or simulated overlay occurs. Allowed
+actions apply once, invalidate reads and retain their existing revert contract.
+Unknown/duplicate tool names are rejected. An operator restart is required for
+a changed configuration; already-pending actions retain their recorded semantics.
+This option does not grant resource access or implement provider authentication.
+
 ## Approval, simulation and remote effects
 
 All reads await kernel observation authorization before fetching. Each bound

@@ -14,7 +14,8 @@ if (process.env.CLAWOS_KERNEL_VM !== '1' || process.env.CLAWOS_TEST_MODE !== 'ga
 const require = createRequire(resolve('packages/clawos-conformance/package.json'));
 const { GatewayClient } = await import(pathToFileURL(require.resolve('openclaw/plugin-sdk/gateway-runtime')).href);
 const config = JSON.parse(readFileSync(process.env.OPENCLAW_CONFIG_PATH, 'utf8'));
-const report = { runId: process.env.CLAWOS_SCENARIO_RUN, mode: 'gateway-integration',
+const phase = process.argv[2] ?? 'deferred';
+const report = phase === 'native' ? JSON.parse(readFileSync(process.env.CLAWOS_SCENARIO_REPORT, 'utf8')) : { runId: process.env.CLAWOS_SCENARIO_RUN, mode: 'gateway-integration',
   provider: 'in-memory-fixture', realProvider: false, checks: {}, turns: [] };
 const save = () => writeFileSync(process.env.CLAWOS_SCENARIO_REPORT, JSON.stringify(report, null, 2) + '\n', { mode: 0o600 });
 function check(id, value) {
@@ -22,7 +23,9 @@ function check(id, value) {
   if (value !== true) throw new Error(id);
   console.log('PASS ' + id);
 }
-let shared, paired, current;
+let shared, paired, restricted, current;
+const requests = [], resolutions = [];
+const scenarioAgent = phase === 'native' ? 'stranger' : 'main';
 const server = createServer(async (req, res) => {
   try {
     if (req.method !== 'POST' || !current) throw new Error();
@@ -66,14 +69,18 @@ const server = createServer(async (req, res) => {
     }
   } catch { res.writeHead(400); res.end('{}'); }
 });
-async function connect(auth) {
+async function connect(auth, scopes = ['operator.admin'], observe = false) {
   let client, timer;
   try {
     const hello = await new Promise((resolve, reject) => {
       timer = setTimeout(() => reject(new Error('connection-timeout')), 30000);
       client = new GatewayClient({ url: 'ws://127.0.0.1:19100', ...auth, env: process.env,
-        clientName: 'cli', mode: 'cli', role: 'operator', scopes: ['operator.admin'], requestTimeoutMs: 120000,
-        hostDeps: { logDebug() {}, logError() {} }, onHelloOk: resolve, onConnectError: () => reject(new Error('connection-failed')) });
+        clientName: 'cli', mode: 'cli', role: 'operator', scopes, caps: observe ? ['plugin-approvals'] : [], requestTimeoutMs: 120000,
+        hostDeps: { logDebug() {}, logError() {} }, onEvent: event => {
+          if (!observe) return;
+          if (event.event === 'plugin.approval.requested') requests.push(event.payload);
+          if (event.event === 'plugin.approval.resolved') resolutions.push(event.payload);
+        }, onHelloOk: resolve, onConnectError: () => reject(new Error('connection-failed')) });
       client.start();
     });
     return { client, deviceToken: hello.auth?.deviceToken };
@@ -90,7 +97,7 @@ function cli(args) {
 }
 async function runTurn(id, operations) {
   current = { names: [], calls: 0, callIds: [], results: [], resultShapes: [], operations };
-  await paired.client.request('agent', { agentId: 'main', sessionKey: `agent:main:github-${id}`, message: 'Perform the requested fixture operation and inspect the result.', idempotencyKey: randomUUID() }, { expectFinal: true, timeoutMs: 120000 });
+  await paired.client.request('agent', { agentId: scenarioAgent, sessionKey: `agent:${scenarioAgent}:github-${id}`, message: 'Perform the requested fixture operation and inspect the result.', idempotencyKey: randomUUID() }, { expectFinal: true, timeoutMs: 120000 });
   const row = { id, modelRequests: current.names.length, toolCalls: current.calls, results: current.results, names: current.names, resultShapes: current.resultShapes };
   report.turns.push(row); current = undefined; save();
   check(id + '-model-used', row.modelRequests > 0);
@@ -101,11 +108,49 @@ function files(dir) { return readdirSync(dir, { withFileTypes: true }).flatMap(e
 try {
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(19101, '127.0.0.1', resolve); });
   shared = await connect({ token: config.gateway.auth.token });
-  check('paired-device-issued', typeof shared.deviceToken === 'string' && shared.deviceToken.length > 0);
-  paired = await connect({ deviceToken: shared.deviceToken });
+  check(phase + '-paired-device-issued', typeof shared.deviceToken === 'string' && shared.deviceToken.length > 0);
+  paired = await connect({ deviceToken: shared.deviceToken }, ['operator.admin'], true);
   const status = await rpc('os.status');
-  check('github-driver-live', status.healthy === true && status.gatekeepers.some(g => g.vendor === 'github' && g.healthy));
-  check('provider-explicitly-synthetic', (await provider()).realProvider === false);
+  check(phase + '-github-driver-live', status.healthy === true && status.gatekeepers.some(g => g.vendor === 'github' && g.healthy));
+  check(phase + '-provider-explicitly-synthetic', (await provider()).realProvider === false);
+  if (phase === 'native') {
+    restricted = await connect({ deviceToken: shared.deviceToken }, ['operator.read']);
+    const added = cli(['grant', 'add', '--agent', scenarioAgent, 'https://github.com/org/repo/issues/12']);
+    check('native-grant-introduced', added.ok && added.value?.status === 'active');
+    const grant = added.value.handle;
+    const read = { tool: 'gk_github_issue_get', params: { grant } };
+    const write = body => ({ tool: 'gk_github_issue_comment', params: { grant, body } });
+    async function nativeTurn(id, decision) {
+      const offset = requests.length;
+      let done = false;
+      const pending = runTurn(id, [write(decision === 'allow-once' ? 'phase-four-first-comment' : 'phase-four-rejected-comment'), read]);
+      void pending.then(() => { done = true; }, () => { done = true; });
+      const deadline = Date.now() + 45000;
+      while (requests.length === offset && !done && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 100));
+      const request = requests[offset];
+      check(id + '-native-prompt', !done && typeof request?.id === 'string' && request.request?.pluginId === 'clawos-kernel' && request.request?.toolName === 'gk_github_issue_comment');
+      check(id + '-no-effect-before-decision', (await provider()).mutations === (decision === 'allow-once' ? 0 : 1));
+      check(id + '-unauthorized-decision-denied', await denied(restricted.client, 'plugin.approval.resolve', { id: request.id, decision }));
+      check(id + '-still-paused', !done && (await provider()).mutations === (decision === 'allow-once' ? 0 : 1));
+      await rpc('plugin.approval.resolve', { id: request.id, decision });
+      const row = await pending;
+      check(id + '-native-resolved', resolutions.some(r => r.id === request.id && r.decision === decision));
+      // Durable upstream resolution is first-answer-wins; replay may return the
+      // canonical result, but must never resume a second provider mutation.
+      try { await rpc('plugin.approval.resolve', { id: request.id, decision: 'allow-once' }); } catch {}
+      return row;
+    }
+    const allowed = await nativeTurn('native-allow', 'allow-once');
+    check('native-apply-readback', allowed.results[1]?.first === true && !allowed.results[0]?.denied);
+    check('native-applied-once', (await provider()).comments === 1 && (await provider()).mutations === 1);
+    check('native-no-pending-after-apply', (await rpc('os.approvals.list')).actions.length === 0);
+    check('native-application-audited', (await rpc('os.audit.query', { limit: 1000 })).some(r => r.kind === 'action.apply' && r.by === 'native-approval' && r.ok));
+    const refused = await nativeTurn('native-deny', 'deny');
+    check('native-deny-no-effect', (await provider()).comments === 1 && !(await provider()).rejectedPresent && (await provider()).mutations === 1);
+    check('native-deny-no-overlay', refused.results[1]?.rejected === false && refused.results[1]?.first === true);
+    check('native-no-pending-after-deny', (await rpc('os.approvals.list')).actions.length === 0);
+    report.nativeApprovalRoundtrip = true;
+  } else {
   const noGrant = await runTurn('no-grant', []);
   check('no-ambient-github-tools', noGrant.names.every(names => !names.some(n => n.startsWith('gk_github_'))));
   const issueUrl = 'https://github.com/org/repo/issues/12';
@@ -167,16 +212,17 @@ try {
   check('cli-grant-revoked', revoked.ok && revoked.value.revoked === true);
   const afterRevoke = await runTurn('revoked', []);
   check('revoked-tools-absent', afterRevoke.names.every(names => !names.some(n => n.startsWith('gk_github_'))));
+  }
   const protectedFiles = [...files(join(process.env.OPENCLAW_STATE_DIR, 'os')), '/home/tester/github-gateway.log'];
   const sensitive = ['offline-app-secret-marker', 'offline-access-token-marker', 'fixture-short-code'];
-  check('fixture-secrets-not-persisted-plaintext', protectedFiles.every(path => {
+  check(phase + '-fixture-secrets-not-persisted-plaintext', protectedFiles.every(path => {
     const content = readFileSync(path); return sensitive.every(value => !content.includes(Buffer.from(value)));
   }));
-  check('scenario-artifact-secret-clean', sensitive.every(value => !JSON.stringify(report).includes(value)));
+  check(phase + '-scenario-artifact-secret-clean', sensitive.every(value => !JSON.stringify(report).includes(value)));
 } catch (error) {
   report.failure = /^[a-z0-9-]+$/.test(error.message) ? error.message : 'scenario-error';
   console.log('FAIL ' + report.failure); process.exitCode = 1;
 } finally {
-  save(); await paired?.client.stopAndWait({ timeoutMs: 5000 }); await shared?.client.stopAndWait({ timeoutMs: 5000 });
+  save(); await restricted?.client.stopAndWait({ timeoutMs: 5000 }); await paired?.client.stopAndWait({ timeoutMs: 5000 }); await shared?.client.stopAndWait({ timeoutMs: 5000 });
   server.closeAllConnections(); await new Promise(resolve => server.close(resolve));
 }

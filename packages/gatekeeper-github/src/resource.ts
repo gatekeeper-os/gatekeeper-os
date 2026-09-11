@@ -9,6 +9,7 @@ import { GitHubApi, object, summary, comment, text, nodeId } from './api.js';
 import { type Target, type ResourceIdentity, filePath } from './urls.js';
 import { resources } from './resources.js';
 import { tools } from './tools.js';
+import { synchronousActions } from './approval-policy.js';
 /** Pure action preview reused by the plugin declaration and bound resources. Bodies live only in preview. */
 export function describeAction(tool: string, params: Record<string, unknown>, target = 'the granted GitHub resource'): ActionDescription {
     validate(tool, params);
@@ -36,8 +37,10 @@ export class GitHubResource extends KitGatekeeper {
     private readonly cachePath: string;
     private readonly snapshots = new Map<string, { queryKey: string; expires: number; value: Record<string, unknown> }>();
     private cacheGeneration = 0;
-    constructor(protected readonly target: Target, private readonly identity: ResourceIdentity, protected readonly api: GitHubApi, private readonly live: () => void, private readonly checkAccess: () => Promise<void>, stateDir: string, private readonly verifyObserver: (verifier: ObserverVerifier, target: Target) => Promise<boolean>) {
+    private readonly synchronous: readonly string[];
+    constructor(protected readonly target: Target, private readonly identity: ResourceIdentity, protected readonly api: GitHubApi, private readonly live: () => void, private readonly checkAccess: () => Promise<void>, stateDir: string, private readonly verifyObserver: (verifier: ObserverVerifier, target: Target) => Promise<boolean>, policy: readonly string[] = []) {
         super(join(stateDir, 'actions.json'));
+        this.synchronous = synchronousActions(policy);
         mkdirSync(stateDir, { recursive: true, mode: 0o700 });
         this.resource = structuredClone(resources.find(r => r.type === target.type)!);
         this.overlay = new OverlayStore(join(stateDir, 'overlay.json'));
@@ -52,7 +55,7 @@ export class GitHubResource extends KitGatekeeper {
     override async describe() { this.live(); return { resource: structuredClone(this.resource), title: this.target.key, suggestedName: `${this.target.owner}/${this.target.repo}${this.target.number ? `#${this.target.number}` : ''}` }; }
     override async getAutoApprovableActions() {
         this.live();
-        return this.resource.tools.filter(t => t.endsWith('_comment')).map(t => ({ tag: t === 'gk_github_issue_comment' ? 'github.issue.comment' : 'github.pull.comment', label: 'Comment' }));
+        return this.resource.tools.filter(t => t.endsWith('_comment') && !this.synchronous.includes(t)).map(t => ({ tag: t === 'gk_github_issue_comment' ? 'github.issue.comment' : 'github.pull.comment', label: 'Comment' }));
     }
     override async startSession(queue: ApprovalQueue): Promise<GatekeeperSession> {
         this.live();
@@ -61,9 +64,13 @@ export class GitHubResource extends KitGatekeeper {
         return { close: () => session.close(), call: async (tool, params, ctx) => {
                 this.live();
                 validate(tool, params);
-                const result = await session.call(tool, params, ctx);
-                this.live();
-                return result;
+                try {
+                    const result = await session.call(tool, params, ctx);
+                    this.live();
+                    return result;
+                } finally {
+                    if (!ctx.dryRun && this.synchronous.includes(tool)) this.invalidateCache();
+                }
             } };
     }
     override async applyAction(id: number) {
@@ -188,7 +195,8 @@ export class GitHubResource extends KitGatekeeper {
     }
     private action(tool: string): ActionImpl {
         const create = tool === 'gk_github_issue_create', review = tool === 'gk_github_pull_review';
-        return { describe: p => describeAction(tool, p, this.target.key),
+        return { describe: p => ({ ...describeAction(tool, p, this.target.key),
+                ...(this.synchronous.includes(tool) ? { awaitDecision: true, autoApprovable: false } : {}) }),
             simulate: (p, overlay, actionId) => {
                 this.live();
                 const id = overlay.nextTempId();

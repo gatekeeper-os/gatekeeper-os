@@ -1377,3 +1377,57 @@ Host workspace **532/532 tests across35 files**, fixture strict typecheck,
 shell syntax, catalog/secrets and diff checks pass. Conformance evidence parser
 has57 new regressions; fixture/stale/failed/missing evidence cannot satisfy the
 full-provider suites. No phase4 tag, connected snapshot or beta release.
+
+## 2026-09-11 — native approval extension, first VM attempt
+
+Added operator-configured synchronousActions (default empty; same four reviewed
+actions) and kernel-owned synchronous outcome settlement, with atomic uncertain
+intent before effect. Nine driver policy tests and32 selected kernel tests pass;
+workspace build and changed-package typechecks pass.
+
+Fresh run `20260911-182449-phase-4`: all53 deferred assertions still pass.
+The native action fails closed before effect: upstream reports “Plugin approval
+unavailable (no approval route)”. Our generic CLI SDK connection had not advertised
+`plugin-approvals`, so it was not a live reviewer route. Next attempt explicitly
+advertises the documented client capability on the observing operator only;
+read-only negative client remains unable to decide. Raw vendor responses are not
+collected; upstream tool errors can include raw_params, which must be accounted
+for in real-provider logging secrecy acceptance (still open).
+
+**Native checkpoint verified:** fresh-installed `20260911-182738-phase-4`
+exited0: **80/80 checks across9 actual model turns**. This includes all prior
+deferred checks and actual upstream plugin.approval.requested/resolved flows:
+read-only reviewer denied, tool remains paused before operator decision,
+allow-once applies exactly once with readback/audit and zero pending actions,
+deny creates no provider mutation or overlay. Scenario report explicitly says
+realProvider:false and nativeApprovalRoundtrip:true; its initial scope file
+retained the older conservative native=false label. Future scope files now point
+to scenarios.json instead of duplicating that result. No artifact rewritten.
+
+The all-four default remains simulated. Native policy is an immutable validated
+subset of the same reviewed action tools, not a new tool/input/auth surface.
+No shared/kit contract or upstream schema changed. Kernel queue completion is
+internal and bound to the original queue; process interruption leaves an
+uncertain non-retryable action. Provider read caches invalidate after native
+effects. Native fixture and full-real-provider acceptance are distinct.
+
+Still required: disposable GitHub OAuth setup and real service scenarios;
+full logging secrecy (upstream failed-tool logs can echo raw_params); connected
+snapshot and full Phase4 review. The full script remains explicitly blocked,
+not a green scaffold. Phase3 kernel-live regression is running after the kernel
+change. No phase advancement or release.
+
+**Kernel regression verified:** `20260911-182923-phase-3`, fresh `installed`,
+`kernel-live`, exit0. All98 structural checks and38 conformance checks pass;
+guest kernel95/95 and CLI117/117 tests pass. Filesystem capability boundaries,
+request/approval flows, no-hook fail-closed behavior and audit remain intact.
+Full host suite542/542 passed, followed by6 additional OAuth-token-prefix
+secrecy scanner regressions (values withheld). GitHub OAuth/App token prefixes
+are now covered by both source and artifact scanners, not just PAT prefixes.
+Updated fixture scope metadata to defer native verdict to scenarios.json.
+
+No new schema migration, upstream pin, production state, GitHub account effect,
+connected snapshot, phase4 acceptance or beta release. The anonymous provider
+fixtures cost no model API usage. Subagent conformance files were reviewed and
+verified; later child tool relay timeouts produced no GitHub edits, so parent
+implemented and verified the synchronous policy locally.

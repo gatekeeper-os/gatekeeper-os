@@ -1106,9 +1106,12 @@ is OAuth App web flow with PKCE, not PAT import or device polling. Configuration
 is currently an explicit plugin entry plus kernel catalog (not an implemented
 `gatekeeper add` wizard). Full Phase 4 remains open. The separate VM
 `gateway-integration` checkpoint uses the production driver with an in-memory
-provider transport and cannot satisfy real-GitHub conformance. All four current
-actions simulate; none sets `awaitDecision`, so the native plugin-approval
-roundtrip in §8.3 still needs an explicit supported synchronous path and evidence.
+provider transport and cannot satisfy real-GitHub conformance. All four actions still simulate by default. The explicit operator-configured
+`synchronousActions` subset now exercises the existing `awaitDecision` escape
+hatch without changing tool schemas or default semantics; real-provider native
+roundtrip acceptance remains required. Native action outcomes are recorded in
+the kernel as uncertain before provider effects and settled only by successful
+completion of the original, exactly-approved tool call.
 The pinned upstream hook emits `plugin.approval.requested` and resolves through
 `plugin.approval.resolve`; “exec.approval.requested-style” in §8.3 is an analogy,
 not the actual RPC/event name. No beta criterion is waived.

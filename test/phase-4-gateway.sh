@@ -21,7 +21,7 @@ cleanup() {
   exit "$rc"
 }
 trap cleanup EXIT
-printf '%s\n' '{"mode":"gateway-integration","realProvider":false,"provider":"in-memory-fixture","fullPhaseAcceptance":false,"nativeApprovalRoundtrip":false}' > "$evidence/scope.json"
+printf '%s\n' '{"mode":"gateway-integration","realProvider":false,"provider":"in-memory-fixture","fullPhaseAcceptance":false,"nativeApprovalEvidence":"scenarios.json"}' > "$evidence/scope.json"
 node --version > "$evidence/node-version"
 pnpm install --frozen-lockfile --ignore-scripts > /home/tester/github-deps.log 2>&1
 pnpm --filter @clawos/kernel... --filter @clawos/gatekeeper-github... --filter @clawos/cli --filter @clawos/conformance... build > /home/tester/github-build.log 2>&1
@@ -39,6 +39,16 @@ until curl -fsS --max-time 2 http://127.0.0.1:19100/readyz >/dev/null 2>&1; do
   sleep 1
 done
 node test/scripts/github-scenarios.mjs
+kill "$gateway_pid"; wait "$gateway_pid" || true; gateway_pid=''
+pnpm exec tsx test/scripts/github-config.mjs native
+openclaw config validate > /home/tester/github-native-validation.log 2>&1
+openclaw gateway run > /home/tester/github-gateway.log 2>&1 & gateway_pid=$!
+deadline=$((SECONDS+120))
+until curl -fsS --max-time 2 http://127.0.0.1:19100/readyz >/dev/null 2>&1; do
+  if ! kill -0 "$gateway_pid" 2>/dev/null || ((SECONDS>=deadline)); then echo 'FAIL github-native-gateway-start'; exit 1; fi
+  sleep 1
+done
+node test/scripts/github-scenarios.mjs native
 pnpm check:catalog
 pnpm check:secrets
 echo 'phase-4 gateway-integration: PASS (synthetic provider; NOT live GitHub or full Phase 4 acceptance)'

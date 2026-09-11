@@ -42,6 +42,19 @@
       },
       "publicOrigin": {
         "type": "string"
+      },
+      "synchronousActions": {
+        "type": "array",
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "enum": [
+            "gk_github_issue_create",
+            "gk_github_issue_comment",
+            "gk_github_pull_comment",
+            "gk_github_pull_review"
+          ]
+        }
       }
     },
     "required": [

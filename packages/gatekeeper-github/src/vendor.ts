@@ -7,6 +7,7 @@ import { GitHubAccount, type Verifiers } from './account.js';
 import { boundedBody, GitHubApi, identifier, object, text, type Transport } from './api.js';
 import { resources } from './resources.js';
 import { tools } from './tools.js';
+import { synchronousActions } from './approval-policy.js';
 interface Credential {
     version: 1;
     token: string;
@@ -37,8 +38,10 @@ export class GitHubVendor implements GatekeeperVendor {
     private readonly verifiers: Verifiers = new Map();
     private readonly clientId: string;
     private readonly origin: string;
+    private readonly synchronous: readonly string[];
     constructor(private readonly ctx: VendorContext, private readonly transport: Transport = fetch, private readonly now: () => number = Date.now) {
         const c = ctx.pluginConfig;
+        this.synchronous = synchronousActions(c.synchronousActions);
         if (typeof c.clientId !== 'string' || !/^[A-Za-z0-9_.-]{1,256}$/.test(c.clientId) || typeof c.publicOrigin !== 'string')
             throw new Error('GitHub OAuth configuration required.');
         const origin = new URL(c.publicOrigin);
@@ -207,7 +210,7 @@ export class GitHubVendor implements GatekeeperVendor {
                     if (pending.operator === operator) this.pending.delete(state);
                 }
             };
-            account = new GitHubAccount(api, credential.login, credential.resourceTypes, stateDir, remove, this.verifiers);
+            account = new GitHubAccount(api, credential.login, credential.resourceTypes, stateDir, remove, this.verifiers, this.synchronous);
             this.accounts.set(operator, account);
         }
         return account;

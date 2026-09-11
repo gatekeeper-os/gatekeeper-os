@@ -9,6 +9,27 @@ import { instanceId } from "./registry.js";
 import { Store } from "./store.js";
 
 describe("ApprovalQueueImpl", () => {
+  it("persists native uncertainty before effects and settles only the originating queue once", async () => {
+    const root=mkdtempSync(join(tmpdir(),"approval-native-")),store=new Store(join(root,"clawos.sqlite"));store.migrate();
+    const grant:Grant={handle:"grant:cccccccc",agentId:"agent-a",cellId:"cell-a",vendor:"test",resourceType:"item",resourceKey:"one",operatorId:"operator-a",scope:"agent",audience:"owner-only",status:"active",createdAt:1,createdBy:"operator"};
+    store.insertGrant(grant);
+    const audit=new AuditLog(join(root,"audit")),manager=new ApprovalQueueImpl(store,audit,"cell-a");
+    const queue=manager.forGrant(grant,"session-a"),other=manager.forGrant(grant,"session-b");
+    await queue.submitAction(1,{title:"Native write",description:"",implementsRevert:true,awaitDecision:true});
+    expect(store.countPending()).toBe(0);expect(store.getAction(1)?.status).toBe("failed");
+    expect(()=>manager.settleSynchronous(other,true)).toThrow();
+    manager.settleSynchronous(queue,true);expect(store.getAction(1)?.status).toBe("applied");
+    expect(()=>manager.settleSynchronous(queue,true)).toThrow();
+    expect(audit.query(10).some(r=>r.kind==="action.apply"&&r.actionId===1&&r.ok)).toBe(true);
+    const failed=manager.forGrant(grant,"session-c");
+    await failed.submitAction(2,{title:"Native write",description:"",implementsRevert:true,awaitDecision:true});
+    manager.settleSynchronous(failed,false);expect(store.getAction(2)?.status).toBe("failed");
+    expect(store.countPending()).toBe(0);
+    const deferred=manager.forGrant(grant,"session-d");
+    await deferred.submitAction(3,{title:"Deferred write",description:"",implementsRevert:true});
+    expect(()=>manager.settleSynchronous(deferred,true)).toThrow();expect(store.getAction(3)?.status).toBe("pending");
+    await audit.flush();store.close();
+  });
   it("rejects retained sessions after their grant is revoked", async () => {
     const root=mkdtempSync(join(tmpdir(),"approval-")),store=new Store(join(root,"clawos.sqlite"));
     store.migrate();

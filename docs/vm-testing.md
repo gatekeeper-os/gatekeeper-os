@@ -323,12 +323,16 @@ The scripted local model exercises actual tool calls and same-turn simulation
 readback. Provider-side counters are independent of OS action/overlay state and
 record no bodies. CLI decisions exercise apply, rejection and reversion plus
 replay refusal, account encryption, audit secrecy and grant revocation.
-This checkpoint is explicitly `realProvider:false`, has no real GitHub account
-or mutation and does not establish the native synchronous approval roundtrip.
+This checkpoint is explicitly `realProvider:false` and has no real GitHub account
+or mutation. It then restarts the Gateway with the operator-configured synchronous
+comment policy and tests native plugin prompts, read-only decision refusal,
+allow-once continuation, deny without mutation/overlay, and terminal kernel action
+state. Only the authenticated observing client advertises `plugin-approvals`;
+capability advertisement is not authorization. Native results are in scenarios.json.
 Only structural evidence under `phase-4-gateway-evidence/` is collected.
 
 Full `phase-4` exits2 with a blocked scope report until real-provider scenarios
-and the native approval requirement are implemented. The two conformance suites
+and full logging secrecy acceptance are implemented/verified. The two conformance suites
 reject fixture, stale, empty or failed reports and require literal-true evidence
 for their current run. No `connected` snapshot is created by the fixture.
 Do not invoke the retired `dev install-plugins`, `gatekeeper add`, or `--pat-env`

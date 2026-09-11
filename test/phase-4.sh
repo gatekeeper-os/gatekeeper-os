@@ -6,8 +6,8 @@ set -euo pipefail
 umask 077
 evidence=/home/tester/phase-4-evidence
 mkdir -p "$evidence"
-printf '%s\n' '{"mode":"full","status":"blocked","fullPhaseAcceptance":false,"realProvider":false,"blockers":["disposable-github-account-repository-oauth-app","protected-oauth-setup-and-real-provider-scenarios","native-await-decision-action-and-roundtrip"]}' > "$evidence/scope.json"
+printf '%s\n' '{"mode":"full","status":"blocked","fullPhaseAcceptance":false,"realProvider":false,"blockers":["disposable-github-account-repository-oauth-app","protected-oauth-setup-and-real-provider-scenarios","real-provider-native-approval-and-logging-secrecy"]}' > "$evidence/scope.json"
 printf '2\n' > "$evidence/live-exit-code"
-echo 'BLOCKED phase-4: real OAuth/provider and native approval acceptance are not implemented/verified; see plans/PROGRESS.md.'
+echo 'BLOCKED phase-4: real OAuth/provider scenarios and complete logging secrecy are not implemented/verified; see plans/PROGRESS.md.'
 echo 'The separate gateway-integration mode uses a synthetic provider and cannot pass this gate.'
 exit 2

@@ -8,6 +8,7 @@ import { RepoGatekeeper } from './repo.js';
 import { IssueGatekeeper } from './issue.js';
 import { PullGatekeeper } from './pull.js';
 import type { GitHubResource } from './resource.js';
+import { synchronousActions } from './approval-policy.js';
 /** Opaque per-vendor verifier registry. No credential is serialized in a verifier. */
 export type Verifiers = Map<string, (target: Target) => Promise<boolean>>;
 /** Check repository and exact resource kind using this account's credentials. */
@@ -28,7 +29,10 @@ export class GitHubAccount implements GatekeeperAccount {
     private active = true;
     private readonly retained = new Map<string, GitHubResource>();
     private readonly verifierIds = new Set<string>();
-    constructor(private readonly api: GitHubApi, private readonly login: string, private readonly enabled: string[], private readonly stateDir: string, private readonly removeCredential: () => void, private readonly verifiers: Verifiers) { }
+    private readonly synchronous: readonly string[];
+    constructor(private readonly api: GitHubApi, private readonly login: string, private readonly enabled: string[], private readonly stateDir: string, private readonly removeCredential: () => void, private readonly verifiers: Verifiers, policy: readonly string[] = []) {
+        this.synchronous = synchronousActions(policy);
+    }
     assertLive = () => {
         if (!this.active) throw new Error('GitHub account unavailable.');
     };
@@ -55,7 +59,7 @@ export class GitHubAccount implements GatekeeperAccount {
                 this.assertLive();
                 const verify = verifier.vendor === 'github' ? this.verifiers.get(verifier.opaque) : undefined;
                 return verify ? verify(resource) : false;
-            });
+            }, this.synchronous);
             this.retained.set(target.key, gatekeeper);
         }
         // Retained objects check their original identity on every observation and application.

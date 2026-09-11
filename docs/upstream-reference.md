@@ -537,3 +537,16 @@ then delivers through the public host dispatcher and respects send/suppression p
 The late Claim hook handles only denial fallthrough. `registerCommand.requiredScopes`
 is also host-enforced, but external handlers lack the complete finalized audience
 context; no raw-label shortcut or bundled-only `exposeSenderIsOwner` is used.
+
+## Phase 4 native approval protocol (2026-09-11)
+
+Pinned2026.9.2 `docs/plugins/hooks.md:493–529` documents the `requireApproval`
+return and its immutable selected parameters/onResolution callback. Actual
+events are `plugin.approval.requested` / `plugin.approval.resolved`, not exec
+approval events (`docs/gateway/protocol.md:605,853`). The public
+`plugin.approval.resolve` method takes `{id,decision}`; the pending projection
+contains `request.pluginId` and `request.toolName`. Both require the operator
+approval scope. Read-only source validation: `PluginApprovalResolveParamsSchema`
+and `plugin-approval` protocol adapter in the published package. No internal
+module is imported or modified. Live validation uses only GatewayClient from
+`openclaw/plugin-sdk/gateway-runtime` plus public RPCs/events.
