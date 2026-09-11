@@ -303,7 +303,8 @@ Ubuntu VM (`GITHUB_ACTIONS`, `RUNNER_ENVIRONMENT`, `RUNNER_OS` guards), with exp
 state/config selectors under `RUNNER_TEMP`. This is a read-only runtime compatibility
 probe, not a phase acceptance run or a substitute for `scripts/vm/test.sh`. It starts
 real kernel/fs plugins via supported `plugins.load.paths`, performs health and operator
-RPC checks, then closes the SDK client and stops the Gateway. Random throwaway auth
+RPC checks through the existing operator helper (bootstrap then device-token reconnect
+using the target-installed public SDK), then stops the Gateway. Random throwaway auth
 stays in the private config/in-memory SDK call; no raw Gateway output is uploaded.
 Only structural verdict JSON leaves the runner. All full phase acceptance continues
 through the snapshot/reset/sync/collect harness above.

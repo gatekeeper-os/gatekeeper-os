@@ -4,7 +4,6 @@ import { randomBytes } from 'node:crypto';
 import { mkdirSync, realpathSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { connect } from '../../packages/clawos-conformance/src/harness.js';
 import { fsResources } from '../../packages/gatekeeper-fs/src/resources.js';
 import { fsTools } from '../../packages/gatekeeper-fs/src/tools.js';
 
@@ -39,7 +38,21 @@ writeFileSync(configPath, JSON.stringify({
   },
 }), { mode: 0o600 });
 let gateway: ReturnType<typeof spawn> | undefined;
-let client: Awaited<ReturnType<typeof connect>> | undefined;
+// Reuse the operator client's existing two-stage device pairing and target-installed SDK.
+// The shared bootstrap token alone intentionally cannot authorize kernel RPCs.
+const binary = spawnSync('sh', ['-c', 'command -v openclaw'], { encoding: 'utf8' });
+if (binary.status !== 0) throw new Error('UPSTREAM_BINARY_REQUIRED');
+function rpc(method: string): unknown {
+  const result = spawnSync(process.execPath, ['packages/clawos-cli/bin/gateway-rpc.mjs', binary.stdout.trim()], {
+    env: { ...process.env, OPENCLAW_GATEWAY_PORT: '19100' },
+    input: JSON.stringify({ method, params: {} }), encoding: 'utf8', timeout: 85000,
+    maxBuffer: 1024 * 1024,
+  });
+  if (result.status !== 0 || result.error) throw new Error('KERNEL_RPC_FAILED');
+  const reply = JSON.parse(result.stdout);
+  if (reply.ok !== true || !Object.hasOwn(reply, 'result')) throw new Error('KERNEL_RPC_INVALID');
+  return reply.result;
+}
 let stage = 'config-validation';
 try {
   const validated = spawnSync('openclaw', ['config', 'validate'], { stdio: 'ignore', timeout: 120000 });
@@ -63,16 +76,15 @@ try {
     check(stage, (await fetch(`http://127.0.0.1:19100/${endpoint}`, { signal: AbortSignal.timeout(5000) })).ok);
   }
   stage = 'authenticated-kernel-rpc';
-  client = await connect('ws://127.0.0.1:19100', token);
-  const status = await client.call('os.status') as { healthy?: boolean; gatekeepers?: Array<{ vendor: string; healthy: boolean }> };
+  const status = rpc('os.status') as { healthy?: boolean; gatekeepers?: Array<{ vendor: string; healthy: boolean }> };
   check(stage, status.healthy === true);
   stage = 'filesystem-driver-healthy';
   check(stage, status.gatekeepers?.some(row => row.vendor === 'fs' && row.healthy) === true);
   stage = 'zero-initial-grants';
-  const grants = await client.call('os.grants.list');
+  const grants = rpc('os.grants.list');
   check(stage, Array.isArray(grants) && grants.length === 0);
   stage = 'empty-approval-queues';
-  const approvals = await client.call('os.approvals.list') as { actions?: unknown[]; requests?: unknown[] };
+  const approvals = rpc('os.approvals.list') as { actions?: unknown[]; requests?: unknown[] };
   check(stage, approvals.actions?.length === 0 && approvals.requests?.length === 0);
   writeFileSync('verdict-smoke.json', JSON.stringify({ ok: true, checks, fullConformance: false }) + '\n');
 } catch {
@@ -80,7 +92,6 @@ try {
   console.error(`COMPATIBILITY_SMOKE_FAILED: ${stage}`);
   process.exitCode = 1;
 } finally {
-  try { await client?.close(); } catch { process.exitCode = 1; }
   if (gateway?.pid && gateway.exitCode === null && gateway.signalCode === null) {
     const stopped = new Promise<void>(resolve => gateway!.once('exit', () => resolve()));
     gateway.kill('SIGTERM');
