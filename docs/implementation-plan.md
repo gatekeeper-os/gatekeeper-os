@@ -1117,6 +1117,13 @@ completion of the original, exactly-approved tool call.
 The pinned upstream hook emits `plugin.approval.requested` and resolves through
 `plugin.approval.resolve`; “exec.approval.requested-style” in §8.3 is an analogy,
 not the actual RPC/event name. No beta criterion is waived.
+The independent REST observation helper now implements strict target binding,
+complete bounded pagination and exact comment deltas without importing the
+GitHub driver or reading its journal. Its transport tests are synthetic; the
+full real-provider orchestrator/OAuth setup remain pending. Missing native
+approval-route coverage is exercised explicitly by disconnecting the only
+reviewer before a real model turn; its log-secrecy verdict is independent of
+provider errors and ordinary user denial.
 
 ### Phase 5 — Approvals UX and auto-approval (2–3 days)
 

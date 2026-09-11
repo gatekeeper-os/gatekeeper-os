@@ -15,16 +15,17 @@ try {
   const paths = [...new Set([...required, ...files(join(state, 'logs')), ...files(join(state, 'os/audit'))])];
   const markers = ['phase-four-first-comment', 'phase-four-rejected-comment', 'phase-four-private-failure',
     'private-tail-marker', 'phase-four-private-provider-response', 'offline-app-secret-marker',
-    'offline-access-token-marker', 'fixture-short-code'];
+    'offline-access-token-marker', 'fixture-short-code', 'phase-four-private-route-failure'];
   report.checks['log-sinks-exist-and-nonempty'] = required.every(path => statSync(path).size > 0);
   const contents = paths.map(path => readFileSync(path));
   const absent = values => contents.every(bytes => values.every(value => !bytes.includes(Buffer.from(value))));
   report.checks['log-sinks-no-fixture-bodies-or-secrets'] = absent(markers);
   report.checks['provider-failure-log-secrecy'] = absent(markers.slice(2, 5));
   report.checks['native-denial-log-secrecy'] = absent([markers[1]]);
-  report.checks['log-sinks-no-fixture-credentials'] = absent(markers.slice(5));
+  report.checks['approval-route-failure-log-secrecy'] = report.nativeApprovalRouteFailure === true && absent([markers[8]]);
+  report.checks['log-sinks-no-fixture-credentials'] = absent(markers.slice(5, 8));
   report.logging = { filesScanned: paths.length, postShutdown: true, providerFailure: true,
-    nativeApprovalRouteFailureCovered: false };
+    nativeApprovalRouteFailureCovered: report.nativeApprovalRouteFailure === true };
   if (Object.values(report.checks).some(value => value !== true)) throw new Error('check-failed');
   console.log('PASS log-sinks-exist-and-nonempty');
   console.log('PASS log-sinks-no-fixture-bodies-or-secrets');

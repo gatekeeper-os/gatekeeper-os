@@ -68,3 +68,21 @@ and operator previews usable.
 
 The OS release remains blocked until a supported upstream remedy is verified;
 no blanket log suppression or approval bypass is proposed.
+
+## Additional isolated missing-route evidence (2026-09-11)
+
+Fresh `20260911-222555-phase-4` on the same unmodified2026.9.2 pin: **100/103
+checks,11 actual model turns, exit1**. Disconnecting the only `plugin-approvals`
+client and reconnecting without the capability produces the specific upstream
+approval-unavailable result. The tool has no provider effect, read overlay or
+pending action. After reconnecting a reviewer, native approved-provider-failure
+checks still pass. The post-shutdown log scan independently fails missing-route
+body secrecy and native-denial body secrecy; credential and provider-error body
+scans pass. Aggregate body secrecy is the third failed check. This closes the
+previous *coverage gap*, not the security blocker. Report remains unsent.
+
+The first attempt (`20260911-222333`) ran missing-route after the deliberate
+uncertain provider effect. Resource reconciliation correctly prevented further
+reads/writes; that run is not accepted as missing-route evidence. The corrected
+run orders the case before provider failure and checks the specific unavailable
+result, rather than treating any generic denial as approval-routing evidence.

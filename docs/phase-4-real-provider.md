@@ -27,6 +27,34 @@ No secrets are needed to provide the login/repository/app names and public
 client ID. The single-use `clawos gatekeeper connect github` URL belongs only
 in the operator's private login flow.
 
+## Independent remote observation helper (implemented, not live-accepted)
+
+`packages/clawos-conformance/src/github-observer.ts` is the read-only evidence
+component for the future full runner. It imports no driver, does not read the
+OAuth journal and performs only uncached GETs to fixed `api.github.com` paths.
+Each capture binds numeric repository/issue IDs, paginates all comments (bounded
+to a disposable issue under 2,000 comments), and rejects count drift, duplicate
+pages, malformed data and redirects. Keep this test issue otherwise idle: REST
+pagination is not an atomic snapshot, and count stability cannot exclude every
+concurrent edit. Unknown/inconsistent observations fail, never prove no effect.
+
+The runner must construct it with the expected owner/repo, repository ID, issue
+number/ID and numeric connected GitHub account ID. It compares opaque in-memory
+captures for exact unchanged, created-once and recorded-comment-only reverted
+deltas, including preservation of pre-existing comments and the expected author.
+Only counts/booleans/comment IDs leave the helper; bodies and credentials do not.
+Reversed, copied or foreign receipts are rejected. The runner must still bind
+its report to the current run and verify actual OAuth identity separately.
+
+Public test repositories need no observer credential. For a private test repo,
+use a **separate read-only observer credential**, delivered privately to the VM
+process, never the developer's `gh` token or a token decrypted from the driver's
+journal. This is an independent read probe, not PAT import into the gatekeeper.
+Production transport is VM/full-mode-only; injected test transports always
+report `realProvider:false`. Unit tests exercise the helper with synthetic HTTP
+responses, not GitHub. The full OAuth/effect orchestrator remains unimplemented;
+this helper alone cannot pass Phase 4.
+
 ## Evidence required from the live runner
 
 Run acceptance through `scripts/vm/test.sh phase-4 installed full`, after the

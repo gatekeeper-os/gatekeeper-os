@@ -1483,3 +1483,57 @@ reused. **Phase4/beta remain unaccepted; no phase tag/merge/connected snapshot.*
 Kernel regression/hosted CI results are recorded below when verified.
 
 - Fresh kernel-live regression `20260911-185018-phase-3`: **98/98 structural checks**, live conformance `ok:true`, exit0; guest97kernel/117CLI tests. VM shutdown requested after collection; no connected snapshot. Draft PR6 remains the checkpoint target.
+
+## 2026-09-11 — Independent GitHub observation and explicit missing-route coverage
+
+Added `packages/clawos-conformance/src/github-observer.ts`, the independent
+read-only REST evidence component for a future full Phase4 runner. It does not
+import the driver, read token journals or perform mutations. Expected numeric
+repository/issue/author identities are bound before accepting comment snapshots;
+bounded complete pagination, duplicate/count-drift rejection, fixed-origin GETs,
+no redirects, bounded bodies and generic errors protect evidence and credentials.
+Opaque in-memory receipts compare unchanged, exact single-create and only a
+previously recorded created-comment reversion, preserving pre-existing comments.
+Bodies never enter receipts/verdicts; injected transport explicitly means
+synthetic evidence. Native fetch is restricted to the disposable VM/full mode.
+The helper is not wired into a complete OAuth/effect orchestrator yet and has
+not contacted real GitHub. Public repositories need no observer token; private
+ones require separately protected read-only observation, not driver token access.
+
+Host verification: `pnpm test` **574/574 tests across38 files**, including21 new
+observer regressions; conformance `tsc --noEmit`, catalog, secret scan, JS syntax
+and diff checks pass. No kernel/driver implementation or upstream pin changed.
+Latest and beta npm tags still resolve to2026.9.4; no newer published package
+was available to test. No upstream report was sent.
+
+Expanded the real-Gateway/synthetic-GitHub fixture to disconnect the only native
+approval receiver, run a model-requested synchronous write, require the specific
+upstream approval-unavailable result, and verify no remote/overlay/pending effect.
+Provider failure, native deny and missing-route log secrecy remain separate gates.
+
+Exact VM command:
+`CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state scripts/vm/test.sh phase-4 installed gateway-integration`
+
+- `20260911-222333-phase-4`: **93/94 checks**, exit1, stopped before log scan.
+  Test-order defect: the prior deliberate provider failure leaves an uncertain
+  journal entry (`gatekeeper-kit` requires reconciliation), blocking the next
+  write/read before genuine missing-route coverage. Generic denied-result
+  matching was insufficient; this is NOT missing-route acceptance evidence.
+  Corrected order puts missing-route first and reconnects the approval receiver
+  before the deliberately failing provider call. Strengthened result matching;
+  no product behavior changed and original failing artifacts remain intact.
+- Fresh corrected run `20260911-222555-phase-4` is recorded below on completion.
+
+Corrected run **20260911-222555-phase-4:100/103 checks,11 actual model turns,
+exit1**, unmodified OpenClaw2026.9.2 (3928bad), fresh installed snapshot.
+All functional scenarios pass, including specific native approval-unavailable,
+no mutation/read overlay/pending action, then restored reviewer and deliberate
+approved provider failure. Post-shutdown5-file scan: provider-failure bodies and
+credentials clean; **native-denial**, **missing-route**, and aggregate body secrecy
+FAIL. No blind rerun planned: the unchanged upstream logger is the known cause.
+Only structural evidence collected; raw logs remain in disposable guest state.
+
+The helper's native GitHub transport is unexercised; its21 tests are synthetic.
+Full real-provider orchestrator, disposable GitHub account/repo/OAuth App and a
+supported upstream log-secrecy fix remain outstanding. No connected snapshot,
+Phase4 tag/merge, later-phase acceptance, production change or beta release.

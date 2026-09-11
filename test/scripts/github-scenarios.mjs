@@ -42,6 +42,8 @@ const server = createServer(async (req, res) => {
       const body = typeof result.content === 'string' ? result.content : JSON.stringify(result.content);
       current.results[index] = {
         first: body.includes('phase-four-first-comment'), rejected: body.includes('phase-four-rejected-comment'),
+        routeFailure: body.includes('phase-four-private-route-failure'),
+        approvalUnavailable: /Plugin approval unavailable/i.test(body),
         denied: /denied|no such grant|not active|blocked|not found|unavailable|not available/i.test(body),
       };
     }
@@ -149,6 +151,20 @@ try {
     check('native-deny-no-effect', (await provider()).comments === 1 && !(await provider()).rejectedPresent && (await provider()).mutations === 1);
     check('native-deny-no-overlay', refused.results[1]?.rejected === false && refused.results[1]?.first === true);
     check('native-no-pending-after-deny', (await rpc('os.approvals.list')).actions.length === 0);
+    // Close the only approval receiver before reconnecting without that cap.
+    // Ordinary operator RPC access is not an approval delivery route.
+    await paired.client.stopAndWait({ timeoutMs: 5000 });
+    paired = await connect({ deviceToken: shared.deviceToken });
+    const beforeRoute = await provider();
+    const missingRoute = await runTurn('native-route-failure', [write('phase-four-private-route-failure'), read]);
+    check('native-route-failure-reported', missingRoute.results[0]?.approvalUnavailable === true);
+    const afterRoute = await provider();
+    check('native-route-failure-no-effect', afterRoute.mutations === beforeRoute.mutations && afterRoute.comments === beforeRoute.comments && afterRoute.failedWrites === beforeRoute.failedWrites);
+    check('native-route-failure-no-overlay', missingRoute.results[1]?.routeFailure === false && !missingRoute.results[1]?.denied);
+    check('native-route-failure-not-pending', (await rpc('os.approvals.list')).actions.length === 0);
+    report.nativeApprovalRouteFailure = true;
+    await paired.client.stopAndWait({ timeoutMs: 5000 });
+    paired = await connect({ deviceToken: shared.deviceToken }, ['operator.admin'], true);
     const failed = await nativeTurn('native-provider-failure', 'allow-once', 'phase-four-private-failure\n"quoted" private-tail-marker', 1);
     check('native-provider-failure-reported', failed.results[0]?.denied === true);
     check('native-provider-failure-once', (await provider()).failedWrites === 1 && (await provider()).mutations === 1 && (await provider()).comments === 1);
