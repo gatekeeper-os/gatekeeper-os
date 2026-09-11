@@ -801,6 +801,22 @@ clawos update [--to <version> | --channel stable|extended-stable|beta] [--dry-ru
 
 ### 6.5 Compatibility discipline (CI)
 
+**2026-09-11 CI repair.** The original nightly scaffold was running before its Phase 7
+integration existed: Node 22 cannot install current upstream, extended-stable is
+2026.6.35 (outside our declared range), and the old install/conformance CLI flags
+are obsolete. The nightly job now resolves each tag once, adds the lock-file pin
+as a control, uses Node 24, and checks declared compatibility before installation.
+Supported releases must pass ordinary-plugin metadata inspection and a fresh hosted
+Ubuntu VM smoke: actual kernel/filesystem startup, three health endpoints,
+authenticated `os.status`, healthy fs driver, zero grants and empty approval queues.
+An out-of-range extended-stable tag is **unsupported / not tested**, never a
+conformance pass; resolution errors, pin/latest/beta escaping the declared range,
+and any supported-release check failure still fail CI. Structural verdicts and job summaries preserve this distinction.
+This is deliberately **compatibility smoke, not full conformance**. Full scenario,
+agent-turn, hook, approval and update/rollback matrix integration remains Phase 7;
+existing Phase 3 VM acceptance evidence is unchanged. No upstream pin/range is widened.
+
+
 Because "all OpenClaw plugin APIs are experimental" (**VERIFIED**), the monorepo's CI runs the conformance suite in a matrix against `openclaw@latest`, `@beta`, and `@extended-stable` nightly. A failure against `beta` opens an issue tagged `upstream-drift` so a compatible plugin release exists *before* that version reaches `latest`. Each OS plugin release bumps `openclaw.compat.pluginApi` only after passing on that version. The repo's `clawos.lock.json` (root, for development) pins the version the suite is green on; `clawos install` uses that pin by default.
 
 ---
