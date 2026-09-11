@@ -41,7 +41,7 @@ Three named snapshots, taken in this order and never modified afterwards:
 
 1. **`base`** — fresh OS with §2 base packages, `tester` user, linger enabled, Docker installed but no images pulled, `.ssh` authorized for the host. No Node, no OpenClaw. This is the starting point for every Phase 1 install test.
 2. **`installed`** — taken after a successful `clawos install` from the current working tree (Phase 1 acceptance). Starting point for Phases 3–6 tests, so you are not paying the install cost every run.
-3. **`connected`** — taken after `clawos gatekeeper add github` + `connect` with a test GitHub account and a test repository introduced to an agent (Phase 4). Starting point for approval, drainer, and update tests.
+3. **`connected`** — taken only after explicit GitHub plugin/catalog configuration, supported web OAuth, and real-provider Phase 4 acceptance with a disposable account and repository. Starting point for approval, drainer, and update tests.
 
 Rules: never test on a VM that was not just restored from a snapshot; re-take `installed` and `connected` whenever the installer or kernel changes in a way that affects them; delete and recreate `base` if the base image is updated. Record which snapshot each test run started from in `plans/PROGRESS.md`.
 
@@ -68,14 +68,14 @@ Inside the VM, the per-phase test scripts live at `test/phase-N.sh` in the repo 
 | `test/phase-1.sh` | `base` | `curl … \| bash` (from the synced tree's `installer/install.sh`), `clawos status`, doctor lint, security audit, idempotent re-run, second cell create, backup/restore |
 | `test/phase-2.sh` | host only | unit tests for shared + kit (no VM needed; still recorded) |
 | `test/phase-3.sh` | `installed` | install kernel + gatekeeper-fs from the tree, conformance subset, fs-grant scenario via `openclaw agent` scripted turns |
-| `test/phase-4.sh` | `installed` | install gatekeeper-github, connect with `GITHUB_TEST_TOKEN` (device flow or PAT for CI), deferred-approval and require-approval scenarios, secret-leak grep, take snapshot `connected` |
+| `test/phase-4.sh` | `installed` | full mode currently reports blocked; requires supported web OAuth, real-provider deferred/native approval scenarios, secrecy checks, then snapshot `connected` |
 | `test/phase-5.sh` | `connected` | auto-approval rule + drainer timing, digest delivery to a test channel, chat commands |
 | `test/phase-6.sh` | `installed` | apply each blueprint, `blueprint lint` negative test, Docker sandbox exec |
 | `test/phase-7.sh` | `connected` | `clawos update --to <latest>` full pipeline; compat-block test; conformance-fail test; kill-during-activate + `clawos rollback` |
 
 ## 6. Test credentials
 
-Never use personal accounts in CI. Create: a throwaway GitHub account with one private test repository and a fine-grained PAT (for CI) plus an OAuth app (for the device/web flow test); a dedicated Slack app and test workspace identities (for channel, pairing, and digest tests); one model provider key with a spending cap (or use OpenClaw's local/OpenAI-compatible test provider from the conformance suite so most tests need no paid model). Local operator acceptance may reuse a host-managed SOPS environment only through protected stdin delivery into the test process. Never copy or interpolate its values into the repository, VM image, command arguments, or artifact bundle.
+Never use personal accounts in CI. Create: a disposable GitHub account with one private test repository and an OAuth App (for the implemented web flow; PAT import and device flow are not implemented); a dedicated Slack app and test workspace identities (for channel, pairing, and digest tests); one model provider key with a spending cap (or use OpenClaw's local/OpenAI-compatible test provider from the conformance suite so most tests need no paid model). Local operator acceptance may reuse a host-managed SOPS environment only through protected stdin delivery into the test process. Never copy or interpolate its values into the repository, VM image, command arguments, or artifact bundle.
 
 ## 7. What "tested" means per phase
 
@@ -308,3 +308,28 @@ using the target-installed public SDK), then stops the Gateway. Random throwaway
 stays in the private config/in-memory SDK call; no raw Gateway output is uploaded.
 Only structural verdict JSON leaves the runner. All full phase acceptance continues
 through the snapshot/reset/sync/collect harness above.
+
+## Phase 4 Gateway integration checkpoint (2026-09-11)
+
+`CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state
+scripts/vm/test.sh phase-4 installed gateway-integration` runs the real kernel,
+operator SDK/CLI and production GitHubVendor against an **in-memory GitHub
+transport**. The VM-only wrapper injects the vendor's existing constructor seam;
+it does not patch upstream, change production endpoints or seed encrypted tokens.
+OAuth start/callback traverses the real kernel router and vendor; the synthetic
+exchange checks PKCE, exact callback, client binding and replay refusal.
+
+The scripted local model exercises actual tool calls and same-turn simulation
+readback. Provider-side counters are independent of OS action/overlay state and
+record no bodies. CLI decisions exercise apply, rejection and reversion plus
+replay refusal, account encryption, audit secrecy and grant revocation.
+This checkpoint is explicitly `realProvider:false`, has no real GitHub account
+or mutation and does not establish the native synchronous approval roundtrip.
+Only structural evidence under `phase-4-gateway-evidence/` is collected.
+
+Full `phase-4` exits2 with a blocked scope report until real-provider scenarios
+and the native approval requirement are implemented. The two conformance suites
+reject fixture, stale, empty or failed reports and require literal-true evidence
+for their current run. No `connected` snapshot is created by the fixture.
+Do not invoke the retired `dev install-plugins`, `gatekeeper add`, or `--pat-env`
+scaffold commands; they are not the implemented setup path.

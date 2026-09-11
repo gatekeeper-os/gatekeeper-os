@@ -1334,3 +1334,46 @@ Local verification: workspace build passed; new smoke helper typecheck passed;
 is not passed); catalog/secret checks and diff whitespace checks passed. Running
 the helper outside a hosted VM was correctly refused before config/runtime mutation.
 GitHub-hosted live results pending; no local VM phase acceptance run is claimed.
+
+## 2026-09-11 — Phase 4 Gateway integration, first attempt
+
+Updated phase/4-github with main4427e32, retaining both progress histories.
+New gateway-integration harness uses the production GitHubVendor through its
+existing test transport seam, actual kernel/SDK/CLI/model turns, and synthetic
+provider observations. It cannot satisfy full real-provider conformance.
+
+First fresh-installed run `20260911-181057-phase-4` exited1: OAuth/PKCE/private
+redirect/replay/device/CLI grant checks passed, but the first granted turn offered
+only the two meta-tools. OS-owned SQLite showed an active issue grant and no
+observers; the passive hook report showed missing GitHub tool preflight.
+`clawos-kernel/openclaw.plugin.json` still declared only filesystem tools, a
+known upstream manifest requirement recorded in upstream-reference.md373.
+Hypothesis: missing registering-kernel contracts suppress GitHub tool exposure,
+not an OAuth or grant-creation failure. Adding the eleven already-approved tool
+IDs and a catalog-to-registering-manifest regression; rerun from installed required.
+No upstream, production, real account or external mutation changes.
+
+Second run `20260911-181333-phase-4` exited1 at the same assertion for a
+different, now-isolated reason. Manifest correction is verified: both GitHub
+issue tools are on all three model requests, both hooks return no error, and
+OS audit confirms action.submit plus successful observation. The model harness
+failed to associate returned tool results, not grant/driver execution. Next probe
+records only message field names and synthetic call-ID matches, never bodies.
+
+Diagnostic run `20260911-181554-phase-4` isolated the result matcher: the
+OpenAI-compatible adapter returned `githubprobe0/1` for emitted
+`github-probe-0/1`. Field-name/ID-only evidence confirms normalization; no
+provider bodies were collected. Emit alphanumeric IDs initially, then compare
+exact returned IDs. No change to kernel authorization or upstream.
+
+**Verified checkpoint:** `20260911-181725-phase-4` restored `installed` and
+exited0 with **53/53 structural checks across7 actual model turns**. Real
+Gateway/production kernel/GitHubVendor and CLI prove synthetic OAuth/PKCE,
+account encryption, issue-only tools, same-turn pending comment readback,
+operator-only apply/reject/revert, independent fixture provider counts,
+no duplicate apply, revocation and secrecy. Raw API/model/Gateway data was not
+collected. This is NOT real GitHub or native approval acceptance.
+Host workspace **532/532 tests across35 files**, fixture strict typecheck,
+shell syntax, catalog/secrets and diff checks pass. Conformance evidence parser
+has57 new regressions; fixture/stale/failed/missing evidence cannot satisfy the
+full-provider suites. No phase4 tag, connected snapshot or beta release.

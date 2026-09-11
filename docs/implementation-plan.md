@@ -1101,6 +1101,18 @@ This implements §4.7's original private-only beta boundary, not v1.1 sharing.
 
 **Acceptance.** Conformance `deferred-approval` and `require-approval-roundtrip` pass using GitHub; manual: agent asked to "comment on issue 12 and then summarize the thread" comments (simulated), summarizes *including its own pending comment*, operator later runs `clawos approvals apply all` → comment appears on GitHub; `reject` removes it from the simulated thread; no token or API body ever appears in `os/audit` or logs (grep test in CI).
 
+**2026-09-11 implementation reconciliation:** the implemented authentication path
+is OAuth App web flow with PKCE, not PAT import or device polling. Configuration
+is currently an explicit plugin entry plus kernel catalog (not an implemented
+`gatekeeper add` wizard). Full Phase 4 remains open. The separate VM
+`gateway-integration` checkpoint uses the production driver with an in-memory
+provider transport and cannot satisfy real-GitHub conformance. All four current
+actions simulate; none sets `awaitDecision`, so the native plugin-approval
+roundtrip in §8.3 still needs an explicit supported synchronous path and evidence.
+The pinned upstream hook emits `plugin.approval.requested` and resolves through
+`plugin.approval.resolve`; “exec.approval.requested-style” in §8.3 is an analogy,
+not the actual RPC/event name. No beta criterion is waived.
+
 ### Phase 5 — Approvals UX and auto-approval (2–3 days)
 
 **Deliverables:** `clawos approvals` TUI table (list/apply/reject/revert with previews), chat commands `/approvals`, `/approve`, `/reject`, operator notifications (pending action digest after `agent_end`, batched, sent through `openclaw message send --channel <c> --target <t> --message "<digest>"` — **VERIFIED** flags — to the cell's operator channel, or in-process via the kernel's own channel access if S-1 finds a plugin-side send API), auto-approval rules in `plugins.entries.clawos-kernel.config.autoApprove[]` keyed by `actionKind.tag`, the drainer.

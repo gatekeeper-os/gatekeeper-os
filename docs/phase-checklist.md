@@ -89,6 +89,13 @@ under the explicit Telegram-only validation deferral, after candidate CI/merge.
 
 ## Phase 4 — gatekeeper-github
 
+Scoped pre-acceptance checkpoint: `vm-artifacts/20260911-181725-phase-4/`,
+fresh `installed`, **53/53 checks**, seven actual model turns, exit0.
+Real Gateway/kernel/CLI with production GitHubVendor and **synthetic** provider
+transport; no real OAuth account or native approval roundtrip accepted.
+Fixed registering-kernel manifest declarations for the eleven GitHub tools.
+Host532/532 tests pass; all full real-provider checkboxes below remain open.
+
 - [x] STOP 1: concrete GitHub surface approved by later explicit beta-completion authorization, 2026-09-09 — [review record](../plans/REVIEW-REQUESTED.md#github-gatekeeper--concrete-stop-1-review). Implementation and live acceptance are not implied.
 - [ ] STOP 2: operator approved starting Phase 2 of the gatekeeper — evidence:
 - [ ] Conformance `deferred-approval` and `require-approval-roundtrip` pass with GitHub — evidence:

@@ -8,7 +8,18 @@
       "os_list_grants",
       "gk_fs_dir_list",
       "gk_fs_file_read",
-      "gk_fs_file_write"
+      "gk_fs_file_write",
+      "gk_github_repo_get",
+      "gk_github_repo_list_issues",
+      "gk_github_repo_list_pulls",
+      "gk_github_repo_read_file",
+      "gk_github_issue_get",
+      "gk_github_pull_get",
+      "gk_github_pull_diff",
+      "gk_github_issue_create",
+      "gk_github_issue_comment",
+      "gk_github_pull_comment",
+      "gk_github_pull_review"
     ],
     "trustedToolPolicies": [
       "clawos-capability-policy"
