@@ -1431,3 +1431,55 @@ connected snapshot, phase4 acceptance or beta release. The anonymous provider
 fixtures cost no model API usage. Subagent conformance files were reviewed and
 verified; later child tool relay timeouts produced no GitHub edits, so parent
 implemented and verified the synchronous policy locally.
+
+
+## 2026-09-11 — Typed tool failures and upstream native-denial logging blocker
+
+Implemented a kernel-owned `runTool` boundary around all registered OS/gatekeeper
+execute callbacks. Exceptions return a generic `details.status:"error"` result,
+never a caught error/body. A private failed-call flag preserves `ok:false` audit
+semantics even though the execute promise resolves. Capability checks, native
+approval decisions and uncertain/nonretryable actions are unchanged.
+
+Unit coverage includes driver error/input secrecy, malformed resource requests,
+unavailable runtime and audience-race denial. Host workspace: **553/553 tests
+across37 files**. Kernel/conformance typechecks, kernel dependency build, catalog,
+secret scan and diff checks pass.
+
+The expanded VM fixture adds an approved503 provider failure, one-shot/replay
+checks, failed audit and actual post-shutdown console/file/audit scans. Console
+logs are now separate for deferred/native runs. Full real-provider conformance
+requires distinct provider-error, native-denial and native-route-failure secrecy
+checks; missing evidence fails, and synthetic evidence remains inadmissible.
+
+Exact command:
+`CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state scripts/vm/test.sh phase-4 installed gateway-integration`
+
+- `20260911-184212`: host snapshot/capability preflight failed before guest work;
+  no live assertions ran. Both internal QCOW snapshots and saved XML were intact.
+  Replacement same-user session virtqemud had reverted to8MiB soft memlock;
+  explicit capability probe showed QEMU io_uring ENOMEM. Used previously
+  authorized/documented process-local recovery on verified PID924070: soft0,
+  hard8MiB unchanged; redefined only original snapshot metadata from saved XML.
+  Original base/installed timestamps remain unchanged; no images recreated.
+- `20260911-184426`: **92/93 checks**, ten model turns, **exit1**. All functional
+  and provider-failure checks pass, aggregate log-body scan fails.
+- `20260911-184853`: **94/96 checks**, ten model turns, **exit1**. Independent
+  `provider-failure-log-secrecy` and credential scan pass. Native-denial body
+  secrecy and aggregate body scan fail in console and JSONL file logs.
+
+Root cause: upstream `pluginApprovalDeniedOutcome` uses failure/blocked,
+causing `BeforeToolCallFailureError`; adapter only recognizes the separate
+blocked-error class, otherwise logging raw tool arguments before our callback.
+Prior missing-route failure has the same outside-execute exposure. No upstream
+patch/import, approval weakening or log suppression. Two clear-cause failures
+preserved; do not keep rerunning without a supported fix.
+
+`plans/upstream-native-approval-logging.md` is a concrete **unsent** upstream bug
+report. `docs/phase-4-real-provider.md` records public setup inputs, protected
+OAuth constraints, required independent remote evidence and honest full-runner
+status. No disposable GitHub setup supplied yet; no personal gh credentials
+reused. **Phase4/beta remain unaccepted; no phase tag/merge/connected snapshot.**
+Kernel regression/hosted CI results are recorded below when verified.
+
+- Fresh kernel-live regression `20260911-185018-phase-3`: **98/98 structural checks**, live conformance `ok:true`, exit0; guest97kernel/117CLI tests. VM shutdown requested after collection; no connected snapshot. Draft PR6 remains the checkpoint target.

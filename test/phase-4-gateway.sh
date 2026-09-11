@@ -42,13 +42,15 @@ node test/scripts/github-scenarios.mjs
 kill "$gateway_pid"; wait "$gateway_pid" || true; gateway_pid=''
 pnpm exec tsx test/scripts/github-config.mjs native
 openclaw config validate > /home/tester/github-native-validation.log 2>&1
-openclaw gateway run > /home/tester/github-gateway.log 2>&1 & gateway_pid=$!
+openclaw gateway run > /home/tester/github-native-gateway.log 2>&1 & gateway_pid=$!
 deadline=$((SECONDS+120))
 until curl -fsS --max-time 2 http://127.0.0.1:19100/readyz >/dev/null 2>&1; do
   if ! kill -0 "$gateway_pid" 2>/dev/null || ((SECONDS>=deadline)); then echo 'FAIL github-native-gateway-start'; exit 1; fi
   sleep 1
 done
 node test/scripts/github-scenarios.mjs native
+kill "$gateway_pid"; wait "$gateway_pid" || true; gateway_pid=''
+node test/scripts/github-log-secrecy.mjs
 pnpm check:catalog
 pnpm check:secrets
 echo 'phase-4 gateway-integration: PASS (synthetic provider; NOT live GitHub or full Phase 4 acceptance)'

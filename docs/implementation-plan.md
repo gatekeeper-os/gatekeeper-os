@@ -1104,7 +1104,9 @@ This implements §4.7's original private-only beta boundary, not v1.1 sharing.
 **2026-09-11 implementation reconciliation:** the implemented authentication path
 is OAuth App web flow with PKCE, not PAT import or device polling. Configuration
 is currently an explicit plugin entry plus kernel catalog (not an implemented
-`gatekeeper add` wizard). Full Phase 4 remains open. The separate VM
+`gatekeeper add` wizard). Full Phase 4 remains open. Its evidence must separately prove failed-tool log
+secrecy and native approval-route-failure log secrecy; sanitized vendor errors
+alone cannot satisfy either gate. See `docs/phase-4-real-provider.md`. The separate VM
 `gateway-integration` checkpoint uses the production driver with an in-memory
 provider transport and cannot satisfy real-GitHub conformance. All four actions still simulate by default. The explicit operator-configured
 `synchronousActions` subset now exercises the existing `awaitDecision` escape

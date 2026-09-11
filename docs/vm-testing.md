@@ -337,3 +337,19 @@ reject fixture, stale, empty or failed reports and require literal-true evidence
 for their current run. No `connected` snapshot is created by the fixture.
 Do not invoke the retired `dev install-plugins`, `gatekeeper add`, or `--pat-env`
 scaffold commands; they are not the implemented setup path.
+
+
+### Phase 4 negative log-secrecy evidence
+
+The fixture now exercises an approved provider failure, confirms a structured
+failed tool result and a failed kernel audit, then stops both Gateways before
+scanning their separate console/file log sinks plus OS audit. Both console logs
+are retained separately; the native restart no longer overwrites deferred logs.
+Only check names/booleans and counts enter artifacts. A native-denial body leak
+on the pinned upstream is an actual failing criterion, not an expected-pass
+fixture assertion. `nativeApprovalRouteFailureCovered:false` explicitly excludes
+the separate missing-route case from this focused scan.
+
+The full real-provider suites additionally require `failed-tool-log-secrecy`,
+`native-denial-log-secrecy`, and `approval-route-failure-log-secrecy` evidence.
+See `docs/phase-4-real-provider.md` and the unsent draft upstream report.

@@ -16,6 +16,7 @@ function guard() {
 }
 guard();
 const fake = fixture();
+let failedWrites = 0;
 let exchanges = 0, verifierHash = '', exchangeBound = false;
 const transport: typeof fetch = async (input, init) => {
   guard();
@@ -29,6 +30,13 @@ const transport: typeof fetch = async (input, init) => {
     if (!exchangeBound) return new Response('{}', { status: 400 });
     verifierHash = createHash('sha256').update(p.get('code_verifier')!).digest('base64url');
     return Response.json({ access_token: 'offline-access-token-marker', token_type: 'bearer', scope: 'repo' });
+  }
+  if (String(input) === 'https://api.github.com/graphql' && init?.method === 'POST') {
+    const body = JSON.parse(String(init.body));
+    if (String(body.variables?.input?.body).startsWith('phase-four-private-failure')) {
+      failedWrites++;
+      return Response.json({ message: 'phase-four-private-provider-response' }, { status: 503 });
+    }
   }
   // The in-memory fixture rejects all non-GitHub origins and never calls fetch.
   return fake.transport(input, init);
@@ -48,7 +56,7 @@ export default {
     // Read-only provider-side observations. No grants, policy decisions, kernel
     // calls, token seeding, or writes are exposed by this monitor.
     api.registerGatewayMethod('vm.github.provider-status', ({ respond }) => respond(true, {
-      provider: 'in-memory-fixture', realProvider: false, exchanges, exchangeBound, verifierHash,
+      provider: 'in-memory-fixture', realProvider: false, failedWrites, exchanges, exchangeBound, verifierHash,
       comments: fake.state.comments.length,
       firstPresent: fake.state.comments.some(c => c.body === 'phase-four-first-comment'),
       rejectedPresent: fake.state.comments.some(c => c.body === 'phase-four-rejected-comment'),

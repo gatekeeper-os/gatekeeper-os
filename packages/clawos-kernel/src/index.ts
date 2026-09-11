@@ -42,14 +42,14 @@ export default definePluginEntry({
       label: "Request access",
       description: "Ask the operator for access to a resource by URL.",
       parameters: Type.Object({ url: Type.String(), reason: Type.String() }),
-      execute: (toolCallId, params) => kernel.requestAccess(toolCallId, params as { url: string; reason: string }),
+      execute: (toolCallId, params) => kernel.runTool(toolCallId, () => kernel.requestAccess(toolCallId, params as { url: string; reason: string })),
     });
     api.registerTool({
       name: "os_list_grants",
       label: "List grants",
       description: "List the resources you currently have access to.",
       parameters: Type.Object({}),
-      execute: (toolCallId) => kernel.listGrantsForCall(toolCallId),
+      execute: (toolCallId) => kernel.runTool(toolCallId, () => kernel.listGrantsForCall(toolCallId)),
     });
 
     // gatekeeper tools are registered by the kernel on behalf of each gatekeeper (plan §4.3)

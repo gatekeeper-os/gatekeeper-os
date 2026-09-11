@@ -550,3 +550,36 @@ approval scope. Read-only source validation: `PluginApprovalResolveParamsSchema`
 and `plugin-approval` protocol adapter in the published package. No internal
 module is imported or modified. Live validation uses only GatewayClient from
 `openclaw/plugin-sdk/gateway-runtime` plus public RPCs/events.
+
+
+## Phase 4 tool-error logging boundary (2026-09-11)
+
+Read-only source inspection of the published pin2026.9.2:
+`dist/agent-tool-definition-adapter-_QXAVYIM.js`,
+`executeAdaptedToolOperation`/`describeToolFailureInputs`, logs thrown errors
+with `raw_params` (and changed `effective_params`). Token redaction is **not**
+arbitrary request-body redaction. `dist/tool-result-error-CbDLJzG-.js`,
+`isToolResultError`, recognizes `details.status:"error"`; returning that result
+preserves failed terminal classification without invoking the thrown-error log.
+The kernel now uses this result boundary for its own registered tool callbacks,
+keeps its own failed-call audit flag, and never returns a caught exception string.
+No internal import or upstream patch is used.
+
+**Unresolved upstream-owned paths:** `agent-tools.before-tool-call-Bb7DJuFB.js`
+returns a failure disposition both for native user denial and when native
+plugin approval has no delivery route;
+its wrapper throws before the plugin's execute callback. That path still reaches
+the raw-argument logger. The historical fixture run20260911-182449 exposed it.
+Fresh run20260911-184426 confirmed native **deny** exposes the rejected body
+in both console and JSONL file logs. `pluginApprovalDeniedOutcome` returns
+`kind:"failure", disposition:"blocked"`; the wrapper throws
+`BeforeToolCallFailureError`, which the adapter
+`isBeforeToolCallBlockedError` predicate does not classify as a safe veto.
+A typed execute result cannot protect errors that occur before execute. Native
+approval timeouts and other host-side failures require the same scrutiny.
+
+The supported `logging.redactPatterns` applies to model/transcript text too,
+retains token prefix/suffix, and replaces defaults at some sinks; it is not a
+verified log-only body-removal switch. No blanket pattern, logger monkey-patch,
+private logger override, or disabled observability is installed. Successful
+provider-failure log scans must **not** close the denial/route-failure secrecy gates.

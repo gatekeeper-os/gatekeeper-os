@@ -90,7 +90,7 @@ describe("kernel channel-policy regression boundaries",()=>{
     await kernel.onBeforeAgentRun({prompt:"Hello",messages:[],senderId:"observer",senderIsOwner:false},ctx);
     const tool=tools[0];
     if(!tool||typeof tool==="function"||Array.isArray(tool))throw new Error("Unexpected tool registration");
-    await expect(tool.execute("call-a",event.params)).rejects.toThrow("Operation denied.");
+    await expect(tool.execute("call-a",event.params)).resolves.toMatchObject({isError:true,details:{status:"error"}});
     expect(fixture.call).toHaveBeenCalledTimes(1); // dry-run only: no resource read after audience changed
     expect((await kernel.onBeforePromptBuild({prompt:"Read",messages:[]},ctx)).toolsAllow).not.toContain("gk_test_read");
   });
@@ -114,7 +114,7 @@ describe("kernel channel-policy regression boundaries",()=>{
     expect(kernel.capabilityPolicy().evaluate(event,{...ctx,toolName:event.toolName})).toMatchObject({block:true});
     await expect(kernel.resolveGrant(ctx.agentId,ctx.sessionKey,handle)).rejects.toThrow("audience");
     const tool=tools[0];if(!tool||typeof tool==="function"||Array.isArray(tool))throw new Error("Unexpected tool");
-    await expect(tool.execute(event.toolCallId,event.params)).rejects.toThrow("Operation denied");
+    await expect(tool.execute(event.toolCallId,event.params)).resolves.toMatchObject({isError:true,details:{status:"error"}});
     await dispatch();
     expect((await kernel.onBeforePromptBuild({prompt:"Read",messages:[]},ctx)).toolsAllow).not.toContain("gk_test_read");
     expect(fixture.call).toHaveBeenCalledTimes(1);
@@ -153,4 +153,32 @@ it("batches an operator digest once per run, never sends resource descriptions",
   await resolved.queue.submitAction(2,{title:"Private fixture",description:"private body",implementsRevert:false});
   await kernel.onAgentEnd({messages:[],success:true},ctx);await kernel.onAgentEnd({messages:[],success:true},ctx);
   expect(fixture.notify).toHaveBeenCalledExactlyOnceWith({channel:"fixture",target:"operator"},2,0);
+});
+
+
+it("returns payload-free driver failures and audits failure despite a resolved tool promise",async()=>{
+  const {handle}=await grant();
+  const params={grant:handle,body:'private-input-marker'};
+  const event={toolName:"gk_test_read",toolCallId:"failed-call",params};
+  await kernel.onBeforeToolCall(event,{...ctx,toolName:event.toolName});
+  fixture.call.mockRejectedValueOnce(new Error('private-provider-response-marker'));
+  const tools:Parameters<OpenClawPluginApi["registerTool"]>[0][]=[];
+  kernel.registerGatekeeperTools({registerTool:tool=>{tools.push(tool);}} as OpenClawPluginApi);
+  const tool=tools[0];if(!tool||typeof tool==="function"||Array.isArray(tool))throw new Error("Unexpected tool");
+  const result=await tool.execute(event.toolCallId,params);
+  expect(result).toMatchObject({isError:true,details:{status:"error"}});
+  expect(JSON.stringify(result)).not.toMatch(/private-input|private-provider/);
+  await kernel.onAfterToolCall({...event,result},{...ctx,toolName:event.toolName});
+  const audit=(await rpc("os.audit.query",{limit:1000})).output;
+  expect(audit).toEqual(expect.arrayContaining([expect.objectContaining({kind:"tool",title:"gk_test_read",ok:false})]));
+  expect(JSON.stringify(audit)).not.toMatch(/private-input|private-provider/);
+});
+it("protects malformed access requests and unavailable runtimes without leaking errors",async()=>{
+  const p={url:"not a url private-url-marker",reason:"private-reason-marker"};
+  await kernel.onBeforeToolCall({toolName:"os_request_access",toolCallId:"invalid-request",params:p},{...ctx,toolName:"os_request_access"});
+  const result=await kernel.runTool("invalid-request",()=>kernel.requestAccess("invalid-request",p));
+  expect(result).toMatchObject({isError:true});
+  expect(JSON.stringify(result)).not.toMatch(/private-url|private-reason/);
+  await kernel.stop();
+  expect(await kernel.runTool("absent",()=>kernel.listGrantsForCall("absent"))).toMatchObject({isError:true});
 });

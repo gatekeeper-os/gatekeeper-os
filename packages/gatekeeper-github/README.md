@@ -88,8 +88,10 @@ Access/refresh tokens are encrypted with the cell key using kit `TokenStore`.
 Optional expiring OAuth App tokens use coalesced refresh, revalidate `/user`'s
 numeric ID, and cannot resurrect a concurrently revoked account. An expired
 refresh token requires reconnection. Revocation invalidates retained account,
-resource, session and verifier objects. No credential or raw provider error is
-logged or included in tool results.
+resource, session and verifier objects. The driver never logs credentials or raw provider errors, and kernel-owned
+execution failures return a payload-free structured error. Upstream native
+approval denials and route failures can still log tool arguments before execution; complete
+log secrecy remains an explicit release blocker.
 
 ## Optional native synchronous decisions
 
@@ -162,7 +164,8 @@ and observer negatives. Fixtures do not authenticate with GitHub.
 
 Phase 4 still requires the original live VM `deferred-approval` and
 `require-approval-roundtrip` checks, real login and apply/reject/revert on a named
-disposable repository, and audit/log secrecy evidence. Do not reuse an agent's
+disposable repository, and separate provider-failure/approval-route-failure audit/log secrecy evidence.
+See [real-provider acceptance prerequisites](../../docs/phase-4-real-provider.md). Do not reuse an agent's
 personal `gh` login or production messaging credentials as acceptance fixtures.
 
 ## Provider contracts checked

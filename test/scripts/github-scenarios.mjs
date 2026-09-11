@@ -120,18 +120,18 @@ try {
     const grant = added.value.handle;
     const read = { tool: 'gk_github_issue_get', params: { grant } };
     const write = body => ({ tool: 'gk_github_issue_comment', params: { grant, body } });
-    async function nativeTurn(id, decision) {
+    async function nativeTurn(id, decision, body, beforeMutations = decision === 'allow-once' ? 0 : 1) {
       const offset = requests.length;
       let done = false;
-      const pending = runTurn(id, [write(decision === 'allow-once' ? 'phase-four-first-comment' : 'phase-four-rejected-comment'), read]);
+      const pending = runTurn(id, [write(body ?? (decision === 'allow-once' ? 'phase-four-first-comment' : 'phase-four-rejected-comment')), read]);
       void pending.then(() => { done = true; }, () => { done = true; });
       const deadline = Date.now() + 45000;
       while (requests.length === offset && !done && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 100));
       const request = requests[offset];
       check(id + '-native-prompt', !done && typeof request?.id === 'string' && request.request?.pluginId === 'clawos-kernel' && request.request?.toolName === 'gk_github_issue_comment');
-      check(id + '-no-effect-before-decision', (await provider()).mutations === (decision === 'allow-once' ? 0 : 1));
+      check(id + '-no-effect-before-decision', (await provider()).mutations === beforeMutations);
       check(id + '-unauthorized-decision-denied', await denied(restricted.client, 'plugin.approval.resolve', { id: request.id, decision }));
-      check(id + '-still-paused', !done && (await provider()).mutations === (decision === 'allow-once' ? 0 : 1));
+      check(id + '-still-paused', !done && (await provider()).mutations === beforeMutations);
       await rpc('plugin.approval.resolve', { id: request.id, decision });
       const row = await pending;
       check(id + '-native-resolved', resolutions.some(r => r.id === request.id && r.decision === decision));
@@ -149,6 +149,12 @@ try {
     check('native-deny-no-effect', (await provider()).comments === 1 && !(await provider()).rejectedPresent && (await provider()).mutations === 1);
     check('native-deny-no-overlay', refused.results[1]?.rejected === false && refused.results[1]?.first === true);
     check('native-no-pending-after-deny', (await rpc('os.approvals.list')).actions.length === 0);
+    const failed = await nativeTurn('native-provider-failure', 'allow-once', 'phase-four-private-failure\n"quoted" private-tail-marker', 1);
+    check('native-provider-failure-reported', failed.results[0]?.denied === true);
+    check('native-provider-failure-once', (await provider()).failedWrites === 1 && (await provider()).mutations === 1 && (await provider()).comments === 1);
+    check('native-provider-failure-not-pending', (await rpc('os.approvals.list')).actions.length === 0);
+    const failureAudit = await rpc('os.audit.query', { limit: 1000 });
+    check('native-provider-failure-audited', failureAudit.some(r => r.kind === 'tool' && r.title === 'gk_github_issue_comment' && r.sessionKey?.endsWith('github-native-provider-failure') && r.ok === false));
     report.nativeApprovalRoundtrip = true;
   } else {
   const noGrant = await runTurn('no-grant', []);
@@ -213,7 +219,7 @@ try {
   const afterRevoke = await runTurn('revoked', []);
   check('revoked-tools-absent', afterRevoke.names.every(names => !names.some(n => n.startsWith('gk_github_'))));
   }
-  const protectedFiles = [...files(join(process.env.OPENCLAW_STATE_DIR, 'os')), '/home/tester/github-gateway.log'];
+  const protectedFiles = [...files(join(process.env.OPENCLAW_STATE_DIR, 'os')), '/home/tester/github-gateway.log', ...(phase === 'native' ? ['/home/tester/github-native-gateway.log'] : [])];
   const sensitive = ['offline-app-secret-marker', 'offline-access-token-marker', 'fixture-short-code'];
   check(phase + '-fixture-secrets-not-persisted-plaintext', protectedFiles.every(path => {
     const content = readFileSync(path); return sensitive.every(value => !content.includes(Buffer.from(value)));

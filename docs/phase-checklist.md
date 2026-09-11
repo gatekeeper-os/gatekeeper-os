@@ -98,6 +98,10 @@ Extended checkpoint `vm-artifacts/20260911-182738-phase-4/`: **80/80**, nine
 model turns, including genuine native plugin-approval allow/deny through an
 operator-configured synchronous policy. Provider remains synthetic. Kernel
 regression `20260911-182923-phase-3`:98 structural/38 conformance checks pass.
+Secrecy-tightened run `20260911-184853-phase-4`: **94/96**, ten model turns,
+exit1. Kernel-owned provider failure is sanitized and audited as failed; native
+upstream denial leaks the rejected action body to console/file logs. This is a
+**release blocker**, not a passing integration run. [Unsent upstream report](../plans/upstream-native-approval-logging.md).
 All full real-provider checkboxes below remain open.
 
 - [x] STOP 1: concrete GitHub surface approved by later explicit beta-completion authorization, 2026-09-09 — [review record](../plans/REVIEW-REQUESTED.md#github-gatekeeper--concrete-stop-1-review). Implementation and live acceptance are not implied.

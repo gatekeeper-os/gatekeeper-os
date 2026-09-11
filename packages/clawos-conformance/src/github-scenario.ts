@@ -4,12 +4,12 @@ import { readFileSync } from "node:fs";
 export const GITHUB_DEFERRED_REQUIRED_CHECKS = [
   "account-connected", "grant-introduced", "action-pending", "pending-overlay-visible",
   "remote-unchanged-before-approval", "apply-remote-confirmed", "reject-overlay-removed",
-  "reject-remote-unchanged", "revert-remote-confirmed", "audit-complete", "secret-scan-clean",
+  "reject-remote-unchanged", "revert-remote-confirmed", "audit-complete", "secret-scan-clean", "failed-tool-log-secrecy",
 ] as const;
 
 /** Native synchronous approval acceptance; deferred queue decisions are not this roundtrip. */
 export const GITHUB_APPROVAL_REQUIRED_CHECKS = [
-  "await-decision-requested", "unauthorized-decision-denied", "operator-approval-resumes", "resolved-once",
+  "await-decision-requested", "unauthorized-decision-denied", "operator-approval-resumes", "resolved-once", "approval-route-failure-log-secrecy", "native-denial-log-secrecy",
 ] as const;
 
 function record(value: unknown): value is Record<string, unknown> {
