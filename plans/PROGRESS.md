@@ -1295,6 +1295,62 @@ is not passed); catalog/secret checks and diff whitespace checks passed. Running
 the helper outside a hosted VM was correctly refused before config/runtime mutation.
 GitHub-hosted live results pending; no local VM phase acceptance run is claimed.
 
+## 2026-09-12 — Phase 6 blueprint implementation checkpoint (not accepted)
+
+Matt authorized overnight implementation order **7 → 5 → 6 → MCP**, overriding
+numerical sequence but not release/security gates. Branch `phase/6-blueprints`
+starts from `origin/main` `f4f66c7`; it does not merge unaccepted Phase 4/5/7.
+
+Implemented:
+- Dependency-free CLI `blueprint list|lint|apply|diff`, bundled schema/templates,
+  assistant/coder/ops/researcher guidance, exact file snapshots, idempotence,
+  path-only drift reports, refusal of existing-agent adoption and interrupted
+  provisioning journals. Other agents and global tool policy are preserved.
+- Mandatory all-turn sandbox for runtime tools; Docker agent scope, network:none,
+  read-only root, dropped capabilities, sandbox-only exec and no elevated mode.
+  Inherited Docker binds and later fragment overrides are refused.
+- Kernel prompt-cap repair: retain native groups within the already-authorized
+  upstream tool set, never pass through arbitrary plugin groups or ungranted gk
+  tools. Kernel request tools explicitly remain visible in sandboxed roles.
+- Published upstream does not bootstrap README; its guide is included in managed
+  AGENTS.md. Added `docs/blueprints.md`, VM procedure and source references.
+
+Verification:
+- **432 host tests** (31 files), full workspace typecheck/build and **10 packed
+  package-license checks** passed. Catalog, secret and whitespace checks pass.
+- **21 blueprint tests** passed inside the VM, as well as on the host.
+- `CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state scripts/vm/test.sh phase-6 installed blueprint-sandbox`
+  → `vm-artifacts/20260912-083358-phase-6/`, **exit 0, 48/48 checks, four turns**.
+  Real Gateway/OpenClaw **2026.9.2**, real Docker, synthetic loopback model; no
+  personal provider/account credentials. Packed CLI provisioning, idempotence,
+  drift/refusal, access-request visibility, ungranted gk hiding, noncoder runtime
+  denial and actual coder command effect all pass. Exact workspace mount selects
+  the coder container; network:none/read-only root/no Docker socket verified.
+- Existing kernel/filesystem runtime regression:
+  `vm-artifacts/20260912-084434-phase-3/`, **exit 0**, **98/98 structural checks**,
+  **38/38 live conformance checks**, **94 kernel + 138 CLI guest tests**. Its
+  narrowing assertions now retain native tools while enforcing the exact granted
+  gk set; the old total-tool count incorrectly encoded native-tool stripping.
+- Full-mode acceptance: `vm-artifacts/20260912-084641-phase-6/`, **blocked exit 2**,
+  explicit missing-driver and effective-policy reasons; `fullPhaseAcceptance:false`.
+- `pnpm lint` is **blocked (exit 2)** by main's missing ESLint v9 flat configuration.
+  Catalog and secret checks were run separately and pass.
+- Installed/default config hash matches after restore. VM **shut off**; original
+  `base` and `installed` snapshots retain Sep 7 timestamps. No credential snapshot.
+
+Earlier deterministic failures are retained, not counted as passes: unsupported
+fixture reload mode (`hot` corrected to `hybrid`), main kernel cap removing native
+exec, a local syntax error caught by both build paths, and verifier assuming
+agent-named containers (upstream uses workspace hashes). The last clean run above
+includes those corrections. No in-flight script was edited.
+
+Full Phase 6 remains **blocked**: `gatekeeper-http` is still absent and the
+GitHub acceptance dependency remains separate; no expectedGatekeepers entry was
+removed. The installed baseline globally denies runtime/fs/automation, which
+per-agent allow cannot restore. This checkpoint uses a separate explicit fixture
+policy, never silently relaxes that baseline, and is not four production-ready
+role acceptance. Phase 4 upstream approval-body logging remains a release gate.
+No merge, phase tag, package publication, visibility change or production action.
 ## 2026-09-12 overnight — Phase5 approvals implementation checkpoint
 
 Matt's requested implementation order is 7 → 5 → 6 → gatekeeper-mcp; acceptance

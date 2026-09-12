@@ -538,6 +538,31 @@ The late Claim hook handles only denial fallthrough. `registerCommand.requiredSc
 is also host-enforced, but external handlers lack the complete finalized audience
 context; no raw-label shortcut or bundled-only `exposeSenderIsOwner` is used.
 
+## Phase 6 blueprint surfaces (2026-09-12)
+
+Read-only source evidence: published `openclaw@2026.9.2` package documentation:
+`docs/cli/agents.md` (agents add --workspace --non-interactive --json and
+agents.entries), `docs/tools/multi-agent-sandbox-tools.md` (global denials cannot
+be restored, per-agent profile override), `docs/gateway/config-agents.md`
+(agent Docker network/readOnlyRoot/capDrop/scope/workspaceAccess),
+`docs/tools/exec.md` (sandbox host and elevated escape), and
+`docs/automation/hooks.md` (bootstrap-extra-files basename restrictions).
+Blueprints use per-agent tools.profile/alsoAllow/deny/exec/elevated and
+agents.entries.<id>.sandbox; the existing supported transactional reconciliation
+owns publication. No new upstream imports. README.md is not natively injected;
+its text is included in AGENTS.md. `agents.entries` is the authored map and the
+legacy list representation is tolerated on read only. Runtime acceptance is
+reported separately from source confirmation.
+
+The Phase 6 VM exposed a project bug in the earlier narrowing cap: only listing
+OS/gatekeeper tools removed native sandbox exec even when operator policy allowed
+it. The ordinary before_prompt_build cap now includes native tool groups
+`group:openclaw`, `group:fs`, `group:runtime`, plus OS request/list and only granted
+`gk_*` names. This is still a **narrowing intersection**, never an override of the
+profile/global/provider/agent/sandbox policies. It does not pass group:plugins.
+Per-agent `tools.alsoAllow: ["clawos-kernel", ...]` and sandbox-layer alsoAllow
+permit kernel-owned tools to reach that cap; they never mint grants. Sources:
+published `docs/gateway/config-tools.md` and public plugin hook result types.
 ### Phase5 local channel outbound target (2026-09-12)
 Public plugin channel contract verified in pinned2026.9.2 exported declaration types:
 `messaging.normalizeTarget`, `messaging.targetResolver.looksLikeId`, and

@@ -309,6 +309,22 @@ stays in the private config/in-memory SDK call; no raw Gateway output is uploade
 Only structural verdict JSON leaves the runner. All full phase acceptance continues
 through the snapshot/reset/sync/collect harness above.
 
+## Phase 6 blueprint sandbox checkpoint (2026-09-12)
+
+`phase-6 installed blueprint-sandbox` builds and globally installs the packed CLI
+**inside the VM only**, provisions the four templates into a separate
+`.openclaw-blueprint-test` cell, verifies idempotence/drift and uses a loopback
+synthetic model for actual Gateway turns. Coder's native exec runs in real Docker;
+container inspection checks network:none, read-only root and absence of socket
+mounts. It uses a locally tagged Debian minimal image as the container fixture;
+this is not proof of the upstream full development image's tool inventory.
+
+This cell deliberately has a fixture tool policy without the installed baseline's
+global runtime/fs/automation denies. The baseline and production policy remain
+unchanged. HTTP and GitHub dependencies remain pending; text-model turns are not
+real-provider capability acceptance. No credentials, bodies, live config or raw
+Gateway logs enter artifacts; only the allowlisted `phase-6-evidence/` directory.
+`phase-6 installed full` returns **blocked, exit 2**, not a fake successful scaffold.
 ## Phase 5 approvals-live checkpoint
 
 `CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=<original-phase0>/scripts/vm/.state

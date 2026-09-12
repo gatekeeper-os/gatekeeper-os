@@ -4,7 +4,8 @@
   "description": "Web research agent with fetch/search and the generic HTTP gatekeeper.",
   "workspaceFiles": [
     "AGENTS.md",
-    "SOUL.md"
+    "SOUL.md",
+    "README.md"
   ],
   "skills": [],
   "toolPolicy": {

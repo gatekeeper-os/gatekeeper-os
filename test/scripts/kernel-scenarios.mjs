@@ -84,7 +84,7 @@ try {
     check('forged-identity-denied',await denied(paired.client,'os.grants.introduce',{agentId:'main',url:'file:///home/tester/kernel-resource/',operatorId:'forged'}));
     check('outside-introduction-denied',await denied(paired.client,'os.grants.introduce',{agentId:'main',url:'file:///home/tester/kernel-outside/'}));
     const empty=await turn('no-grant',{tool:'os_list_grants'});
-    check('no-grant-narrowing',empty.names.every(names=>names.length===2&&names.includes('os_list_grants')&&names.includes('os_request_access')));
+    check('no-grant-narrowing',empty.names.every(names=>!names.some(n=>n.startsWith('gk_'))&&names.includes('os_list_grants')&&names.includes('os_request_access')&&names.includes('exec')));
     restricted=await connect({deviceToken:shared.deviceToken},['operator.write']);
     const pasted=await turn('untrusted-url',{client:restricted.client,agentId:'stranger',message:'Inspect file:///home/tester/kernel-resource/'});
     check('untrusted-sender-not-owner',pasted.hooks.some(h=>h.hook==='before_agent_run'&&h.senderIsOwner===false));
@@ -112,7 +112,7 @@ try {
     check('cli-invalid-input-denied',!cli(['grant','add','--cell','kernel-test','--agent','main','--operatorId','forged','file:///home/tester/kernel-resource/','--json']).ok);
     check('operator-introduced',grant.status==='active'&&/^grant:/.test(grant.handle));
     const listed=await turn('valid-list',{tool:'gk_fs_dir_list',params:{grant:grant.handle}});
-    check('valid-grant-narrowing',listed.names.every(names=>names.length===5&&['os_list_grants','os_request_access','gk_fs_dir_list','gk_fs_file_read','gk_fs_file_write'].every(n=>names.includes(n))));
+    check('valid-grant-narrowing',listed.names.every(names=>names.filter(n=>n.startsWith('gk_')).length===3&&['os_list_grants','os_request_access','gk_fs_dir_list','gk_fs_file_read','gk_fs_file_write','exec'].every(n=>names.includes(n))));
     check('directory-list-succeeded',listed.sawListing&&!listed.sawDenial);
     const before=listed.hooks.find(h=>h.hook==='before_tool_call'&&h.tool==='gk_fs_dir_list');
     check('hook-call-correlation',!!before?.callId&&listed.hooks.some(h=>h.hook==='after_tool_call'&&h.callId===before.callId));

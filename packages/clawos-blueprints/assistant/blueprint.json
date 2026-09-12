@@ -4,7 +4,8 @@
   "description": "Messaging-only personal assistant. No filesystem or shell access; uses gatekeepers for everything external.",
   "workspaceFiles": [
     "AGENTS.md",
-    "SOUL.md"
+    "SOUL.md",
+    "README.md"
   ],
   "skills": [],
   "toolPolicy": {

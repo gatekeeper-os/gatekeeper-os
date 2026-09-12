@@ -1,6 +1,28 @@
 {
   "name": "bad-exec-no-sandbox",
-  "version": "0.0.1",
-  "toolPolicy": { "allow": ["exec"] },
-  "sandbox": { "mode": "off" }
+  "version": "0.1.0",
+  "description": "Messaging-only personal assistant. No filesystem or shell access; uses gatekeepers for everything external.",
+  "workspaceFiles": [
+    "AGENTS.md",
+    "SOUL.md",
+    "README.md"
+  ],
+  "skills": [],
+  "toolPolicy": {
+    "profile": "messaging",
+    "allow": [
+      "exec"
+    ],
+    "deny": [
+      "group:runtime",
+      "group:fs",
+      "browser"
+    ]
+  },
+  "sandbox": {
+    "mode": "off"
+  },
+  "expectedGatekeepers": [
+    "github"
+  ]
 }

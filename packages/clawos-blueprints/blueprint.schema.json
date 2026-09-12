@@ -1,18 +1,119 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["name", "version", "workspaceFiles", "toolPolicy", "sandbox"],
+  "required": [
+    "name",
+    "version",
+    "workspaceFiles",
+    "toolPolicy",
+    "sandbox",
+    "skills",
+    "expectedGatekeepers"
+  ],
   "additionalProperties": false,
   "properties": {
-    "name": { "type": "string" },
-    "version": { "type": "string" },
-    "description": { "type": "string" },
-    "workspaceFiles": { "type": "array", "items": { "type": "string" } },
-    "skills": { "type": "array", "items": { "type": "string" } },
-    "toolPolicy": { "type": "object", "properties": { "profile": { "type": "string" }, "allow": { "type": "array", "items": { "type": "string" } }, "deny": { "type": "array", "items": { "type": "string" } } } },
-    "sandbox": { "type": "object", "properties": { "mode": { "enum": ["off", "non-main", "all"] }, "workspaceAccess": { "enum": ["none", "ro", "rw"] } } },
-    "expectedGatekeepers": { "type": "array", "items": { "type": "string" } },
-    "bindingsHint": { "type": "string" },
-    "model": { "type": "string" }
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,31}$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "description": {
+      "type": "string"
+    },
+    "workspaceFiles": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "AGENTS.md",
+          "SOUL.md",
+          "USER.md",
+          "IDENTITY.md",
+          "BOOT.md",
+          "README.md"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]{0,31}$"
+      },
+      "uniqueItems": true
+    },
+    "toolPolicy": {
+      "type": "object",
+      "properties": {
+        "profile": {
+          "enum": [
+            "minimal",
+            "messaging",
+            "coding"
+          ]
+        },
+        "allow": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_:-]*$"
+          },
+          "uniqueItems": true
+        },
+        "deny": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_:-]*$"
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "profile",
+        "allow",
+        "deny"
+      ]
+    },
+    "sandbox": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "enum": [
+            "off",
+            "non-main",
+            "all"
+          ]
+        },
+        "workspaceAccess": {
+          "enum": [
+            "none",
+            "ro",
+            "rw"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "mode"
+      ]
+    },
+    "expectedGatekeepers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "bindingsHint": {
+      "type": "string"
+    },
+    "model": {
+      "type": "string"
+    }
   }
 }
