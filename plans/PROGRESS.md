@@ -1426,3 +1426,17 @@ This is a **synthetic provider**, not a connected real MCP server or full native
 acceptance. `require-approval-roundtrip` is not executed while the upstream logging
 gate remains. The test script records `conformance-scope.json` rather than passing
 native conformance using a fixture. Existing kernel/fs VM regression follows.
+
+
+Final own-branch regression `20260912-113729-phase-3` from original `installed`,
+unmodified upstream2026.9.2: **exit0**, **98/98 structural checks +38/38 live
+conformance checks**, **93 kernel +117 CLI VM tests**. This is the existing
+kernel/filesystem focused checkpoint, not native MCP conformance. MCP synthetic
+secrecy scan covered **4files**, all clean. Production bundle inspection confirms
+`FixtureNotesServer`, `NotesFixture`, and its effect/error marker are absent.
+
+Implementation checkpoint **5f79232** is pushed to draft PR14. No merge is made;
+latest-head hosted CI must be checked after this receipt commit. VM shutdown
+requested after all runs, original `base`/`installed` snapshots retained; final
+shutoff verification is recorded below before handoff. Full acceptance/native
+logging/real-provider gates remain unchanged.
