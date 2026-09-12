@@ -371,7 +371,7 @@ This resets the original installed snapshot, rebuilds and packs the current CLI,
 and runs the two-cell Phase 6 checkpoint. After each cell's role scenarios,
 `openclaw security audit --deep --json` audits that actual cell with its own
 Gateway still running. The cell token is supplied through child environment
-`OPENCLAW_GATEWAY_TOKEN`, not argv; the original state identity is preserved.
+the canonical `CLAWOS_GATEWAY_TOKEN` SecretRef environment provider, not argv; the original state identity is preserved.
 
 The gate requires zero critical findings and a successful authenticated deep probe.
 Only the exact warning codes and per-cell predicates in `docs/blueprints.md` are
