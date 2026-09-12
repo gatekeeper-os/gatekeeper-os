@@ -1294,3 +1294,48 @@ Local verification: workspace build passed; new smoke helper typecheck passed;
 is not passed); catalog/secret checks and diff whitespace checks passed. Running
 the helper outside a hosted VM was correctly refused before config/runtime mutation.
 GitHub-hosted live results pending; no local VM phase acceptance run is claimed.
+
+## 2026-09-11 — clawkeeper transfer/org bootstrap housekeeping (no phase advance)
+
+The shared `origin` now points to
+`https://github.com/clawkeeper/openclaw-os.git`; fetch succeeded and all 12
+pre-existing worktrees remain present. No rebase, reset, worktree deletion,
+additional transfer, visibility change, package publication, or upstream post.
+
+- URL-only [PR #9](https://github.com/clawkeeper/openclaw-os/pull/9), branch
+  `chore/clawkeeper-urls`, commit `f378172`, updates `package.json` repository URL
+  and the old repository links in README/docs only. Candidate `build-test` passed;
+  the PR remains open as requested. This record is separate to preserve its scope.
+- Reviewed [PR #8](https://github.com/clawkeeper/openclaw-os/pull/8) against main
+  `4427e32` and the Phase 4 candidate `bad84f2`, without rewriting its structure.
+  Correction `cf04daa` fixes introduction-hook, plugin-trust, grant/lockdown,
+  egress, audit, auto-approval and main-vs-candidate claims. Detailed source mapping
+  is recorded in the PR review comment. Candidate `build-test` passed in run
+  `34674796119`; squash-merged as `f4f66c7`. Verdict: acceptable with those corrections.
+- Refreshed GitHub CLI authorization verified `repo`, `admin:org`, and `workflow`.
+  Added all missing requested labels: seven on `openclaw-os` and six on
+  `gatekeepers`; `good first issue` already existed on both and was preserved.
+  Existing `gatekeeper-wanted`, seed issues and seed files were not rewritten.
+- Verified on `clawkeeper/openclaw-os`, `clawkeeper/gatekeepers`, and
+  `clawkeeper/.github`: wiki and projects off; merge commits disabled; squash and
+  rebase merges enabled; delete-branch-on-merge enabled. Organization default
+  repository permission remains `read`; member repository creation (including
+  public/private creation flags) is now disabled. Unrelated settings preserved.
+- **Skipped:** secret scanning and push protection on all three private repos:
+  organization is Free, with no paid secret-protection entitlement enabled. No plan
+  upgrade or security-product purchase was authorized or performed.
+- **Blocked:** adding required status-check context `build-test` to `main`.
+  REST protection/rules reads and the targeted add-contexts request return HTTP 403:
+  "Upgrade to GitHub Pro or make this repository public to enable this feature."
+  GraphQL returns no visible branch-protection rules. Contrary to the supplied
+  assumption, no existing rule can be confirmed or edited with the current plan.
+  `build-test` is verified as the CI job/check name, but is **not configured as a
+  required check** by this work. Recheck and configure protection when entitlement
+  changes or Matt independently authorizes public visibility; do not assume it
+  will activate automatically.
+
+Local before/after settings, label inventories, exact API rejection, review, and
+worktree receipts are retained in the sibling `housekeeping-clawkeeper/` evidence
+directory outside the repository. Verification used API readbacks, candidate CI,
+and `git diff --check`; no new VM or phase acceptance is claimed. Beta gates,
+including the upstream approval-body logging blocker, are unchanged.
