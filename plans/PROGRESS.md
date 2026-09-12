@@ -1339,3 +1339,10 @@ metadata tests pass after correction. Fresh VM rerun pending, not yet accepted.
 Original snapshot registrations were restored from unchanged metadata after a
 read-only disk inventory confirmed base/installed dates. The documented same-user
 virtqemud soft-memlock fallback was restored; no production or global setting changed.
+
+Second boundary VM `20260912-104016-phase-8`:82 package tests pass and actual
+MCP/fs lifecycle health passes. The next harness assertion incorrectly expected
+`os.gatekeepers.connect` to provision immediately. Source `oauth.ts` shows that
+RPC only issues a kernel-owned nonce URL; the browser start route validates the
+account. Corrected the harness to open that exact local URL and require400 for
+the unconfigured account plus replay denial. No runtime authorization weakened.

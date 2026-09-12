@@ -15,7 +15,12 @@ try{
  const status=await paired.client.request('os.status',{});
  check('mcp-lifecycle-healthy',status.gatekeepers.some(g=>g.vendor==='mcp'&&g.healthy));
  check('filesystem-lifecycle-preserved',status.gatekeepers.some(g=>g.vendor==='fs'&&g.healthy));
- check('unconfigured-account-denied',await denied(paired.client,'os.gatekeepers.connect',{vendor:'mcp'}));
+ const entry=await paired.client.request('os.gatekeepers.connect',{vendor:'mcp'});
+ check('kernel-owned-start-url',typeof entry.url==='string' && /^\/os\/gatekeeper\/mcp\/oauth\/start\?state=[A-Za-z0-9_-]{32}$/.test(entry.url));
+ const start=await fetch(new URL(entry.url,'http://127.0.0.1:19100'),{redirect:'error'});
+ check('unconfigured-account-denied',start.status===400 && (await start.text()).includes('Account connection unavailable.'));
+ const replay=await fetch(new URL(entry.url,'http://127.0.0.1:19100'),{redirect:'error'});
+ check('connection-replay-denied',replay.status===400);
  check('unconfigured-server-denied',await denied(paired.client,'os.grants.introduce',{agentId:'main',url:'https://mcp.clawkeeper.invalid/servers/demo'}));
  check('shared-token-introduction-denied',await denied(shared.client,'os.grants.introduce',{agentId:'main',url:'https://mcp.clawkeeper.invalid/servers/demo'}));
  const list=await paired.client.request('os.grants.list',{});
