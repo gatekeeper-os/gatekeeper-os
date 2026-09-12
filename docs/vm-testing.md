@@ -308,3 +308,14 @@ using the target-installed public SDK), then stops the Gateway. Random throwaway
 stays in the private config/in-memory SDK call; no raw Gateway output is uploaded.
 Only structural verdict JSON leaves the runner. All full phase acceptance continues
 through the snapshot/reset/sync/collect harness above.
+
+## Phase 5 approvals-live checkpoint
+
+`CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=<original-phase0>/scripts/vm/.state
+scripts/vm/test.sh phase-5 installed approvals-live` resets the original unconnected
+snapshot. It uses a synthetic driver with the existing filesystem contract name,
+not an actual filesystem/GitHub provider, and a local synthetic channel. Real
+Gateway/model dispatch, authenticated SDK RPCs, packed CLI and message CLI exercise
+queue order, timer, previews, operator commands, and digest delivery. Only structural
+`phase-5-evidence` files are collected. No personal credentials or external message.
+Default/full mode returns blocked; this checkpoint cannot claim full acceptance.

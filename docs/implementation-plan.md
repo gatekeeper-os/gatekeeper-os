@@ -1107,6 +1107,16 @@ This implements §4.7's original private-only beta boundary, not v1.1 sharing.
 
 **Acceptance.** An action with tag `github.issue.comment` auto-applies within 30 s when the rule exists and the gatekeeper marked it `autoApprovable`; not when either is missing; drainer stops at the first non-eligible action and resumes after it is decided; digest arrives once per run, not once per action.
 
+**2026-09-12 implementation checkpoint (not acceptance).** The operator CLI now has
+bounded, terminal-escaped tables and explicit `approvals preview IDs|all`; it is a
+line-oriented interface, not a full-screen interactive selector. Chat aliases use
+trusted private operator dispatch; shared, non-owner, or forged command contexts
+are silently claimed without model fallthrough. Manual decisions immediately resume
+the ordered drainer. The existing timer and per-run digest mechanism are exercised
+in `phase-5 installed approvals-live` with a local synthetic provider/channel.
+This does not establish real GitHub or real messaging transport acceptance; full
+mode remains blocked until the Phase 4 secrecy gate and real-channel receipt pass.
+
 ### Phase 6 — Blueprints and shell (3–4 days)
 
 **Deliverables:** `packages/clawos-blueprints` with `assistant` (messaging-only, no fs/exec), `coder` (sandboxed fs+exec, `gatekeeper-fs` + `gatekeeper-github` expected), `ops` (cron + notifications), `researcher` (web tools + `gatekeeper-http`); `blueprint.json` schema (`name`, `version`, `workspaceFiles`, `skills`, `toolPolicy`, `sandbox`, `expectedGatekeepers`, `bindingsHint`); `clawos blueprint list|apply|diff|lint`; `write-blueprint` skill.
@@ -1114,6 +1124,12 @@ This implements §4.7's original private-only beta boundary, not v1.1 sharing.
 `clawos blueprint apply coder --agent dev` does: `openclaw agents add dev --workspace ~/.openclaw/agents/dev/workspace [--bind <channel:account>] --non-interactive` (**VERIFIED** flags; non-interactive mode requires `--workspace`) → copies workspace files into the agent's workspace → writes `os/config.d/30-agents.json5` entry for `agents.entries.dev` (tools, sandbox, skills) → `clawos config apply` → records the applied snapshot in `os/blueprints/dev/`. `diff` shows drift between the snapshot and the live workspace/config.
 
 **Acceptance.** Applying each blueprint to a fresh cell yields a working agent; `blueprint lint` rejects a blueprint that grants `exec` without `sandbox.mode: "all"`; re-applying is idempotent.
+
+### Authorized implementation order (2026-09-11 overnight)
+
+Matt requested **Phase 7 → Phase 5 → Phase 6 → gatekeeper-mcp** for overnight
+implementation. This overrides numerical scheduling only, not acceptance dependencies,
+secrecy invariants, or gatekeeper review STOP points. No unaccepted merge or phase tag.
 
 ### Phase 7 — Update, rollback, and compatibility pipeline (3–4 days)
 
