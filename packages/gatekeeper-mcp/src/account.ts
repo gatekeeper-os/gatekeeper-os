@@ -1,29 +1,18 @@
-import { KitGatekeeper, OverlayStore, type TokenStore } from "@clawos/gatekeeper-kit";
-import type { ApprovalQueue, GatekeeperAccount, GatekeeperSession, ObserverVerifier } from "@clawos/shared";
+import { type TokenStore } from "@clawos/gatekeeper-kit";
+import type { GatekeeperAccount, ObserverVerifier } from "@clawos/shared";
 import { bindingKey, boundaryResource, checkInventory, denied, type ServerBinding } from "./manifest.js";
 import { parseProposedResourceUrl } from "./resources.js";
-import { inspectServer } from "./transport.js";
+import { join } from "node:path";
+import { McpServer } from "./server.js";
+import { inspectServer, readServerNote } from "./transport.js";
 
 /** Encrypted record contains no remotely claimed identity or discovered authorization policy. */
 export interface CredentialRecord { version: 1; binding: string; bearer: string; }
-/** Control-plane-only resource. Sessions, observations, actions and sharing all deny at STOP2. */
-class McpServer extends KitGatekeeper {
-  resource;
-  protected overlay = new OverlayStore();
-  constructor(id: string, private readonly live: () => void) { super(); this.resource = boundaryResource(id); }
-  override async describe() { this.live(); return { resource: structuredClone(this.resource), title: "MCP server", suggestedName: "MCP" }; }
-  override async getAutoApprovableActions() { this.live(); return []; }
-  override async startSession(_queue: ApprovalQueue): Promise<GatekeeperSession> { this.live(); throw denied(); }
-  override async applyAction(_id: number): Promise<void> { throw denied(); }
-  override async rejectAction(_id: number): Promise<void> { throw denied(); }
-  override async revertAction(_id: number): Promise<void> { throw denied(); }
-  override async addObserver(_id: string, _verifier: ObserverVerifier): Promise<void> { throw denied(); }
-}
 /** Revocable operator account with exact endpoint/credential/inventory validation on each introduction. */
 export class McpAccount implements GatekeeperAccount {
   private active = true;
   constructor(private readonly bindings: readonly ServerBinding[], private readonly store: TokenStore,
-    private readonly onRevoke: () => void, private readonly inspect: typeof inspectServer = inspectServer) {}
+    private readonly onRevoke: () => void, private readonly inspect: typeof inspectServer = inspectServer, private readonly statePath?: string) {}
   private live = (): void => { if (!this.active) throw denied(); };
   private credential(binding: ServerBinding): CredentialRecord {
     this.live();
@@ -43,7 +32,11 @@ export class McpAccount implements GatekeeperAccount {
       // Recheck after I/O; revocation or rotation cannot revive a stale introduction.
       if (this.credential(binding).bearer !== before.bearer) throw denied();
       const live = () => { if (this.credential(binding).bearer !== before.bearer) throw denied(); };
-      const gatekeeper = new McpServer(id, live);
+      const gatekeeper = new McpServer(live, async noteId => {
+        live();
+        const result = await readServerNote(binding.endpoint, before.bearer, noteId);
+        live(); return result;
+      }, this.statePath ? join(this.statePath, "resources", bindingKey(binding)) : undefined);
       return { gatekeeper, resource: boundaryResource(id), resourceKey: url };
     } catch { throw denied(); }
   }

@@ -3,8 +3,9 @@ import { request } from 'node:https';
 import type { ClientRequest } from 'node:http';
 import { BlockList, isIP } from 'node:net';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { checkInventory } from './manifest.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { JSONRPCMessageSchema, ListToolsResultSchema, type JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
+import { JSONRPCMessageSchema, ListToolsResultSchema, CallToolResultSchema, type JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 
 const MAX_BYTES = 131_072;
 const MAX_SCHEMA_BYTES = 16_384;
@@ -43,7 +44,7 @@ function boundedObject(value: unknown, maxBytes: number): asserts value is Recor
   walk(value, 0);
 }
 
-/** JSON-response Streamable HTTP subset. No GET stream, retry, OAuth discovery, or tool invocation. */
+/** JSON-response Streamable HTTP subset. No GET stream, retry, OAuth discovery, or unreviewed tool invocation. */
 class InspectionTransport implements Transport {
   onclose?: () => void;
   onerror?: (error: Error) => void;
@@ -147,16 +148,35 @@ class InspectionTransport implements Transport {
     });
   }
   async send(message: JSONRPCMessage): Promise<void> {
-    if (!('method' in message) || !['initialize', 'notifications/initialized', 'tools/list'].includes(message.method)) throw failure();
+    if (!('method' in message) || !['initialize', 'notifications/initialized', 'tools/list', 'tools/call'].includes(message.method)) throw failure();
+    if (message.method === 'tools/call') {
+      const p = message.params;
+      if (!p || p.name !== 'notes.get') throw failure();
+      boundedObject(p.arguments, 1024);
+      if (Object.keys(p.arguments).join() !== 'noteId' || typeof p.arguments.noteId !== 'string' || !/^[a-zA-Z0-9_-]{1,128}$/.test(p.arguments.noteId)) throw failure();
+    }
     const response = await this.post(message, false);
     if (response) this.onmessage?.(response);
   }
 }
 
 /** Inspect only a fixed public HTTPS endpoint using an explicit private bearer; never executes tools. */
-export async function inspectServer(endpoint: string, bearer: string): Promise<{
-  tools: Array<{ name: string; inputSchema: Record<string, unknown>; outputSchema?: Record<string, unknown> }>;
-}> {
+export async function inspectServer(endpoint: string, bearer: string) {
+  return withServer(endpoint, bearer, async (_client, tools) => ({ tools }));
+}
+/** The only production data-plane operation: a reviewed observation, after same-session inventory validation. */
+export async function readServerNote(endpoint: string, bearer: string, noteId: string): Promise<unknown> {
+  if (!/^[a-zA-Z0-9_-]{1,128}$/.test(noteId)) throw failure();
+  return withServer(endpoint, bearer, async (client, tools) => {
+    checkInventory(tools);
+    const result = await client.request({ method: 'tools/call', params: { name: 'notes.get', arguments: { noteId } } }, CallToolResultSchema, { timeout: 5000 });
+    // Resource links, remote text instructions and images are never interpreted or fetched.
+    if (result.isError || !result.structuredContent) throw failure();
+    return result.structuredContent;
+  });
+}
+type Inventory = Array<{ name: string; inputSchema: Record<string, unknown>; outputSchema?: Record<string, unknown> }>;
+async function withServer<T>(endpoint: string, bearer: string, operationResult: (client: Client, tools: Inventory) => Promise<T>): Promise<T> {
   let transport: InspectionTransport | undefined;
   let client: Client | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -189,7 +209,7 @@ export async function inspectServer(endpoint: string, bearer: string): Promise<{
           tools.push({ name: tool.name, inputSchema: tool.inputSchema, ...(tool.outputSchema ? { outputSchema: tool.outputSchema } : {}) });
         }
         cursor = result.nextCursor;
-        if (cursor === undefined) return { tools };
+        if (cursor === undefined) return operationResult(client, tools);
         if (!cursor || cursor.length > 256 || cursors.has(cursor)) throw failure();
         cursors.add(cursor);
       }

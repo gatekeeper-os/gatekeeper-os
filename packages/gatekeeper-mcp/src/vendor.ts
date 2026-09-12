@@ -4,6 +4,7 @@ import { TokenStore, type VendorContext } from "@clawos/gatekeeper-kit";
 import type { GatekeeperAccount, GatekeeperVendor } from "@clawos/shared";
 import { McpAccount, type CredentialRecord } from "./account.js";
 import { bindingKey, boundaryResource, checkInventory, configuredServers, denied, type ServerBinding } from "./manifest.js";
+import { mcpTools } from "./tools.js";
 import { inspectServer } from "./transport.js";
 
 /** Load only the installer-created cell key. No key generation or production-state fallback. */
@@ -32,7 +33,7 @@ export class McpVendor implements GatekeeperVendor {
   async describe() { return { title: "MCP", description: "Explicitly configured credential accounts.", autoProvisionsAccount: true }; }
   async connectAccount(): Promise<{url: string}> { throw denied(); }
   async getSupportedResources() { return this.bindings.map(binding => boundaryResource(binding.id)); }
-  async getTools() { return []; }
+  async getTools() { return structuredClone(mcpTools); }
   async getAccount(operatorId: string) { return this.accounts.get(operatorId) ?? null; }
   async createAccount(operatorId: string): Promise<GatekeeperAccount> {
     const existing = this.accounts.get(operatorId); if (existing) return existing;
@@ -53,7 +54,7 @@ export class McpVendor implements GatekeeperVendor {
       checkInventory((await this.inspect(binding.endpoint, bearer)).tools);
       if (!previous) store.put(key, { version: 1, binding: key, bearer });
     }
-    const account = new McpAccount(bindings, store, () => { this.accounts.delete(operatorId); }, this.inspect);
+    const account = new McpAccount(bindings, store, () => { this.accounts.delete(operatorId); }, this.inspect, join(this.ctx.stateDir, "os", "gatekeepers", "mcp"));
     this.accounts.set(operatorId, account); return account;
   }
 }

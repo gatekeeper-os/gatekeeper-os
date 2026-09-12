@@ -161,7 +161,7 @@ same work. This authorization does not waive tests or capability invariants.
 
 Historical context at STOP1: Matt requested MCP after Phase7→5→6. Those
 implementation checkpoints were saved separately. The request below was approved
-on 2026-09-12; the current review is STOP2 at the end of this file.
+on 2026-09-12; STOP2 was also approved later that day; see the end of this file.
 
 Review [mcp-surface-contract.md](mcp-surface-contract.md): HTTPS Streamable HTTP
 only; fixed named tools from operator-reviewed manifests; owner-only server grant
@@ -177,11 +177,13 @@ action/simulation/observer work. No current runtime or remote server is enabled.
 The skill explicitly requires operator review at STOP1; per its unattended rule,
 this run stops MCP implementation here and reports the completed overnight work.
 
-## MCP gatekeeper — current STOP2 review
+## MCP gatekeeper — STOP2 approved (2026-09-12)
 
-STOP1 was approved by Matt: **“Approved continue”**,2026-09-12. Connection and
-grant-validation implementation is now at the separate STOP2 boundary. Review
-[mcp-stop2.md](mcp-stop2.md): approve owner-only queue-authorized observations
-and native-approved, non-autoapplicable, non-reversible append actions with
-uncertain-outcome protection. Runtime tools remain disabled until that decision;
-upstream body logging and full live acceptance are not waived.
+Matt explicitly approved responsibilities4–7 under
+[mcp-surface-contract.md](mcp-surface-contract.md). Both reviews are satisfied;
+no repeat approval is pending. The runtime publishes only private read-note.
+Generic append keeps `awaitDecision:true`, `autoApprovable:false`,
+`implementsRevert:false` and remains unregistered/hard-gated by upstream native
+logging. Deferred action evidence uses only the separate deterministic synthetic
+notes fixture. See [PROGRESS.md](PROGRESS.md) for actual host and disposable-VM
+receipts; no full native/provider/beta acceptance, merge or publication.

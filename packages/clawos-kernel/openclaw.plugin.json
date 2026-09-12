@@ -8,7 +8,9 @@
       "os_list_grants",
       "gk_fs_dir_list",
       "gk_fs_file_read",
-      "gk_fs_file_write"
+      "gk_fs_file_write",
+      "gk_mcp_demo_read_note",
+      "gk_mcp_demo_append_note"
     ],
     "trustedToolPolicies": [
       "clawos-capability-policy"

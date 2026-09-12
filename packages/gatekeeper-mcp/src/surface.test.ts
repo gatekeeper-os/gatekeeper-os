@@ -25,9 +25,9 @@ it("does not collapse namespaces or accept remote tool strings as names", () => 
   expect(proposedToolName("demo", "read_note")).toBe("gk_mcp_demo_read_note");
   for (const [server, alias] of [["a_b", "c"], ["demo", "notes.get"], ["demo", "../call"], ["demo", "x".repeat(33)]]) expect(() => proposedToolName(server!, alias!)).toThrow();
 });
-it("keeps all tool execution disabled at STOP2", () => {
+it("registers the reviewed observation only while native append remains gated", () => {
   const entry=readFileSync(new URL("./index.ts", import.meta.url), "utf8");
   const manifest=JSON.parse(readFileSync(new URL("../openclaw.plugin.json", import.meta.url), "utf8"));
   expect(entry).toContain("defineGatekeeper");expect(entry).not.toContain("registerTool");
-  expect(manifest.contracts.tools).toEqual([]);expect(manifest.activation.onStartup).toBe(true);
+  expect(manifest.contracts.tools).toEqual(["gk_mcp_demo_read_note"]);expect(manifest.activation.onStartup).toBe(true);
 });

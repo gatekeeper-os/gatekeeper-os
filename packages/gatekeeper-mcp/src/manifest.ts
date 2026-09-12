@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type { SupportedResource } from "@clawos/shared";
 import { proposedResourceUrl } from "./resources.js";
-import { proposedTools } from "./tools.js";
+import { proposedTools, mcpTools } from "./tools.js";
 
 /** Sanitized fixed failure; never attach provider responses or credential-bearing causes. */
 export const denied = (): Error => new Error("MCP boundary unavailable.");
@@ -59,7 +59,7 @@ export function configuredServers(config: Record<string, unknown>): ServerBindin
 export function bindingKey(binding: ServerBinding): string {
   return createHash("sha256").update(canonical({binding, reviewedInventory})).digest("hex");
 }
-/** Control-plane resource at STOP2; no model tools are activated until Phase2 is reviewed. */
+/** Read-only runtime resource; generic native append is not registered. */
 export function boundaryResource(id: string): SupportedResource {
-  return { type: `server_${id}`, urlPattern: proposedResourceUrl(id), title: "MCP server", description: "One configured server.", grantable: true, observerStrategy: "private-only", tools: [] };
+  return { type: `server_${id}`, urlPattern: proposedResourceUrl(id), title: "MCP server", description: "One configured server.", grantable: true, observerStrategy: "private-only", tools: mcpTools.filter(tool => tool.resourceType === `server_${id}`).map(tool => tool.name) };
 }

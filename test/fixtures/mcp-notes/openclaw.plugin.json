@@ -1,0 +1,1 @@
+{"id":"gatekeeper-mcp","name":"VM-only synthetic MCP notes","activation":{"onStartup":true},"contracts":{"tools":["gk_mcp_demo_read_note","gk_mcp_demo_append_note"]},"configSchema":{"type":"object","additionalProperties":false,"properties":{}},"clawos":{"gatekeeper":{"vendor":"mcp","apiVersion":1}}}

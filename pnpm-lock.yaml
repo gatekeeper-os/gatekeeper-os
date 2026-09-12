@@ -272,6 +272,9 @@ importers:
       openclaw:
         specifier: 'catalog:'
         version: 2026.9.2
+      typebox:
+        specifier: 'catalog:'
+        version: 1.1.39
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

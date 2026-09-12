@@ -1,16 +1,16 @@
 # MCP gatekeeper — concrete STOP1 contract
 
 Status: **STOP1 approved by Matt: “Approved continue”, 2026-09-12.**
-Account/transport boundary implementation follows the approved review; sessions/actions
-remain disabled. This is the next item in Matt's overnight order after
+**STOP2 approved by Matt on 2026-09-12** for responsibilities4–7.
+The active runtime surface is narrowed to the reviewed observation; native actions
+remain unregistered and hard-gated by the upstream logging issue. This is the next item in Matt's overnight order after
 Phase7, Phase5 and Phase6, not full Phase8 or beta acceptance.
 
 ## Approved STOP1 decision
 
 Approve the following initial boundary: **HTTPS Streamable HTTP only**, individually
 named tools compiled from an operator-reviewed per-server manifest, and owner-only
-server grants using the logical URL convention below. A second review remains
-required before approval/simulation/observer implementation. Stdio execution,
+server grants using the logical URL convention below. The second review was approved on 2026-09-12 before approval/cache/observer implementation. Stdio execution,
 per-tool grants and arbitrary discovery are excluded from this first slice.
 
 ## Exact grant identifiers
@@ -87,7 +87,7 @@ elicitation, server-side sampling, server-initiated client tools and automatic
 resource-link fetching are excluded initially. Connection liveness/schema checks
 alone do not make any tool an observation or safe to execute.
 
-## Planned action/observer behavior — still behind STOP2
+## Approved action/observer behavior — native execution still gated
 
 All observations await the existing queue authorization and recheck liveness before
 returning only explicitly projected fields. Returned text is untrusted data, never
@@ -103,8 +103,7 @@ and nonretryable until operator reconciliation; MCP request IDs are not guarante
 vendor idempotency keys.
 
 Native action execution remains blocked by the already confirmed upstream denied/
-no-route body-logging issue until a supported fix passes secrecy acceptance. A
-STOP1 approval does not waive this or authorize runtime publication.
+no-route body-logging issue until a supported fix passes secrecy acceptance. Neither STOP approval waives this or authorizes runtime publication.
 
 ## Evidence required after review
 
@@ -133,6 +132,31 @@ has been added. Historical filesystem/GitHub approvals remain unchanged.
 
 Matt approved this contract on 2026-09-12. The implemented connection boundary and
 remaining concrete review are recorded in [mcp-stop2.md](mcp-stop2.md). JSON-only
-Streamable HTTP is the supported subset; other transports deny. No tool execution
-is enabled. The initial compiled surface remains demo only, not an arbitrary
-server discovery service.
+Streamable HTTP is the supported subset; other transports deny. The initial compiled surface remains demo only, not an arbitrary
+server discovery service. STOP2 subsequently approved the read-only runtime and
+synthetic deferred-fixture evidence; append remains excluded from runtime tools.
+
+
+## STOP2 implementation scope (2026-09-12)
+
+- Active production tool: `gk_mcp_demo_read_note` only. The reviewed append mapping
+  remains in inventory validation, but not in vendor tools/resource metadata.
+  This prevents the kernel from entering upstream native approval before our
+  execution callback. The kernel manifest reserves both names for declared
+  metadata and VM fixture coverage; it does not itself register append.
+- Reads authorize before I/O and immediately before release, recheck account and
+  session liveness, validate inventory on the same pinned TLS connection, project
+  `noteId`, text≤8192, nonnegative integer revision and explicit truncation, and
+  refresh a single bounded cache document under the account-bound resource store.
+  Failed refreshes never return stale data; all sharing denies (strategyA).
+- Generic `ActionImpl` retains `awaitDecision:true`, `autoApprovable:false`,
+  `implementsRevert:false`, no simulate/revert, and unconditional apply denial.
+  No generic deferred protocol, guessed undo or fake append success is introduced.
+- `src/testing/notes-fixture.ts` is **test-only**, never imported into the production
+  bundle and never selectable by plugin configuration. Its synthetic in-memory
+  notes append has deterministic concatenation/revision semantics, truthful
+  deferred simulation (`awaitDecision:false` only in that adapter), overlay replay
+  after refresh/restart and standard kit apply/reject/uncertain journals. It does
+  not claim generic MCP simulation, a real server effect, or native acceptance.
+- No full acceptance: native allow/deny/no-route tests remain gated; only deferred
+  synthetic Gateway evidence and production observation/transport tests qualify.

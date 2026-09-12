@@ -4,7 +4,7 @@ STOP1 approved by Matt's **“Approved continue”** on 2026-09-12, following th
 concrete [surface contract](mcp-surface-contract.md) and draft PR14. That approval
 has been applied; no repeated STOP1 approval is requested.
 
-## Implemented boundary
+## Historical connection boundary (before the approved continuation)
 
 - Public HTTPS **JSON-response Streamable HTTP subset**, public MCP SDK1.30.0.
   No legacy/streaming SSE, stdio/subprocess, automatic OAuth/client registration,
@@ -35,7 +35,10 @@ has been applied; no repeated STOP1 approval is requested.
   The plugin is not installed in production and no external server is contacted
   by importing it or loading the empty configuration.
 
-## Decision requested: authoring Phase2
+## Approved decision: authoring Phase2
+
+**Approved by Matt, 2026-09-12:** proceed with responsibilities4–7. The initial
+connection-boundary evidence below is historical, not a fresh approval request.
 
 Proceed with the already-reviewed two-tool demo mapping using:
 
@@ -60,10 +63,22 @@ for the preserved failures and completed host/VM receipts. Account unit fixtures
 local TLS protocol tests and real Gateway plugin-lifecycle checks are distinct
 claims; none counts as real-provider effect or full conformance acceptance.
 
-## Why stop here
+## Historical STOP2 checkpoint
 
 [write-gatekeeper/SKILL.md](../.agents/skills/write-gatekeeper/SKILL.md) step6 says
 **“STOP 2 — ask the operator whether to proceed to Phase 2.”** Its opening rule is
 **“do not proceed past either without operator approval.”** STOP1 approved the
 presented API/URL contract; STOP2 is the concrete approval/action/observer work
-above. Implementation does not cross this second boundary yet.
+above. That boundary is now approved; implementation proceeds within the explicit native
+logging gate. See the surface contract’s STOP2 implementation scope and PROGRESS
+for current host/VM evidence. No repeat approval is requested.
+
+
+## Current runtime restriction
+
+Read-note is active for explicitly configured/granted servers. Append is not
+registered: merely denying its execute callback would still let the kernel invoke
+upstream native approval and expose denied/no-route bodies. Generic metadata
+retains the approved true/false/false policy without changing the kit contract.
+A separate VM-only deterministic notes adapter exercises standard deferred
+simulation/apply/reject; it is neither a production switch nor real-provider proof.

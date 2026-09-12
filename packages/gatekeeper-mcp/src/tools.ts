@@ -1,4 +1,6 @@
-/** STOP1 review-only metadata. Not exported by the plugin and never registered. */
+import { Type } from "typebox";
+import type { GatekeeperToolDef } from "@clawos/shared";
+/** Operator-reviewed metadata; append remains excluded from runtime registration. */
 export interface ProposedMcpTool {
   readonly name: string;
   readonly upstreamName: string;
@@ -17,7 +19,7 @@ export function proposedToolName(server: string, alias: string): string {
   if (!/^[a-z][a-z0-9]{0,15}$/.test(server) || !/^[a-z][a-z0-9_]{0,31}$/.test(alias)) throw new Error("Invalid MCP tool identity.");
   return `gk_mcp_${server}_${alias}`;
 }
-/** Synthetic notes server exemplifies the exact proposed manifest expansion; no transport exists. */
+/** Synthetic notes server exemplifies the exact proposed manifest expansion; not a real provider integration. */
 export const proposedTools: readonly ProposedMcpTool[] = [
   {
     name: proposedToolName("demo", "read_note"), upstreamName: "notes.get", resourceType: "server_demo", kind: "observation",
@@ -37,3 +39,10 @@ export const proposedTools: readonly ProposedMcpTool[] = [
     }, required: ["grant", "noteId", "text"] },
   },
 ];
+
+/** Runtime publishes only the approved observation until native secrecy acceptance is restored. */
+export const mcpTools: GatekeeperToolDef[] = proposedTools.filter(tool => tool.kind === "observation").map(tool => ({
+  name: tool.name, resourceType: tool.resourceType, kind: tool.kind, description: tool.description,
+  parameters: Type.Unsafe(structuredClone(tool.parameters)),
+  outputSchema: Type.Object({ noteId: Type.String({ minLength: 1, maxLength: 128 }), text: Type.String({ maxLength: 8192 }), revision: Type.Integer({ minimum: 0 }), truncated: Type.Boolean() }, { additionalProperties: false }),
+}));

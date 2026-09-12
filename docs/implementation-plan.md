@@ -279,6 +279,16 @@ CLAWOS_CELL=<name>
 6. **Simulation** — pending actions are reflected in subsequent reads as if applied.
 7. **Observer verification** — when a session has an audience beyond its owner (group chats, shared sessions), the gatekeeper must confirm each observer may see what has been read (§4.7).
 
+**MCP STOP2 implementation scope (approved 2026-09-12).** Generic MCP actions
+retain `awaitDecision:true`, `autoApprovable:false`, `implementsRevert:false` when
+simulation/revert cannot be honestly supplied. The current runtime publishes only
+the reviewed `read_note` observation: append remains excluded from vendor/resource
+metadata and hard-denied until the supported upstream native-approval logging fix
+passes secrecy acceptance. The separate test-only notes adapter has deterministic
+append semantics and exercises the standard deferred kit lifecycle; fixture
+simulation, local TLS transport and real Gateway evidence are distinct from
+real-provider/native/full acceptance. See `plans/mcp-surface-contract.md`.
+
 ### 4.2 Registration and discovery
 
 A gatekeeper is an ordinary OpenClaw plugin whose manifest carries the `clawos.gatekeeper` marker. S-1 selects the OS-owned catalog fallback: the kernel reads configured, canonical package roots from `os/gatekeepers.json`, validates each manifest's plugin id/vendor/API version, and registers cached tool shapes synchronously (§5.1). A manifest on disk is metadata, **not** proof of a loaded driver.

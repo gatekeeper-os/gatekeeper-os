@@ -29,7 +29,8 @@ vi.mock('node:https', async (importOriginal) => {
   } };
 });
 import { createServer } from 'node:https';
-import { inspectServer } from './transport.js';
+import { reviewedInventory } from './manifest.js';
+import { readServerNote, inspectServer } from './transport.js';
 
 let server: Server;
 let directory: string;
@@ -209,4 +210,33 @@ describe('bounded authenticated MCP inspection over real local TLS', () => {
     expect(pages).toBeGreaterThan(0);
     expect(pages).toBeLessThanOrEqual(4);
   });
+});
+
+it('executes only notes.get after exact same-session inventory verification and strips content blocks', async () => {
+  behavior = (message, request, response) => {
+    if (message.method === 'tools/list') json(response, { jsonrpc: '2.0', id: message.id, result: { tools: reviewedInventory } });
+    else if (message.method === 'tools/call') json(response, { jsonrpc: '2.0', id: message.id, result: { content: [{ type: 'text', text: 'UNTRUSTED INSTRUCTIONS' }], structuredContent: { noteId: 'note1', text: 'hello', revision: 1 } } });
+    else normal(message, request, response);
+  };
+  expect(await readServerNote(endpoint, 'fixture-bearer', 'note1')).toEqual({ noteId: 'note1', text: 'hello', revision: 1 });
+  expect(messages.at(-1)?.message).toMatchObject({ method: 'tools/call', params: { name: 'notes.get', arguments: { noteId: 'note1' } } });
+  expect(state.pinned).toEqual(Array(5).fill('93.184.216.34'));
+});
+it('never calls a tool after inventory drift or invalid note identity', async () => {
+  await expect(readServerNote(endpoint, 'fixture-bearer', '../note')).rejects.toThrow(); expect(state.requests).toBe(0);
+  await expect(readServerNote(endpoint, 'fixture-bearer', 'note1')).rejects.toThrow();
+  expect(messages.some(({ message }) => message.method === 'tools/call')).toBe(false);
+});
+it.each(['tool-error', 'text-only', 'resource-link', 'server-request', 'disconnected'])('denies unsafe observation response %s without replay', async kind => {
+  behavior = (message, request, response) => {
+    if (message.method === 'tools/list') { json(response, { jsonrpc: '2.0', id: message.id, result: { tools: reviewedInventory } }); return; }
+    if (message.method !== 'tools/call') { normal(message, request, response); return; }
+    if (kind === 'disconnected') { response.destroy(); return; }
+    if (kind === 'server-request') { json(response, { jsonrpc: '2.0', id: 'hostile', method: 'sampling/createMessage' }); return; }
+    const result = kind === 'resource-link' ? { content: [{ type: 'resource_link', uri: 'https://evil.invalid/private', name: 'private' }] }
+      : { content: [{ type: 'text', text: 'PRIVATE ERROR' }], ...(kind === 'tool-error' ? { isError: true, structuredContent: { noteId: 'note1', text: 'private', revision: 1 } } : {}) };
+    json(response, { jsonrpc: '2.0', id: message.id, result });
+  };
+  await expect(readServerNote(endpoint, 'fixture-bearer', 'note1')).rejects.toThrow('8001');
+  expect(messages.filter(({ message }) => message.method === 'tools/call')).toHaveLength(1);
 });

@@ -1367,3 +1367,62 @@ reporting commit; check the PR receipt rather than assuming a green prior head.
 server configuration, native action execution, production installation, phase
 merge, tag, visibility change or publication. Dedicated VM shutdown is recorded
 in the local handoff receipt; original base/installed snapshots preserved.
+
+
+## MCP STOP2 approved — responsibilities4–7 (2026-09-12)
+
+Matt explicitly approved STOP2 under `plans/mcp-surface-contract.md`; no repeated
+review is requested. Generic append retains `awaitDecision:true`,
+`autoApprovable:false`, `implementsRevert:false`, no fabricated simulation and hard
+apply denial. Native execution remains gated by the upstream denied/no-route
+body-logging defect. Append is absent from runtime tools/resource metadata so the
+kernel cannot enter that native approval path; only read-note is active.
+
+Implemented `src/server.ts`: schema-checked private sessions, two awaited read
+checks (before I/O and before release), account/session revocation checks,
+projection/truncation and bounded fresh cache. Transport verifies exact reviewed
+inventory before `notes.get` on the same pinned TLS session and never dispatches
+unreviewed methods. No generic observer oracle, discovery, retry or sharing.
+
+`src/testing/notes-fixture.ts` is excluded from the production entry/bundle and has
+no configuration switch. Its deterministic concatenation/revision semantics use
+normal kit deferred simulation, overlay replay across refresh/restart, operator
+apply/reject and durable uncertain outcomes. `test/fixtures/mcp-notes` plus the
+phase8 Gateway scenario exercise this synthetic provider, not native actions or
+real MCP service effects. Production metadata never enables the fixture.
+
+Host: **513/513 tests**, **103/103 MCP-specific tests**, workspace typecheck/build,
+catalog/secrets/diff checks, frozen-lockfile install and **10 packed-license
+checks** pass. The focused transport tests use real local TLS with test-only
+routing interception; account/session tests are offline fixtures.
+
+Full-mode VM `20260912-113130-phase-8` returned **blocked/exit2** as expected,
+although originally invoked with an environment mode that the runner’s positional
+mode overrides; no passing focused run is claimed from it. Focused
+`20260912-113213-phase-8`: **103/103 package tests +10/10 actual Gateway boundary
+checks**, then **exit1** at synthetic fixture load. Structural diagnostics show
+missing `typebox` in the test fixture’s dependency root. Added a test-only link to
+the MCP package dependencies; no production behavior or policy changed. Failed
+artifacts remain preserved. Fresh focused rerun pending at this documentation
+checkpoint. Original base/installed snapshots and unmodified upstream2026.9.2.
+
+No full native/conformance/beta acceptance, real credentials, configured real
+provider, production change, merge, tag, visibility change or publication.
+
+
+### MCP STOP2 observation/deferred VM checkpoint
+
+Focused clean-snapshot `20260912-113454-phase-8`: **exit0**, **103/103 MCP
+package tests**, **10/10 production-boundary Gateway checks**, and **36/36
+synthetic deferred Gateway checks across8 actual model turns**. Verified kernel
+only grant introduction, paired operator decisions, no effects before approval,
+overlay observation, reject removing only simulated effect, operator apply once,
+duplicate-apply denial, truthful revert denial, cross-agent tool narrowing,
+revocation and observation/decision audits. Fixture provider records exactly one
+synthetic effect; native execution remains false. Post-shutdown secrecy scan
+reports clean; actual file count is in `secrecy.json`. Raw logs remain in the VM.
+
+This is a **synthetic provider**, not a connected real MCP server or full native
+acceptance. `require-approval-roundtrip` is not executed while the upstream logging
+gate remains. The test script records `conformance-scope.json` rather than passing
+native conformance using a fixture. Existing kernel/fs VM regression follows.

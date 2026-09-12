@@ -50,13 +50,13 @@ it("prevents binding rotation from reusing persisted credentials",async()=>{
   const changed=new McpVendor({pluginConfig:{servers:[{...binding,endpoint:"https://example.org/mcp"}]},stateDir:root,logger},inspect);
   await expect(changed.createAccount("operator")).rejects.toThrow();
 });
-it("checks exact server on every introduction; all session/effect paths remain denied",async()=>{
+it("checks exact server on every introduction; observations open and native effects deny",async()=>{
   const {vendor,inspect}=setup();const account=await vendor.createAccount("operator");
   const first=await account.getGatekeeperFor(proposedResourceUrl("demo"));
   expect(first.resourceKey).toBe(proposedResourceUrl("demo"));expect(first.resource).toEqual(boundaryResource("demo"));
   expect(await first.gatekeeper.describe()).toHaveProperty("suggestedName","MCP");
-  expect(await vendor.getTools()).toEqual([]);expect(await first.gatekeeper.getAutoApprovableActions()).toEqual([]);
-  await expect(first.gatekeeper.startSession({authorizeObservation:async()=>{},submitAction:async()=>{}})).rejects.toThrow();
+  expect((await vendor.getTools()).map(tool=>tool.name)).toEqual(["gk_mcp_demo_read_note"]);expect(await first.gatekeeper.getAutoApprovableActions()).toEqual([]);
+  const session = await first.gatekeeper.startSession({authorizeObservation:async()=>{},submitAction:async()=>{}}); await session.close();
   await expect(first.gatekeeper.applyAction(1)).rejects.toThrow();await expect(first.gatekeeper.rejectAction(1)).rejects.toThrow();
   await expect(first.gatekeeper.revertAction!(1)).rejects.toThrow();await expect(account.getVerifier()).rejects.toThrow();
   inspect.mockResolvedValueOnce({tools:[]});await expect(account.getGatekeeperFor(proposedResourceUrl("demo"))).rejects.toThrow();

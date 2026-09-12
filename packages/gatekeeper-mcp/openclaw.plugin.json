@@ -1,9 +1,11 @@
 {
   "id": "gatekeeper-mcp",
   "name": "MCP Gatekeeper",
-  "description": "Control-plane MCP boundary; tool execution disabled pending STOP2.",
+  "description": "Reviewed private MCP observations; native actions remain disabled.",
   "contracts": {
-    "tools": []
+    "tools": [
+      "gk_mcp_demo_read_note"
+    ]
   },
   "configSchema": {
     "type": "object",
