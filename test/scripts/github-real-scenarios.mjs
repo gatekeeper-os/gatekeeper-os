@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { randomUUID, randomBytes } from 'node:crypto';
 import { GitHubObserver } from '../../packages/clawos-conformance/src/github-observer.ts';
+import { oauthStartUrl } from './github-real-evidence.mjs';
 const state = '/home/tester/.openclaw-kernel-test';
 if (process.env.CLAWOS_KERNEL_VM !== '1' || process.env.CLAWOS_TEST_MODE !== 'full' || process.cwd() !== '/home/tester/src' ||
     process.env.OPENCLAW_STATE_DIR !== state || process.env.OPENCLAW_CONFIG_PATH !== state + '/openclaw.json') throw new Error('VM required');
@@ -145,15 +146,16 @@ try {
     check('unconnected-grant-denied', await denied(paired.client, 'os.grants.introduce', { agentId: scenarioAgent, url: issueUrl }));
     check('unpaired-connect-denied', await denied(shared.client, 'os.gatekeepers.connect', { vendor: 'github' }));
     const connected = await rpc('os.gatekeepers.connect', { vendor: 'github', resourceTypes: ['issue'] });
-    check('oauth-start-url-private', /^http:\/\/127\.0\.0\.1:19100\/os\/gatekeeper\/github\/oauth\/start\?state=[A-Za-z0-9_-]{32}$/.test(connected.url));
-    const start = await fetch(connected.url, { redirect: 'manual' });
+    const startUrl = oauthStartUrl(connected.url);
+    check('oauth-start-url-private', typeof startUrl === 'string');
+    const start = await fetch(startUrl, { redirect: 'manual' });
     check('oauth-private-redirect', start.status === 303 && start.headers.get('cache-control') === 'no-store' && start.headers.get('referrer-policy') === 'no-referrer');
     const authorization = new URL(start.headers.get('location'));
     check('oauth-provider-pkce', authorization.origin === 'https://github.com' && authorization.pathname === '/login/oauth/authorize' &&
       authorization.searchParams.get('client_id') === input.oauthClientId && authorization.searchParams.get('code_challenge_method') === 'S256' &&
       /^[A-Za-z0-9_-]{43}$/.test(authorization.searchParams.get('code_challenge')) &&
       authorization.searchParams.get('redirect_uri') === 'http://127.0.0.1:19100/os/gatekeeper/github/oauth/callback');
-    check('oauth-start-replay-denied', (await fetch(connected.url, { redirect: 'manual' })).status === 400);
+    check('oauth-start-replay-denied', (await fetch(startUrl, { redirect: 'manual' })).status === 400);
     markers.oauthState = authorization.searchParams.get('state');
     markers.oauthChallenge = authorization.searchParams.get('code_challenge');
     writeFileSync(privatePath, JSON.stringify(markers), { mode: 0o600 });

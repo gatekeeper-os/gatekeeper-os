@@ -1,4 +1,8 @@
 // Pure evidence predicates; a missing canary or missing sink can never prove secrecy.
+export function oauthStartUrl(path) {
+  if (typeof path !== 'string' || !/^\/os\/gatekeeper\/github\/oauth\/start\?state=[A-Za-z0-9_-]{32}$/.test(path)) return undefined;
+  return new URL(path, 'http://127.0.0.1:19100').href;
+}
 export function absentFromLogs(contents, values) {
   return Array.isArray(contents) && contents.length > 0 && contents.every(value => typeof value === 'string') &&
     Array.isArray(values) && values.length > 0 && values.every(value => typeof value === 'string' && value.length > 0) &&

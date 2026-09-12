@@ -2,8 +2,8 @@
 
 **Not accepted.** `gateway-integration` uses synthetic GitHub and cannot pass
 the full gate. `test/phase-4.sh` now implements the live-provider runner, with protected stdin
-delivery. It exits2 when OAuth input is missing; full OAuth/effect acceptance
-remains unverified.
+delivery. It exits2 when OAuth input is missing. Real OAuth/effect checks passed
+in run `20260912-035736-phase-4`; full acceptance still fails upstream log secrecy.
 
 ## Required test setup
 
@@ -117,7 +117,8 @@ keyring into this pipe, not written to the repository or command line.
 `os.gatekeepers.account({vendor:"github"})` exposes validated account metadata
 only for the gateway-authenticated device operator; it cannot select another
 operator or create an account. Full acceptance binds its numeric accountId after
-actual web OAuth. The app client ID and masked private secret entry are pending.
+actual web OAuth. The app client ID and masked private secret entry were supplied; actual web OAuth
+and authenticated numeric identity binding passed in run `20260912-035736-phase-4`.
 The authorized account alone cannot create an OAuth App through gh/API.
 
 Missing-input VM `20260912-011344` correctly returned exit2, full acceptancefalse.
@@ -126,3 +127,27 @@ resolved release in an isolated guest directory without changing the pin.
 Run `20260912-010401` on2026.9.4 passed103/106 checks: native-denial,
 missing-route and aggregate body secrecy still fail. No supported remedy is
 available/verified; the upstream report remains unsent.
+
+
+## Live OAuth and GitHub effects verified — 2026-09-11
+Issuer-fix full VM run `20260912-035736-phase-4` on unmodified pinned
+OpenClaw 2026.9.2 completed real GitHub OAuth/PKCE, bound account56606128
+(mmango7474), and rejected callback replay. All deferred simulate/readback,
+operator-only apply, duplicate-apply rejection, reject, recorded-comment revert,
+grant revocation, native allow/deny/no-route, unauthorized decision and replay
+checks passed against actual GitHub. Two test-owned comments were reverted;
+independent host GitHub GETs confirm issue1 has zero comments remaining.
+
+Saved report: **94/98 checks**,9 model turns, exit1. The four false checks are
+native-denial-log-secrecy, approval-route-failure-log-secrecy and their two
+aggregate gates (secret-scan-clean/full-required-evidence-present). Post-shutdown
+scan covered5 logs and1 audit: credentials and kernel-owned provider-failure
+body checks pass; native denied/no-route bodies still leak in upstream logs.
+The deliberate provider failure has real HTTP200 GraphQL-error provenance.
+This is live OAuth/effect proof, **not full Phase4 acceptance**; the final two
+conformance suites were not reached because the log-secrecy gate failed.
+No upstream patch, connected snapshot, merge/tag, later-phase acceptance or beta.
+OAuth App setup is no longer the blocker; a supported logging fix remains.
+The existing private upstream report is still unsent, pending explicit permission.
+
+Final host verification:594/594 Vitest +4/4 runner checks, catalog/secrets/diff checks pass. VM confirmed shut off; localhost19100 tunnel closed and transient host app-secret file removed. Original base/installed snapshots retained; no connected snapshot.

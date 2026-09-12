@@ -862,6 +862,9 @@ Blueprints re-enable capabilities deliberately: a "coder" blueprint sets `agents
 
 OAuth client secrets and API keys enter via OpenClaw SecretRefs (`{source: "env"|"file"|"exec"}`, **VERIFIED**) referenced from `plugins.entries.gatekeeper-*.config`, never as literals in fragments. Per-operator tokens obtained by OAuth are stored in `os/gatekeepers/<vendor>/accounts/<operatorId>.json`, encrypted with a cell key at `os/cell.key` (mode `600`, generated at install; AES-256-GCM via `node:crypto`). The kernel never reads token files — only the owning gatekeeper does, through the kit. OAuth redirect URIs are `${gateway.publicOrigin}/os/gatekeeper/<vendor>/oauth/callback`; state parameters embed a nonce bound to the operator and expire in 10 minutes (two-stage nonce from cloudflare-os `SKELETON.md`). Because the baseline binds to loopback, OAuth callbacks need either `openclaw gateway` exposed via Tailscale (`gateway.bind: "tailnet"`, upstream-supported) or the operator completing the flow on the host's browser; `clawos gatekeeper connect` explains which applies.
 
+Callback interoperability (2026-09-11 live GitHub finding): the kernel accepts optional RFC 9207 `iss` only on callbacks, exactly matching the trusted adapter's `oauthIssuer` declaration (GitHub: `https://github.com/login/oauth`). Unknown/duplicate parameters remain rejected; an absent issuer preserves existing providers, while an undeclared or mismatched issuer is rejected before token exchange. The callback issuer never selects a network destination. State consumption, operator/vendor binding and PKCE are unchanged.
+
+
 ### 7.5 Supply chain
 
 **VERIFIED S-1 m (2026-09-07):** configure `security.installPolicy.exec` with

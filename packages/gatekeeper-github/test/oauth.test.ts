@@ -46,6 +46,7 @@ afterEach(() => vi.unstubAllEnvs());
 describe('GitHub supported web OAuth with kernel nonce and encrypted tokens', () => {
   it('preserves exact state, callback and S256 PKCE and stores only encrypted credentials', async () => {
     const f = setup(), c = await f.connect();
+    expect(f.vendor.oauthIssuer).toBe('https://github.com/login/oauth');
     expect(c.url.origin).toBe('https://github.com'); expect(c.url.searchParams.get('state')).toBe(c.state);
     expect(c.url.searchParams.get('code_challenge_method')).toBe('S256');
     expect(c.url.searchParams.get('redirect_uri')).toBe('http://127.0.0.1:19100/os/gatekeeper/github/oauth/callback');
@@ -95,6 +96,21 @@ describe('GitHub supported web OAuth with kernel nonce and encrypted tokens', ()
     const f = setup(); f.state.scope = 'user'; await expect(f.complete(await f.connect())).rejects.toThrow('GitHub connection failed.');
     expect(await f.vendor.getAccount('operator')).toBeNull();
     f.state.failToken = true; await expect(f.complete(await f.connect())).rejects.toThrow('GitHub connection failed.');
+    expect(f.logger.warn.mock.calls).toEqual([
+      ['GitHub account connection failed (23).'], ['GitHub account connection failed (21).'],
+    ]);
+  });
+  it('maps provider errors to fixed numeric diagnostics without retaining callback payloads', async () => {
+    const f = setup();
+    for (const [error, code] of [['bad_verification_code', 32], [fakeSecret, 35]] as const) {
+      const vendor = new GitHubVendor(f.ctx, async () => new Response(JSON.stringify({ error, error_description: fakeToken })));
+      const state = 'x'.repeat(32);
+      await vendor.connectAccount('operator', { state, callbackPath: '/os/gatekeeper/github/oauth/callback' });
+      await expect(vendor.completeConnection('operator', { state, code: 'private-callback-marker' })).rejects.toThrow('GitHub connection failed.');
+      expect(f.logger.warn).toHaveBeenLastCalledWith(`GitHub account connection failed (${code}).`);
+      expect(await vendor.getAccount('operator')).toBeNull();
+    }
+    expect(JSON.stringify(f.logger.warn.mock.calls)).not.toMatch(/offline-|private-callback|bad_verification/);
   });
   it('coalesces refresh and revalidates numeric identity', async () => {
     const f = setup(); f.state.expiring = true; await f.complete(await f.connect());

@@ -1605,3 +1605,38 @@ blocked/fullPhaseAcceptancefalse. Prior012352 did not reach tests: ACPI shutdown
 was ignored; guest agent disconnected. Guest systemd poweroff via the existing
 tester administration path shut it down gracefully (no forced power-off), then
 normal fresh-snapshot test succeeded in demonstrating the missing-input gate.
+
+## OAuth setup continuation — 2026-09-11
+Public client ID received and secret entered via a masked operator terminal into private host tmpfs. Full run `20260912-025503-phase-4` stopped at `oauth-start-url-private` before external OAuth: the kernel deliberately returns a relative local route, whereas the new runner incorrectly required an absolute URL. Fixed the harness to validate the exact relative GitHub start route/32-character nonce and resolve only against fixed loopback19100; hostile origins, extra parameters and path aliases are rejected by the regression. This does not change the production OAuth implementation or establish credential validity. Clean rerun required.
+
+OAuth run `20260912-033256-phase-4`: fresh PKCE preflight passed, but Matt's browser callback returned generic400 before connection completed. No account/effect acceptance. Stopped waiting scenario explicitly (exit143), allowed runner cleanup/collection; no in-flight files edited. Controlled invalid-code exchange returned GitHub200/bad_verification_code, which does not prove the real exchange succeeds. Existing logs contain no stage evidence. Added fixed numeric-only router/vendor diagnostics and secrecy regressions to distinguish nonce, token exchange, identity and storage failures on the next fresh flow; no provider bodies/errors, credentials, callback URLs or operator IDs logged. Targeted36OAuth tests +4evidence tests and both package typechecks passed before clean rerun. Cause remains unconfirmed.
+
+
+## Callback issuer rejection — 2026-09-11
+Browser callback structure now confirms GitHub supplies RFC 9207 `iss`; the router's closed query allowlist rejected it at numeric stage1 before token exchange. Previous masked capture was a different address and did not support a root cause. Added optional trusted adapter `oauthIssuer`, exact issuer matching, and positive/negative/replay regressions. No callback values retained; the shared attempt is retired and a fresh VM flow is required. Verification pending; no OAuth/beta success claimed.
+
+Issuer fix verification: full workspace typecheck exit0,44/44 OAuth tests and4/4 evidence tests pass; diff check clean. Fresh full VM run reset/sync and all12 pre-authorization checks pass; waiting for browser callback. Temporary nova callback forward19100 readinessHTTP200. Fresh link delivered only to operator terminal. No live token-exchange success yet.
+
+
+## Live OAuth and GitHub effects verified — 2026-09-11
+Issuer-fix full VM run `20260912-035736-phase-4` on unmodified pinned
+OpenClaw 2026.9.2 completed real GitHub OAuth/PKCE, bound account56606128
+(mmango7474), and rejected callback replay. All deferred simulate/readback,
+operator-only apply, duplicate-apply rejection, reject, recorded-comment revert,
+grant revocation, native allow/deny/no-route, unauthorized decision and replay
+checks passed against actual GitHub. Two test-owned comments were reverted;
+independent host GitHub GETs confirm issue1 has zero comments remaining.
+
+Saved report: **94/98 checks**,9 model turns, exit1. The four false checks are
+native-denial-log-secrecy, approval-route-failure-log-secrecy and their two
+aggregate gates (secret-scan-clean/full-required-evidence-present). Post-shutdown
+scan covered5 logs and1 audit: credentials and kernel-owned provider-failure
+body checks pass; native denied/no-route bodies still leak in upstream logs.
+The deliberate provider failure has real HTTP200 GraphQL-error provenance.
+This is live OAuth/effect proof, **not full Phase4 acceptance**; the final two
+conformance suites were not reached because the log-secrecy gate failed.
+No upstream patch, connected snapshot, merge/tag, later-phase acceptance or beta.
+OAuth App setup is no longer the blocker; a supported logging fix remains.
+The existing private upstream report is still unsent, pending explicit permission.
+
+Final host verification:594/594 Vitest +4/4 runner checks, catalog/secrets/diff checks pass. VM confirmed shut off; localhost19100 tunnel closed and transient host app-secret file removed. Original base/installed snapshots retained; no connected snapshot.

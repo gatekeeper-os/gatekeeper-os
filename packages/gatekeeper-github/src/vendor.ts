@@ -31,6 +31,7 @@ interface Pending {
 export class GitHubVendor implements GatekeeperVendor {
     vendor = 'github' as const;
     apiVersion = 1 as const;
+    readonly oauthIssuer = 'https://github.com/login/oauth';
     private readonly store: TokenStore;
     private readonly pending = new Map<string, Pending>();
     private readonly accounts = new Map<string, GitHubAccount>();
@@ -126,27 +127,42 @@ export class GitHubVendor implements GatekeeperVendor {
             !opts.code || opts.code.length > 1024 || /[\x00-\x20\x7f]/u.test(opts.code) ||
             (opts.resourceTypes && JSON.stringify(opts.resourceTypes) !== JSON.stringify(pending.resourceTypes)))
             throw new Error('Invalid GitHub callback.');
+        let stage = 20;
         try {
             const response = await this.transport('https://github.com/login/oauth/access_token', { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(30000),
                 headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: new URLSearchParams({ client_id: this.clientId, client_secret: this.secret(), code: opts.code, redirect_uri: pending.redirect, code_verifier: pending.verifier }).toString() });
+            stage = 21;
             if (!response.ok) {
                 await response.body?.cancel();
                 throw new Error();
             }
+            stage = 22;
             const data = object(JSON.parse(await boundedBody(response, 16384)));
+            if (data.error) {
+                // Fixed codes only: never interpolate provider errors, codes, tokens or headers.
+                stage = data.error === 'incorrect_client_credentials' ? 31 : data.error === 'bad_verification_code' ? 32 :
+                    data.error === 'redirect_uri_mismatch' ? 33 : data.error === 'incorrect_code_verifier' ? 34 : 35;
+                throw new Error();
+            }
+            stage = 23;
             if (data.error || typeof data.access_token !== 'string' || !data.access_token || data.access_token.length > 4096 || String(data.token_type).toLowerCase() !== 'bearer' || !String(data.scope).split(/[ ,]+/u).includes('repo'))
                 throw new Error();
+            stage = 24;
             const token = data.access_token, expiration = this.expiration(data);
+            stage = 25;
             const identity = object(await new GitHubApi(() => token, this.transport).request('/user'));
+            stage = 26;
             const id = identifier(identity.id), login = text(identity.login, 100);
             if (!login || (pending.previousId !== undefined && id !== pending.previousId) || pending.generation !== this.generations.get(operator))
                 throw new Error();
+            stage = 27;
             this.store.put(operator, { version: 1, token, id, login, resourceTypes: pending.resourceTypes, ...expiration } satisfies Credential);
             this.accounts.get(operator)?.deactivate();
             this.accounts.delete(operator);
         }
         catch {
+            try { this.ctx.logger.warn(`GitHub account connection failed (${stage}).`); } catch { /* Preserve sanitized failure. */ }
             throw new Error('GitHub connection failed.');
         }
     }

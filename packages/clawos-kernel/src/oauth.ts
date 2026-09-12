@@ -14,7 +14,8 @@ const denied = () => new Error("Account connection unavailable.");
  * Vendor adapters own configured provider origins, PKCE/account checks, token exchange and encrypted storage. */
 export class OAuthRouter {
   private readonly flows = new Map<string, Flow>();
-  constructor(private readonly registry: Pick<Registry, "connection" | "entries">, private readonly now: () => number = Date.now) {}
+  constructor(private readonly registry: Pick<Registry, "connection" | "entries">, private readonly now: () => number = Date.now,
+    private readonly reportFailure: (stage: number) => void = () => {}) {}
 
   /** Issue a private local browser URL; callers must supply operator identity from authenticated RPC, not request data. */
   async connect(vendorName: string, operatorId: string, resourceTypes?: string[]): Promise<{ url: string }> {
@@ -40,6 +41,7 @@ export class OAuthRouter {
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     const finish = (status: number, body: string) => { res.statusCode = status; res.end(body); return true; };
     if (req.method !== "GET") { res.setHeader("Allow", "GET"); return finish(405, "Method not allowed."); }
+    let failureStage = 1;
     try {
       const raw = req.url ?? "";
       if (raw.length > 8192) throw denied();
@@ -47,10 +49,11 @@ export class OAuthRouter {
       const match = /^\/os\/gatekeeper\/([a-z][a-z0-9_]{0,63})\/oauth\/(start|callback)(?:\?([^#]*))?$/.exec(raw);
       if (!match) return finish(404, "Not found.");
       const vendorName = match[1]!, stage = match[2]!, query = new URLSearchParams(match[3] ?? "");
-      const allowed = stage === "start" ? ["state"] : ["state", "code", "error"];
+      const allowed = stage === "start" ? ["state"] : ["state", "code", "error", "iss"];
       for (const key of query.keys()) if (!allowed.includes(key) || query.getAll(key).length !== 1) throw denied();
       const state = query.get("state") ?? "";
       if (!noncePattern.test(state)) throw denied();
+      failureStage = 2;
       const flow = this.flow(vendorName);
       if (stage === "start") {
         const advanced = flow.nonces.advanceBound(state);
@@ -72,15 +75,25 @@ export class OAuthRouter {
           return finish(303, "Continue account connection in your browser.");
         } catch { flow.nonces.consume(advanced.nonce); throw denied(); }
       }
+      failureStage = 3;
       const bound = flow.nonces.consume(state); // Consume before any exchange; failures are not replayable.
       if (!bound || !flow.vendor.completeConnection) throw denied();
+      failureStage = 4;
+      // RFC 9207: compare against the trusted adapter, never fetch or normalize a callback-supplied issuer.
+      if (query.has("iss") && (!flow.vendor.oauthIssuer || query.get("iss") !== flow.vendor.oauthIssuer)) throw denied();
       const code = query.get("code");
       if (query.has("error") || !code || code.length > 4096 || /[\u0000-\u0020\u007f]/u.test(code)) throw denied();
       const binding = JSON.parse(bound) as Binding;
+      failureStage = 5;
       await flow.vendor.completeConnection(binding.operatorId, { code, state, ...(binding.resourceTypes ? { resourceTypes: binding.resourceTypes } : {}) });
+      failureStage = 6;
       if (!await flow.vendor.getAccount(binding.operatorId)) throw denied();
       return finish(200, "Account connected. You may close this window.");
-    } catch { return finish(400, "Account connection unavailable. Start a new connection from your operator client."); }
+    } catch {
+      // No URL, operator identity, provider error or callback payload reaches diagnostics.
+      try { this.reportFailure(failureStage); } catch { /* Logging must not change denial. */ }
+      return finish(400, "Account connection unavailable. Start a new connection from your operator client.");
+    }
   }
 
   /** Revoke every outstanding connection on kernel shutdown. */

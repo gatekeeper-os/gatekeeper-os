@@ -184,6 +184,8 @@ export interface GatekeeperVendor {
   vendor: string;
   /** Version of the OS gatekeeper contract. */
   apiVersion: 1;
+  /** Trusted authorization-server issuer for optional RFC 9207 callback `iss`; exact match, never a request-derived destination. */
+  readonly oauthIssuer?: string;
   /** Describe this object without returning credentials. */
   describe(): Promise<{ title: string; description: string; icon?: string; autoProvisionsAccount?: boolean }>;
   /** Start OAuth (or equivalent). The returned URL must embed a cryptographic nonce. */
