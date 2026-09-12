@@ -1553,9 +1553,9 @@ Matt withdrew the earlier `gatekeepers/mcp/` instruction: MCP belongs in core at
 `@clawkeepers` (organization exists; Matt owns it). Community Tier 0 is docs and
 an inert, locally typechecked template; registry builds wait for kit/shared publication.
 
-The exact `plans/addendum-community-repo-and-release.md` text has not been supplied
-in this conversation and is absent from local checkouts and the main GitHub tree
-(404 verified). §8 incorporates the explicit two-repo/reference-driver decisions.
-Phase 9's ten ordered deliverables and exact first release set are deliberately
-not reconstructed from guesses. This plan PR remains draft pending Matt's addendum.
-No visibility change, package publish, tag, or upstream post is authorized here.
+The exact addendum arrived on disk during execution and is now included in this
+same plan-maintenance PR. §8 includes Tier 0/Tier 1 and the reference-driver rule;
+Phase 9 now has all ten ordered deliverables verbatim. First release is
+`0.1.0-beta.1` for shared, gatekeeper-kit, kernel, gatekeeper-fs, and cli only.
+GitHub/MCP wait for acceptance. The earlier temporary missing-input note is
+superseded. No visibility change, package publish, phase tag, or upstream post.
