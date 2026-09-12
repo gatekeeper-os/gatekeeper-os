@@ -1358,3 +1358,10 @@ command tests and corrected kernel typecheck passed after it. Complete workspace
 build/typechecks/catalog/secrets and10 package-license checks passed. Hosted checks
 for final correction pending. Artifacts contain structural receipts only. Full
 acceptance remains false; fixture provider/channel do not prove real transports.
+
+Final full-mode probe `20260912-074825-phase-5` returned **blocked/exit2**, explicitly
+requiring accepted GitHub/log secrecy and a configured real operator channel.
+Implementation committed/pushed as `178b9e1` + `864df55`, draft PR12. The final
+correction's hosted CI is running. VM `clawos-test` verified **shut off**; original
+base/installed snapshots retain2026-09-07 creation dates. VM ownership released
+for Phase6. No personal credentials, production changes, phase acceptance or merge.
