@@ -11,7 +11,11 @@ for (const role of ['assistant', 'coder', 'ops', 'researcher']) {
   const state = `/home/tester/.openclaw-blueprint-audit-${role}`, configPath = join(state, 'openclaw.json');
   mkdirSync(state, { recursive: true, mode: 0o700 });
   const config = structuredClone(original);
-  config.agents.entries = { [id]: { ...entry, default: true } };
+  // The applied multi-agent cell uses explicit ownership. Project the blueprint
+  // onto main, retaining Doctor's explicit heartbeat/system/Talk targets. A legacy
+  // default:true marker is invalid with explicit ownership.
+  config.agents.entries = { main: { ...entry } };
+  delete config.agents.entries.main.default;
   writeFileSync(configPath, JSON.stringify(config), { mode: 0o600 });
   const run = spawnSync('openclaw', ['security', 'audit', '--deep', '--json'], {
     env: { ...process.env, OPENCLAW_STATE_DIR: state, OPENCLAW_CONFIG_PATH: configPath },
@@ -23,7 +27,7 @@ for (const role of ['assistant', 'coder', 'ops', 'researcher']) {
     severity: ['critical', 'warn', 'info'].includes(row.severity) ? row.severity : 'unknown',
   })) : [];
   const clean = run.status === 0 && report?.summary?.critical === 0 && report?.summary?.warn === 0;
-  results.push({ role, clean, exitCode: run.status, findings, configuration: 'one applied blueprint projected per isolated audit config', deepGateway: 'shared disposable Gateway' });
+  results.push({ role, clean, exitCode: run.status, parsedReport: Boolean(report), findings, configuration: 'one applied blueprint projected onto main per isolated audit config', deepGateway: 'shared disposable Gateway' });
 }
 writeFileSync('/home/tester/phase-6-evidence/release-audits.json', JSON.stringify({ results, allClean: results.every(row => row.clean), fullPhaseAcceptance: false }, null, 2) + '\n');
 for (const result of results) console.log(`${result.clean ? 'PASS' : 'FAIL'} deep-audit-${result.role}`);
