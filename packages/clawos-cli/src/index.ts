@@ -4,6 +4,7 @@
  * Host layer: install, cell, status, doctor, config apply, backup. Kernel administration uses paired operator RPC. Blueprint, update and rollback remain later-phase work.
  */
 
+import { update, rollback } from "./commands/update.js";
 import { kernelCommand } from "./commands/kernel.js";
 import { backup } from "./commands/backup.js";
 import { cell } from "./commands/cell.js";
@@ -20,6 +21,8 @@ type Command = (args: string[], globals: GlobalOptions) => Promise<number>;
 const COMMANDS: Record<string, Command> = {
   ...Object.fromEntries(["grant", "audit", "approvals", "gatekeeper", "kernel"].map(name => [name, (args: string[], globals: GlobalOptions) => kernelCommand(name, args, globals)])),
   install,
+  update,
+  rollback,
   "install-policy": installPolicy,
   status,
   doctor,
@@ -39,6 +42,8 @@ function usage(): number {
       "",
       "  install [--environment-file <absolute-path>]",
       "                             install or converge this cell (idempotent)",
+      "  update --check|--to      guarded update with live conformance",
+      "  rollback --yes          recover a journaled update",
       "  status                     report cell health",
       "  doctor                     host-layer diagnostics with fix hints",
       "  cell create <name> --port  create an additional cell",

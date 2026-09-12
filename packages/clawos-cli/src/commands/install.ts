@@ -105,6 +105,7 @@ export async function install(args: string[], globals: GlobalOptions): Promise<n
 
   // [2/12] upstream at the pin
   const pin = pinnedVersion();
+  if(readLockfile(cell)?.runtimeBinary)throw new StepError("This cell uses a verified update runtime; use update/rollback instead of rerunning the source installer");
   const current = installedVersion(cell);
   if (current !== pin) {
     if (!globals.yes) throw new StepError(`upstream is ${current ?? "absent"}, pin is ${pin}`, "re-run with --yes");
@@ -182,6 +183,14 @@ export async function install(args: string[], globals: GlobalOptions): Promise<n
         record(`environment-${key}`, "changed");
       }
     }
+  }
+
+  // Legacy Phase-1 cells have schema 0 but no kernel database. Commit the initial
+  // kernel schema before its first startup; never permit this during update/rollback.
+  const initialSchemaPin = readLockfile(cell);
+  if (initialSchemaPin?.kernelSchema === 0) {
+    if (existsSync(join(cell.osDir, "clawos.sqlite")) || existsSync(join(cell.osDir, "update-maintenance.json"))) throw new StepError("Legacy kernel schema requires explicit recovery");
+    writeLockfile(cell, { ...initialSchemaPin, kernelSchema: 1 });
   }
 
   // [9/12] service: upstream installs its own unit; we add a drop-in beside it and enable the unit.

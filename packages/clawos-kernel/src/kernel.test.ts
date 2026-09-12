@@ -21,6 +21,7 @@ vi.mock("./registry.js",()=>({instanceId:()=>"fixture-instance",Registry:class{
   introduce(...args:unknown[]){fixture.introduce(...args);return Promise.resolve({resource:{type:"item",title:"Fixture"},resourceKey:"fixture"});}
   openSession(){return Promise.resolve({session:{call:fixture.call,close:fixture.close},instanceId:"fixture-instance",gatekeeper:{applyAction:fixture.apply,rejectAction:fixture.reject}});}
   toolNames(){return["gk_test_read"];}
+  health(){return [{vendor:"test",healthy:true}];}
 }}));
 
 let kernel:Kernel;let api:Partial<OpenClawPluginApi>;
@@ -125,7 +126,7 @@ describe("kernel channel-policy regression boundaries",()=>{
   });
 });
 
-async function rpc(method:string,params:Record<string,unknown>={}){let output:unknown;let ok=false;const handler=kernel.gatewayMethods().find(([name])=>name===method)?.[1];if(!handler)throw new Error("Missing RPC");await handler({params,client:{connect:{role:"operator",scopes:["operator.admin"],device:{id:"paired-operator"}},isDeviceTokenAuth:true},respond:(success:boolean,value:unknown)=>{ok=success;output=value;}} as Parameters<typeof handler>[0]);return{ok,output};}
+async function rpc(method:string,params:Record<string,unknown>={},scopes:string[]=["operator.admin"]){let output:unknown;let ok=false;const handler=kernel.gatewayMethods().find(([name])=>name===method)?.[1];if(!handler)throw new Error("Missing RPC");await handler({params,client:{connect:{role:"operator",scopes,device:{id:"paired-operator"}},isDeviceTokenAuth:true},respond:(success:boolean,value:unknown)=>{ok=success;output=value;}} as Parameters<typeof handler>[0]);return{ok,output};}
 it("binds action authority at submission and rechecks it on operator apply",async()=>{
   const {handle}=await grant();const resolved=await kernel.resolveGrant(ctx.agentId,ctx.sessionKey,handle);
   await resolved.queue.submitAction(1,{title:"Fixture",description:"",implementsRevert:false});
@@ -153,4 +154,36 @@ it("batches an operator digest once per run, never sends resource descriptions",
   await resolved.queue.submitAction(2,{title:"Private fixture",description:"private body",implementsRevert:false});
   await kernel.onAgentEnd({messages:[],success:true},ctx);await kernel.onAgentEnd({messages:[],success:true},ctx);
   expect(fixture.notify).toHaveBeenCalledExactlyOnceWith({channel:"fixture",target:"operator"},2,0);
+});
+
+describe('update maintenance barrier',()=>{
+  it('tracks admitted runs and removes only the completed run',async()=>{
+    await kernel.onBeforeAgentRun({} as HookEvent<'before_agent_run'>,ctx);
+    await kernel.onBeforeAgentRun({} as HookEvent<'before_agent_run'>,{...ctx,runId:'run-b'});
+    expect(await kernel.status()).toMatchObject({activeRuns:2,activeRunTrackingComplete:true,kernelSchema:1});
+    await kernel.onAgentEnd({} as HookEvent<'agent_end'>,ctx);
+    expect(await kernel.status()).toMatchObject({activeRuns:1});
+  });
+  it('fails draining closed when upstream omits run identity',async()=>{
+    const {runId,...missing}=ctx;
+    await kernel.onBeforeAgentRun({} as HookEvent<'before_agent_run'>,missing);
+    expect(await kernel.status()).toMatchObject({activeRuns:1,activeRunTrackingComplete:false});
+  });
+  it('does not admit or count a maintenance-blocked run',async()=>{
+    api.pluginConfig={maintenance:true};
+    expect(await kernel.onBeforeAgentRun({} as HookEvent<'before_agent_run'>,ctx)).toMatchObject({outcome:'block',reason:'maintenance'});
+    expect(await kernel.status()).toMatchObject({activeRuns:0,maintenance:true});
+  });
+});
+
+it('persists operator maintenance and blocks non-admin changes without granting authority',async()=>{
+  expect((await rpc('os.maintenance.set',{enabled:true})).ok).toBe(true);
+  expect((await rpc('os.grants.introduce',{agentId:'a',url:'https://fixture.invalid/a'})).ok).toBe(false);
+  expect((await rpc('os.status')).ok).toBe(true);
+  expect((await rpc('os.maintenance.set',{enabled:false})).ok).toBe(true);
+});
+
+it('does not let a read-only paired client pause the cell',async()=>{
+  expect((await rpc('os.maintenance.set',{enabled:true},['operator.read'])).ok).toBe(false);
+  expect((await kernel.status()).maintenance).toBe(false);
 });
