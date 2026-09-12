@@ -1544,3 +1544,18 @@ VM cleanup verified: `clawos-test` is **shut off**. The original `base` snapshot
 (2026-09-07 11:38:13 -0700) and `installed` snapshot (2026-09-07 15:49:39 -0700)
 are intact; no new snapshot was created. VM ownership returned to the parent for
 Phase 5. These final documentation/reporting commits change no updater runtime code.
+
+
+## 2026-09-12 — community ownership and release-plan maintenance
+
+Matt withdrew the earlier `gatekeepers/mcp/` instruction: MCP belongs in core at
+`packages/gatekeeper-mcp`, alongside fs, github, and http. The npm scope is
+`@clawkeepers` (organization exists; Matt owns it). Community Tier 0 is docs and
+an inert, locally typechecked template; registry builds wait for kit/shared publication.
+
+The exact `plans/addendum-community-repo-and-release.md` text has not been supplied
+in this conversation and is absent from local checkouts and the main GitHub tree
+(404 verified). §8 incorporates the explicit two-repo/reference-driver decisions.
+Phase 9's ten ordered deliverables and exact first release set are deliberately
+not reconstructed from guesses. This plan PR remains draft pending Matt's addendum.
+No visibility change, package publish, tag, or upstream post is authorized here.

@@ -907,6 +907,28 @@ version, target type and fixture mode were retained. See `plans/spike-S1.md`.
 
 ## 8. Repository layout and tooling
 
+### Two-repository ownership
+
+| Repository | Owns |
+|---|---|
+| `clawkeeper/openclaw-os` (core) | Kernel, shared contracts, gatekeeper kit, CLI, blueprints, conformance, and all four reference drivers: filesystem (`fs`), GitHub (`github`), MCP (`mcp`), HTTP (`http`). |
+| `clawkeeper/gatekeepers` (community) | Community vendor drivers and their contribution template, built against the published core kit/contracts. |
+
+**Reference-driver rule:** `gatekeeper-fs`, `gatekeeper-github`, `gatekeeper-mcp`, and
+`gatekeeper-http` stay in core under `packages/`. This is an ownership rule, not a
+claim that every reference driver is implemented or accepted. In particular,
+`packages/gatekeeper-mcp` is correct; the earlier instruction to create
+`gatekeepers/mcp/` in the community repository is withdrawn.
+
+The npm scope is **`@clawkeepers`**. The organization exists and Matt owns it.
+Community tool-surface PRs are welcome now; community builds start after
+`@clawkeepers/gatekeeper-kit` and `@clawkeepers/shared` are published. A temporary
+local-kit template typecheck is useful pre-publication evidence, not proof of an
+install from npm. The community authoring skill must remain identical to core's
+`.agents/skills/write-gatekeeper` copy.
+
+The core workspace remains:
+
 ```
 openclaw-os/
 ├── AGENTS.md                      # agent operating rules: kernel bar, invariants, review order
