@@ -90,8 +90,10 @@ try {
         execFileSync('tar', ['-xf', archive, '-C', extracted], { stdio: 'pipe' });
         const packageRoot = join(extracted, 'package');
         extractedPackages.push({ name: pkg.name, root: packageRoot });
-        if (existsSync(join(packageRoot, 'openclaw.plugin.json'))) validationRoots.push(packageRoot);
-        for (const prefix of pluginPrefixes) validationRoots.push(join(packageRoot, prefix));
+        if (pkg.private === false) {
+          if (existsSync(join(packageRoot, 'openclaw.plugin.json'))) validationRoots.push(packageRoot);
+          for (const prefix of pluginPrefixes) validationRoots.push(join(packageRoot, prefix));
+        }
       }
     }
     count++;

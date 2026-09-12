@@ -26,6 +26,8 @@ interface Runtime{store:Store;registry:Registry;audit:AuditLog;approvals:Approva
 type GatewayMethod=(opts:GatewayMethodOptions)=>Promise<void>|void;
 const slot=createPluginRuntimeStore<Runtime>({pluginId:"clawos-kernel",errorMessage:"Kernel unavailable."});
 const text=(value:string)=>({content:[{type:"text" as const,text:value}],details:{}});
+/** Version of the loaded package, not a copied development pin. */
+const kernelVersion: string = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
 const EmptyParams=Type.Object({},{additionalProperties:false});
 const ApprovalListParams=Type.Object({includeDecided:Type.Optional(Type.Boolean())},{additionalProperties:false});
 const AuditQueryParams=Type.Object({limit:Type.Optional(Type.Integer({minimum:1,maximum:1000}))},{additionalProperties:false});
@@ -98,7 +100,7 @@ export class Kernel{
   async onBeforeInstall(e:HookEvent<"before_install">,_ctx:HookCtx<"before_install">){const verdict=evaluateInstall(this.config().install,e);return verdict.decision==="allow"?undefined:{block:true,blockReason:verdict.reason!};}
   async onAgentEnd(_e:HookEvent<"agent_end">,ctx:HookCtx<"agent_end">){if(ctx.runId)this.activeRuns.delete(ctx.runId);const r=slot.tryGetRuntime();if(!r)return;await r.actions.drain(this.maintenance()?[]:this.config().autoApprove??[]);const notify=this.config().notify,actions=r.store.countPending(),requests=r.store.countPendingRequests();if(!notify||!ctx.runId||!(actions+requests)||!r.store.claimNotification(ctx.runId))return;try{await sendOperatorDigest(notify,actions,requests);}catch{r.audit.write({ts:new Date().toISOString(),cell:cell(),kind:"tool",title:"Operator digest delivery unconfirmed",ok:false});}}
   async onSessionEnd(_e:HookEvent<"session_end">,ctx:HookCtx<"session_end">){if(!ctx.sessionKey)return;const r=slot.tryGetRuntime(),sessions=r?.sessions.get(ctx.sessionKey);if(!sessions)return;for(const session of sessions.keys())await session.close().catch(()=>{});r!.sessions.delete(ctx.sessionKey);}
-  async status(){const r=this.runtime();return{cell:cell(),upstreamVersion:runtimeVersion(this.api),kernelVersion:"0.1.0",healthy:true,kernelSchema:1,activeRuns:this.activeRuns.size+this.unknownRuns,activeEffects:r.actions.activeEffects,activeRunTrackingComplete:this.unknownRuns===0,maintenance:this.maintenance()===true,gatekeepers:r.registry.health(),pendingApprovals:r.store.countPending(),pendingRequests:r.store.countPendingRequests()};}
+  async status(){const r=this.runtime();return{cell:cell(),upstreamVersion:runtimeVersion(this.api),kernelVersion,healthy:true,kernelSchema:1,activeRuns:this.activeRuns.size+this.unknownRuns,activeEffects:r.actions.activeEffects,activeRunTrackingComplete:this.unknownRuns===0,maintenance:this.maintenance()===true,gatekeepers:r.registry.health(),pendingApprovals:r.store.countPending(),pendingRequests:r.store.countPendingRequests()};}
 }
 function toolResult(result:ToolResult|DryRunResult){if("content" in result)return{content:result.content,details:result.details??{}};return text(JSON.stringify(result));}
 function checked<T>(schema:TSchema,value:unknown):T{if(!Value.Check(schema,value))throw new Error();return value as T;}
