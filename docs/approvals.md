@@ -11,7 +11,7 @@ claim, authorize or execute an action. Reversion is supported only by drivers th
 implement it. Existing uncertain effects stay nonretryable.
 
 In an authorized **private** operator conversation, `/approvals`, `/approvals
-preview IDs`, `/approve IDs`, `/reject IDs`, and `/grant URL` use claimed upstream
+preview IDs`, `/approvals apply IDs`, `/reject IDs`, and `/grant URL` use claimed upstream
 dispatch before model execution. The operator identity comes from upstream owner
 resolution and the configured operator allowlist, not message text. Shared or
 unauthorized command attempts produce no action and no command reply.

@@ -1109,7 +1109,10 @@ This implements §4.7's original private-only beta boundary, not v1.1 sharing.
 
 **2026-09-12 implementation checkpoint (not acceptance).** The operator CLI now has
 bounded, terminal-escaped tables and explicit `approvals preview IDs|all`; it is a
-line-oriented interface, not a full-screen interactive selector. Chat aliases use
+line-oriented interface, not a full-screen interactive selector. Upstream reserves
+`/approve <native-id> <decision>` before plugin dispatch; deferred actions use
+`/approvals apply IDs`, and the originally planned short `/approve` alias is not
+implemented because it would collide with native approval enforcement. Chat aliases use
 trusted private operator dispatch; shared, non-owner, or forged command contexts
 are silently claimed without model fallthrough. Manual decisions immediately resume
 the ordered drainer. The existing timer and per-run digest mechanism are exercised

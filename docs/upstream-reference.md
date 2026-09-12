@@ -545,3 +545,10 @@ Public plugin channel contract verified in pinned2026.9.2 exported declaration t
 channel initially omitted target resolution; actual `openclaw message send`
 rejected its fixed operator target. The corrected fixture accepts only `operator`.
 No production transport or private upstream import.
+
+### Reserved native approval command (Phase5,2026-09-12)
+Pinned2026.9.2 handles `/approve <id> <decision>` in its built-in command handler
+before agent `reply_dispatch`. A real synthetic channel turn to `/approve 6`
+returns native usage and leaves the deferred action pending. Keep this command
+reserved; use `/approvals apply IDs` for the separate deferred queue. No native
+approval hook or upstream command is overridden.

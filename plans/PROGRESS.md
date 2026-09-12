@@ -1302,7 +1302,7 @@ requirements remain unchanged. This branch is independent from `origin/main`
 `f4f66c7`, not merged with the unaccepted Phase4 or Phase7 branches.
 
 Implemented bounded terminal-escaped approval tables, explicit operator previews,
-strict `/approve`, `/reject`, `/grant` aliases, silent unauthorized dispatch, and
+strict `/approvals apply`, `/reject`, `/grant` aliases, silent unauthorized dispatch, and
 immediate ordered auto-drain after manual decisions. Existing timer and once/run
 notification claims are tested through real Gateway/model/SDK/message CLI flows
 with a synthetic driver/channel. This is not a full-screen interactive TUI.
@@ -1336,3 +1336,25 @@ contract name are not real-provider or filesystem acceptance. No merge/tag/relea
   the same inbound MessageSid for subsequent commands, causing duplicate-message
   handling to suppress the next decision. Fixture now gives each inbound message
   a unique serial; no command authorization or acceptance assertion weakened.
+
+- `20260912-074253-phase-5`: unique MessageSid fixed delivery, but `/approve`
+  returned native-command usage and did not decide the deferred action. Upstream
+  built-in handler reserves this command before agent reply dispatch. Removed the
+  dead/colliding alias; the test now requires native usage/no deferred effect then
+  exercises `/approvals apply`. Plan corrected, native approval enforcement intact.
+
+### Phase5 verified runtime checkpoint
+
+`CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=<phase0>/scripts/vm/.state scripts/vm/test.sh phase-5 installed approvals-live`
+finished **exit0**, `vm-artifacts/20260912-074628-phase-5/`, upstream2026.9.2:
+**49/49 structural checks**, six real Gateway/model turns. Timer-only effect applied
+in **10,812ms**. Both eligibility negatives, ordered stop/resume, bounded packed-CLI
+table/preview/revert, two-actions/one-run digest, private/outsider/group/forged command
+handling, deferred apply/reject, native `/approve` preservation, explicit grant and
+read-only decision denial passed. No pending synthetic actions remained.
+
+Host:431 tests passed before the reserved-command correction; all41 affected kernel/
+command tests and corrected kernel typecheck passed after it. Complete workspace
+build/typechecks/catalog/secrets and10 package-license checks passed. Hosted checks
+for final correction pending. Artifacts contain structural receipts only. Full
+acceptance remains false; fixture provider/channel do not prove real transports.

@@ -115,8 +115,11 @@ try {
  }
  current={id:'approve-command',names:[],calls:0};
  const approve=await paired.client.request('vm.channel.dispatch',{scenario:'command-owner',command:'/approve '+commandAction.id},{timeoutMs:120000});
- check('approve-command-claimed',current.names.length===0&&approve.delivered===1);current=undefined;
- check('approve-command-effect',(await actions()).find(x=>x.id===commandAction.id).status==='applied');
+ check('native-approve-preserved',current.names.length===0&&approve.nativeApprovalUsage===true);
+ check('native-approve-no-deferred-effect',(await actions()).find(x=>x.id===commandAction.id).status==='pending');
+ const appliedCommand=await paired.client.request('vm.channel.dispatch',{scenario:'command-owner',command:'/approvals apply '+commandAction.id},{timeoutMs:120000});
+ check('apply-command-claimed',current.names.length===0&&appliedCommand.delivered===1);current=undefined;
+ check('apply-command-effect',(await actions()).find(x=>x.id===commandAction.id).status==='applied');
  const reverted=cli(['approvals','revert',String(commandAction.id),'--cell','kernel-test','--json']);
  check('cli-revert',reverted.ok&&(await actions()).find(x=>x.id===commandAction.id).status==='reverted');
  await submit('reject-command-target',{eligible:false});const rejected=(await actions()).at(-1);
