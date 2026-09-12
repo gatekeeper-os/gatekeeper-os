@@ -112,7 +112,7 @@ On a disposable evaluation machine with Node 22.22.3+:
 ```sh
 npm install --global @clawkeepers/cli@beta
 clawos --version
-clawos cell create evaluation --policy messaging
+clawos cell create evaluation --port 19100 --policy messaging
 ```
 
 The CLI install and version command were verified from a clean npm prefix on

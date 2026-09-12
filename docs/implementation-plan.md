@@ -1257,7 +1257,7 @@ Linux with systemd (Ubuntu 22.04+/Debian 12+/Arch/Fedora 39+), macOS 13+, or Win
 
 **Registry update 2026-09-12.** The five first-release packages are published at
 `0.1.0-beta.1`. Install the CLI with `npm install --global @clawkeepers/cli@beta`,
-then use `clawos cell create evaluation --policy messaging` on a disposable host.
+then use `clawos cell create evaluation --port 19100 --policy messaging` on a disposable host.
 `latest` currently resolves to this beta because no stable release exists. A clean
 prefix CLI install/version smoke passed; npm-only cell acceptance remains a separate
 VM gate. The source-install path below remains the Phase 1 evaluation route.

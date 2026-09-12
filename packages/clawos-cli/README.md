@@ -8,7 +8,7 @@ Gateway's paired-device operator RPCs; the CLI never opens the kernel database.
 ```sh
 npm install --global @clawkeepers/cli@beta
 clawos --version
-clawos cell create evaluation --policy messaging
+clawos cell create evaluation --port 19100 --policy messaging
 ```
 
 Use a disposable machine for provisioning. `latest` currently resolves to
