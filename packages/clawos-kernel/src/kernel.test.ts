@@ -247,3 +247,19 @@ it('fuzzes post-preflight parameter rewriting without executing a changed call',
   }
   expect(fixture.call.mock.calls.every(call => call[2].dryRun === true)).toBe(true);
 });
+
+
+it('does not reopen queued resources when persistent maintenance starts during a manual effect', async () => {
+  api.pluginConfig = { ...api.pluginConfig, autoApprove: ['github.issue.comment'] };
+  const { handle } = await grant();
+  const resource = await kernel.resolveGrant(ctx.agentId, ctx.sessionKey, handle);
+  const description = { title: 'Fixture', description: '', implementsRevert: false,
+    autoApprovable: true, actionKind: { tag: 'github.issue.comment', label: 'Comment' } };
+  await resource.queue.submitAction(1, description); await resource.queue.submitAction(2, description);
+  const resolve = vi.spyOn(kernel, 'resolveGrant');
+  fixture.apply.mockImplementationOnce(async () => { expect((await rpc('os.maintenance.set', { enabled: true })).ok).toBe(true); });
+  expect((await rpc('os.approvals.apply', { ids: [1] })).ok).toBe(true);
+  expect(resolve).toHaveBeenCalledTimes(1);
+  expect(fixture.apply).toHaveBeenCalledExactlyOnceWith(1);
+  expect((await rpc('os.approvals.list')).output).toMatchObject({ actions: [{ id: 2, status: 'pending' }] });
+});
