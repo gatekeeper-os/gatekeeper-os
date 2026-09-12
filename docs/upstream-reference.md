@@ -294,6 +294,25 @@ It validates discovery/config-schema presence and rejects error diagnostics; it
 does **not** claim plugin execution or runtime conformance. The executable
 entrypoints are built and checked to remain inside their package roots.
 
+**Reverified 2026-09-12, release preparation:** the requested packed-output
+`plugins validate --root <extracted-package> --entry ./dist/index.js --json`
+fails with the same missing-authoring-metadata diagnostic on the ordinary kernel
+entry. Sources: pinned `docs/cli/plugins.md` (Build and validate) and the actual
+PR #16 CI run `34692506245`. This is a blocking gate, not an accepted replacement
+by manifest inspection. The checker resolves internal dependencies from extracted
+tarballs and runs the pin with both state/config under a fresh temporary directory;
+neither production state tree is used.
+
+**VERIFIED 2026-09-12, npm release workflow:** npm trusted publishing uses GitHub
+Actions OIDC with `id-token: write`, a supported npm CLI (the workflow installs
+npm 11), and per-package trusted-publisher configuration. Source:
+<https://docs.npmjs.com/trusted-publishers/>. npm provenance generation requires
+public source and a public package; source:
+<https://docs.npmjs.com/generating-provenance-statements/>. A private core repo
+therefore does not satisfy the prepared provenance workflow; its public-source
+guard deliberately fails. This observation authorizes neither visibility changes
+nor an npm login. The first manual publish remains Matt's addendum step 5.
+
 ## Completed continuation retest (2026-09-07)
 
 `CLAWOS_VM_DRIVER=libvirt scripts/vm/test.sh phase-0`, fresh snapshot `base`,

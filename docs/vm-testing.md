@@ -350,3 +350,30 @@ systemd activation, verified archive restoration and an interrupted transaction.
 step-five runtime probe is explicitly substituted by the test harness and cannot pass
 production full-conformance validation. Both evidence files and command output distinguish
 this checkpoint from full Phase 7 acceptance; the `full` mode currently returns blocked.
+
+## Phase 9 prepublish checkpoint
+
+```sh
+CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=<original-phase0>/scripts/vm/.state \
+  scripts/vm/test.sh phase-9 installed prepublish
+```
+
+This resets the original installed snapshot, rebuilds and packs the current CLI,
+runs the focused blueprint/sandbox checkpoint, then invokes
+`openclaw security audit --deep --json` for all four blueprint configurations.
+Each applied blueprint is projected onto `main` in its own private audit config,
+preserving explicit agent ownership and heartbeat/system/Talk targets. The deep
+probe uses the shared disposable Gateway; it is not four separately booted full
+blueprint deployments. Findings are retained as IDs/severity only. A failed command,
+unparseable report, warning or critical finding fails the gate. Raw audit output,
+credentials and configs are not collected.
+
+Phase 3/5/6/7 packed-CLI checkpoints now install with the isolated prefix
+`/home/tester/phase-checkpoint-cli`; its bin directory is prepended for the test.
+This prevents the new npm scope from colliding with the original snapshot's CLI
+without overwriting or uninstalling it. Actual tarball names come from pnpm pack,
+not the old npm scope. No snapshot is modified or replaced.
+
+This command never publishes, logs into npm, tags, or claims the later npm-only
+Phase 9 acceptance. The release's kernel changes also require the independent
+`phase-3 installed kernel-live` checkpoint. Preserve failed runs as failed evidence.

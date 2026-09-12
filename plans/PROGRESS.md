@@ -1544,3 +1544,88 @@ VM cleanup verified: `clawos-test` is **shut off**. The original `base` snapshot
 (2026-09-07 11:38:13 -0700) and `installed` snapshot (2026-09-07 15:49:39 -0700)
 are intact; no new snapshot was created. VM ownership returned to the parent for
 Phase 5. These final documentation/reporting commits change no updater runtime code.
+
+### 2026-09-12 — integration and first-release preparation; publication blocked
+
+PRs [#11](https://github.com/clawkeeper/openclaw-os/pull/11),
+[#12](https://github.com/clawkeeper/openclaw-os/pull/12), and
+[#13](https://github.com/clawkeeper/openclaw-os/pull/13) are merged, with their
+overlapping kernel changes resolved together. Integrated head `c691bf2` passed
+481 host tests and VM `20260912-112504-phase-3`: **exit 0, 98 structural + 38
+conformance checks**. Required URL PR [#9](https://github.com/clawkeeper/openclaw-os/pull/9)
+is also merged; main is `6b1996d`.
+
+The exact disk addendum is incorporated in the single
+[plan PR #15](https://github.com/clawkeeper/openclaw-os/pull/15), head `66b59db`,
+ready with green CI. **The earlier `gatekeepers/mcp/` instruction is withdrawn;
+`packages/gatekeeper-mcp` in core is correct.** All four reference drivers remain
+in core. Community Tier 0 is [gatekeepers PR #6](https://github.com/clawkeeper/gatekeepers/pull/6),
+head `6d2d2d5`: real inert template files typecheck/build/import against the local
+kit, five wanted issues carry the publication note, and the authoring skill is
+byte-identical to core. Its CI diff is blocked on private cross-repository read
+access, not a local byte mismatch. No access credential or visibility change was
+made. The org-profile scope correction is [.github PR #1](https://github.com/clawkeeper/.github/pull/1).
+
+Release preparation is [draft PR #16](https://github.com/clawkeeper/openclaw-os/pull/16).
+The scope-only rename is `c2b9de4`. Five packages are prepared at `0.1.0-beta.1`:
+shared, gatekeeper-kit, kernel, gatekeeper-fs and cli. Everything else, including
+the spike, is private. ESLint 9 works; CI requires the fail-closed secrets job
+before build/test. Merge protection itself could not be configured under the
+current private-repository entitlement (403). The guarded release script and
+OIDC/provenance workflow are written but have not tagged or published anything.
+
+Hardening found and fixed the persisted-pause check in post-decision draining
+(`f0cec34`), with a reproducer and 256 parameter-rewrite/replay fuzz cases. The
+final runtime passed **483 tests in hosted CI** (`bc33baa`, run `34692506245`),
+then CI failed the new packed-entry gate. Final local build/types/lint/catalog/
+secrets, utility controls and **10 packed-license checks** pass. The actual
+`npm_config_git_checks=false pnpm -r publish --dry-run` exited 0 and selected
+exactly the five beta packages; no registry writes or npm login. The one-command
+override only allows the preparation git branch during dry-run.
+
+Blueprint VM `20260912-120458-phase-9` on runtime `b91ab92`: **48 structural
+checks + four synthetic-model turns passed; overall exit 1** because every deep
+audit returned warnings. All four returned parseable JSON/exit 0, not clean
+security verdicts. Findings: missing trusted proxies and failed deep Gateway
+probe on all roles, sandbox-host-with-sandbox-off on assistant/ops, full exec
+trust on coder. Coder's real Docker network/read-only/socket boundaries passed.
+The isolated audit states did not establish a successful deep Gateway probe;
+no claim of deep acceptance. Proxy/exec policy was not relaxed to erase warnings.
+The final kernel and audit-script SHA-256 values independently matched the guest.
+
+Retained failed precursor runs: `20260912-114956-phase-9` (renamed CLI collision
+with original snapshot package, fixed by isolated test prefix); and
+`20260912-115446-phase-9` (invalid audit projection, fixed by preserving explicit
+ownership and main-target references). Running scripts were never edited.
+
+**Publication is blocked.** Pinned `plugins validate --entry` rejects ordinary
+plugin entries without tool/feature authoring metadata. The command actually
+runs on packed artifacts and is not waived. Blueprint audit findings also remain
+open; private source blocks the later provenance workflow. No publish-ready
+`v0.1.0-beta.1` commit exists and no `phase-9` tag was made. Exact conditional
+handoff commands and threat-review scope are in
+[RELEASE-PREPARATION-2026-09-12.md](RELEASE-PREPARATION-2026-09-12.md).
+
+MCP [PR #14](https://github.com/clawkeeper/openclaw-os/pull/14) remains unmerged
+at `8e51394`, final CI green: 105 MCP tests, 10 production-boundary + 36 synthetic
+deferred Gateway checks, eight model turns, four clean structural secrecy scans.
+Its separate kernel regression passed 98 structural + 38 conformance checks.
+Generic actions retain `awaitDecision:true` / `implementsRevert:false`; native
+execution/full acceptance remain gated by upstream logging. No upstream post or
+production change was made.
+
+Final release-runtime checkpoint `20260912-121809-phase-3` on `b91ab92`:
+**exit 0; 120 kernel tests + 163 CLI tests, 98 structural checks and all 38
+selected live conformance checks passed** on unmodified OpenClaw 2026.9.2.
+Guest kernel/harness SHA-256 matched the host source. The preceding attempt
+`20260912-121504-phase-3` stopped during graceful reset, before any test ran;
+it is **NOT RUN**, not a test failure or acceptance result. Guest systemd
+poweroff succeeded and the retry used the unchanged original installed snapshot.
+No forced power-off was used.
+
+Final independent cleanup: `virsh domstate clawos-test` reports **shut off**;
+only original `base` (2026-09-07 11:38:13 -0700) and `installed`
+(2026-09-07 15:49:39 -0700) snapshots exist. No connected or replacement snapshot.
+Durable host/VM receipts are in the kit's `release-prep-20260912/` directory;
+VM artifacts remain local and uncommitted. This final reporting change contains
+no runtime modification, tag, merge or publish.
