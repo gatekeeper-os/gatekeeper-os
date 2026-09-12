@@ -1,5 +1,5 @@
 /** Approved resource metadata; matching is only a candidate, never authorization. */
-import type { SupportedResource } from "@clawos/shared";
+import type { SupportedResource } from "@clawkeepers/shared";
 
 /** A directory at or below an explicit operator root; empty roots allow nothing. */
 export const fsResources: SupportedResource[] = [{

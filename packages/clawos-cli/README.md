@@ -1,4 +1,4 @@
-# @clawos/cli — `clawos`
+# @clawkeepers/cli — `clawos`
 
 Host orchestration uses upstream CLI/config APIs. Capability operations use the live
 Gateway's paired-device operator RPCs; the CLI never opens the kernel database.

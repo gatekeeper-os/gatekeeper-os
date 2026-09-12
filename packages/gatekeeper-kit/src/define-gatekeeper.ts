@@ -1,6 +1,6 @@
 import { realpathSync } from "node:fs";
 import { Value } from "typebox/value";
-import { GatekeeperToolDefSchema, SupportedResourceSchema, type ActionDescription, type GatekeeperToolDef, type GatekeeperVendor, type SupportedResource } from "@clawos/shared";
+import { GatekeeperToolDefSchema, SupportedResourceSchema, type ActionDescription, type GatekeeperToolDef, type GatekeeperVendor, type SupportedResource } from "@clawkeepers/shared";
 import { definePluginEntry, type OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
 import { createPluginRuntimeStore } from "openclaw/plugin-sdk/runtime-store";
 

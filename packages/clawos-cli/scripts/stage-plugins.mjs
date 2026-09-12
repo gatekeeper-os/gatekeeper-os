@@ -19,7 +19,7 @@ for (const [dir, id] of [['clawos-kernel', 'clawos-kernel'], ['gatekeeper-fs', '
     target:'node22',
     splitting:false,
     sourcemap:false,
-    noExternal:[/@clawos\//, /^typebox/],
+    noExternal:[/@clawkeepers\//, /^typebox/],
     external:['openclaw', 'openclaw/*'],
     clean:true,
     silent:true,
@@ -57,7 +57,7 @@ await build({
   outDir:metadata,
   format:['esm'],
   splitting:false,
-  noExternal:[/@clawos\//,/^typebox/],
+  noExternal:[/@clawkeepers\//,/^typebox/],
   silent:true,
 });
 
@@ -77,7 +77,7 @@ await build({
   outExtension:()=>({js:'.mjs'}),
   target:'node22',
   splitting:false,
-  noExternal:[/@clawos\//,/^typebox/],
+  noExternal:[/@clawkeepers\//,/^typebox/],
   silent:true,
 });
 copyFileSync(join(root, 'packages/gatekeeper-fs/node_modules/typebox/license'), join(destination, 'THIRD-PARTY-NOTICES'));

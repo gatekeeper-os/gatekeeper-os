@@ -288,7 +288,7 @@ Ubuntu 24.04, OpenClaw 2026.9.2. Host: 88 unit tests pass; `check:catalog`, `che
    closed only in the observable direction, backed by upstream's own snapshot guard.
    Proven in the VM, not just asserted: an external `openclaw config set gateway.bind lan` makes
    `clawos config apply` exit 1 naming `gateway.bind`, write nothing, and recover under `--force`.
-2. **§10.2's `curl … | bash` does not exist.** The repository is private and no `@clawos/*` package
+2. **§10.2's `curl … | bash` does not exist.** The repository is private and no `@clawkeepers/*` package
    is published, so there is no registry path either. The installer now detects the
    piped-without-a-checkout case and reports what is missing; the plan no longer advertises it.
 3. **§10.3 step 6 (plugins) is deferred, not done.** `clawos install` reports `deferred` for the
@@ -519,8 +519,8 @@ were not modified. To inspect this checkpoint: `cat plans/PROGRESS.md` from the 
   bounded nonrecursive listing, external-edit refusal and owner-only audience requirements.
   These runtime requirements are proposed, not implemented or tested by schema checks.
 - Checks passed: `pnpm install --frozen-lockfile --offline --ignore-scripts` (488 cached
-  packages, no downloads); `pnpm --filter @clawos/gatekeeper-fs... build`;
-  `pnpm --filter @clawos/gatekeeper-fs typecheck`; `pnpm check:catalog`;
+  packages, no downloads); `pnpm --filter @clawkeepers/gatekeeper-fs... build`;
+  `pnpm --filter @clawkeepers/gatekeeper-fs typecheck`; `pnpm check:catalog`;
   `pnpm check:secrets`; `git diff --check`. A TypeBox metadata smoke check validated all
   three definitions, representative inputs/outputs, resource mapping, malformed-handle
   refusal, caller identity-field rejection and description rules.
@@ -1044,7 +1044,7 @@ Runtime plugin staging now requires reviewed MIT metadata and copies mandatory
 LICENSE/NOTICE files without silently accepting their absence. Both bundled
 plugins and the standalone install-policy payload retain the TypeBox notice.
 
-Checks: `pnpm --filter @clawos/cli... build`,
+Checks: `pnpm --filter @clawkeepers/cli... build`,
 `node scripts/check-package-licenses.mjs --pack` (10/10 actual tarballs, including
 nested runtime artifacts), catalog, secret scan and diff whitespace checks pass.
 This is distribution preparation, not beta or full Phase 3 acceptance. No release

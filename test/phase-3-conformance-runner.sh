@@ -10,9 +10,9 @@ printf '%s\n' '{"mode":"conformance-runner","fullPhaseAcceptance":false,"liveKer
 node --version > "$evidence/node-version"
 node -e 'console.log(JSON.parse(require("fs").readFileSync("clawos.lock.json", "utf8")).upstream.version)' > "$evidence/upstream-pin"
 pnpm install --frozen-lockfile --ignore-scripts
-pnpm --filter @clawos/conformance... build
-pnpm --filter @clawos/conformance typecheck
-pnpm --filter @clawos/conformance exec vitest run --reporter=default --reporter=json --outputFile="$evidence/runner-tests.json"
+pnpm --filter @clawkeepers/conformance... build
+pnpm --filter @clawkeepers/conformance typecheck
+pnpm --filter @clawkeepers/conformance exec vitest run --reporter=default --reporter=json --outputFile="$evidence/runner-tests.json"
 # Real live suites must fail without evidence from a current isolated run.
 # Skipped-suite refusal remains covered by the runner unit fixtures.
 unset CLAWOS_KERNEL_VM CLAWOS_SCENARIO_RUN CLAWOS_SCENARIO_REPORT

@@ -2,7 +2,7 @@
 import { mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname } from "node:path";
-import type { ActionDescription, Grant, GrantStatus, PendingAction } from "@clawos/shared";
+import type { ActionDescription, Grant, GrantStatus, PendingAction } from "@clawkeepers/shared";
 
 type Database = import("node:sqlite").DatabaseSync;
 const { DatabaseSync } = createRequire(import.meta.url)("node:sqlite") as typeof import("node:sqlite");

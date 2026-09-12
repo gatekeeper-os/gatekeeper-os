@@ -1,5 +1,5 @@
 {
-  "name": "@clawos/shared",
+  "name": "@clawkeepers/shared",
   "version": "0.1.0",
   "description": "Contracts for OpenClaw OS: gatekeeper interfaces, approval queue, grants.",
   "type": "module",

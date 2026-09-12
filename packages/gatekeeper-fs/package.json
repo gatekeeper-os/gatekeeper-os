@@ -1,5 +1,5 @@
 {
-  "name": "@clawos/gatekeeper-fs",
+  "name": "@clawkeepers/gatekeeper-fs",
   "version": "0.1.0",
   "description": "Scoped host-directory gatekeeper for OpenClaw OS.",
   "type": "module",
@@ -20,8 +20,8 @@
     "validate": "node ../../scripts/check-plugin-metadata.mjs ."
   },
   "dependencies": {
-    "@clawos/shared": "workspace:*",
-    "@clawos/gatekeeper-kit": "workspace:*",
+    "@clawkeepers/shared": "workspace:*",
+    "@clawkeepers/gatekeeper-kit": "workspace:*",
     "typebox": "catalog:"
   },
   "peerDependencies": {

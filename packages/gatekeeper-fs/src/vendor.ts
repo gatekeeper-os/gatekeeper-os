@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { join } from "node:path";
-import type { GatekeeperAccount, GatekeeperVendor } from "@clawos/shared";
-import type { VendorContext } from "@clawos/gatekeeper-kit";
+import type { GatekeeperAccount, GatekeeperVendor } from "@clawkeepers/shared";
+import type { VendorContext } from "@clawkeepers/gatekeeper-kit";
 import { FsAccount } from "./account.js";
 import { configuredRoots, DirectoryBinding, denied } from "./paths.js";
 import { fsResources } from "./resources.js";

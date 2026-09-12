@@ -15,7 +15,7 @@ trap cleanup EXIT
 printf '%s\n' '{"mode":"plugin-install-hook","fullPhaseAcceptance":false,"primaryRulesIndependentlyControlled":true,"realFilesystemWritesEnabled":false}' > "$EV/scope.json"
 node --version > "$EV/node-version"
 pnpm install --frozen-lockfile --ignore-scripts > /home/tester/install-hook-deps.log 2>&1
-pnpm --filter @clawos/kernel... --filter @clawos/gatekeeper-fs... --filter @clawos/conformance... build > /home/tester/install-hook-build.log 2>&1
+pnpm --filter @clawkeepers/kernel... --filter @clawkeepers/gatekeeper-fs... --filter @clawkeepers/conformance... build > /home/tester/install-hook-build.log 2>&1
 pnpm exec tsup test/scripts/install-hook-primary.ts --format esm --target node22 --out-dir /home/tester/install-hook-build > /home/tester/install-hook-primary-build.log 2>&1
 pnpm exec tsx test/scripts/kernel-config.mjs
 node test/scripts/install-hook-config.mjs

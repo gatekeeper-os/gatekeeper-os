@@ -1,4 +1,4 @@
-# @clawos/gatekeeper-kit
+# @clawkeepers/gatekeeper-kit
 
 Security-critical helpers for gatekeeper authors. Start with [SKELETON.md](SKELETON.md).
 

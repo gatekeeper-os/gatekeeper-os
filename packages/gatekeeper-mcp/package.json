@@ -1,5 +1,5 @@
 {
-  "name": "@clawos/gatekeeper-mcp",
+  "name": "@clawkeepers/gatekeeper-mcp",
   "version": "0.0.0",
   "description": "Wraps any MCP server behind the gatekeeper model (v1.1, plan §9 Phase 8).",
   "type": "module",
@@ -7,7 +7,7 @@
   "types": "./dist/index.d.ts",
   "files": ["LICENSE", "NOTICE", "dist", "openclaw.plugin.json", "config.schema.json", "hooks", "README.md"],
   "scripts": { "build": "tsup src/index.ts --format esm --dts --clean", "test": "vitest run", "typecheck": "tsc -p tsconfig.json --noEmit", "validate": "node ../../scripts/check-plugin-metadata.mjs ." },
-  "dependencies": { "@clawos/shared": "workspace:*", "@clawos/gatekeeper-kit": "workspace:*" },
+  "dependencies": { "@clawkeepers/shared": "workspace:*", "@clawkeepers/gatekeeper-kit": "workspace:*" },
   "peerDependencies": { "openclaw": "catalog:" },
   "devDependencies": { "tsup": "catalog:", "typescript": "catalog:", "vitest": "catalog:", "@types/node": "catalog:" },
   "openclaw": {

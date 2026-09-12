@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { SupportedResource } from "@clawos/shared";
+import type { SupportedResource } from "@clawkeepers/shared";
 import { KitGatekeeper } from "./kit-gatekeeper.js";
 import { OverlayStore } from "./overlay-store.js";
 import { TestApprovalQueue } from "./testing.js";

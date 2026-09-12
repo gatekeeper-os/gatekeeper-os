@@ -1,4 +1,4 @@
-import { defineGatekeeper } from "@clawos/gatekeeper-kit";
+import { defineGatekeeper } from "@clawkeepers/gatekeeper-kit";
 import { FsVendor } from "./vendor.js";
 import { fsResources } from "./resources.js";
 import { describeWrite } from "./directory.js";

@@ -1,7 +1,7 @@
 /** Kernel-owned queues enforce observer policy before any driver returns data. */
-import { ActionDescriptionSchema } from "@clawos/shared";
+import { ActionDescriptionSchema } from "@clawkeepers/shared";
 import { Value } from "typebox/value";
-import type { ApprovalQueue, Grant } from "@clawos/shared";
+import type { ApprovalQueue, Grant } from "@clawkeepers/shared";
 import type { AuditLog } from "./audit.js";
 import type { Store } from "./store.js";
 import { instanceId } from "./registry.js";

@@ -9,9 +9,9 @@ trap 'rc=$?; printf "%s\n" "$rc" > "$evidence/enforcement-exit-code"' EXIT
 node --version > "$evidence/node-version"
 node -e 'console.log(JSON.parse(require("fs").readFileSync("clawos.lock.json", "utf8")).upstream.version)' > "$evidence/upstream-pin"
 pnpm install --frozen-lockfile --ignore-scripts
-pnpm --filter @clawos/gatekeeper-fs... build
-pnpm --filter @clawos/gatekeeper-fs typecheck
-pnpm --filter @clawos/gatekeeper-fs exec vitest run --reporter=default --reporter=json --outputFile="$evidence/fs-tests.json"
+pnpm --filter @clawkeepers/gatekeeper-fs... build
+pnpm --filter @clawkeepers/gatekeeper-fs typecheck
+pnpm --filter @clawkeepers/gatekeeper-fs exec vitest run --reporter=default --reporter=json --outputFile="$evidence/fs-tests.json"
 pnpm check:catalog
 pnpm check:secrets
 echo 'fs-enforcement: PASS (focused only; all host-file application stays disabled)'

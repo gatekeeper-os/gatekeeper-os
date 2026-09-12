@@ -290,7 +290,7 @@ Live attachment uses the public `openclaw/plugin-sdk/runtime-store` object-form 
 Installing a gatekeeper is therefore purely:
 
 ```bash
-openclaw plugins install npm:@clawos/gatekeeper-github@1.2.0 --pin --accept-capabilities
+openclaw plugins install npm:@clawkeepers/gatekeeper-github@1.2.0 --pin --accept-capabilities
 openclaw config patch --stdin <<'EOF'
 { plugins: { entries: { "gatekeeper-github": { enabled: true, config: { clientId: "${GITHUB_OAUTH_CLIENT_ID}" } } } } }
 EOF
@@ -558,7 +558,7 @@ mode, prompt-phase, and shared-state corrections verified by S-1.
 ```jsonc
 // packages/clawos-kernel/package.json (relevant part)
 {
-  "name": "@clawos/kernel",
+  "name": "@clawkeepers/kernel",
   "version": "1.0.0",
   "type": "module",
   "peerDependencies": { "openclaw": ">=2026.9.2 <2026.11.0" },
@@ -1176,7 +1176,7 @@ normal default outside this explicitly authorized work.
 
 ### Phase 9 — Hardening and release (1 week)
 
-Threat-model review against `REVIEW.md`; fuzz `before_tool_call` param rewriting; secret-leak grep gates in CI; `openclaw security audit` clean on every blueprint; docs complete; `clawos --version`, changelog, signed npm releases under `@clawos/*`; publish the gatekeeper catalog to ClawHub (`clawhub package publish`, **VERIFIED** command) so `openclaw plugins install clawhub:@clawos/gatekeeper-github` works.
+Threat-model review against `REVIEW.md`; fuzz `before_tool_call` param rewriting; secret-leak grep gates in CI; `openclaw security audit` clean on every blueprint; docs complete; `clawos --version`, changelog, signed npm releases under `@clawkeepers/*`; publish the gatekeeper catalog to ClawHub (`clawhub package publish`, **VERIFIED** command) so `openclaw plugins install clawhub:@clawkeepers/gatekeeper-github` works.
 
 ---
 
@@ -1190,7 +1190,7 @@ Linux with systemd (Ubuntu 22.04+/Debian 12+/Arch/Fedora 39+), macOS 13+, or Win
 
 **CORRECTION 2026-09-07 (Phase 1).** The `curl … | bash` one-liner below is **not available yet** and the
 installer no longer pretends otherwise. It needs either a public repository or an authenticated fetch, and
-`ControlStackAI/openclaw-os` is private; no `@clawos/*` package is published to npm, so there is no registry
+`ControlStackAI/openclaw-os` is private; no `@clawkeepers/*` package is published to npm, so there is no registry
 fallback either. `installer/install.sh` detects the piped-without-a-checkout case and reports exactly what is
 missing instead of failing obscurely on a 404. The source install below is the supported path today, and it is
 what Phase 1 acceptance exercises. The one-liner becomes real when the packages are published.
@@ -1221,7 +1221,7 @@ clawos blueprint apply assistant --agent home
 openclaw agents list --bindings
 
 # 5. Add a gatekeeper and connect your account
-clawos gatekeeper add github     # installs @clawos/gatekeeper-github, prompts for OAuth app id/secret
+clawos gatekeeper add github     # installs @clawkeepers/gatekeeper-github, prompts for OAuth app id/secret
 clawos gatekeeper connect github # prints the OAuth URL; complete it in a browser
 
 # 6. Introduce a resource and use it
@@ -1273,7 +1273,7 @@ Each cell has its own state dir, token, key, plugins config, gatekeeper accounts
 
 ### 10.6 Docker
 
-For container hosts, `deploy/docker/` provides a `Dockerfile` that layers on `ghcr.io/openclaw/openclaw:<pin>` (**VERIFIED** image) — adding only the `@clawos/*` packages and the `clawos` binary, never modifying upstream layers — and a `compose.yml` that mounts `/home/node/.openclaw` (state, including `os/`) and runs `clawos install --in-container` at first start. Sandboxing inside Docker requires the Docker socket or `OPENCLAW_SANDBOX=1` per upstream's `scripts/docker/setup.sh` conventions; the compose file documents both.
+For container hosts, `deploy/docker/` provides a `Dockerfile` that layers on `ghcr.io/openclaw/openclaw:<pin>` (**VERIFIED** image) — adding only the `@clawkeepers/*` packages and the `clawos` binary, never modifying upstream layers — and a `compose.yml` that mounts `/home/node/.openclaw` (state, including `os/`) and runs `clawos install --in-container` at first start. Sandboxing inside Docker requires the Docker socket or `OPENCLAW_SANDBOX=1` per upstream's `scripts/docker/setup.sh` conventions; the compose file documents both.
 
 ### 10.7 Uninstall
 
@@ -1316,7 +1316,7 @@ For container hosts, `deploy/docker/` provides a `Dockerfile` that layers on `gh
       "clawos-kernel": { enabled: true, config: {
         operators: [],                       // [{channel:"telegram", senderId:"…"}], filled by `clawos operator add`
         autoApprove: [],                     // ["github.issue.comment"]
-        install: { allowSources: ["npm:@clawos/*", "clawhub:@clawos/*"] },
+        install: { allowSources: ["npm:@clawkeepers/*", "clawhub:@clawkeepers/*"] },
         egress: { denyPatterns: ["(?i)api[_-]?key\\s*[:=]", "grant:[a-z0-9]{8}"] },
         audit: { llm: false },
       } },
@@ -1341,7 +1341,7 @@ For container hosts, `deploy/docker/` provides a `Dockerfile` that layers on `gh
 
 ```typescript
 // packages/gatekeeper-github/src/index.ts
-import { defineGatekeeper } from "@clawos/gatekeeper-kit";
+import { defineGatekeeper } from "@clawkeepers/gatekeeper-kit";
 import { Type } from "typebox";
 import { GitHubVendor } from "./vendor.js";
 

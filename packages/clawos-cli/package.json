@@ -1,5 +1,5 @@
 {
-  "name": "@clawos/cli",
+  "name": "@clawkeepers/cli",
   "version": "0.1.0",
   "description": "The clawos binary: install, cells, status, doctor, config apply, backups.",
   "type": "module",
@@ -27,9 +27,9 @@
     "typescript": "catalog:",
     "vitest": "catalog:",
     "@types/node": "catalog:",
-    "@clawos/kernel": "workspace:*",
-    "@clawos/gatekeeper-fs": "workspace:*",
-    "@clawos/shared": "workspace:*"
+    "@clawkeepers/kernel": "workspace:*",
+    "@clawkeepers/gatekeeper-fs": "workspace:*",
+    "@clawkeepers/shared": "workspace:*"
   },
   "license": "MIT",
   "repository": {

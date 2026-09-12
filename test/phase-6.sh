@@ -22,11 +22,11 @@ trap cleanup EXIT
 pnpm install --frozen-lockfile --ignore-scripts > /home/tester/blueprint-deps.log 2>&1
 pnpm build > /home/tester/blueprint-build.log 2>&1
 mkdir -p /home/tester/blueprint-cli-package
-pnpm --filter @clawos/cli pack --pack-destination /home/tester/blueprint-cli-package > /home/tester/blueprint-pack.log 2>&1
+pnpm --filter @clawkeepers/cli pack --pack-destination /home/tester/blueprint-cli-package > /home/tester/blueprint-pack.log 2>&1
 npm install -g /home/tester/blueprint-cli-package/clawos-cli-0.1.0.tgz --ignore-scripts > /home/tester/blueprint-install.log 2>&1
 node --version > "$evidence/node-version"
 openclaw --version > "$evidence/upstream-version"
-pnpm --filter @clawos/cli exec vitest run src/commands/blueprint.test.ts --reporter=default --reporter=json --outputFile="$evidence/blueprint-tests.json"
+pnpm --filter @clawkeepers/cli exec vitest run src/commands/blueprint.test.ts --reporter=default --reporter=json --outputFile="$evidence/blueprint-tests.json"
 pnpm exec tsx test/scripts/blueprint-config.mjs
 openclaw config validate > /home/tester/blueprint-validation.log 2>&1
 # Setup the sandbox image via Docker in the VM only; no engine socket or host mounts enter the agent container.

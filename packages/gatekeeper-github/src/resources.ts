@@ -1,4 +1,4 @@
-import type { SupportedResource } from "@clawos/shared";
+import type { SupportedResource } from "@clawkeepers/shared";
 
 /** URL patterns exactly as cloudflare-os gatekeeper-github (plan §9 Phase 4). */
 export const resources: SupportedResource[] = [

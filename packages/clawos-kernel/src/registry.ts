@@ -1,8 +1,8 @@
 /** Catalog-backed gatekeeper registry with checked live runtime attachment. */
 import { readFileSync, realpathSync } from "node:fs";
 import { Value } from "typebox/value";
-import { GatekeeperToolDefSchema, SupportedResourceSchema, type ApprovalQueue, type Gatekeeper, type GatekeeperSession, type GatekeeperToolDef, type GatekeeperVendor, type Grant, type SupportedResource } from "@clawos/shared";
-import { gatekeeperRuntimeSlot } from "@clawos/gatekeeper-kit";
+import { GatekeeperToolDefSchema, SupportedResourceSchema, type ApprovalQueue, type Gatekeeper, type GatekeeperSession, type GatekeeperToolDef, type GatekeeperVendor, type Grant, type SupportedResource } from "@clawkeepers/shared";
+import { gatekeeperRuntimeSlot } from "@clawkeepers/gatekeeper-kit";
 
 /** Enabled gatekeeper identity and static, schema-checked catalog metadata. */
 export interface CatalogEntry { pluginId:string; vendor:string; apiVersion:1; root:string; tools:GatekeeperToolDef[]; resources:SupportedResource[]; enabled?:boolean; }

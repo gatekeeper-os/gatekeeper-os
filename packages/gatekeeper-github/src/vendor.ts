@@ -1,5 +1,5 @@
-import type { GatekeeperAccount, GatekeeperVendor } from "@clawos/shared";
-import type { VendorContext } from "@clawos/gatekeeper-kit";
+import type { GatekeeperAccount, GatekeeperVendor } from "@clawkeepers/shared";
+import type { VendorContext } from "@clawkeepers/gatekeeper-kit";
 import { resources } from "./resources.js";
 import { tools } from "./tools.js";
 

@@ -1,7 +1,7 @@
 /** Kernel-owned account routing. Only authenticated operator RPC may issue a browser entry nonce. */
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { GatekeeperVendor } from "@clawos/shared";
-import { OAuthNonceMachine } from "@clawos/gatekeeper-kit";
+import type { GatekeeperVendor } from "@clawkeepers/shared";
+import { OAuthNonceMachine } from "@clawkeepers/gatekeeper-kit";
 import type { Registry } from "./registry.js";
 
 type Binding = { operatorId: string; resourceTypes?: string[] };

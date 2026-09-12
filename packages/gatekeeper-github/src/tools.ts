@@ -1,5 +1,5 @@
 import { Type } from "typebox";
-import type { GatekeeperToolDef } from "@clawos/shared";
+import type { GatekeeperToolDef } from "@clawkeepers/shared";
 
 // STOP 1: this surface is presented for operator review before src/{repo,issue,pull}.ts are implemented.
 const G = Type.String();

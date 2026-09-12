@@ -1,6 +1,6 @@
 /** Upstream's primary install boundary. Bounded stdin, static cell binding, no Gateway/plugin recursion. */
 import { readFileSync } from "node:fs";
-import { evaluateInstall, type InstallMaterial, type InstallRules } from "@clawos/shared";
+import { evaluateInstall, type InstallMaterial, type InstallRules } from "@clawkeepers/shared";
 import { resolveCell } from "../util/cell.js";
 import { parseFragment } from "../util/json5.js";
 import type { GlobalOptions } from "../options.js";
