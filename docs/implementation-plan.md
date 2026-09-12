@@ -1141,17 +1141,17 @@ Linux with systemd (Ubuntu 22.04+/Debian 12+/Arch/Fedora 39+), macOS 13+, or Win
 
 **CORRECTION 2026-09-07 (Phase 1).** The `curl … | bash` one-liner below is **not available yet** and the
 installer no longer pretends otherwise. It needs either a public repository or an authenticated fetch, and
-`ControlStackAI/openclaw-os` is private; no `@clawos/*` package is published to npm, so there is no registry
+`clawkeeper/openclaw-os` is private; no `@clawos/*` package is published to npm, so there is no registry
 fallback either. `installer/install.sh` detects the piped-without-a-checkout case and reports exactly what is
 missing instead of failing obscurely on a 404. The source install below is the supported path today, and it is
 what Phase 1 acceptance exercises. The one-liner becomes real when the packages are published.
 
 ```bash
 # 1. Install OpenClaw OS from a clone (the supported path today)
-git clone https://github.com/ControlStackAI/openclaw-os.git && cd openclaw-os && ./installer/install.sh
+git clone https://github.com/clawkeeper/openclaw-os.git && cd openclaw-os && ./installer/install.sh
 
 #    NOT YET AVAILABLE (private repo, nothing published) — see the correction above:
-#    curl -fsSL https://raw.githubusercontent.com/ControlStackAI/openclaw-os/main/installer/install.sh | bash
+#    curl -fsSL https://raw.githubusercontent.com/clawkeeper/openclaw-os/main/installer/install.sh | bash
 
 # The installer runs, in order:
 #   preflight.sh                                   → OS/Node/Docker/port checks
