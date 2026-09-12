@@ -36,8 +36,8 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm exec tsx --test scripts/release.test.ts
-      - run: node --test scripts/check-secrets.test.mjs
-      - name: Validate the actual packed artifacts
+      - run: node --test scripts/check-secrets.test.mjs scripts/packed-load.test.mjs
+      - name: Load the actual packed artifacts in an isolated Gateway
         run: node scripts/check-package-licenses.mjs --pack --validate
       - name: Pack all release packages before publishing any
         run: node scripts/pack-release.mjs

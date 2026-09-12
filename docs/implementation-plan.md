@@ -880,7 +880,26 @@ Derived from the upstream security page's hardened baseline (**VERIFIED**) plus 
 }
 ```
 
-Blueprints re-enable capabilities deliberately: a "coder" blueprint sets `agents.entries.coder.tools.allow: ["group:fs", "exec"]` *together with* `sandbox.mode: "all"` — never one without the other (enforced by `clawos blueprint lint`).
+Blueprints never widen a cell's global policy. The baseline above remains unchanged.
+`clawos cell create <name> --port <n> --policy messaging|runtime` selects a cell
+policy at creation; messaging is the default and keeps today's fragment set.
+A runtime cell additionally copies `05-policy-runtime.json5` and omits
+`20-sandbox.json5`: the one runtime fragment replaces global runtime/fs denials
+with an explicit `tools.allow` for fs, exec, the kernel and session status, keeps
+browser/automation/process/code_execution denied, sets exec host `sandbox` and
+mode `allowlist`, and requires `agents.defaults.sandbox.mode: "all"`. The mode is
+the least non-deny mode supported by sandboxed exec on the pin; no host exec is
+authorized. `clawos config apply` rejects a runtime fragment missing the all-turn
+sandbox, including when a later fragment weakens it.
+
+Blueprint schema `policy` is runtime for coder and messaging for assistant, ops,
+and researcher. Lint requires all-turn sandbox for runtime blueprints. Apply reads
+the cell's config through upstream `config get` (not OS fragments), refuses a
+runtime blueprint above the global ceiling with an exact separate-cell creation
+command, and never patches an existing cell's global baseline. Coder permits fs
+and sandboxed exec; assistant/ops deny both; researcher exposes web tools only.
+HTTP is planned after this beta, not an expected provisioned driver. Upstream
+`agents.defaults.tools` is unsupported (VERIFIED schema probe, upstream reference).
 
 ### 7.3 Sandboxing
 
@@ -1237,7 +1256,7 @@ clawos status
 [2/12] upstream             npm install -g openclaw@<pin> --allow-scripts=openclaw ; openclaw --version == pin
 [3/12] state dir            mkdir -p ~/.openclaw/os/{config.d,audit,gatekeepers,blueprints,backups,logs} (700)
 [4/12] keys                 os/cell.key (600) ; CLAWOS_GATEWAY_TOKEN → ~/.openclaw/.env (600)
-[5/12] config               write minimal openclaw.json if absent (600) ; copy config/config.d/* → os/config.d/
+[5/12] config               write minimal openclaw.json if absent (600) ; copy selected messaging/runtime fragment set → os/config.d/
 [6/12] plugins              Install the CLI's bundled first-party kernel/fs artifacts under
                             <stateDir>/os/plugins/<content-hash>/; generate gatekeepers.json
                             and 15-runtime.json with exact roots, explicit plugin allow/load

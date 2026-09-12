@@ -610,3 +610,30 @@ approval hook or upstream command is overridden.
   `os.status` reports kernel schema, actual SDK version, active runs/effects and tracking completeness.
 - The concrete per-cell runtime drop-in and backup-restore sequence is undergoing disposable VM
   verification; do not read this implementation record as successful Phase 7 acceptance.
+
+
+### VERIFIED 2026-09-12: cell policy schema and exec boundary
+
+Pinned OpenClaw **2026.9.2** `config validate --json` in isolated state/config
+accepts the unchanged top-level tool-policy control and rejects
+`agents.defaults.tools`: `agents.defaults: Unrecognized key: "tools"` (exit 1).
+The paired evidence is `release-gates-20260912/schema-receipt.json` outside the
+repository. No agent-default tool-policy override exists on this pin.
+Global `tools.allow`/`deny` is a ceiling; per-agent policies intersect it and
+cannot restore a global denial (bundled `docs/gateway/sandbox-vs-tool-policy-vs-elevated.md`).
+
+Cell policy profiles therefore select fragments at creation. The runtime profile
+pairs explicit global fs/exec permission with `agents.defaults.sandbox.mode=all`
+in **one** fragment and omits the messaging `20-sandbox` fragment that would
+otherwise replace all with non-main. Blueprint application uses the public
+`config get <root> --json` redacted authored/effective config surface, never local
+fragments as evidence of the cell's active policy.
+
+Pinned `docs/tools/exec.md` defines modes deny/allowlist/ask/auto/full. The installed
+exec implementation rejects explicit deny before sandbox dispatch; host command
+allowlist/approval processing applies to gateway/node dispatch, not sandbox
+execution. Thus runtime profile and coder use the least non-deny mode
+`allowlist`, explicit `host=sandbox`, elevated disabled and all-turn Docker
+sandboxing. This is not a command allowlist **inside** Docker; the container is
+the execution boundary. Actual Docker and fresh tool-surface assertions remain
+required VM evidence, not inferred from schema validation.

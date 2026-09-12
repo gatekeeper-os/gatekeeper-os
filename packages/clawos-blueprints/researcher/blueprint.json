@@ -1,7 +1,7 @@
 {
   "name": "researcher",
   "version": "0.1.0",
-  "description": "Web research agent with fetch/search and the generic HTTP gatekeeper.",
+  "description": "Web-tools-only research agent. gatekeeper-http is planned after this beta.",
   "workspaceFiles": [
     "AGENTS.md",
     "SOUL.md",
@@ -9,20 +9,21 @@
   ],
   "skills": [],
   "toolPolicy": {
-    "profile": "messaging",
+    "profile": "minimal",
     "allow": [
       "web_search",
       "web_fetch"
     ],
     "deny": [
       "group:runtime",
-      "group:fs"
+      "group:fs",
+      "group:automation",
+      "browser"
     ]
   },
   "sandbox": {
-    "mode": "non-main"
+    "mode": "off"
   },
-  "expectedGatekeepers": [
-    "http"
-  ]
+  "expectedGatekeepers": [],
+  "policy": "messaging"
 }

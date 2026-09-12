@@ -1,0 +1,18 @@
+// Opt-in runtime CELL policy. Never copy this fragment without its all-turn sandbox.
+// Runtime cells omit 20-sandbox.json5; messaging cells omit this file.
+{
+  tools: {
+    profile: "full",
+    allow: ["group:fs", "exec", "clawos-kernel", "session_status"],
+    deny: ["group:automation", "browser", "process", "code_execution"],
+    exec: { host: "sandbox", mode: "allowlist" },
+  },
+  agents: {
+    defaults: {
+      sandbox: {
+        mode: "all", scope: "agent", backend: "docker", workspaceAccess: "ro",
+        docker: { network: "none", readOnlyRoot: true, capDrop: ["ALL"] },
+      },
+    },
+  },
+}

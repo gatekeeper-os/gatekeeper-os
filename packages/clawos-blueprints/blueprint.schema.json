@@ -8,7 +8,8 @@
     "toolPolicy",
     "sandbox",
     "skills",
-    "expectedGatekeepers"
+    "expectedGatekeepers",
+    "policy"
   ],
   "additionalProperties": false,
   "properties": {
@@ -114,6 +115,34 @@
     },
     "model": {
       "type": "string"
+    },
+    "policy": {
+      "enum": [
+        "messaging",
+        "runtime"
+      ]
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "policy": {
+            "const": "runtime"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "sandbox": {
+            "properties": {
+              "mode": {
+                "const": "all"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

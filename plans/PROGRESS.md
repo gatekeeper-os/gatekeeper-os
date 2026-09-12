@@ -1629,3 +1629,69 @@ only original `base` (2026-09-07 11:38:13 -0700) and `installed`
 Durable host/VM receipts are in the kit's `release-prep-20260912/` directory;
 VM artifacts remain local and uncommitted. This final reporting change contains
 no runtime modification, tag, merge or publish.
+
+## 2026-09-12 — release-gate correction stopped at upstream policy prerequisite
+
+Matt authorized replacement of authoring-metadata validation with packed loading,
+role-specific baseline policy, exact-code audit exceptions, ordered merges
+(#15 → #16 → #14), community Tier 0 merge, and a **local-only** beta tag. No
+publication, tag push, visibility change, or upstream post is authorized.
+
+Preflight verified the unchanged live open heads: core #15 `66b59db`, #16
+`81b0bd9`, #14 `8e51394`; community gatekeepers #6 exists and remains open at
+`6d2d2d5`. None was merged in this continuation.
+
+**STOP — the explicit step-2 prerequisite fails on pinned OpenClaw 2026.9.2.**
+`docs/upstream-reference.md`'s Phase 6 section and the pinned bundled
+`docs/tools/multi-agent-sandbox-tools.md:195–230` describe intersecting policies:
+agent policy cannot restore global denials. They do not establish an overridable
+`agents.defaults.tools` policy. An actual isolated CLI schema probe confirms the
+proposed key is unsupported:
+
+- Existing top-level `tools.deny` / `tools.exec.mode: deny` control:
+  `node <pinned-openclaw>/openclaw.mjs config validate --json` → exit 0,
+  `valid: true`, no warnings.
+- Same denials and exec mode moved to `agents.defaults.tools`: identical command
+  → exit 1, `valid: false`, issue at `agents.defaults`:
+  `Unrecognized key: "tools"`.
+
+Both invocations explicitly scoped `OPENCLAW_STATE_DIR` and
+`OPENCLAW_CONFIG_PATH` to separate directories outside production/shared runtime
+state, with resolved-path boundary assertions. Receipt and exact synthetic
+configs are in
+`/home/matthew/projects/Personal/openclaw-os-agent-kit/release-gates-20260912/`
+(`schema-receipt.json`, `control/`, `defaults-tools/`). No Gateway was started.
+
+Per Matt's instruction to stop if the override contract does not hold, no baseline
+policy was moved or relaxed and no alternative policy was invented. No runtime
+or CI corrections, VM checkpoints, merges, release-script invocation, tag or
+publish were performed. The packed-authoring gate withdrawal is accepted as a
+decision but its replacement is not yet implemented. Resume requires a supported
+policy design or a separately approved upstream-pin change; do not remove the
+global ceiling to force the requested config to validate.
+
+## Release-gate resume — cell profiles (2026-09-12)
+
+Matt replaced the unsupported agent-default tool override with explicit cell policy
+profiles and authorized ordered green merges #15 → #16 → #14 → gatekeepers #6 →
+.github #1, then a **local-only** v0.1.0-beta.1 tag. No publish, tag push, visibility
+change or upstream post is authorized.
+
+- PR15 green build-test34691503571 merged as2a48d4d. The release-prep PR corrects
+  §7.2 and withdraws authoring-metadata validation in favor of packed install/load.
+- `00-baseline.json5` unchanged. Messaging copies the existing set; runtime adds
+  `05-policy-runtime.json5` and omits `20-sandbox.json5` so non-main cannot overwrite
+  all-turn sandboxing. Runtime global explicit fs/exec allow and sandbox are coupled;
+  config apply rejects a missing/weakened sandbox, even in later local overrides.
+- Both merged policy sets validate on unmodified pinned2026.9.2, exit0, no warnings;
+  isolated receipt `release-gates-20260912/cell-policy/schema-receipt.json`.
+  Blueprint policy preflight uses upstream config get, refuses coder on messaging
+  before any mutation, gives a separate runtime-cell command; no global relaxation.
+- Least non-deny exec mode is allowlist with explicit sandbox host. Pinned runtime
+  host allowlist gate is gateway/node-only; Docker is the sandbox execution boundary.
+  Coder permits fs+exec only, researcher web-only; HTTP planned after beta, not expected.
+- Focused CLI41 tests and full host493 tests pass. Typecheck/build/ESLint pass.
+- VM preflight found missing libvirt snapshot registrations, not missing disk
+  snapshots. Same-user virtqemud process-only soft-memlock0 fallback restored;
+  unchanged saved metadata re-registered. Original base/installed Sep7 dates intact.
+  Fresh Phase9 dual-cell provisioning/audit checkpoint is running; not yet accepted.

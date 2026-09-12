@@ -50,7 +50,7 @@ function usage(): number {
       "  rollback --yes          recover a journaled update",
       "  status                     report cell health",
       "  doctor                     host-layer diagnostics with fix hints",
-      "  cell create <name> --port  create an additional cell",
+      "  cell create <name> --port <n> [--policy messaging|runtime]",
       "  cell list                  list registered cells",
       "  config apply               reconcile os/config.d/*.json5 into openclaw.json",
       "  backup create|restore      archive and roll back a cell",

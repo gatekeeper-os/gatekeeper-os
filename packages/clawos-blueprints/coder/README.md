@@ -7,3 +7,5 @@ Expected gatekeepers: fs, github. Applying this template does not install a driv
 Apply with `clawos blueprint apply coder --agent coder-worker --yes`. Reapply refuses drift instead of overwriting edits. `clawos blueprint diff --agent coder-worker` reports changed paths without exposing contents.
 
 The global tool policy can deny tools this role requests. Blueprint application never loosens that policy; inspect `policyConflicts` and the effective tool surface before routing work.
+
+Cell policy: `runtime`; create a separate cell with `clawos cell create coding --port 18801 --policy runtime` before applying coder. Blueprint application never widens global cell policy.
