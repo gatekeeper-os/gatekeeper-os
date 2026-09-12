@@ -1360,3 +1360,55 @@ A new reset/sync/collect runtime checkpoint is running on frozen source, includi
 the copied-metadata compatibility rejection, successful nine-step update, explicit
 rollback, and killed-activation recovery. Final VM counts/exit and PR/CI links will
 be appended when the run finishes. Full Phase 7 acceptance remains open.
+
+### 2026-09-12 — Phase 7 runtime checkpoint passed; full gate remains blocked
+
+Implementation checkpoint: `db17a1d`, [draft PR #11](https://github.com/clawkeeper/openclaw-os/pull/11).
+No merge, phase tag or acceptance advance.
+
+Exact runtime command (shared state is the original Phase 0 worktree):
+
+```sh
+CLAWOS_VM_DRIVER=libvirt \
+CLAWOS_VM_STATE_DIR=/home/matthew/projects/Personal/openclaw-os-agent-kit/openclaw-os-worktrees/phase-0-bootstrap/scripts/vm/.state \
+  scripts/vm/test.sh phase-7 installed runtime-checkpoint
+```
+
+**`vm-artifacts/20260912-065811-phase-7/`: exit 0, 482 seconds, Node v24.20.0.**
+Nine checkpoint assertions passed. Each of the three actual staged **2026.9.4**
+Gateway/SDK/filesystem probes passed **14 checks** (42 probe checks total). The
+active cell began at the lock's **2026.9.2** pin with a real filesystem grant.
+
+- Installed the current strict kernel and created the disposable filesystem grant.
+- Availability check resolved current latest and all installed plugin ranges.
+- Copied incompatible kernel metadata was rejected at **step 2**, without changing live config.
+- A successful real runtime probe followed by intentional conformance rejection stopped at
+  **step 5**, before maintenance/activation; the production full-conformance validator still
+  rejects this deliberately reduced probe.
+- Real successful transaction recorded **all nine completed steps**, selected 2026.9.4 in
+  systemd, verified authenticated runtime version/schema/grants/audit, and reopened admission.
+- Explicit rollback restored a healthy 2026.9.2 cell with identical grants.
+- SIGKILL during activation recovered via the same rollback implementation. A read-only
+  post-run journal check confirms `state=rolled-back`, `step=7`, completed steps **1–6**,
+  `from=2026.9.2`, `target=2026.9.4`, `kernelSchema=1` (`recovery-journal-proof.json`).
+- Final kernel was healthy, schema 1, maintenance false. No real GitHub credentials, model
+  credentials, outbound provider mutations, or connected credential snapshot were used.
+
+The subsequent default/full-gate run `scripts/vm/test.sh phase-7 installed full`
+correctly returned **exit 2 / blocked** with structural evidence at
+`vm-artifacts/20260912-070750-phase-7/`. Its reporting branch now preserves a blocked
+verdict instead of becoming a secondary collection error. It performed no update.
+
+Host checks: **438/438 tests**, complete build/typecheck/catalog/secrets/diff checks;
+**10/10 packed-license checks**. Lint remains unavailable because the base repository
+has no ESLint v9 config. Hosted candidate checks on `db17a1d` are green:
+[build-test](https://github.com/clawkeeper/openclaw-os/actions/runs/34679634343),
+[compatibility smoke + update-contract regression](https://github.com/clawkeeper/openclaw-os/actions/runs/34679634309).
+The older extended-stable tag remains explicitly unsupported, not a live test pass.
+
+**Not accepted:** full connected-provider/Phase 4-linked conformance (including native
+secrecy), post-activation model-driven observation, scheduler registration/delivery,
+full nightly update matrix, later schema-bump migrations and non-Linux runtime activation.
+The CLI requires a reviewed full adapter and has no smoke-bypass flag. The test-only
+runtime substitution cannot close the release gate. Phase 5 may proceed next under
+Matt's implementation-order instruction; it must preserve these acceptance limits.

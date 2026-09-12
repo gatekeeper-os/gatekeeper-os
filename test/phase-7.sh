@@ -2,7 +2,13 @@
 # Reset-VM runtime checkpoint; no connected credential snapshot and no full-conformance waiver.
 set -euo pipefail
 [ "$HOME" = /home/tester ] && [ "$PWD" = /home/tester/src ] || exit 1
-[ "${CLAWOS_TEST_MODE:-full}" = runtime-checkpoint ] || { echo 'BLOCKED: full Phase 7 requires accepted Phase 4/5/6 live conformance'; exit 2; }
+if [ "${CLAWOS_TEST_MODE:-full}" != runtime-checkpoint ]; then
+  mkdir -p /home/tester/phase-7-evidence
+  printf '%s\n' '{"mode":"full","blocked":true,"fullPhaseAcceptance":false,"reason":"Full Phase 4/5/6 live conformance is not accepted"}' > /home/tester/phase-7-evidence/scope.json
+  printf '2\n' > /home/tester/phase-7-evidence/runtime-exit-code
+  echo 'BLOCKED: full Phase 7 requires accepted Phase 4/5/6 live conformance'
+  exit 2
+fi
 export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
 export CLAWOS_CELL=default OPENCLAW_STATE_DIR=/home/tester/.openclaw OPENCLAW_CONFIG_PATH=/home/tester/.openclaw/openclaw.json OPENCLAW_NO_AUTO_UPDATE=1
 unset OPENCLAW_PROFILE OPENCLAW_GATEWAY_TOKEN
