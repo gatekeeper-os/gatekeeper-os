@@ -22,8 +22,8 @@ trap cleanup EXIT
 pnpm install --frozen-lockfile --ignore-scripts > /home/tester/blueprint-deps.log 2>&1
 pnpm build > /home/tester/blueprint-build.log 2>&1
 mkdir -p /home/tester/blueprint-cli-package
-pnpm --filter @clawkeepers/cli pack --pack-destination /home/tester/blueprint-cli-package > /home/tester/blueprint-pack.log 2>&1
-npm install -g /home/tester/blueprint-cli-package/clawos-cli-0.1.0.tgz --ignore-scripts > /home/tester/blueprint-install.log 2>&1
+cli_archive=$(node scripts/pack-cli.mjs /home/tester/blueprint-cli-package)
+npm install -g "$cli_archive" --ignore-scripts > /home/tester/blueprint-install.log 2>&1
 node --version > "$evidence/node-version"
 openclaw --version > "$evidence/upstream-version"
 pnpm --filter @clawkeepers/cli exec vitest run src/commands/blueprint.test.ts --reporter=default --reporter=json --outputFile="$evidence/blueprint-tests.json"
@@ -41,6 +41,7 @@ until curl -fsS --max-time 2 http://127.0.0.1:19100/readyz >/dev/null 2>&1; do
   sleep 1
 done
 node test/scripts/blueprint-scenarios.mjs
+if [ "${CLAWOS_RELEASE_AUDIT:-0}" = 1 ]; then node test/scripts/release-blueprint-audit.mjs; fi
 pnpm check:catalog
 pnpm check:secrets
 echo 'blueprint-sandbox: PASS (focused checkpoint, not full Phase 6 acceptance)'

@@ -221,3 +221,29 @@ it('does not let a read-only paired client pause the cell',async()=>{
   expect((await rpc('os.maintenance.set',{enabled:true},['operator.read'])).ok).toBe(false);
   expect((await kernel.status()).maintenance).toBe(false);
 });
+
+
+it('fuzzes post-preflight parameter rewriting without executing a changed call', async () => {
+  const { handle } = await grant();
+  const tools: Parameters<OpenClawPluginApi['registerTool']>[0][] = [];
+  kernel.registerGatekeeperTools({ registerTool: tool => { tools.push(tool); } } as OpenClawPluginApi);
+  const tool = tools[0];
+  if (!tool || typeof tool === 'function' || Array.isArray(tool)) throw new Error('Unexpected tool');
+  let seed = 0x9e3779b9;
+  const next = () => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return seed >>> 0; };
+  for (let index = 0; index < 256; index++) {
+    const id = `fuzz-${index}`, value = next();
+    const params: Record<string, unknown> = { grant: handle, item: { value, list: [value, null, 'fixture'] } };
+    expect(await kernel.onBeforeToolCall({ toolName: 'gk_test_read', toolCallId: id, params }, { ...ctx, toolName: 'gk_test_read' })).toEqual({});
+    const changed = structuredClone(params);
+    switch (index % 4) {
+      case 0: changed.grant = 'grant:00000000'; break;
+      case 1: changed.item = { value: next(), list: [] }; break;
+      case 2: changed.endpoint = 'https://unreviewed.invalid'; break;
+      case 3: delete changed.item; break;
+    }
+    await expect(tool.execute(id, changed)).rejects.toThrow('Operation denied');
+    await expect(tool.execute(id, params)).rejects.toThrow('Operation denied');
+  }
+  expect(fixture.call.mock.calls.every(call => call[2].dryRun === true)).toBe(true);
+});

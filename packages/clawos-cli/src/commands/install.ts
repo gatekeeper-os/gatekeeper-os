@@ -42,8 +42,8 @@ export interface InstallResult {
 
 /** Where the installer looks for fragment templates and the drop-in template. */
 function templateRoot(): string {
-  // In the packed tarball, templates sit next to `dist/`. From a source checkout, they are the repo's `config/`.
-  const packaged = join(dirname(new URL(import.meta.url).pathname), "..", "templates");
+  // In the packed tarball, templates sit inside `dist/`. From a source checkout, they are the repo's `config/`.
+  const packaged = join(dirname(new URL(import.meta.url).pathname), "templates");
   if (existsSync(join(packaged, "config.d"))) return packaged;
   const fromSource = process.env.CLAWOS_FROM_SOURCE;
   if (fromSource && existsSync(join(fromSource, "config", "config.d"))) return join(fromSource, "config");

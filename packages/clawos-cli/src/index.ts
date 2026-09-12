@@ -4,6 +4,7 @@
  * Host layer: install, cell, status, doctor, config apply, backup. Kernel administration uses paired operator RPC. Blueprints provision versioned agent workspaces. Update and rollback remain separate-phase work.
  */
 
+import { readFileSync } from "node:fs";
 import { blueprint } from "./commands/blueprint.js";
 import { update, rollback } from "./commands/update.js";
 import { kernelCommand } from "./commands/kernel.js";
@@ -61,6 +62,7 @@ function usage(): number {
 }
 
 export async function main(argv: string[]): Promise<void> {
+  if (argv.length === 1 && argv[0] === "--version") { console.log(JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version); return; }
   let code: number;
   try {
     const { globals, rest } = parseGlobals(argv);

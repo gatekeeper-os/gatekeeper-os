@@ -1,6 +1,6 @@
 {
   "name": "openclaw-os",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "private": true,
   "description": "An operating-system layer over upstream OpenClaw, modeled on Cloudflare OS gatekeepers.",
   "type": "module",

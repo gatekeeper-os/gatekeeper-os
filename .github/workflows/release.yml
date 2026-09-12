@@ -1,0 +1,51 @@
+name: release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+concurrency:
+  group: npm-release
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24', cache: pnpm }
+      - name: Verify tagged public source
+        env:
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
+        run: |
+          test "$REPOSITORY_PRIVATE" = false
+          test "$GITHUB_REPOSITORY" = clawkeeper/openclaw-os
+          version=$(node -p "require('./package.json').version")
+          test "$GITHUB_REF_NAME" = "v$version"
+          test "$(git rev-list -n 1 "$GITHUB_REF_NAME")" = "$(git rev-parse HEAD)"
+          git merge-base --is-ancestor HEAD origin/main
+      - name: Install OIDC-capable npm
+        run: npm install --global npm@11
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm exec tsx --test scripts/release.test.ts
+      - name: Validate the actual packed artifacts
+        run: node scripts/check-package-licenses.mjs --pack --validate
+      - name: Pack all release packages before publishing any
+        run: node scripts/pack-release.mjs
+      - name: Trusted publish with provenance
+        # Configure npm trusted publishers AFTER Matt's first publish. No npm token.
+        run: |
+          version=$(node -p "require('./package.json').version")
+          dist_tag=latest
+          if [[ "$version" == *-* ]]; then dist_tag=beta; fi
+          while IFS= read -r archive; do
+            npm publish "$archive" --access public --tag "$dist_tag" --provenance
+          done < "$RUNNER_TEMP/clawkeeper-release/archives.txt"

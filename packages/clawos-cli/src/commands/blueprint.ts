@@ -79,7 +79,7 @@ export function blueprintDrift(snapshot: Snapshot, liveEntry: Json|undefined): s
   return paths;
 }
 function templateRoot():string {
-  const packaged=join(dirname(fileURLToPath(import.meta.url)),'..','templates');
+  const packaged=join(dirname(fileURLToPath(import.meta.url)),'templates');
   if(existsSync(join(packaged,'blueprints')))return packaged;
   if(process.env.CLAWOS_FROM_SOURCE)return resolve(process.env.CLAWOS_FROM_SOURCE);
   return fail('templates unavailable');

@@ -17,8 +17,8 @@ node --version > "$evidence/node-version"
 pnpm install --frozen-lockfile --ignore-scripts > /home/tester/kernel-deps.log 2>&1
 pnpm --filter @clawkeepers/kernel... --filter @clawkeepers/gatekeeper-fs... --filter @clawkeepers/conformance... --filter @clawkeepers/cli build > /home/tester/kernel-build.log 2>&1
 mkdir -p /home/tester/kernel-cli-package
-pnpm --filter @clawkeepers/cli pack --pack-destination /home/tester/kernel-cli-package > /home/tester/kernel-cli-pack.log 2>&1
-npm install -g /home/tester/kernel-cli-package/clawos-cli-0.1.0.tgz --ignore-scripts > /home/tester/kernel-cli-install.log 2>&1
+cli_archive=$(node scripts/pack-cli.mjs /home/tester/kernel-cli-package)
+npm install -g "$cli_archive" --ignore-scripts > /home/tester/kernel-cli-install.log 2>&1
 pnpm --filter @clawkeepers/kernel typecheck
 pnpm --filter @clawkeepers/kernel exec vitest run --reporter=default --reporter=json --outputFile="$evidence/kernel-tests.json"
 pnpm --filter @clawkeepers/cli exec vitest run --reporter=default --reporter=json --outputFile="$evidence/cli-tests.json"

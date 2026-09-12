@@ -1,15 +1,51 @@
 {
   "name": "@clawkeepers/gatekeeper-kit",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "description": "Builder and security-critical helpers for OpenClaw OS gatekeepers.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["LICENSE", "NOTICE", "dist", "openclaw.plugin.json", "config.schema.json", "hooks", "README.md", "SKELETON.md"],
-  "scripts": { "build": "tsup src/index.ts --format esm --dts --clean", "test": "vitest run", "typecheck": "tsc -p tsconfig.json --noEmit" },
-  "dependencies": { "@clawkeepers/shared": "workspace:*", "typebox": "catalog:" },
-  "devDependencies": { "tsup": "catalog:", "typescript": "catalog:", "vitest": "catalog:", "@types/node": "catalog:" },
-  "peerDependencies": { "openclaw": "catalog:" },
+  "files": [
+    "dist",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@clawkeepers/shared": "workspace:*",
+    "typebox": "catalog:"
+  },
+  "devDependencies": {
+    "tsup": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "@types/node": "catalog:"
+  },
+  "peerDependencies": {
+    "openclaw": "catalog:"
+  },
   "license": "MIT",
-  "repository": {"type": "git", "url": "git+https://github.com/ControlStackAI/openclaw-os.git", "directory": "packages/gatekeeper-kit"}
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clawkeeper/openclaw-os.git",
+    "directory": "packages/gatekeeper-kit"
+  },
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "engines": {
+    "node": ">=22.22.3"
+  }
 }

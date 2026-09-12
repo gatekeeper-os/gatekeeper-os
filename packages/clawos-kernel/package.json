@@ -1,20 +1,68 @@
 {
   "name": "@clawkeepers/kernel",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "description": "OpenClaw OS kernel plugin: capability model, gatekeeper registry, approval queue, audit.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["LICENSE", "NOTICE", "dist", "openclaw.plugin.json", "config.schema.json", "hooks", "README.md"],
-  "scripts": { "build": "tsup src/index.ts --format esm --dts --clean", "test": "vitest run", "typecheck": "tsc -p tsconfig.json --noEmit", "validate": "node ../../scripts/check-plugin-metadata.mjs ." },
-  "dependencies": { "@clawkeepers/shared": "workspace:*", "@clawkeepers/gatekeeper-kit": "workspace:*", "typebox": "catalog:" },
-  "peerDependencies": { "openclaw": "catalog:" },
-  "devDependencies": { "tsup": "catalog:", "typescript": "catalog:", "vitest": "catalog:", "@types/node": "catalog:" },
+  "files": [
+    "dist",
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "openclaw.plugin.json",
+    "config.schema.json"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "validate": "node ../../scripts/check-plugin-metadata.mjs ."
+  },
+  "dependencies": {
+    "@clawkeepers/shared": "workspace:*",
+    "@clawkeepers/gatekeeper-kit": "workspace:*",
+    "typebox": "catalog:"
+  },
+  "peerDependencies": {
+    "openclaw": "catalog:"
+  },
+  "devDependencies": {
+    "tsup": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "@types/node": "catalog:"
+  },
   "openclaw": {
-    "extensions": ["./dist/index.js"],
-    "compat": { "pluginApi": ">=2026.9.2 <2026.11.0", "minGatewayVersion": "2026.9.2" },
-    "build": { "openclawVersion": "2026.9.2", "pluginSdkVersion": "2026.9.2" }
+    "extensions": [
+      "./dist/index.js"
+    ],
+    "compat": {
+      "pluginApi": ">=2026.9.2 <2026.11.0",
+      "minGatewayVersion": "2026.9.2"
+    },
+    "build": {
+      "openclawVersion": "2026.9.2",
+      "pluginSdkVersion": "2026.9.2"
+    }
   },
   "license": "MIT",
-  "repository": {"type": "git", "url": "git+https://github.com/ControlStackAI/openclaw-os.git", "directory": "packages/clawos-kernel"}
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clawkeeper/openclaw-os.git",
+    "directory": "packages/clawos-kernel"
+  },
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "engines": {
+    "node": ">=22.22.3"
+  }
 }

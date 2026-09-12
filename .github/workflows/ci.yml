@@ -25,6 +25,7 @@ jobs:
       - run: pnpm build
       - run: node scripts/check-package-licenses.mjs --pack
       - run: pnpm test
+      - run: pnpm exec tsx --test scripts/release.test.ts
       - name: Install pinned upstream and validate plugin metadata
         env:
           OPENCLAW_STATE_DIR: ${{ runner.temp }}/clawos-pin-check

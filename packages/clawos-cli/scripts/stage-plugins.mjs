@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
-const destination = join(root, 'packages/clawos-cli/templates/plugins');
+const destination = join(root, 'packages/clawos-cli/dist/templates/plugins');
 const typeboxLicense = readFileSync(join(root, 'packages/gatekeeper-fs/node_modules/typebox/license'), 'utf8');
 
 for (const [dir, id] of [['clawos-kernel', 'clawos-kernel'], ['gatekeeper-fs', 'gatekeeper-fs']]) {

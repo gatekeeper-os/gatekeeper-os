@@ -19,7 +19,7 @@ export function kernelRpcForCell(cell: Cell, method: string, params: Record<stri
   const binary = selected?{code:0,stdout:selected}:run('sh', ['-c', 'command -v openclaw']);
   if (binary.code !== 0) throw new StepError('openclaw is not on PATH');
   const base=dirname(fileURLToPath(import.meta.url));
-  const helper=[join(base,'..','bin','gateway-rpc.mjs'),join(base,'..','..','bin','gateway-rpc.mjs')].find(existsSync);
+  const helper=[join(base,'bin','gateway-rpc.mjs'),join(base,'..','bin','gateway-rpc.mjs'),join(base,'..','..','bin','gateway-rpc.mjs')].find(existsSync);
   if(!helper)throw new StepError('Installed kernel RPC helper missing');
   const result = spawnSync(process.execPath, [helper, binary.stdout.trim()], {
     env: { ...process.env, ...cell.env }, input: JSON.stringify({ method, params }), encoding: 'utf8',

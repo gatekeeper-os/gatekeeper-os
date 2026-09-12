@@ -1,6 +1,6 @@
 // Verify project metadata and optionally the actual distributable tarballs.
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { homedir, tmpdir, userInfo } from 'node:os';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
@@ -8,14 +8,13 @@ import { execFileSync } from 'node:child_process';
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const validate = process.argv.includes('--validate');
 const pack = process.argv.includes('--pack') || validate;
-if (validate && userInfo().username !== 'tester' && process.env.GITHUB_ACTIONS !== 'true') {
-  throw new Error('Packed plugin validation runs only in the disposable VM or GitHub Actions');
-}
 const temporary = pack ? mkdtempSync(join(tmpdir(), 'clawos-license-check-')) : undefined;
 const license = readFileSync(join(root, 'LICENSE'));
 const notice = readFileSync(join(root, 'NOTICE'));
 let count = 0, plugins = 0;
-function validatePlugin(root) {
+const validationRoots = [], extractedPackages = [];
+const validator = join(root, 'packages/clawos-kernel/node_modules/openclaw/openclaw.mjs');
+function validatePlugin(pluginRoot) {
   const state = mkdtempSync(join(temporary, 'validation-state-'));
   const config = join(state, 'openclaw.json');
   for (const name of ['.openclaw', '.openclaw-prod']) {
@@ -26,8 +25,11 @@ function validatePlugin(root) {
   const env = { ...process.env, OPENCLAW_STATE_DIR: state, OPENCLAW_CONFIG_PATH: config, OPENCLAW_NO_AUTO_UPDATE: '1' };
   for (const name of ['OPENCLAW_PROFILE', 'OPENCLAW_GATEWAY_TOKEN', 'OPENCLAW_GATEWAY_PASSWORD', 'OPENCLAW_GATEWAY_URL']) delete env[name];
   try {
-    execFileSync('openclaw', ['plugins', 'validate', '--root', root, '--json'], { env, timeout: 120000, stdio: ['ignore', 'pipe', 'pipe'] });
-  } catch { throw new Error('Packed plugin metadata validation failed (raw output withheld)'); }
+    execFileSync(process.execPath, [validator, 'plugins', 'validate', '--root', pluginRoot, '--entry', './dist/index.js', '--json'], { env, timeout: 120000, stdio: ['ignore', 'pipe', 'pipe'] });
+  } catch (error) {
+    const missing = /does not expose tool or feature authoring metadata/.test(String(error.stderr ?? '') + String(error.stdout ?? ''));
+    throw new Error(`Packed plugin metadata validation failed${missing ? ': ordinary entry lacks authoring metadata' : ''} (raw output withheld)`);
+  }
   plugins++;
 }
 try {
@@ -74,25 +76,36 @@ try {
           throw new Error(`${entry.name}: bundled TypeBox notice missing from ${prefix}`);
         }
       };
-      const pluginPrefixes = new Set([...members].map(member => member.match(/^templates\/plugins\/[^/]+\//)?.[0]).filter(Boolean));
+      const pluginPrefixes = new Set([...members].map(member => member.match(/^(?:dist\/)?templates\/plugins\/[^/]+\//)?.[0]).filter(Boolean));
       for (const prefix of pluginPrefixes) {
         verify(prefix);
         verifyThirdParty(prefix);
       }
-      if (members.has('templates/plugins/install-policy.mjs')) verifyThirdParty('templates/plugins/');
+      for (const prefix of ['templates/plugins/', 'dist/templates/plugins/']) {
+        if (members.has(prefix + 'install-policy.mjs')) verifyThirdParty(prefix);
+      }
       if (validate) {
         const extracted = join(temporary, entry.name);
         mkdirSync(extracted);
         execFileSync('tar', ['-xf', archive, '-C', extracted], { stdio: 'pipe' });
         const packageRoot = join(extracted, 'package');
-        if (existsSync(join(packageRoot, 'openclaw.plugin.json'))) validatePlugin(packageRoot);
-        for (const prefix of pluginPrefixes) validatePlugin(join(packageRoot, prefix));
+        extractedPackages.push({ name: pkg.name, root: packageRoot });
+        if (existsSync(join(packageRoot, 'openclaw.plugin.json'))) validationRoots.push(packageRoot);
+        for (const prefix of pluginPrefixes) validationRoots.push(join(packageRoot, prefix));
       }
     }
     count++;
   }
   console.log(`Package licenses: ${count} verified${pack ? ' including packed artifacts' : ''}`);
   if (validate) {
+    // Resolve the pre-publication dependency set from extracted tarballs, never
+    // workspace libraries. Only pinned third-party dependencies come from install.
+    const modules = join(temporary, 'node_modules');
+    mkdirSync(join(modules, '@clawkeepers'), { recursive: true });
+    for (const item of extractedPackages) symlinkSync(item.root, join(modules, item.name));
+    symlinkSync(join(root, 'packages/gatekeeper-fs/node_modules/typebox'), join(modules, 'typebox'));
+    symlinkSync(join(root, 'packages/clawos-kernel/node_modules/openclaw'), join(modules, 'openclaw'));
+    for (const pluginRoot of validationRoots) validatePlugin(pluginRoot);
     if (!plugins) throw new Error('No packed plugins validated');
     console.log(`Packed plugin CLI validation: ${plugins} verified`);
   }

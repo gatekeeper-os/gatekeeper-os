@@ -1,0 +1,9 @@
+{
+  "packages": [
+    "clawos-shared",
+    "gatekeeper-kit",
+    "clawos-kernel",
+    "gatekeeper-fs",
+    "clawos-cli"
+  ]
+}
