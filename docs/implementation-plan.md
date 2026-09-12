@@ -228,76 +228,14 @@ All OS state lives under `<stateDir>/os/`, where `<stateDir>` is `~/.openclaw` f
     └── logs/                         # OS logs (never contain secrets)
 ```
 
-**CORRECTION 2026-09-07 (Phase 1).** `os/backups/` cannot be the output directory for `openclaw backup create`.
-Upstream rejects output paths inside the source state or workspace tree to avoid self-inclusion, and `os/` is
-inside the state directory. Archives therefore live at `~/.clawos/backups/<cell>/`, alongside the host-level cell
-registry. `os/backups/` remains only for tars the OS writes itself.
-
-A second constraint shapes `clawos backup restore`: upstream restore is **never in place**. It requires a fresh
-empty target, has no `--force`, and leaves activation to the operator. `clawos backup restore` therefore performs
-upstream's documented activation sequence — verify, extract to a staging directory outside the state tree, stop
-the unit, move the current state aside (never delete it), move the extracted state asset into place using the
-manifest's `assets[]` entry of kind `state`, run `doctor`, restart, and confirm `/readyz`. The displaced state is
-kept at `<stateDir>.pre-restore-<ts>`, so a failed restore is always recoverable.
-
-Environment for a named cell (written into its systemd unit by `clawos cell create`):
-
-```
-OPENCLAW_PROFILE=<name>           # → ~/.openclaw-<name>
-OPENCLAW_GATEWAY_PORT=<port>      # unique per cell
-OPENCLAW_NO_AUTO_UPDATE=1
-CLAWOS_CELL=<name>
-```
-
-### 3.4 Naming and namespaces (DECISION)
-
-| Thing | Convention | Why |
-|---|---|---|
-| Kernel plugin id | `clawos-kernel` | — |
-| Gatekeeper plugin id | `gatekeeper-<vendor>` | Mirrors cloudflare-os package naming; the kernel discovers gatekeepers by this prefix **and** the manifest marker below. |
-| Gatekeeper manifest marker | `openclaw.plugin.json` → `"clawos": { "gatekeeper": { "vendor": "<vendor>", "apiVersion": 1 } }` | Extra top-level keys in the manifest are the portable analogue of the `GATEKEEPER_` binding prefix. (**VERIFIED** for the S-1 probe on 2026.9.2: unknown `clawos` metadata permits actual load/RPC; `plugins validate` is an authoring-metadata validator, not an ordinary-plugin validator.) |
-| Gatekeeper tool names | `gk_<vendor>_<resource>_<verb>` e.g. `gk_github_repo_list_issues`; entire name ≤64 ASCII characters, lowercase letters/digits/underscores only | Kernel matcher lists explicit `gk_*` tool IDs; unambiguous audit. Provider-documentation intersection, not an upstream registration limit; reject overlong/invalid names instead of truncating. |
-| Kernel tools (agent-facing) | `os_request_access`, `os_list_grants` | The only two tools the kernel exposes to models. |
-| Gateway RPC methods | `os.grants.*`, `os.approvals.*`, `os.gatekeepers.*`, `os.audit.*`, `os.status` | Avoids reserved `config.*`, `exec.approvals.*`, `wizard.*`, `update.*`. |
-| CLI | `clawos <group> <cmd>` and `openclaw os <group> <cmd>` | Same code path. |
-| HTTP routes | `/os/gatekeeper/<vendor>/oauth/…`, `/os/approvals` | Registered via `api.registerHttpRoute`. |
-| Grant handle (agent-visible) | `grant:<8-char base32>` | Opaque; never encodes the resource. |
-| Action id | integer, per-gatekeeper monotonic | Same as cloudflare-os `submitAction(action: number)`. |
-| Config fragment ownership | `os/config.d/NN-<name>.json5` | Numeric prefix = merge order. |
-
----
-
-## 4. The Gatekeeper model for OpenClaw
-
-### 4.1 Responsibilities (ported 1:1)
-
-1. **Auth management** — obtain and hold credentials on behalf of the human operator (OAuth via `registerHttpRoute`, or a SecretRef to an env/file/exec secret for API keys). Tokens live in the gatekeeper's `accounts/` store, encrypted at rest (§7.4). Credentials are *never* passed to the model, never appear in tool results, and never appear in logs.
-2. **API design** — capability-oriented tools: each tool takes a `grant` handle that denotes a *specific* resource (a repo, a document, a directory), not a coarse "vendor" tool that takes raw ids. "A Jira gatekeeper might support 'whole service', 'project', and 'issue' granularities, but it would be silly to support granting access to a single field of an issue separately."
-3. **Fine-grained resource granting** — the gatekeeper publishes `SupportedResource[]`, each with a `URLPattern` string, a title, and a granularity. Pasting a matching URL is the introduction.
-4. **Logging and approvals** — every read goes through `authorizeObservation()` before data is returned; every write goes through `submitAction()` and is not performed until `applyAction()`.
-5. **Caching** — per-resource cache in the gatekeeper's `cache/` store, which also lets the gatekeeper present a cleaner shape than the vendor's raw API.
-6. **Simulation** — pending actions are reflected in subsequent reads as if applied.
-7. **Observer verification** — when a session has an audience beyond its owner (group chats, shared sessions), the gatekeeper must confirm each observer may see what has been read (§4.7).
-
-**MCP STOP2 implementation scope (approved 2026-09-12).** Generic MCP actions
-retain `awaitDecision:true`, `autoApprovable:false`, `implementsRevert:false` when
-simulation/revert cannot be honestly supplied. The current runtime publishes only
-the reviewed `read_note` observation: append remains excluded from vendor/resource
-metadata and hard-denied until the supported upstream native-approval logging fix
-passes secrecy acceptance. The separate test-only notes adapter has deterministic
-append semantics and exercises the standard deferred kit lifecycle; fixture
-simulation, local TLS transport and real Gateway evidence are distinct from
-real-provider/native/full acceptance. See `plans/mcp-surface-contract.md`.
-
-### 4.2 Registration and discovery
-
-A gatekeeper is an ordinary OpenClaw plugin whose manifest carries the `clawos.gatekeeper` marker. S-1 selects the OS-owned catalog fallback: the kernel reads configured, canonical package roots from `os/gatekeepers.json`, validates each manifest's plugin id/vendor/API version, and registers cached tool shapes synchronously (§5.1). A manifest on disk is metadata, **not** proof of a loaded driver.
-
-Live attachment uses the public `openclaw/plugin-sdk/runtime-store` object-form store keyed by plugin id. A gatekeeper's `registerService().start()` publishes its driver together with cell/root/API-version identity; `stop()` revokes retained handles and clears only its own current slot. The kernel resolves that live slot at use time and fails closed before startup, after stop, for disabled/missing entries, or for cell/root/version mismatch. Do not rely on service ordering or retain a stale driver across replacement. Discovery modes declare inert capabilities but never publish a driver. Kernel integration and its negative conformance remain Phase 3 work; S-1 tests the transport with a no-tool/no-session fixture.
-
-**Correction to the scaffold:** no documented startup manifest enumerator has been verified, and a network RPC cannot carry a live JavaScript vendor object or establish in-process provenance merely by omitting client fields. The guessed `api.runtime` accessor and RPC-only attachment fallback are removed; no upstream registry is mutated. The named SDK slot is transport between trusted native plugins, **not an authentication boundary** against malicious in-process code. Install policy and `resolveGrant()` remain required. Source: pinned SDK `runtime-store.d.ts`, `docs/plugins/sdk-runtime.md` (Storing runtime references / Gateway service events); acceptance evidence is recorded in S-1.
-
-Installing a gatekeeper is therefore purely:
+**Registry update 2026-09-12.** The five first-release packages are published at
+`0.1.0-beta.1`. Install the CLI with `npm install --global @clawkeepers/cli@beta`,
+then use `clawos cell create evaluation --policy messaging` on a disposable host.
+`latest` currently resolves to this beta because no stable release exists. A clean
+prefix CLI install/version smoke passed; npm-only cell acceptance remains a separate
+VM gate. The source-install path below remains the Phase 1 evaluation route.
+The unauthenticated `curl … | bash` route is still unavailable while the source
+repository is private; registry availability does not make that URL public.
 
 ```bash
 openclaw plugins install npm:@clawkeepers/gatekeeper-github@1.2.0 --pin --accept-capabilities
@@ -930,7 +868,7 @@ Live fixture results: block denied installation, `{}` denied installation,
 allow permitted installation; allow was evaluated twice. Only input key names,
 version, target type and fixture mode were retained. See `plans/spike-S1.md`.
 
-`security.installPolicy` (**VERIFIED** primary boundary: a trusted local command after staging, covering plugins and skills and failing closed when unavailable) is generated in `15-runtime.json` with `enabled:true` and a protected standalone policy script invoked through an absolute Node executable. It evaluates `plugins.entries.clawos-kernel.config.install`; `before_install` re-checks the same rules. `plugins.allow` positively selects enabled first-party plugins; explicit `plugins.deny` entries remain authoritative. The source installer deploys bundled first-party artifacts to cell-local `plugins.load.paths`; it does not fetch nonexistent npm releases. Third-party CLI installation still uses upstream's policy/provenance checks (`--force` never bypasses the policy). `openclaw security audit --deep` runs after source installation, and missing/invalid verdicts or critical findings fail installation.
+`security.installPolicy` (**VERIFIED** primary boundary: a trusted local command after staging, covering plugins and skills and failing closed when unavailable) is generated in `15-runtime.json` with `enabled:true` and a protected standalone policy script invoked through an absolute Node executable. It evaluates `plugins.entries.clawos-kernel.config.install`; `before_install` re-checks the same rules. `plugins.allow` positively selects enabled first-party plugins; explicit `plugins.deny` entries remain authoritative. The source installer deploys bundled first-party artifacts to cell-local `plugins.load.paths`; it does not fetch registry releases; the five beta packages are now also available on npm. Third-party CLI installation still uses upstream's policy/provenance checks (`--force` never bypasses the policy). `openclaw security audit --deep` runs after source installation, and missing/invalid verdicts or critical findings fail installation.
 
 ---
 
@@ -1263,10 +1201,10 @@ missing instead of failing obscurely on a 404. The source install below is the s
 what Phase 1 acceptance exercises. The one-liner becomes real when the packages are published.
 
 ```bash
-# 1. Install OpenClaw OS from a clone (the supported path today)
+# 1. Source-install evaluation inside a disposable VM (repository access required)
 git clone https://github.com/clawkeeper/openclaw-os.git && cd openclaw-os && ./installer/install.sh
 
-#    NOT YET AVAILABLE (private repo, nothing published) — see the correction above:
+#    NOT YET AVAILABLE (private source repository):
 #    curl -fsSL https://raw.githubusercontent.com/clawkeeper/openclaw-os/main/installer/install.sh | bash
 
 # The installer runs, in order:

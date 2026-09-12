@@ -1996,3 +1996,18 @@ handoff and external final receipt, avoiding a self-referential commit hash here
 No package publish, tag push, visibility change or upstream post. Post-publish
 work and exact manual commands are in RELEASE-PREPARATION-2026-09-12.md. No phase-9
 tag: npm-only fresh-VM acceptance remains a later explicit checkpoint.
+
+
+## 2026-09-12 — private post-publish preparation, step 1
+
+Verified with `npm view <name> version dist-tags time --json` for each package:
+
+| Package | Version | beta | latest | Published (UTC) |
+| --- | --- | --- | --- | --- |
+| @clawkeepers/shared | 0.1.0-beta.1 | 0.1.0-beta.1 | 0.1.0-beta.1 | 2026-09-12T16:41:38.368Z |
+| @clawkeepers/gatekeeper-kit | 0.1.0-beta.1 | 0.1.0-beta.1 | 0.1.0-beta.1 | 2026-09-12T16:41:53.650Z |
+| @clawkeepers/kernel | 0.1.0-beta.1 | 0.1.0-beta.1 | 0.1.0-beta.1 | 2026-09-12T16:42:15.218Z |
+| @clawkeepers/gatekeeper-fs | 0.1.0-beta.1 | 0.1.0-beta.1 | 0.1.0-beta.1 | 2026-09-12T16:42:33.630Z |
+| @clawkeepers/cli | 0.1.0-beta.1 | 0.1.0-beta.1 | 0.1.0-beta.1 | 2026-09-12T16:42:49.646Z |
+
+Clean, initially empty prefix: `npm install --global --prefix <clean-prefix> @clawkeepers/cli@beta` exited 0; `<clean-prefix>/bin/clawos --version` returned 0.1.0-beta.1. No workspace links or source build. This is CLI install smoke, not cell acceptance. Core/org docs switch to explicit @beta and retain source-install VM evaluation and all unproven-boundary statements. All repositories remain private. Release run 34706409757 failed at the private-source guard as designed and must never be rerun. No publish, tag, visibility, trusted-publisher, or upstream change.
