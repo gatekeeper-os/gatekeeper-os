@@ -1436,7 +1436,7 @@ secrecy scan covered **4files**, all clean. Production bundle inspection confirm
 `FixtureNotesServer`, `NotesFixture`, and its effect/error marker are absent.
 
 Implementation checkpoint **5f79232** is pushed to draft PR14. No merge is made;
-latest-head hosted CI must be checked after this receipt commit. VM shutdown
-requested after all runs, original `base`/`installed` snapshots retained; final
-shutoff verification is recorded below before handoff. Full acceptance/native
-logging/real-provider gates remain unchanged.
+latest-head hosted CI must be checked after this receipt commit. VM independently verified **shut off** after all runs; original `base`
+(2026-09-07 11:38:13 PDT) and `installed` (2026-09-07 15:49:39 PDT) snapshots
+retained, no connected snapshot. Full acceptance/native logging/real-provider
+gates remain unchanged.
