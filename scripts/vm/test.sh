@@ -30,8 +30,9 @@ mode="${3:-full}"
 case "$phase:$mode" in
   *:full) install_only=0;;
   phase-6:blueprint-sandbox) install_only=0;;
+  phase-7:runtime-checkpoint) install_only=0;;
   phase-1:install-only) install_only=1;;
-  phase-3:fs-boundary|phase-3:fs-enforcement|phase-3:conformance-runner|phase-3:kernel-live|phase-3:install-integration|phase-3:install-hook|phase-3:plugin-install-hook|phase-3:channel-ingress) install_only=0;;
+  phase-5:approvals-live|phase-3:fs-boundary|phase-3:fs-enforcement|phase-3:conformance-runner|phase-3:kernel-live|phase-3:install-integration|phase-3:install-hook|phase-3:plugin-install-hook|phase-3:channel-ingress) install_only=0;;
   *) vm_die "unsupported acceptance mode: $phase $mode";;
 esac
 ts="$(date -u +%Y%m%d-%H%M%S)"

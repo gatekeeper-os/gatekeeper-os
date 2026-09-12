@@ -6,6 +6,10 @@ out="${1:?outdir}"; since="${2:-1 hour ago}"
 grab() { local name="$1"; shift; vm_call exec "$*" > "$out/$name" 2>&1 || true; }
 if [ "${3:-}" = phase-6 ]; then
   vm_call pull /home/tester/phase-6-evidence/ "$out/" || exit 1
+elif [ "${3:-}" = phase-5 ]; then
+  vm_call pull /home/tester/phase-5-evidence/ "$out/" || exit 1
+elif [ "${3:-}" = phase-7 ]; then
+  vm_call pull /home/tester/phase-7-evidence/ "$out/" || exit 1
 elif [ "${3:-}:${4:-}" = phase-3:full ]; then
   vm_call pull /home/tester/phase-3-combined-evidence/ "$out/" || exit 1
   # Keep the structural source reports, not just the aggregator's totals. Never

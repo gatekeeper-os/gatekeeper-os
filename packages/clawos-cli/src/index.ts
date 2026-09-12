@@ -5,6 +5,7 @@
  */
 
 import { blueprint } from "./commands/blueprint.js";
+import { update, rollback } from "./commands/update.js";
 import { kernelCommand } from "./commands/kernel.js";
 import { backup } from "./commands/backup.js";
 import { cell } from "./commands/cell.js";
@@ -22,6 +23,8 @@ const COMMANDS: Record<string, Command> = {
   ...Object.fromEntries(["grant", "audit", "approvals", "gatekeeper", "kernel"].map(name => [name, (args: string[], globals: GlobalOptions) => kernelCommand(name, args, globals)])),
   blueprint,
   install,
+  update,
+  rollback,
   "install-policy": installPolicy,
   status,
   doctor,
@@ -42,6 +45,8 @@ function usage(): number {
       "  install [--environment-file <absolute-path>]",
       "                             install or converge this cell (idempotent)",
       "  blueprint list|lint|apply|diff  versioned agent workspaces (apply requires --agent and --yes)",
+      "  update --check|--to      guarded update with live conformance",
+      "  rollback --yes          recover a journaled update",
       "  status                     report cell health",
       "  doctor                     host-layer diagnostics with fix hints",
       "  cell create <name> --port  create an additional cell",

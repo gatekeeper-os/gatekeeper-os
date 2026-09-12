@@ -24,7 +24,8 @@
       "os.approvals.revert",
       "os.gatekeepers.list",
       "os.gatekeepers.connect",
-      "os.audit.query"
+      "os.audit.query",
+      "os.maintenance.set"
     ]
   },
   "activation": {

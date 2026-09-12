@@ -64,3 +64,20 @@ jobs:
           name: verdict-${{ matrix.tag }}
           path: verdict-*.json
           if-no-files-found: error
+  update-contract:
+    # Transaction/evidence regression only. This does not relabel runtime smoke as full conformance.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "24", cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Update transaction and fail-closed evidence contract
+        run: pnpm exec vitest run packages/clawos-cli/src/util/update-transaction.test.ts packages/clawos-kernel/src/kernel.test.ts
+      - name: State evidence scope
+        if: always()
+        run: |
+          printf '%s\n' '### Update transaction regression' 'Unit effects and evidence-validator tests only; full update/rollback conformance is not claimed.' >> "$GITHUB_STEP_SUMMARY"

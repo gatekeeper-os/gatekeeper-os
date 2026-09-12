@@ -563,3 +563,31 @@ profile/global/provider/agent/sandbox policies. It does not pass group:plugins.
 Per-agent `tools.alsoAllow: ["clawos-kernel", ...]` and sandbox-layer alsoAllow
 permit kernel-owned tools to reach that cap; they never mint grants. Sources:
 published `docs/gateway/config-tools.md` and public plugin hook result types.
+### Phase5 local channel outbound target (2026-09-12)
+Public plugin channel contract verified in pinned2026.9.2 exported declaration types:
+`messaging.normalizeTarget`, `messaging.targetResolver.looksLikeId`, and
+`outbound.resolveTarget({to}) -> {ok:true,to}|{ok:false,error}`. The synthetic
+channel initially omitted target resolution; actual `openclaw message send`
+rejected its fixed operator target. The corrected fixture accepts only `operator`.
+No production transport or private upstream import.
+
+### Reserved native approval command (Phase5,2026-09-12)
+Pinned2026.9.2 handles `/approve <id> <decision>` in its built-in command handler
+before agent `reply_dispatch`. A real synthetic channel turn to `/approve 6`
+returns native usage and leaves the deferred action pending. Keep this command
+reserved; use `/approvals apply IDs` for the separate deferred queue. No native
+approval hook or upstream command is overridden.
+
+## Phase 7 runtime selection and maintenance (2026-09-11)
+
+- Published pinned public `OpenClawPluginApi.runtime.version` (`PluginRuntimeCore.version`)
+  supplies the actual running version. The kernel no longer reports a copied version pin.
+  Access is isolated in `src/upstream/runtime-version.ts`; no private SDK import is added.
+- Existing public `gateway run`/`gateway --port`, `config validate`, backup create/verify/restore,
+  public GatewayClient and ordinary plugin metadata are reused. No upstream update internals,
+  state SQLite reads, install-root writes, or edits to an upstream systemd unit.
+- New `os.maintenance.set` is an OS-owned admin-device RPC, declared in the kernel manifest.
+  The barrier persists in OS-owned state; ordinary mutation RPCs cannot operate while paused.
+  `os.status` reports kernel schema, actual SDK version, active runs/effects and tracking completeness.
+- The concrete per-cell runtime drop-in and backup-restore sequence is undergoing disposable VM
+  verification; do not read this implementation record as successful Phase 7 acceptance.

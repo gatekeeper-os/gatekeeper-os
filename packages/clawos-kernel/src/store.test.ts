@@ -41,3 +41,15 @@ it("refuses preexisting shared grants in beta and preserves original action bind
  expect(s.authorizeGrant(g,"a","session","c")).toBeNull();
  s.bindAction(1,"original","a","session");s.bindAction(1,"replacement","b","other");expect(s.actionBinding(1)?.handle).toBe("original");s.close();
 });
+
+it('refuses a future OS schema instead of overwriting its version during rollback startup',async()=>{
+  const path=join(mkdtempSync(join(tmpdir(),'future-schema-')),'clawos.sqlite');
+  const {DatabaseSync}=await import('node:sqlite');
+  const database=new DatabaseSync(path);
+  database.exec("CREATE TABLE meta(k TEXT PRIMARY KEY,v TEXT NOT NULL); INSERT INTO meta VALUES('schema','2');");
+  database.close();
+  const store=new Store(path);
+  expect(()=>store.migrate()).toThrow('schema incompatible');store.close();
+  const check=new DatabaseSync(path,{readOnly:true});
+  expect(check.prepare("SELECT v FROM meta WHERE k='schema'").get()?.v).toBe('2');check.close();
+});

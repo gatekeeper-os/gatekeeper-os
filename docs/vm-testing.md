@@ -325,3 +325,28 @@ unchanged. HTTP and GitHub dependencies remain pending; text-model turns are not
 real-provider capability acceptance. No credentials, bodies, live config or raw
 Gateway logs enter artifacts; only the allowlisted `phase-6-evidence/` directory.
 `phase-6 installed full` returns **blocked, exit 2**, not a fake successful scaffold.
+## Phase 5 approvals-live checkpoint
+
+`CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=<original-phase0>/scripts/vm/.state
+scripts/vm/test.sh phase-5 installed approvals-live` resets the original unconnected
+snapshot. It uses a synthetic driver with the existing filesystem contract name,
+not an actual filesystem/GitHub provider, and a local synthetic channel. Real
+Gateway/model dispatch, authenticated SDK RPCs, packed CLI and message CLI exercise
+queue order, timer, previews, operator commands, and digest delivery. Only structural
+`phase-5-evidence` files are collected. No personal credentials or external message.
+Default/full mode returns blocked; this checkpoint cannot claim full acceptance.
+
+## Phase 7 runtime checkpoint (implementation branch)
+
+`CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=<shared original state>
+scripts/vm/test.sh phase-7 installed runtime-checkpoint` restores the original installed
+snapshot, installs the current kernel, and introduces a disposable filesystem grant. No
+personal credentials or connected snapshot. Collection is restricted to structural
+`phase-7-evidence/` files; raw configs, tokens, vendor output, journals and backups stay in
+private guest state.
+
+The checkpoint exercises actual npm staging, Gateway/SDK health and grant operations,
+systemd activation, verified archive restoration and an interrupted transaction. Its
+step-five runtime probe is explicitly substituted by the test harness and cannot pass
+production full-conformance validation. Both evidence files and command output distinguish
+this checkpoint from full Phase 7 acceptance; the `full` mode currently returns blocked.
