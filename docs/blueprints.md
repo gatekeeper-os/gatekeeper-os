@@ -44,7 +44,7 @@ edit is also refused. A stale lock after process death requires operator review.
   cell profile; messaging is the default and preserves the deny-by-default baseline.
   Runtime permission and default sandbox `mode: all` live in one inseparable
   `05-policy-runtime.json5` fragment. Config apply refuses an unsafe runtime fragment.
-- Coder requires a runtime cell; assistant, ops and researcher require messaging.
+- Coder declares runtime policy; assistant, ops and researcher declare messaging policy.
   Apply checks the effective config through upstream's config surface before writes.
   Applying coder in a messaging cell refuses and prints the exact command to create
   a separate runtime cell; it never widens an existing cell's global policy.
@@ -86,7 +86,7 @@ exact warning codes are accepted, with no prefix or category wildcard:
 - `tools.exec.security_full_configured`: accepted only in a runtime cell with default and every agent's effective sandbox `mode: all` verified in the same run.
 
 `gateway.probe_failed` is never an exception: the audit uses the cell token through
-`OPENCLAW_GATEWAY_TOKEN` and the cell's real state/identity. Findings are recorded
+the canonical `CLAWOS_GATEWAY_TOKEN` SecretRef environment provider and the cell's real state/identity. Findings are recorded
 only as IDs and severities, never raw diagnostics or credential values.
 
 Inherited global Docker binds are rejected for sandboxed blueprints: upstream
@@ -94,7 +94,7 @@ merges them with per-agent binds, so an empty per-agent list cannot remove them.
 A later config fragment that changes the provisioned agent policy also blocks
 reconciliation before it can publish that override as an accepted snapshot.
 
-Kernel-owned tools are explicitly permitted at profile and sandbox-policy layers;
+Except for the web-tools-only researcher, kernel-owned tools are explicitly permitted at profile and sandbox-policy layers;
 the kernel still hides ungranted `gk_*` schemas and enforces capability checks.
 Its prompt filter preserves native tool groups within upstream's existing policy
 intersection, so it cannot restore native tools an operator denied. This makes
