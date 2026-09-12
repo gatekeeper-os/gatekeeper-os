@@ -115,7 +115,7 @@ The upstream runtime pin is `openclaw@2026.9.2` in
 every version in the range has passed acceptance.
 
 ```sh
-git clone https://github.com/ControlStackAI/openclaw-os.git
+git clone https://github.com/clawkeeper/openclaw-os.git
 cd openclaw-os
 corepack enable
 pnpm install --frozen-lockfile

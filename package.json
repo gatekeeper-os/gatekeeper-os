@@ -28,5 +28,5 @@
     "vitest": "catalog:"
   },
   "license": "MIT",
-  "repository": {"type": "git", "url": "git+https://github.com/ControlStackAI/openclaw-os.git"}
+  "repository": {"type": "git", "url": "git+https://github.com/clawkeeper/openclaw-os.git"}
 }
