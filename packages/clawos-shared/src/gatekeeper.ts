@@ -149,7 +149,7 @@ export interface Gatekeeper {
 /** Per-operator account (one OAuth identity or static credential). */
 export interface GatekeeperAccount {
   /** Describe this object without returning credentials. */
-  describe(): Promise<{ email?: string; displayName?: string; expiresAt?: number }>;
+  describe(): Promise<{ email?: string; displayName?: string; expiresAt?: number; accountId?: string }>;
   /** List the resource types supported by this account or vendor. */
   getSupportedResources(): Promise<SupportedResource[]>;
   /** Returns a Gatekeeper for the resource a URL denotes, with credentials bound. Called BEFORE any grant exists. */

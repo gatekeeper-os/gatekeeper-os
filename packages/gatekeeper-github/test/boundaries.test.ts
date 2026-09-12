@@ -50,7 +50,7 @@ describe('bounded secret-safe transport', () => {
   });
   it('separates rate limiting from negative ACL', async () => {
     const api = new GitHubApi(() => 'fixture', async () => new Response('private', { status: 403, headers: { 'x-ratelimit-remaining': '0' } }));
-    await expect(api.request('/user')).rejects.toMatchObject({ status: 429 });
+    await expect(api.request('/user')).rejects.toMatchObject({ status: 429, providerResponseStatus: 403 });
   });
   it('bounds streamed bodies even without content length', async () => {
     await expect(boundedBody(new Response('123456'), 5)).rejects.toBeInstanceOf(GitHubError);
@@ -59,4 +59,21 @@ describe('bounded secret-safe transport', () => {
     const api = new GitHubApi(() => 'fixture', async () => { throw new Error('private credential'); });
     await expect(api.request('/user')).rejects.toThrow('GitHub request failed (0).');
   });
+});
+
+it('marks only actual HTTP responses as provider provenance', async () => {
+  const rejected = new GitHubApi(() => 'credential', async () => new Response('private-body', { status: 422 }));
+  const responseError = await rejected.request('/user').catch(error => error);
+  expect(responseError).toMatchObject({ status: 422, providerResponseStatus: 422 });
+  expect(JSON.stringify(responseError)).not.toMatch(/credential|private-body/);
+  const offline = new GitHubApi(() => 'credential', async () => { throw new Error('private'); });
+  expect((await offline.request('/user').catch(error => error)).providerResponseStatus).toBeUndefined();
+  expect((await rejected.request('//invalid').catch(error => error)).providerResponseStatus).toBeUndefined();
+});
+
+it('records actual HTTP200 for GraphQL errors without retaining the error body', async () => {
+  const api = new GitHubApi(() => 'private-token', async () => Response.json({ errors: [{ message: 'private-error' }] }));
+  const error = await api.graphql('query', {}).catch(error => error);
+  expect(error).toMatchObject({ status: 502, providerResponseStatus: 200 });
+  expect(JSON.stringify(error)).not.toMatch(/private/);
 });

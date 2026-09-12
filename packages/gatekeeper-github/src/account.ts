@@ -30,13 +30,13 @@ export class GitHubAccount implements GatekeeperAccount {
     private readonly retained = new Map<string, GitHubResource>();
     private readonly verifierIds = new Set<string>();
     private readonly synchronous: readonly string[];
-    constructor(private readonly api: GitHubApi, private readonly login: string, private readonly enabled: string[], private readonly stateDir: string, private readonly removeCredential: () => void, private readonly verifiers: Verifiers, policy: readonly string[] = []) {
+    constructor(private readonly api: GitHubApi, private readonly login: string, private readonly enabled: string[], private readonly stateDir: string, private readonly removeCredential: () => void, private readonly verifiers: Verifiers, policy: readonly string[] = [], private readonly accountId?: number) {
         this.synchronous = synchronousActions(policy);
     }
     assertLive = () => {
         if (!this.active) throw new Error('GitHub account unavailable.');
     };
-    async describe() { this.assertLive(); return { displayName: this.login }; }
+    async describe() { this.assertLive(); return { displayName: this.login, ...(this.accountId === undefined ? {} : { accountId: String(this.accountId) }) }; }
     async getSupportedResources() { this.assertLive(); return structuredClone(resources.filter(r => this.enabled.includes(r.type))); }
     async getGatekeeperFor(url: string) {
         this.assertLive();

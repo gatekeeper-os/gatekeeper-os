@@ -56,7 +56,7 @@ export const GatekeeperToolDefSchema = Type.Object({
 }, closed);
 /** Credential-free account summary returned by account.describe(). */
 export const AccountDescriptionSchema = Type.Object({
-  email: Type.Optional(text), displayName: Type.Optional(text), expiresAt: Type.Optional(timestamp),
+  email: Type.Optional(text), displayName: Type.Optional(text), expiresAt: Type.Optional(timestamp), accountId: Type.Optional(text),
 }, closed);
 /** Credential-free vendor summary returned by vendor.describe(). */
 export const VendorDescriptionSchema = Type.Object({

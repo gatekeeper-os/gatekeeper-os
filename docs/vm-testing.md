@@ -41,7 +41,7 @@ Three named snapshots, taken in this order and never modified afterwards:
 
 1. **`base`** — fresh OS with §2 base packages, `tester` user, linger enabled, Docker installed but no images pulled, `.ssh` authorized for the host. No Node, no OpenClaw. This is the starting point for every Phase 1 install test.
 2. **`installed`** — taken after a successful `clawos install` from the current working tree (Phase 1 acceptance). Starting point for Phases 3–6 tests, so you are not paying the install cost every run.
-3. **`connected`** — taken only after explicit GitHub plugin/catalog configuration, supported web OAuth, and real-provider Phase 4 acceptance with a disposable account and repository. Starting point for approval, drainer, and update tests.
+3. **`connected`** — taken only after explicit GitHub plugin/catalog configuration, supported web OAuth, and real-provider Phase 4 acceptance with a dedicated test repository and explicitly authorized identity. Starting point for approval, drainer, and update tests.
 
 Rules: never test on a VM that was not just restored from a snapshot; re-take `installed` and `connected` whenever the installer or kernel changes in a way that affects them; delete and recreate `base` if the base image is updated. Record which snapshot each test run started from in `plans/PROGRESS.md`.
 
@@ -68,7 +68,7 @@ Inside the VM, the per-phase test scripts live at `test/phase-N.sh` in the repo 
 | `test/phase-1.sh` | `base` | `curl … \| bash` (from the synced tree's `installer/install.sh`), `clawos status`, doctor lint, security audit, idempotent re-run, second cell create, backup/restore |
 | `test/phase-2.sh` | host only | unit tests for shared + kit (no VM needed; still recorded) |
 | `test/phase-3.sh` | `installed` | install kernel + gatekeeper-fs from the tree, conformance subset, fs-grant scenario via `openclaw agent` scripted turns |
-| `test/phase-4.sh` | `installed` | full mode currently reports blocked; requires supported web OAuth, real-provider deferred/native approval scenarios, secrecy checks, then snapshot `connected` |
+| `test/phase-4.sh` | `installed` | full runner implemented; missing protected inputs report blocked; requires supported web OAuth, real-provider deferred/native approval scenarios, secrecy checks, then snapshot `connected` |
 | `test/phase-5.sh` | `connected` | auto-approval rule + drainer timing, digest delivery to a test channel, chat commands |
 | `test/phase-6.sh` | `installed` | apply each blueprint, `blueprint lint` negative test, Docker sandbox exec |
 | `test/phase-7.sh` | `connected` | `clawos update --to <latest>` full pipeline; compat-block test; conformance-fail test; kill-during-activate + `clawos rollback` |
@@ -331,8 +331,8 @@ state. Only the authenticated observing client advertises `plugin-approvals`;
 capability advertisement is not authorization. Native results are in scenarios.json.
 Only structural evidence under `phase-4-gateway-evidence/` is collected.
 
-Full `phase-4` exits2 with a blocked scope report until real-provider scenarios
-and full logging secrecy acceptance are implemented/verified. The two conformance suites
+Full `phase-4` exits2 with a blocked scope report when protected OAuth inputs are absent; real-provider scenarios are implemented but not live-accepted, and full logging
+secrecy remains blocked upstream. The two conformance suites
 reject fixture, stale, empty or failed reports and require literal-true evidence
 for their current run. No `connected` snapshot is created by the fixture.
 Do not invoke the retired `dev install-plugins`, `gatekeeper add`, or `--pat-env`
@@ -353,3 +353,17 @@ the separate missing-route case from this focused scan.
 The full real-provider suites additionally require `failed-tool-log-secrecy`,
 `native-denial-log-secrecy`, and `approval-route-failure-log-secrecy` evidence.
 See `docs/phase-4-real-provider.md` and the unsent draft upstream report.
+
+### Authorized local GitHub and current runner (2026-09-11)
+
+Matt authorized `mmango7474` personal gh for local acceptance, with a dedicated
+private `clawos-beta-acceptance` repository/issue. The ban on personal CI accounts
+is unchanged. Use `CLAWOS_TEST_INPUT_STDIN=1` for protected input delivery; see
+[real-provider setup](phase-4-real-provider.md). No token journal seeding.
+
+- `observer-live`: actual GitHub observation component,9/9 checks, not OAuth or
+  gatekeeper acceptance. Creates/deletes only its uniquely recorded fixture comment.
+- `upstream-logging`: exact published latest in isolated guest install/state,
+  unchanged project pin. Latest9.4 runtime reproduces the release blocker.
+- `full`: production OAuth and independent effects; no-input preflight exit2.
+  Collected evidence is structural only. Secrets/raw logs remain guest-private.

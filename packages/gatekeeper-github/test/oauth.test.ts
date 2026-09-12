@@ -55,7 +55,7 @@ describe('GitHub supported web OAuth with kernel nonce and encrypted tokens', ()
     expect(f.calls[0]!.body.get('client_secret')).toBe(fakeSecret);
     const dir = join(f.dir, 'os', 'gatekeepers', 'github', 'accounts'), stored = readdirSync(dir).map(n => readFileSync(join(dir, n), 'utf8')).join('');
     expect(stored).not.toContain(fakeToken); expect(stored).not.toContain(fakeSecret);
-    expect(await (await f.vendor.getAccount('operator'))!.describe()).toEqual({ displayName: 'fixture' });
+    expect(await (await f.vendor.getAccount('operator'))!.describe()).toEqual({ displayName: 'fixture', accountId: '99' });
     expect(await f.vendor.getAccount('other')).toBeNull();
     await expect(f.vendor.completeConnection('operator', { code: 'fixture', state: c.state })).rejects.toThrow();
     for (const logger of Object.values(f.logger)) expect(logger).not.toHaveBeenCalled();

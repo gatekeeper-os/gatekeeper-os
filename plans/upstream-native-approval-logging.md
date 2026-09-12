@@ -1,6 +1,7 @@
 # Draft upstream report: native approval denial logs tool arguments
 
-**Draft only; not sent upstream.** Observed with unmodified OpenClaw2026.9.2 in
+**Draft only; not sent upstream.** Observed with unmodified OpenClaw2026.9.2 and
+published2026.9.4 in
 an isolated Ubuntu VM. No real GitHub credentials or effects were used.
 
 ## Reproduction
@@ -86,3 +87,18 @@ uncertain provider effect. Resource reconciliation correctly prevented further
 reads/writes; that run is not accepted as missing-route evidence. The corrected
 run orders the case before provider failure and checks the specific unavailable
 result, rather than treating any generic denial as approval-routing evidence.
+
+## Published latest runtime reproduction (2026-09-11)
+
+Fresh VM `20260912-010401-phase-4`, upstream `OpenClaw2026.9.4 (3a9d69d)`:
+**103/106 checks,11 actual model turns, exit1**. Exact published npm latest was
+installed separately inside the guest; no project pin/upstream code changed.
+All functional approval checks pass. Separate native denial, missing-route and
+aggregate diagnostic body scans fail; provider-error and credential scans pass.
+GitHub was synthetic in this repro; no personal token was used. This replaces
+source-only9.4 evidence with an actual runtime reproduction.
+
+Current upstream SECURITY.md requests private GitHub Security Advisory reports,
+not public issues/PRs, with latest-release proof and a concrete trust boundary.
+This draft concerns the OS body-free diagnostics invariant. It does not establish
+attacker privilege escalation or assign a severity. No external report submitted.

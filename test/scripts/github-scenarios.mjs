@@ -11,7 +11,8 @@ if (process.env.CLAWOS_KERNEL_VM !== '1' || process.env.CLAWOS_TEST_MODE !== 'ga
     process.env.OPENCLAW_STATE_DIR !== '/home/tester/.openclaw-kernel-test' ||
     process.env.OPENCLAW_CONFIG_PATH !== '/home/tester/.openclaw-kernel-test/openclaw.json' ||
     process.cwd() !== '/home/tester/src') throw new Error('VM required');
-const require = createRequire(resolve('packages/clawos-conformance/package.json'));
+if (process.env.CLAWOS_TEST_UPSTREAM_ROOT && process.env.CLAWOS_TEST_UPSTREAM_ROOT !== '/home/tester/phase4-upstream/node_modules/openclaw') throw new Error('VM upstream root required');
+const require = createRequire(process.env.CLAWOS_TEST_UPSTREAM_ROOT ? resolve(process.env.CLAWOS_TEST_UPSTREAM_ROOT, 'package.json') : resolve('packages/clawos-conformance/package.json'));
 const { GatewayClient } = await import(pathToFileURL(require.resolve('openclaw/plugin-sdk/gateway-runtime')).href);
 const config = JSON.parse(readFileSync(process.env.OPENCLAW_CONFIG_PATH, 'utf8'));
 const phase = process.argv[2] ?? 'deferred';
@@ -43,6 +44,7 @@ const server = createServer(async (req, res) => {
       current.results[index] = {
         first: body.includes('phase-four-first-comment'), rejected: body.includes('phase-four-rejected-comment'),
         routeFailure: body.includes('phase-four-private-route-failure'),
+        providerResponseStatus: Number(body.match(/Provider response status: ([1-5][0-9]{2})\./)?.[1]) || undefined,
         approvalUnavailable: /Plugin approval unavailable/i.test(body),
         denied: /denied|no such grant|not active|blocked|not found|unavailable|not available/i.test(body),
       };
@@ -167,6 +169,7 @@ try {
     paired = await connect({ deviceToken: shared.deviceToken }, ['operator.admin'], true);
     const failed = await nativeTurn('native-provider-failure', 'allow-once', 'phase-four-private-failure\n"quoted" private-tail-marker', 1);
     check('native-provider-failure-reported', failed.results[0]?.denied === true);
+    check('native-provider-http-provenance', failed.results[0]?.providerResponseStatus === 503);
     check('native-provider-failure-once', (await provider()).failedWrites === 1 && (await provider()).mutations === 1 && (await provider()).comments === 1);
     check('native-provider-failure-not-pending', (await rpc('os.approvals.list')).actions.length === 0);
     const failureAudit = await rpc('os.audit.query', { limit: 1000 });
@@ -176,6 +179,8 @@ try {
   const noGrant = await runTurn('no-grant', []);
   check('no-ambient-github-tools', noGrant.names.every(names => !names.some(n => n.startsWith('gk_github_'))));
   const issueUrl = 'https://github.com/org/repo/issues/12';
+  check('unconnected-account-metadata-empty', await rpc('os.gatekeepers.account', { vendor: 'github' }) === null);
+  check('unpaired-account-metadata-denied', await denied(shared.client, 'os.gatekeepers.account', { vendor: 'github' }));
   check('unconnected-grant-denied', await denied(paired.client, 'os.grants.introduce', { agentId: 'main', url: issueUrl }));
   check('unpaired-connect-denied', await denied(shared.client, 'os.gatekeepers.connect', { vendor: 'github' }));
   const connected = cli(['gatekeeper', 'connect', 'github']);
@@ -189,6 +194,8 @@ try {
   check('oauth-exact-callback', callback.href === 'http://127.0.0.1:19100/os/gatekeeper/github/oauth/callback');
   callback.searchParams.set('state', redirect.searchParams.get('state')); callback.searchParams.set('code', 'fixture-short-code');
   check('oauth-fixture-connected', (await fetch(callback)).status === 200);
+  const accountMetadata = await rpc('os.gatekeepers.account', { vendor: 'github' });
+  check('oauth-account-numeric-identity', accountMetadata?.accountId === '99' && accountMetadata?.displayName === 'fixture');
   const exchange = await provider();
   check('oauth-exchange-bound', exchange.exchanges === 1 && exchange.exchangeBound && exchange.verifierHash === redirect.searchParams.get('code_challenge'));
   check('oauth-callback-replay-denied', (await fetch(callback)).status === 400 && (await provider()).exchanges === 1);

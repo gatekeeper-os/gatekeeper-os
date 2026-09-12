@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { OverlayStore } from "./overlay-store.js";
 import { CacheMutationStore } from "./cache-mutation-store.js";
 import { ActionSequencer } from "./action-sequencer.js";
-import { sanitizeError } from "./sanitize.js";
+import { sanitizeError, sanitizedFailure, providerResponseStatus } from "./sanitize.js";
 const dirs: string[] = [];
 const file = () => { const d = mkdtempSync(join(tmpdir(), "clawos-store-test-")); dirs.push(d); return join(d, "state.json"); };
 afterEach(() => { for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true }); });
@@ -45,4 +45,15 @@ describe("persistent simulation", () => {
     for (const value of [new Error("private body"), "private 503 data", { message: "private", status: "503" }, { get status() { throw new Error(); } }]) expect(sanitizeError(value)).toBe("The operation failed.");
     expect(sanitizeError({ status: 503, message: "private" })).toBe("The operation failed. (status 503)");
   });
+});
+
+it('preserves only numeric HTTP provenance through repeated sanitization', () => {
+  const raw = Object.assign(new Error('private response'), { providerResponseStatus: 422, status: 422, body: 'private body', token: 'secret' });
+  const safe = sanitizedFailure(sanitizedFailure(raw));
+  expect(safe.providerResponseStatus).toBe(422);
+  expect(safe.cause).toBeUndefined();
+  expect(JSON.stringify(safe)).not.toMatch(/private|secret|token|body/);
+  for (const value of [undefined, '422', 99, 600, 422.5, NaN]) expect(providerResponseStatus({ providerResponseStatus: value })).toBeUndefined();
+  expect(providerResponseStatus({ status: 422 })).toBeUndefined();
+  expect(providerResponseStatus({ get providerResponseStatus() { throw new Error('private'); } })).toBeUndefined();
 });

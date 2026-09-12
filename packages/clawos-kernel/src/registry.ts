@@ -1,7 +1,7 @@
 /** Catalog-backed gatekeeper registry with checked live runtime attachment. */
 import { readFileSync, realpathSync } from "node:fs";
 import { Value } from "typebox/value";
-import { GatekeeperToolDefSchema, SupportedResourceSchema, type ApprovalQueue, type Gatekeeper, type GatekeeperSession, type GatekeeperToolDef, type GatekeeperVendor, type Grant, type SupportedResource } from "@clawos/shared";
+import { AccountDescriptionSchema, GatekeeperToolDefSchema, SupportedResourceSchema, type ApprovalQueue, type Gatekeeper, type GatekeeperSession, type GatekeeperToolDef, type GatekeeperVendor, type Grant, type SupportedResource } from "@clawos/shared";
 import { gatekeeperRuntimeSlot } from "@clawos/gatekeeper-kit";
 
 /** Enabled gatekeeper identity and static, schema-checked catalog metadata. */
@@ -39,6 +39,14 @@ export class Registry {
   }
   /** Resolve a live vendor for operator-only account setup, never for resource access. */
   connection(vendorName:string):GatekeeperVendor{return this.live(vendorName).vendor;}
+  /** Describe only the authenticated operator's connected account; never mint a grant or expose credentials. */
+  async accountDescription(vendorName:string,operatorId:string){
+    const account=await this.live(vendorName).vendor.getAccount(operatorId);
+    if(!account)return null;
+    const description={...await account.describe()};
+    if(!Value.Check(AccountDescriptionSchema,description))throw new Error("Invalid account description.");
+    return description;
+  }
   /** Resolve account and resource afresh; this is called only by Kernel.resolveGrant. */
   async openSession(grant:Grant,queue:ApprovalQueue):Promise<OpenedSession>{
     const {vendor}=this.live(grant.vendor);const account=await vendor.getAccount(grant.operatorId)??await vendor.createAccount?.(grant.operatorId);if(!account)throw new Error("Gatekeeper unavailable.");

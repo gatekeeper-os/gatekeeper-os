@@ -5,5 +5,5 @@ export { TokenStore } from "./token-store.js";
 export { OverlayStore, type OverlayEntry } from "./overlay-store.js";
 export { CacheMutationStore } from "./cache-mutation-store.js";
 export { ActionSequencer } from "./action-sequencer.js";
-export { sanitizeError } from "./sanitize.js";
+export { sanitizeError, sanitizedFailure, providerResponseStatus } from "./sanitize.js";
 export { TestApprovalQueue } from "./testing.js";

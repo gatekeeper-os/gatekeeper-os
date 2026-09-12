@@ -175,7 +175,9 @@ The concrete responsibilities 1–3 boundary is now:
 - Strict schemas for the eleven already-reviewed tools; the kernel registers
   them, not this plugin. No arbitrary API, identifier, credential, or host input.
 - Explicit config mapping: public client ID, env/default client-secret SecretRef,
-  trusted `publicOrigin`; no plaintext credential or borrowed personal gh login.
+  trusted `publicOrigin`; no plaintext credential in source/argv/artifacts. Matt
+  explicitly authorized personal gh on2026-09-11 for the isolated local fixture
+  and independent observer, not token import into the driver or CI.
 
 The existing completion authorization also covers responsibilities 4–7:
 per-session kernel authorization, durable deferred actions and overlays,

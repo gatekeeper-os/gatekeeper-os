@@ -35,7 +35,7 @@ export class GitHubObserver {
   #sequence = 0;
 
   constructor(target: GitHubObservationTarget, options: { token?: string; transport?: typeof fetch } = {}) {
-    if (!options.transport && (process.env.CLAWOS_KERNEL_VM !== '1' || process.env.CLAWOS_TEST_MODE !== 'full' ||
+    if (!options.transport && (process.env.CLAWOS_KERNEL_VM !== '1' || !['full', 'observer-live'].includes(process.env.CLAWOS_TEST_MODE ?? '') ||
         process.cwd() !== '/home/tester/src' || process.env.OPENCLAW_STATE_DIR !== '/home/tester/.openclaw-kernel-test' ||
         process.env.OPENCLAW_CONFIG_PATH !== '/home/tester/.openclaw-kernel-test/openclaw.json')) fail();
     if (typeof target.owner !== 'string' || typeof target.repo !== 'string' || !/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/.test(target.owner) ||

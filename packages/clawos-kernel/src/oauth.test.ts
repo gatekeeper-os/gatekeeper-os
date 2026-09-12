@@ -164,3 +164,24 @@ describe("kernel account routing with real registry and kit nonce state", () => 
     expect((await request(url)).status).toBe(303);
   });
 });
+
+
+describe("credential-free account registry metadata",()=>{
+  it("returns only the authenticated operator's schema-checked account description",async()=>{
+    expect(await registry.accountDescription("example","operator-a")).toBeNull();
+    fixture.account.describe=async()=>({displayName:"Fixture",accountId:"99"});
+    fixture.accounts.set("operator-a",fixture.account);
+    expect(await registry.accountDescription("example","operator-a")).toEqual({displayName:"Fixture",accountId:"99"});
+    expect(await registry.accountDescription("example","operator-b")).toBeNull();
+  });
+  it("unwraps the kit runtime membrane before returning credential-free primitives",async()=>{
+    fixture.account.describe=async()=>new Proxy({displayName:"Fixture",accountId:"99"},{});
+    fixture.accounts.set("operator-a",fixture.account);
+    expect(await registry.accountDescription("example","operator-a")).toEqual({displayName:"Fixture",accountId:"99"});
+  });
+  it("rejects credential-bearing extra fields instead of returning them",async()=>{
+    fixture.account.describe=async()=>({displayName:"Fixture",token:"private-fixture-value"});
+    fixture.accounts.set("operator-a",fixture.account);
+    await expect(registry.accountDescription("example","operator-a")).rejects.toThrow("Invalid account description.");
+  });
+});

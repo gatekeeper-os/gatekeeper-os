@@ -583,3 +583,12 @@ retains token prefix/suffix, and replaces defaults at some sinks; it is not a
 verified log-only body-removal switch. No blanket pattern, logger monkey-patch,
 private logger override, or disabled observability is installed. Successful
 provider-failure log scans must **not** close the denial/route-failure secrecy gates.
+
+
+### Published9.4 logging reproduction (2026-09-11)
+
+Fresh isolated VM20260912-010401 ran published `OpenClaw2026.9.4 (3a9d69d)`;
+103/106 checks,11 model turns, exit1. The verified native-denial/missing-route
+raw-argument logging behavior persists at runtime, not just in source inspection.
+No pin change, private SDK import or upstream modification. See the unsent report
+and Phase4 progress for exact invocation and structural evidence paths.

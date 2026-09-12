@@ -1400,3 +1400,19 @@ entries continue to take precedence. Filesystem roots remain empty by default.
 Primary live CLI install acceptance, shared evaluator regressions and the
 secondary hook typecheck are separate; no hook-backed Gateway install claim
 follows from CLI evidence.
+
+
+### Phase4 continuation — authorized personal identity,2026-09-11
+
+The full VM runner and protected stdin delivery now exist; supported OAuth still
+requires the operator-created OAuth App. Read-scoped `os.gatekeepers.account`
+returns validated metadata for the authenticated operator only, including the
+verified numeric GitHub account ID. It returns null rather than creating accounts.
+A proxy-membrane regression was fixed by copying primitive description fields
+before validation instead of structuredClone on the proxy.
+
+Matt authorized personal gh for this local fixture (not CI/token import). Real
+GitHub observer/component run20260912-010743 passed9/9 and restored the issue.
+This is not gatekeeper/OAuth acceptance. Full missing-input run20260912-011344
+returned2. Published9.4 runtime20260912-010401 still fails3 log secrecy checks
+(103/106); phase4 remains open, no connected snapshot or later-phase acceptance.

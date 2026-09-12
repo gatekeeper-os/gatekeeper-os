@@ -6,8 +6,10 @@ out="${1:?outdir}"; since="${2:-1 hour ago}"
 grab() { local name="$1"; shift; vm_call exec "$*" > "$out/$name" 2>&1 || true; }
 if [ "${3:-}" = phase-4 ]; then
   # Never collect raw provider/OAuth responses, Gateway logs, or cell state.
-  if [ "${4:-}" = gateway-integration ]; then
+  if [ "${4:-}" = gateway-integration ] || [ "${4:-}" = upstream-logging ]; then
     vm_call pull /home/tester/phase-4-gateway-evidence/ "$out/" || exit 1
+  elif [ "${4:-}" = observer-live ]; then
+    vm_call pull /home/tester/phase-4-observer-evidence/ "$out/" || exit 1
   else
     vm_call pull /home/tester/phase-4-evidence/ "$out/" || exit 1
   fi

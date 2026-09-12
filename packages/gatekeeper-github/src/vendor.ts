@@ -210,7 +210,7 @@ export class GitHubVendor implements GatekeeperVendor {
                     if (pending.operator === operator) this.pending.delete(state);
                 }
             };
-            account = new GitHubAccount(api, credential.login, credential.resourceTypes, stateDir, remove, this.verifiers, this.synchronous);
+            account = new GitHubAccount(api, credential.login, credential.resourceTypes, stateDir, remove, this.verifiers, this.synchronous, credential.id);
             this.accounts.set(operator, account);
         }
         return account;

@@ -1537,3 +1537,71 @@ The helper's native GitHub transport is unexercised; its21 tests are synthetic.
 Full real-provider orchestrator, disposable GitHub account/repo/OAuth App and a
 supported upstream log-secrecy fix remain outstanding. No connected snapshot,
 Phase4 tag/merge, later-phase acceptance, production change or beta release.
+
+
+## 2026-09-11 — Authorized live GitHub component and full runner implementation
+
+Matt explicitly authorized personal gh and completion of beta. This supersedes
+older disposable-account-only text for local testing, not OAuth correctness,
+personal CI credentials, secrecy or the no-upstream-modification invariant.
+Created private `mmango7474/clawos-beta-acceptance`, repository1366819708,
+issue1/5430217206, bound to account56606128. No production repository modified.
+
+Implemented full Phase4 runner (`test/phase-4.sh`, `github-real-*` helpers),
+protected bounded stdin delivery via guest tmpfs, operator-scoped account metadata
+RPC, and numeric HTTP response provenance across GitHub/kit/kernel. No original
+error bodies/causes retained; local/network errors do not claim response status.
+GraphQL HTTP200 errors preserve the actual response status, not an inferred502.
+The runner uses real web OAuth/PKCE, production driver, independent remote reads,
+deferred apply/reject/revert, native allow/deny/no-route, and post-shutdown log
+scans. Missing inputs fail closed; full OAuth acceptance is still unverified.
+Full evidence must also pass both existing live conformance suites. The3 pure
+runner evidence tests now run in ordinary `pnpm test`/CI.
+
+Exact acceptance prefix for all runs:
+`CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state scripts/vm/test.sh`
+
+- `phase-4 installed observer-live`, protected `CLAWOS_TEST_INPUT_STDIN=1`:
+  `20260912-010743`, **9/9 PASS**, actual GitHub. Host keyring token piped directly
+  to protected delivery (not argv/artifacts/driver journal). Test actor created
+  one unique comment; independent observer verified exact create and reversion.
+  Host readback confirms zero comments. This is **NOT gatekeeper/OAuth acceptance**.
+- `phase-4 installed full`, no input: `20260912-011344`, expected **exit2**,
+  blocked/fullPhaseAcceptancefalse. App client ID and privately entered secret
+  remain pending. Native browser unavailable; no authenticated UI for app creation.
+- `phase-4 installed upstream-logging`: initial `20260912-010022` failed at the
+  new metadata RPC (structuredClone of a live proxy). Fixed by copying primitive
+  description fields and validating the closed schema; added proxy regression.
+  Fresh corrected `20260912-010401`, published **2026.9.4 (3a9d69d)**, **103/106**,
+  11 model turns, exit1. Native deny/no-route and aggregate body secrecy fail.
+  Exact isolated install; pin unchanged. Synthetic GitHub in this logging repro.
+- `phase-4 installed gateway-integration`: `20260912-011908` stopped before
+  tests: qemu-img io_uring ENOMEM from session virtqemud1335736, journal-confirmed.
+  Original snapshots verified intact; restored already-documented process-local
+  soft-memlock0/hard8MiB fallback. No system/global/production setting changed.
+- Fresh corrected pin run `20260912-012013`, **104/107**,11 model turns, exit1.
+  Added numeric503 provenance passes through real Gateway/model boundary. All
+  functional checks pass; only known native denial/no-route/aggregate secrecy fail.
+
+Host verification: **584/584 Vitest +3/3 node evidence tests**,38 Vitest files,
+immutable run after typecheck completed; full workspace typecheck, catalog,
+secrets, syntax/diff, and10 packed-license checks pass. An earlier parallel
+build/test run is not used as final evidence; final test run used stable artifacts.
+
+Unsent upstream report now includes published-latest runtime evidence and private
+reporting route from SECURITY.md. Explicit permission to send privately requested;
+no report sent. No upstream patch, credential import, log suppression, connected
+snapshot, phase merge/tag, later-phase acceptance or beta release. Final kernel
+regression and hosted CI results follow below.
+
+
+Fresh `phase-3 installed kernel-live` run `20260912-012143`: **98/98 structural
+checks**, live conformance `ok:true`, exit0. Kernel/filesystem regression passes.
+The final full-mode no-input check also exercises the fail-closed cleanup path;
+its current-run scope and exit result are recorded below.
+
+Final no-input `phase-4 installed full` run20260912-012551: expectedexit2,
+blocked/fullPhaseAcceptancefalse. Prior012352 did not reach tests: ACPI shutdown
+was ignored; guest agent disconnected. Guest systemd poweroff via the existing
+tester administration path shut it down gracefully (no forced power-off), then
+normal fresh-snapshot test succeeded in demonstrating the missing-input gate.

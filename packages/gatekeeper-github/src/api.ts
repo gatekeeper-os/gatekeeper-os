@@ -1,6 +1,6 @@
 /** Fixed-origin GitHub REST transport. Redirects and arbitrary API destinations are forbidden. */
 export class GitHubError extends Error {
-    constructor(readonly status: number) { super(`GitHub request failed (${status}).`); }
+    constructor(readonly status: number, readonly providerResponseStatus?: number) { super(`GitHub request failed (${status}).`); }
 }
 /** Injectable transport is for offline tests; production always uses native fetch. */
 export type Transport = typeof fetch;
@@ -35,12 +35,16 @@ export async function boundedBody(response: Response, maximum = 2 * 1024 * 1024)
 export class GitHubApi {
     constructor(private readonly token: () => string | Promise<string>, private readonly transport: Transport = fetch) { }
     async graphql(query: string, variables: Record<string, unknown>): Promise<Record<string, unknown>> {
-        const response = object(await this.request('/graphql', 'POST', { query, variables }));
+        const received = await this.requestWithStatus('/graphql', 'POST', { query, variables });
+        const response = object(received.value);
         if (response.errors !== undefined)
-            throw new GitHubError(502);
+            throw new GitHubError(502, received.status);
         return object(response.data);
     }
     async request(path: string, method = 'GET', body?: unknown, diff = false): Promise<unknown> {
+        return (await this.requestWithStatus(path, method, body, diff)).value;
+    }
+    private async requestWithStatus(path: string, method = 'GET', body?: unknown, diff = false): Promise<{ value: unknown; status: number }> {
         if (!path.startsWith('/') || path.startsWith('//') || /[\\\r\n#]/u.test(path))
             throw new GitHubError(400);
         try {
@@ -52,10 +56,10 @@ export class GitHubApi {
             });
             if (!response.ok) {
                 await response.body?.cancel();
-                throw new GitHubError(response.status === 403 && (response.headers.get("x-ratelimit-remaining") === "0" || response.headers.has("retry-after")) ? 429 : response.status);
+                throw new GitHubError(response.status === 403 && (response.headers.get("x-ratelimit-remaining") === "0" || response.headers.has("retry-after")) ? 429 : response.status, response.status);
             }
             const text = await boundedBody(response, diff ? 1024 * 1024 : 2 * 1024 * 1024);
-            return diff ? text : text ? JSON.parse(text) : null;
+            return { value: diff ? text : text ? JSON.parse(text) : null, status: response.status };
         }
         catch (error) {
             throw error instanceof GitHubError ? error : new GitHubError(0);

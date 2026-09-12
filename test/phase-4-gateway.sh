@@ -5,6 +5,10 @@ set -euo pipefail
 [ "${CLAWOS_TEST_MODE:-}" = gateway-integration ] || exit 1
 umask 077
 export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
+if [ -n "${CLAWOS_TEST_UPSTREAM_ROOT:-}" ]; then
+  [ "$CLAWOS_TEST_UPSTREAM_ROOT" = /home/tester/phase4-upstream/node_modules/openclaw ] || exit 1
+  export PATH="/home/tester/phase4-upstream/node_modules/.bin:$PATH"
+fi
 export CLAWOS_KERNEL_VM=1 CLAWOS_CELL=kernel-test OPENCLAW_NO_AUTO_UPDATE=1
 export OPENCLAW_STATE_DIR=/home/tester/.openclaw-kernel-test
 export OPENCLAW_CONFIG_PATH=/home/tester/.openclaw-kernel-test/openclaw.json

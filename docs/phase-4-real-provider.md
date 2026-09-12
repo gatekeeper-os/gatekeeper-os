@@ -1,14 +1,17 @@
 # Phase 4 real-provider acceptance prerequisites
 
 **Not accepted.** `gateway-integration` uses synthetic GitHub and cannot pass
-the full gate. `test/phase-4.sh` deliberately exits2; a live-provider runner and
-protected OAuth setup still need implementation and verification.
+the full gate. `test/phase-4.sh` now implements the live-provider runner, with protected stdin
+delivery. It exits2 when OAuth input is missing; full OAuth/effect acceptance
+remains unverified.
 
 ## Required test setup
 
-- Disposable GitHub login, repository and existing issue URL. Keep the account
-  isolated from production repositories: OAuth App `repo` scope is broad even
-  though OS grants remain resource-scoped.
+- Dedicated test repository and issue. Matt explicitly authorized his personal
+  `gh` login on2026-09-11: account `mmango7474` (56606128), private repository
+  `mmango7474/clawos-beta-acceptance` (1366819708), issue1 (5430217206).
+  This local exception does not authorize personal credentials in CI. OAuth App
+  `repo` scope is broad even though OS grants remain resource-scoped.
 - OAuth App public client ID and exact registered callback. The implemented flow
   is OAuth App web authorization with S256 PKCE, **not PAT import**.
 - Browser-reachable Gateway origin. For the loopback VM fixture it is
@@ -20,17 +23,17 @@ protected OAuth setup still need implementation and verification.
 - App secret provisioned privately through masked host-owned entry/private
   service environment delivery and the existing env/default SecretRef. Do not
   put secrets, authorization codes or single-use OAuth URLs in chat, command
-  arguments, source, reports or snapshots. Do not reuse the developer's `gh`
-  authentication as the disposable test identity.
+  arguments, source, reports or snapshots. The authorized `gh` identity may act as the independent observer; its token
+  must never be imported into the driver or counted as web OAuth acceptance.
 
 No secrets are needed to provide the login/repository/app names and public
 client ID. The single-use `clawos gatekeeper connect github` URL belongs only
 in the operator's private login flow.
 
-## Independent remote observation helper (implemented, not live-accepted)
+## Independent remote observation helper (live component verified)
 
 `packages/clawos-conformance/src/github-observer.ts` is the read-only evidence
-component for the future full runner. It imports no driver, does not read the
+component for the full runner. It imports no driver, does not read the
 OAuth journal and performs only uncached GETs to fixed `api.github.com` paths.
 Each capture binds numeric repository/issue IDs, paginates all comments (bounded
 to a disposable issue under 2,000 comments), and rejects count drift, duplicate
@@ -47,18 +50,21 @@ Reversed, copied or foreign receipts are rejected. The runner must still bind
 its report to the current run and verify actual OAuth identity separately.
 
 Public test repositories need no observer credential. For a private test repo,
-use a **separate read-only observer credential**, delivered privately to the VM
-process, never the developer's `gh` token or a token decrypted from the driver's
-journal. This is an independent read probe, not PAT import into the gatekeeper.
-Production transport is VM/full-mode-only; injected test transports always
-report `realProvider:false`. Unit tests exercise the helper with synthetic HTTP
-responses, not GitHub. The full OAuth/effect orchestrator remains unimplemented;
-this helper alone cannot pass Phase 4.
+prefer a **separate read-only observer credential**. For this explicitly
+authorized local test, the host-keyring `gh` token is delivered via protected stdin
+and guest tmpfs; the observer itself remains GET-only. Never read the driver's
+journal or substitute that credential into its OAuth flow. This is an independent read probe, not PAT import into the gatekeeper.
+Production transport is VM/full-or-observer-live-mode-only; injected test transports always
+report `realProvider:false`. Unit tests use synthetic HTTP. The separate `observer-live` VM run
+`20260912-010743` passed9/9 checks against actual GitHub: exact single-comment
+create, independent observation, recorded-comment deletion and baseline restore.
+The actor used the authorized gh credential, not the gatekeeper. This proves the
+observation component, not OAuth or full Phase4. Host readback confirmed zero
+remaining comments.
 
 ## Evidence required from the live runner
 
-Run acceptance through `scripts/vm/test.sh phase-4 installed full`, after the
-full runner is implemented. It must use the production driver entry/native
+Run acceptance through `scripts/vm/test.sh phase-4 installed full`, with protected input available. It must use the production driver entry/native
 fetch, not the VM fixture or a token seeded into the driver journal.
 
 1. Complete actual OAuth and bind the expected numeric GitHub account identity.
@@ -81,7 +87,7 @@ The conformance report is current-run `provider:"github.com"`, `mode:"full"`,
 
 ## Remaining upstream logging blocker
 
-On the pinned release, ordinary native user denial logs the rejected body in console and file
+On the pinned release and published2026.9.4, ordinary native user denial logs the rejected body in console and file
 logs (fresh VM20260911-184426, **92/93 checks**, exit1). Also, removing every
 `plugin-approvals` reviewer and requesting
 a synchronous action yields a native no-route failure **before** the kernel's
@@ -97,3 +103,26 @@ No private SDK import, upstream patch, weakened approval rule, or blanket log
 suppression is an accepted workaround. Until a supported fix is verified, keep
 Phase 4 open and do not create the `connected` snapshot, merge/tag the phase, or
 advance beta acceptance.
+
+## Protected delivery and current gates
+
+`CLAWOS_TEST_INPUT_STDIN=1 scripts/vm/test.sh phase-4 installed full` accepts
+one private JSON envelope on stdin: `input` (public identities/client ID/origin),
+`appSecret`, and optional `observerToken`. The launcher bounds input, creates a
+mode0600 guest tmpfs file with exclusive/no-follow semantics, consumes/unlinks
+it, and passes secrets only in the child environment. Never paste this envelope
+into chat or shell history. The existing gh token is obtained directly from the
+keyring into this pipe, not written to the repository or command line.
+
+`os.gatekeepers.account({vendor:"github"})` exposes validated account metadata
+only for the gateway-authenticated device operator; it cannot select another
+operator or create an account. Full acceptance binds its numeric accountId after
+actual web OAuth. The app client ID and masked private secret entry are pending.
+The authorized account alone cannot create an OAuth App through gh/API.
+
+Missing-input VM `20260912-011344` correctly returned exit2, full acceptancefalse.
+Published-latest mode (`phase-4 installed upstream-logging`) installs an exact
+resolved release in an isolated guest directory without changing the pin.
+Run `20260912-010401` on2026.9.4 passed103/106 checks: native-denial,
+missing-route and aggregate body secrecy still fail. No supported remedy is
+available/verified; the upstream report remains unsent.
