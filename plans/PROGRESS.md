@@ -2011,3 +2011,10 @@ Verified with `npm view <name> version dist-tags time --json` for each package:
 | @clawkeepers/cli | 0.1.0-beta.1 | 0.1.0-beta.1 | 0.1.0-beta.1 | 2026-09-12T16:42:49.646Z |
 
 Clean, initially empty prefix: `npm install --global --prefix <clean-prefix> @clawkeepers/cli@beta` exited 0; `<clean-prefix>/bin/clawos --version` returned 0.1.0-beta.1. No workspace links or source build. This is CLI install smoke, not cell acceptance. Core/org docs switch to explicit @beta and retain source-install VM evaluation and all unproven-boundary statements. All repositories remain private. Release run 34706409757 failed at the private-source guard as designed and must never be rerun. No publish, tag, visibility, trusted-publisher, or upstream change.
+
+
+## 2026-09-12 — private post-publish preparation, step 2
+
+Step 1 core docs merged f8232a85c0eece4f28b33e88cb0b810a723ebbff after CI34707380067 build-test green. Org docs a2fea2d32e0c1bfe4c2e98ea7af5c5ca1780dfae, with the required --port example corrected by f25e5075f6ec55a714e27f5c2c125822f3f5cacc after green build-test.
+
+Release archive preflight reads the packed manifest, then runs npm view name@version version --json. Exact existing versions log “already published, skipping”; only registry E404 proceeds to the unchanged npm publish --access public --tag dist_tag --provenance command. Malformed/auth/network/timeout/version mismatch responses fail closed. Tests cover all-five skip, absent version, lookup errors, archive identity and workflow wiring. No real publication or release workflow invocation used for verification. The original beta tag still points to 41ba040 and is not moved.

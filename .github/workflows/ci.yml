@@ -26,7 +26,7 @@ jobs:
       - run: node scripts/check-package-licenses.mjs --pack
       - run: pnpm test
       - run: pnpm exec tsx --test scripts/release.test.ts
-      - run: node --test scripts/check-secrets.test.mjs scripts/packed-load.test.mjs test/scripts/blueprint-audit-gate.test.mjs
+      - run: node --test scripts/release-published.test.mjs scripts/check-secrets.test.mjs scripts/packed-load.test.mjs test/scripts/blueprint-audit-gate.test.mjs
       - name: Inspect manifests and load packed plugins with pinned upstream
         env:
           OPENCLAW_STATE_DIR: ${{ runner.temp }}/clawos-pin-check
