@@ -23,7 +23,8 @@ pnpm install --frozen-lockfile --ignore-scripts > /home/tester/blueprint-deps.lo
 pnpm build > /home/tester/blueprint-build.log 2>&1
 mkdir -p /home/tester/blueprint-cli-package
 cli_archive=$(node scripts/pack-cli.mjs /home/tester/blueprint-cli-package)
-npm install -g "$cli_archive" --ignore-scripts > /home/tester/blueprint-install.log 2>&1
+npm install -g --prefix /home/tester/phase-checkpoint-cli "$cli_archive" --ignore-scripts > /home/tester/blueprint-install.log 2>&1
+export PATH="/home/tester/phase-checkpoint-cli/bin:$PATH"
 node --version > "$evidence/node-version"
 openclaw --version > "$evidence/upstream-version"
 pnpm --filter @clawkeepers/cli exec vitest run src/commands/blueprint.test.ts --reporter=default --reporter=json --outputFile="$evidence/blueprint-tests.json"
