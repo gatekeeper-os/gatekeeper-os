@@ -537,3 +537,58 @@ then delivers through the public host dispatcher and respects send/suppression p
 The late Claim hook handles only denial fallthrough. `registerCommand.requiredScopes`
 is also host-enforced, but external handlers lack the complete finalized audience
 context; no raw-label shortcut or bundled-only `exposeSenderIsOwner` is used.
+
+## Phase 4 native approval protocol (2026-09-11)
+
+Pinned2026.9.2 `docs/plugins/hooks.md:493–529` documents the `requireApproval`
+return and its immutable selected parameters/onResolution callback. Actual
+events are `plugin.approval.requested` / `plugin.approval.resolved`, not exec
+approval events (`docs/gateway/protocol.md:605,853`). The public
+`plugin.approval.resolve` method takes `{id,decision}`; the pending projection
+contains `request.pluginId` and `request.toolName`. Both require the operator
+approval scope. Read-only source validation: `PluginApprovalResolveParamsSchema`
+and `plugin-approval` protocol adapter in the published package. No internal
+module is imported or modified. Live validation uses only GatewayClient from
+`openclaw/plugin-sdk/gateway-runtime` plus public RPCs/events.
+
+
+## Phase 4 tool-error logging boundary (2026-09-11)
+
+Read-only source inspection of the published pin2026.9.2:
+`dist/agent-tool-definition-adapter-_QXAVYIM.js`,
+`executeAdaptedToolOperation`/`describeToolFailureInputs`, logs thrown errors
+with `raw_params` (and changed `effective_params`). Token redaction is **not**
+arbitrary request-body redaction. `dist/tool-result-error-CbDLJzG-.js`,
+`isToolResultError`, recognizes `details.status:"error"`; returning that result
+preserves failed terminal classification without invoking the thrown-error log.
+The kernel now uses this result boundary for its own registered tool callbacks,
+keeps its own failed-call audit flag, and never returns a caught exception string.
+No internal import or upstream patch is used.
+
+**Unresolved upstream-owned paths:** `agent-tools.before-tool-call-Bb7DJuFB.js`
+returns a failure disposition both for native user denial and when native
+plugin approval has no delivery route;
+its wrapper throws before the plugin's execute callback. That path still reaches
+the raw-argument logger. The historical fixture run20260911-182449 exposed it.
+Fresh run20260911-184426 confirmed native **deny** exposes the rejected body
+in both console and JSONL file logs. `pluginApprovalDeniedOutcome` returns
+`kind:"failure", disposition:"blocked"`; the wrapper throws
+`BeforeToolCallFailureError`, which the adapter
+`isBeforeToolCallBlockedError` predicate does not classify as a safe veto.
+A typed execute result cannot protect errors that occur before execute. Native
+approval timeouts and other host-side failures require the same scrutiny.
+
+The supported `logging.redactPatterns` applies to model/transcript text too,
+retains token prefix/suffix, and replaces defaults at some sinks; it is not a
+verified log-only body-removal switch. No blanket pattern, logger monkey-patch,
+private logger override, or disabled observability is installed. Successful
+provider-failure log scans must **not** close the denial/route-failure secrecy gates.
+
+
+### Published9.4 logging reproduction (2026-09-11)
+
+Fresh isolated VM20260912-010401 ran published `OpenClaw2026.9.4 (3a9d69d)`;
+103/106 checks,11 model turns, exit1. The verified native-denial/missing-route
+raw-argument logging behavior persists at runtime, not just in source inspection.
+No pin change, private SDK import or upstream modification. See the unsent report
+and Phase4 progress for exact invocation and structural evidence paths.

@@ -56,6 +56,43 @@ beforeEach(() => {
 });
 
 describe("kernel account routing with real registry and kit nonce state", () => {
+  it("accepts the provider's exact issuer callback and still rejects replay", async () => {
+    fixture.vendor = { ...fixture.vendor, oauthIssuer: "https://github.com/login/oauth" }; install(fixture.vendor);
+    const { state } = await begin();
+    const callback = `/os/gatekeeper/example/oauth/callback?code=fixture-code&iss=https%3A%2F%2Fgithub.com%2Flogin%2Foauth&state=${state}`;
+    expect((await request(callback)).status).toBe(200);
+    expect(fixture.complete).toHaveBeenCalledWith("operator-a", { code: "fixture-code", state });
+    expect((await request(callback)).status).toBe(400);
+    expect(fixture.complete).toHaveBeenCalledTimes(1);
+  });
+  it.each(["", "https://evil.invalid", "https://github.com/login/oauth/", "https://github.com/login/oauth?x=1", "https://github.com/login/oauth#x", "https://github.com/login/oauth\n"])("rejects mismatched issuer before exchange and consumes the callback: %j", async issuer => {
+    fixture.vendor = { ...fixture.vendor, oauthIssuer: "https://github.com/login/oauth" }; install(fixture.vendor);
+    const { callback } = await begin();
+    expect((await request(callback + "&iss=" + encodeURIComponent(issuer))).status).toBe(400);
+    expect((await request(callback)).status).toBe(400);
+    expect(fixture.complete).not.toHaveBeenCalled();
+  });
+  it("rejects undeclared, duplicate, or start-route issuers without exchanging", async () => {
+    const a = await begin();
+    expect((await request(a.callback + "&iss=https%3A%2F%2Fgithub.com%2Flogin%2Foauth")).status).toBe(400);
+    fixture.vendor = { ...fixture.vendor, oauthIssuer: "https://github.com/login/oauth" }; install(fixture.vendor);
+    const b = await begin();
+    expect((await request(b.callback + "&iss=https%3A%2F%2Fgithub.com%2Flogin%2Foauth&iss=https%3A%2F%2Fgithub.com%2Flogin%2Foauth")).status).toBe(400);
+    const start = await router.connect("example", "operator-a");
+    expect((await request(start.url + "&iss=https%3A%2F%2Fgithub.com%2Flogin%2Foauth")).status).toBe(400);
+    expect(fixture.complete).not.toHaveBeenCalled();
+  });
+  it("reports only numeric callback stages and retains denial if diagnostics fail", async () => {
+    const report = vi.fn(); router = new OAuthRouter(registry, () => clock, report);
+    const a = await begin();
+    fixture.complete.mockRejectedValueOnce(new Error("private-provider-payload"));
+    const failed = await request(a.callback);
+    expect(failed.status).toBe(400); expect(failed.body).not.toContain("private-provider");
+    expect(report.mock.calls).toEqual([[5]]);
+    report.mockImplementation(() => { throw new Error("private-logger-payload"); });
+    expect((await request(a.callback)).status).toBe(400);
+    expect(report.mock.calls).toEqual([[5], [3]]);
+  });
   it("binds start and callback to the authenticated operator and catalog resource request", async () => {
     const { state, callback, response } = await begin("operator-a", ["item"]);
     expect(fixture.connect).toHaveBeenCalledWith("operator-a", { state, callbackPath: "/os/gatekeeper/example/oauth/callback", resourceTypes: ["item"] });
@@ -162,5 +199,26 @@ describe("kernel account routing with real registry and kit nonce state", () => 
     expect((await request(url + "&large=" + "x".repeat(8192))).status).toBe(400);
     expect(fixture.connect).not.toHaveBeenCalled();
     expect((await request(url)).status).toBe(303);
+  });
+});
+
+
+describe("credential-free account registry metadata",()=>{
+  it("returns only the authenticated operator's schema-checked account description",async()=>{
+    expect(await registry.accountDescription("example","operator-a")).toBeNull();
+    fixture.account.describe=async()=>({displayName:"Fixture",accountId:"99"});
+    fixture.accounts.set("operator-a",fixture.account);
+    expect(await registry.accountDescription("example","operator-a")).toEqual({displayName:"Fixture",accountId:"99"});
+    expect(await registry.accountDescription("example","operator-b")).toBeNull();
+  });
+  it("unwraps the kit runtime membrane before returning credential-free primitives",async()=>{
+    fixture.account.describe=async()=>new Proxy({displayName:"Fixture",accountId:"99"},{});
+    fixture.accounts.set("operator-a",fixture.account);
+    expect(await registry.accountDescription("example","operator-a")).toEqual({displayName:"Fixture",accountId:"99"});
+  });
+  it("rejects credential-bearing extra fields instead of returning them",async()=>{
+    fixture.account.describe=async()=>({displayName:"Fixture",token:"private-fixture-value"});
+    fixture.accounts.set("operator-a",fixture.account);
+    await expect(registry.accountDescription("example","operator-a")).rejects.toThrow("Invalid account description.");
   });
 });

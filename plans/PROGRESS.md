@@ -1272,6 +1272,46 @@ green candidate CI; final remote merge/tag state is recorded by the orchestrator
   acceptance still requires a disposable test repository/identity/OAuth app, requested
   by name/link only; no credentials borrowed from production.
 
+## 2026-09-09 — Phase 4 implementation candidate; live acceptance open
+
+Implemented the approved eleven-tool GitHub surface in `packages/gatekeeper-github`:
+strict account-bound repo/issue/pull introductions, OAuth App web flow with S256
+PKCE and kernel nonce binding, encrypted credentials/refresh/revocation, seven
+authorized observations, four deferred action kinds, durable overlays, stable
+GraphQL node-ID effects, comment deletion/created-issue closure reverts, and
+observer ACL checks. Reviews deliberately have no generic revert. Deployment
+inputs ship with the package; the public client ID is not classified as a secret.
+Both original STOP artifacts and the existing completion authorization are
+preserved in `REVIEW-REQUESTED.md`; no repeat approval or acceptance waiver.
+
+Parent review read the implementation and corrected unbounded query cache growth:
+at most 32 memory/disk slots per resource, exact query-key matching on collisions,
+with a restart/collision regression. The kit change is only the explicit
+`Promise<ActionKind[]>` annotation on its existing empty default method.
+
+Host verification: full workspace build/typecheck pass; `pnpm test` **474/474**
+across 33 files, including **64 GitHub** and **48 kit** tests. Catalog, secrecy and
+diff checks pass. These are offline tests, not live-provider or VM evidence.
+No VM command was run, no upstream pin/snapshot changed, no production access or
+real GitHub login/effect occurred for this candidate. Upstream remains pinned to
+2026.9.2; Phase 3 acceptance and the Telegram-only deferral remain unchanged.
+
+**Phase 4 is NOT accepted.** Still required:
+
+- Named disposable GitHub repository, identity and OAuth App; app client ID and
+  trusted callback origin. The existing names/links request is unanswered. No
+  personal `gh` credential may be silently reused as an acceptance fixture.
+- Host-owned private credential provisioning and supported private web login.
+  Device flow, PAT import and a configuration wizard are not implemented/claimed.
+- Implement/run live Phase 4 VM scenarios through `scripts/vm/test.sh`, including
+  GitHub-backed `deferred-approval` and `require-approval-roundtrip`, actual model
+  simulation/readback, real apply/reject/revert, remote verification and audit/log
+  secrecy evidence. Mock assertions are not substitutes for these gates.
+- Candidate CI and live acceptance review before merge or `phase-4` tagging.
+
+The original Phase 5–7 scope remains outstanding; no beta release, public
+visibility change, organization creation or repository transfer is performed.
+
 ## 2026-09-11 — repair scheduled CI scaffold (candidate)
 
 Investigated failing nightly runs 34589038215 and 34465773220. Latest/beta require
@@ -1294,3 +1334,309 @@ Local verification: workspace build passed; new smoke helper typecheck passed;
 is not passed); catalog/secret checks and diff whitespace checks passed. Running
 the helper outside a hosted VM was correctly refused before config/runtime mutation.
 GitHub-hosted live results pending; no local VM phase acceptance run is claimed.
+
+## 2026-09-11 — Phase 4 Gateway integration, first attempt
+
+Updated phase/4-github with main4427e32, retaining both progress histories.
+New gateway-integration harness uses the production GitHubVendor through its
+existing test transport seam, actual kernel/SDK/CLI/model turns, and synthetic
+provider observations. It cannot satisfy full real-provider conformance.
+
+First fresh-installed run `20260911-181057-phase-4` exited1: OAuth/PKCE/private
+redirect/replay/device/CLI grant checks passed, but the first granted turn offered
+only the two meta-tools. OS-owned SQLite showed an active issue grant and no
+observers; the passive hook report showed missing GitHub tool preflight.
+`clawos-kernel/openclaw.plugin.json` still declared only filesystem tools, a
+known upstream manifest requirement recorded in upstream-reference.md373.
+Hypothesis: missing registering-kernel contracts suppress GitHub tool exposure,
+not an OAuth or grant-creation failure. Adding the eleven already-approved tool
+IDs and a catalog-to-registering-manifest regression; rerun from installed required.
+No upstream, production, real account or external mutation changes.
+
+Second run `20260911-181333-phase-4` exited1 at the same assertion for a
+different, now-isolated reason. Manifest correction is verified: both GitHub
+issue tools are on all three model requests, both hooks return no error, and
+OS audit confirms action.submit plus successful observation. The model harness
+failed to associate returned tool results, not grant/driver execution. Next probe
+records only message field names and synthetic call-ID matches, never bodies.
+
+Diagnostic run `20260911-181554-phase-4` isolated the result matcher: the
+OpenAI-compatible adapter returned `githubprobe0/1` for emitted
+`github-probe-0/1`. Field-name/ID-only evidence confirms normalization; no
+provider bodies were collected. Emit alphanumeric IDs initially, then compare
+exact returned IDs. No change to kernel authorization or upstream.
+
+**Verified checkpoint:** `20260911-181725-phase-4` restored `installed` and
+exited0 with **53/53 structural checks across7 actual model turns**. Real
+Gateway/production kernel/GitHubVendor and CLI prove synthetic OAuth/PKCE,
+account encryption, issue-only tools, same-turn pending comment readback,
+operator-only apply/reject/revert, independent fixture provider counts,
+no duplicate apply, revocation and secrecy. Raw API/model/Gateway data was not
+collected. This is NOT real GitHub or native approval acceptance.
+Host workspace **532/532 tests across35 files**, fixture strict typecheck,
+shell syntax, catalog/secrets and diff checks pass. Conformance evidence parser
+has57 new regressions; fixture/stale/failed/missing evidence cannot satisfy the
+full-provider suites. No phase4 tag, connected snapshot or beta release.
+
+## 2026-09-11 — native approval extension, first VM attempt
+
+Added operator-configured synchronousActions (default empty; same four reviewed
+actions) and kernel-owned synchronous outcome settlement, with atomic uncertain
+intent before effect. Nine driver policy tests and32 selected kernel tests pass;
+workspace build and changed-package typechecks pass.
+
+Fresh run `20260911-182449-phase-4`: all53 deferred assertions still pass.
+The native action fails closed before effect: upstream reports “Plugin approval
+unavailable (no approval route)”. Our generic CLI SDK connection had not advertised
+`plugin-approvals`, so it was not a live reviewer route. Next attempt explicitly
+advertises the documented client capability on the observing operator only;
+read-only negative client remains unable to decide. Raw vendor responses are not
+collected; upstream tool errors can include raw_params, which must be accounted
+for in real-provider logging secrecy acceptance (still open).
+
+**Native checkpoint verified:** fresh-installed `20260911-182738-phase-4`
+exited0: **80/80 checks across9 actual model turns**. This includes all prior
+deferred checks and actual upstream plugin.approval.requested/resolved flows:
+read-only reviewer denied, tool remains paused before operator decision,
+allow-once applies exactly once with readback/audit and zero pending actions,
+deny creates no provider mutation or overlay. Scenario report explicitly says
+realProvider:false and nativeApprovalRoundtrip:true; its initial scope file
+retained the older conservative native=false label. Future scope files now point
+to scenarios.json instead of duplicating that result. No artifact rewritten.
+
+The all-four default remains simulated. Native policy is an immutable validated
+subset of the same reviewed action tools, not a new tool/input/auth surface.
+No shared/kit contract or upstream schema changed. Kernel queue completion is
+internal and bound to the original queue; process interruption leaves an
+uncertain non-retryable action. Provider read caches invalidate after native
+effects. Native fixture and full-real-provider acceptance are distinct.
+
+Still required: disposable GitHub OAuth setup and real service scenarios;
+full logging secrecy (upstream failed-tool logs can echo raw_params); connected
+snapshot and full Phase4 review. The full script remains explicitly blocked,
+not a green scaffold. Phase3 kernel-live regression is running after the kernel
+change. No phase advancement or release.
+
+**Kernel regression verified:** `20260911-182923-phase-3`, fresh `installed`,
+`kernel-live`, exit0. All98 structural checks and38 conformance checks pass;
+guest kernel95/95 and CLI117/117 tests pass. Filesystem capability boundaries,
+request/approval flows, no-hook fail-closed behavior and audit remain intact.
+Full host suite542/542 passed, followed by6 additional OAuth-token-prefix
+secrecy scanner regressions (values withheld). GitHub OAuth/App token prefixes
+are now covered by both source and artifact scanners, not just PAT prefixes.
+Updated fixture scope metadata to defer native verdict to scenarios.json.
+
+No new schema migration, upstream pin, production state, GitHub account effect,
+connected snapshot, phase4 acceptance or beta release. The anonymous provider
+fixtures cost no model API usage. Subagent conformance files were reviewed and
+verified; later child tool relay timeouts produced no GitHub edits, so parent
+implemented and verified the synchronous policy locally.
+
+
+## 2026-09-11 — Typed tool failures and upstream native-denial logging blocker
+
+Implemented a kernel-owned `runTool` boundary around all registered OS/gatekeeper
+execute callbacks. Exceptions return a generic `details.status:"error"` result,
+never a caught error/body. A private failed-call flag preserves `ok:false` audit
+semantics even though the execute promise resolves. Capability checks, native
+approval decisions and uncertain/nonretryable actions are unchanged.
+
+Unit coverage includes driver error/input secrecy, malformed resource requests,
+unavailable runtime and audience-race denial. Host workspace: **553/553 tests
+across37 files**. Kernel/conformance typechecks, kernel dependency build, catalog,
+secret scan and diff checks pass.
+
+The expanded VM fixture adds an approved503 provider failure, one-shot/replay
+checks, failed audit and actual post-shutdown console/file/audit scans. Console
+logs are now separate for deferred/native runs. Full real-provider conformance
+requires distinct provider-error, native-denial and native-route-failure secrecy
+checks; missing evidence fails, and synthetic evidence remains inadmissible.
+
+Exact command:
+`CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state scripts/vm/test.sh phase-4 installed gateway-integration`
+
+- `20260911-184212`: host snapshot/capability preflight failed before guest work;
+  no live assertions ran. Both internal QCOW snapshots and saved XML were intact.
+  Replacement same-user session virtqemud had reverted to8MiB soft memlock;
+  explicit capability probe showed QEMU io_uring ENOMEM. Used previously
+  authorized/documented process-local recovery on verified PID924070: soft0,
+  hard8MiB unchanged; redefined only original snapshot metadata from saved XML.
+  Original base/installed timestamps remain unchanged; no images recreated.
+- `20260911-184426`: **92/93 checks**, ten model turns, **exit1**. All functional
+  and provider-failure checks pass, aggregate log-body scan fails.
+- `20260911-184853`: **94/96 checks**, ten model turns, **exit1**. Independent
+  `provider-failure-log-secrecy` and credential scan pass. Native-denial body
+  secrecy and aggregate body scan fail in console and JSONL file logs.
+
+Root cause: upstream `pluginApprovalDeniedOutcome` uses failure/blocked,
+causing `BeforeToolCallFailureError`; adapter only recognizes the separate
+blocked-error class, otherwise logging raw tool arguments before our callback.
+Prior missing-route failure has the same outside-execute exposure. No upstream
+patch/import, approval weakening or log suppression. Two clear-cause failures
+preserved; do not keep rerunning without a supported fix.
+
+`plans/upstream-native-approval-logging.md` is a concrete **unsent** upstream bug
+report. `docs/phase-4-real-provider.md` records public setup inputs, protected
+OAuth constraints, required independent remote evidence and honest full-runner
+status. No disposable GitHub setup supplied yet; no personal gh credentials
+reused. **Phase4/beta remain unaccepted; no phase tag/merge/connected snapshot.**
+Kernel regression/hosted CI results are recorded below when verified.
+
+- Fresh kernel-live regression `20260911-185018-phase-3`: **98/98 structural checks**, live conformance `ok:true`, exit0; guest97kernel/117CLI tests. VM shutdown requested after collection; no connected snapshot. Draft PR6 remains the checkpoint target.
+
+## 2026-09-11 — Independent GitHub observation and explicit missing-route coverage
+
+Added `packages/clawos-conformance/src/github-observer.ts`, the independent
+read-only REST evidence component for a future full Phase4 runner. It does not
+import the driver, read token journals or perform mutations. Expected numeric
+repository/issue/author identities are bound before accepting comment snapshots;
+bounded complete pagination, duplicate/count-drift rejection, fixed-origin GETs,
+no redirects, bounded bodies and generic errors protect evidence and credentials.
+Opaque in-memory receipts compare unchanged, exact single-create and only a
+previously recorded created-comment reversion, preserving pre-existing comments.
+Bodies never enter receipts/verdicts; injected transport explicitly means
+synthetic evidence. Native fetch is restricted to the disposable VM/full mode.
+The helper is not wired into a complete OAuth/effect orchestrator yet and has
+not contacted real GitHub. Public repositories need no observer token; private
+ones require separately protected read-only observation, not driver token access.
+
+Host verification: `pnpm test` **574/574 tests across38 files**, including21 new
+observer regressions; conformance `tsc --noEmit`, catalog, secret scan, JS syntax
+and diff checks pass. No kernel/driver implementation or upstream pin changed.
+Latest and beta npm tags still resolve to2026.9.4; no newer published package
+was available to test. No upstream report was sent.
+
+Expanded the real-Gateway/synthetic-GitHub fixture to disconnect the only native
+approval receiver, run a model-requested synchronous write, require the specific
+upstream approval-unavailable result, and verify no remote/overlay/pending effect.
+Provider failure, native deny and missing-route log secrecy remain separate gates.
+
+Exact VM command:
+`CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state scripts/vm/test.sh phase-4 installed gateway-integration`
+
+- `20260911-222333-phase-4`: **93/94 checks**, exit1, stopped before log scan.
+  Test-order defect: the prior deliberate provider failure leaves an uncertain
+  journal entry (`gatekeeper-kit` requires reconciliation), blocking the next
+  write/read before genuine missing-route coverage. Generic denied-result
+  matching was insufficient; this is NOT missing-route acceptance evidence.
+  Corrected order puts missing-route first and reconnects the approval receiver
+  before the deliberately failing provider call. Strengthened result matching;
+  no product behavior changed and original failing artifacts remain intact.
+- Fresh corrected run `20260911-222555-phase-4` is recorded below on completion.
+
+Corrected run **20260911-222555-phase-4:100/103 checks,11 actual model turns,
+exit1**, unmodified OpenClaw2026.9.2 (3928bad), fresh installed snapshot.
+All functional scenarios pass, including specific native approval-unavailable,
+no mutation/read overlay/pending action, then restored reviewer and deliberate
+approved provider failure. Post-shutdown5-file scan: provider-failure bodies and
+credentials clean; **native-denial**, **missing-route**, and aggregate body secrecy
+FAIL. No blind rerun planned: the unchanged upstream logger is the known cause.
+Only structural evidence collected; raw logs remain in disposable guest state.
+
+The helper's native GitHub transport is unexercised; its21 tests are synthetic.
+Full real-provider orchestrator, disposable GitHub account/repo/OAuth App and a
+supported upstream log-secrecy fix remain outstanding. No connected snapshot,
+Phase4 tag/merge, later-phase acceptance, production change or beta release.
+
+
+## 2026-09-11 — Authorized live GitHub component and full runner implementation
+
+Matt explicitly authorized personal gh and completion of beta. This supersedes
+older disposable-account-only text for local testing, not OAuth correctness,
+personal CI credentials, secrecy or the no-upstream-modification invariant.
+Created private `mmango7474/clawos-beta-acceptance`, repository1366819708,
+issue1/5430217206, bound to account56606128. No production repository modified.
+
+Implemented full Phase4 runner (`test/phase-4.sh`, `github-real-*` helpers),
+protected bounded stdin delivery via guest tmpfs, operator-scoped account metadata
+RPC, and numeric HTTP response provenance across GitHub/kit/kernel. No original
+error bodies/causes retained; local/network errors do not claim response status.
+GraphQL HTTP200 errors preserve the actual response status, not an inferred502.
+The runner uses real web OAuth/PKCE, production driver, independent remote reads,
+deferred apply/reject/revert, native allow/deny/no-route, and post-shutdown log
+scans. Missing inputs fail closed; full OAuth acceptance is still unverified.
+Full evidence must also pass both existing live conformance suites. The3 pure
+runner evidence tests now run in ordinary `pnpm test`/CI.
+
+Exact acceptance prefix for all runs:
+`CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state scripts/vm/test.sh`
+
+- `phase-4 installed observer-live`, protected `CLAWOS_TEST_INPUT_STDIN=1`:
+  `20260912-010743`, **9/9 PASS**, actual GitHub. Host keyring token piped directly
+  to protected delivery (not argv/artifacts/driver journal). Test actor created
+  one unique comment; independent observer verified exact create and reversion.
+  Host readback confirms zero comments. This is **NOT gatekeeper/OAuth acceptance**.
+- `phase-4 installed full`, no input: `20260912-011344`, expected **exit2**,
+  blocked/fullPhaseAcceptancefalse. App client ID and privately entered secret
+  remain pending. Native browser unavailable; no authenticated UI for app creation.
+- `phase-4 installed upstream-logging`: initial `20260912-010022` failed at the
+  new metadata RPC (structuredClone of a live proxy). Fixed by copying primitive
+  description fields and validating the closed schema; added proxy regression.
+  Fresh corrected `20260912-010401`, published **2026.9.4 (3a9d69d)**, **103/106**,
+  11 model turns, exit1. Native deny/no-route and aggregate body secrecy fail.
+  Exact isolated install; pin unchanged. Synthetic GitHub in this logging repro.
+- `phase-4 installed gateway-integration`: `20260912-011908` stopped before
+  tests: qemu-img io_uring ENOMEM from session virtqemud1335736, journal-confirmed.
+  Original snapshots verified intact; restored already-documented process-local
+  soft-memlock0/hard8MiB fallback. No system/global/production setting changed.
+- Fresh corrected pin run `20260912-012013`, **104/107**,11 model turns, exit1.
+  Added numeric503 provenance passes through real Gateway/model boundary. All
+  functional checks pass; only known native denial/no-route/aggregate secrecy fail.
+
+Host verification: **584/584 Vitest +3/3 node evidence tests**,38 Vitest files,
+immutable run after typecheck completed; full workspace typecheck, catalog,
+secrets, syntax/diff, and10 packed-license checks pass. An earlier parallel
+build/test run is not used as final evidence; final test run used stable artifacts.
+
+Unsent upstream report now includes published-latest runtime evidence and private
+reporting route from SECURITY.md. Explicit permission to send privately requested;
+no report sent. No upstream patch, credential import, log suppression, connected
+snapshot, phase merge/tag, later-phase acceptance or beta release. Final kernel
+regression and hosted CI results follow below.
+
+
+Fresh `phase-3 installed kernel-live` run `20260912-012143`: **98/98 structural
+checks**, live conformance `ok:true`, exit0. Kernel/filesystem regression passes.
+The final full-mode no-input check also exercises the fail-closed cleanup path;
+its current-run scope and exit result are recorded below.
+
+Final no-input `phase-4 installed full` run20260912-012551: expectedexit2,
+blocked/fullPhaseAcceptancefalse. Prior012352 did not reach tests: ACPI shutdown
+was ignored; guest agent disconnected. Guest systemd poweroff via the existing
+tester administration path shut it down gracefully (no forced power-off), then
+normal fresh-snapshot test succeeded in demonstrating the missing-input gate.
+
+## OAuth setup continuation — 2026-09-11
+Public client ID received and secret entered via a masked operator terminal into private host tmpfs. Full run `20260912-025503-phase-4` stopped at `oauth-start-url-private` before external OAuth: the kernel deliberately returns a relative local route, whereas the new runner incorrectly required an absolute URL. Fixed the harness to validate the exact relative GitHub start route/32-character nonce and resolve only against fixed loopback19100; hostile origins, extra parameters and path aliases are rejected by the regression. This does not change the production OAuth implementation or establish credential validity. Clean rerun required.
+
+OAuth run `20260912-033256-phase-4`: fresh PKCE preflight passed, but Matt's browser callback returned generic400 before connection completed. No account/effect acceptance. Stopped waiting scenario explicitly (exit143), allowed runner cleanup/collection; no in-flight files edited. Controlled invalid-code exchange returned GitHub200/bad_verification_code, which does not prove the real exchange succeeds. Existing logs contain no stage evidence. Added fixed numeric-only router/vendor diagnostics and secrecy regressions to distinguish nonce, token exchange, identity and storage failures on the next fresh flow; no provider bodies/errors, credentials, callback URLs or operator IDs logged. Targeted36OAuth tests +4evidence tests and both package typechecks passed before clean rerun. Cause remains unconfirmed.
+
+
+## Callback issuer rejection — 2026-09-11
+Browser callback structure now confirms GitHub supplies RFC 9207 `iss`; the router's closed query allowlist rejected it at numeric stage1 before token exchange. Previous masked capture was a different address and did not support a root cause. Added optional trusted adapter `oauthIssuer`, exact issuer matching, and positive/negative/replay regressions. No callback values retained; the shared attempt is retired and a fresh VM flow is required. Verification pending; no OAuth/beta success claimed.
+
+Issuer fix verification: full workspace typecheck exit0,44/44 OAuth tests and4/4 evidence tests pass; diff check clean. Fresh full VM run reset/sync and all12 pre-authorization checks pass; waiting for browser callback. Temporary nova callback forward19100 readinessHTTP200. Fresh link delivered only to operator terminal. No live token-exchange success yet.
+
+
+## Live OAuth and GitHub effects verified — 2026-09-11
+Issuer-fix full VM run `20260912-035736-phase-4` on unmodified pinned
+OpenClaw 2026.9.2 completed real GitHub OAuth/PKCE, bound account56606128
+(mmango7474), and rejected callback replay. All deferred simulate/readback,
+operator-only apply, duplicate-apply rejection, reject, recorded-comment revert,
+grant revocation, native allow/deny/no-route, unauthorized decision and replay
+checks passed against actual GitHub. Two test-owned comments were reverted;
+independent host GitHub GETs confirm issue1 has zero comments remaining.
+
+Saved report: **94/98 checks**,9 model turns, exit1. The four false checks are
+native-denial-log-secrecy, approval-route-failure-log-secrecy and their two
+aggregate gates (secret-scan-clean/full-required-evidence-present). Post-shutdown
+scan covered5 logs and1 audit: credentials and kernel-owned provider-failure
+body checks pass; native denied/no-route bodies still leak in upstream logs.
+The deliberate provider failure has real HTTP200 GraphQL-error provenance.
+This is live OAuth/effect proof, **not full Phase4 acceptance**; the final two
+conformance suites were not reached because the log-secrecy gate failed.
+No upstream patch, connected snapshot, merge/tag, later-phase acceptance or beta.
+OAuth App setup is no longer the blocker; a supported logging fix remains.
+The existing private upstream report is still unsent, pending explicit permission.
+
+Final host verification:594/594 Vitest +4/4 runner checks, catalog/secrets/diff checks pass. VM confirmed shut off; localhost19100 tunnel closed and transient host app-secret file removed. Original base/installed snapshots retained; no connected snapshot.

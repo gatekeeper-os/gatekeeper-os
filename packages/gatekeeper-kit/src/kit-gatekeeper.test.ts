@@ -122,3 +122,16 @@ describe("recovery and in-flight boundaries", () => {
     await r.rejectAction(1); await r.applyAction(2); expect(r.base).toEqual(["second"]);
   });
 });
+
+it('keeps HTTP provenance through native execution while retaining uncertain nonretryable state', async () => {
+  const r = new Resource(file()), q = new TestApprovalQueue(), s = await r.startSession(q);
+  r.awaitDecision = true;
+  r.apply.mockRejectedValue(Object.assign(new Error('private provider body'), { providerResponseStatus: 422, token: 'private-token' }));
+  const ctx = { ...q.context(), actionApproval: { toolCallId: 'test-call', tool: put, params } };
+  const failure = await s.call(put, params, ctx).catch(error => error);
+  expect(failure).toMatchObject({ providerResponseStatus: 422 });
+  expect(failure.message).not.toContain('private');
+  expect(JSON.stringify(failure)).not.toContain('private');
+  await expect(r.applyAction(1)).rejects.toThrow();
+  expect(r.apply).toHaveBeenCalledTimes(1);
+});

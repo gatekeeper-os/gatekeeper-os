@@ -862,6 +862,9 @@ Blueprints re-enable capabilities deliberately: a "coder" blueprint sets `agents
 
 OAuth client secrets and API keys enter via OpenClaw SecretRefs (`{source: "env"|"file"|"exec"}`, **VERIFIED**) referenced from `plugins.entries.gatekeeper-*.config`, never as literals in fragments. Per-operator tokens obtained by OAuth are stored in `os/gatekeepers/<vendor>/accounts/<operatorId>.json`, encrypted with a cell key at `os/cell.key` (mode `600`, generated at install; AES-256-GCM via `node:crypto`). The kernel never reads token files — only the owning gatekeeper does, through the kit. OAuth redirect URIs are `${gateway.publicOrigin}/os/gatekeeper/<vendor>/oauth/callback`; state parameters embed a nonce bound to the operator and expire in 10 minutes (two-stage nonce from cloudflare-os `SKELETON.md`). Because the baseline binds to loopback, OAuth callbacks need either `openclaw gateway` exposed via Tailscale (`gateway.bind: "tailnet"`, upstream-supported) or the operator completing the flow on the host's browser; `clawos gatekeeper connect` explains which applies.
 
+Callback interoperability (2026-09-11 live GitHub finding): the kernel accepts optional RFC 9207 `iss` only on callbacks, exactly matching the trusted adapter's `oauthIssuer` declaration (GitHub: `https://github.com/login/oauth`). Unknown/duplicate parameters remain rejected; an absent issuer preserves existing providers, while an undeclared or mismatched issuer is rejected before token exchange. The callback issuer never selects a network destination. State consumption, operator/vendor binding and PKCE are unchanged.
+
+
 ### 7.5 Supply chain
 
 **VERIFIED S-1 m (2026-09-07):** configure `security.installPolicy.exec` with
@@ -1100,6 +1103,30 @@ This implements §4.7's original private-only beta boundary, not v1.1 sharing.
 **Deliverables:** `packages/gatekeeper-github` following §4.6 (with the two STOP reviews), resources `repo`, `issue`, `pull` (URL patterns exactly as cloudflare-os: `https://github.com/:owner/:repo`, `…/issues/:number`, `…/pull/:number`), tools (observations: `gk_github_repo_get`, `gk_github_repo_list_issues`, `gk_github_repo_list_pulls`, `gk_github_repo_read_file`, `gk_github_issue_get`, `gk_github_pull_get`, `gk_github_pull_diff`; actions: `gk_github_issue_create`, `gk_github_issue_comment`, `gk_github_pull_comment`, `gk_github_pull_review`), OAuth device/web flow, observer strategy B (`hasRepoAccess` distinguishing 403/404 → false from transient errors → throw), simulation for all four actions (overlay-at-read), `revertAction` for comments (delete) and issue create (close), `deploy-inputs.json`.
 
 **Acceptance.** Conformance `deferred-approval` and `require-approval-roundtrip` pass using GitHub; manual: agent asked to "comment on issue 12 and then summarize the thread" comments (simulated), summarizes *including its own pending comment*, operator later runs `clawos approvals apply all` → comment appears on GitHub; `reject` removes it from the simulated thread; no token or API body ever appears in `os/audit` or logs (grep test in CI).
+
+**2026-09-11 implementation reconciliation:** the implemented authentication path
+is OAuth App web flow with PKCE, not PAT import or device polling. Configuration
+is currently an explicit plugin entry plus kernel catalog (not an implemented
+`gatekeeper add` wizard). Full Phase 4 remains open. Its evidence must separately prove failed-tool log
+secrecy and native approval-route-failure log secrecy; sanitized vendor errors
+alone cannot satisfy either gate. See `docs/phase-4-real-provider.md`. The separate VM
+`gateway-integration` checkpoint uses the production driver with an in-memory
+provider transport and cannot satisfy real-GitHub conformance. All four actions still simulate by default. The explicit operator-configured
+`synchronousActions` subset now exercises the existing `awaitDecision` escape
+hatch without changing tool schemas or default semantics; real-provider native
+roundtrip acceptance remains required. Native action outcomes are recorded in
+the kernel as uncertain before provider effects and settled only by successful
+completion of the original, exactly-approved tool call.
+The pinned upstream hook emits `plugin.approval.requested` and resolves through
+`plugin.approval.resolve`; “exec.approval.requested-style” in §8.3 is an analogy,
+not the actual RPC/event name. No beta criterion is waived.
+The independent REST observation helper now implements strict target binding,
+complete bounded pagination and exact comment deltas without importing the
+GitHub driver or reading its journal. Its transport tests are synthetic; the
+full real-provider orchestrator/OAuth setup remain pending. Missing native
+approval-route coverage is exercised explicitly by disconnecting the only
+reviewer before a real model turn; its log-secrecy verdict is independent of
+provider errors and ordinary user denial.
 
 ### Phase 5 — Approvals UX and auto-approval (2–3 days)
 
@@ -1376,3 +1403,19 @@ entries continue to take precedence. Filesystem roots remain empty by default.
 Primary live CLI install acceptance, shared evaluator regressions and the
 secondary hook typecheck are separate; no hook-backed Gateway install claim
 follows from CLI evidence.
+
+
+### Phase4 continuation — authorized personal identity,2026-09-11
+
+The full VM runner and protected stdin delivery now exist; supported OAuth still
+requires the operator-created OAuth App. Read-scoped `os.gatekeepers.account`
+returns validated metadata for the authenticated operator only, including the
+verified numeric GitHub account ID. It returns null rather than creating accounts.
+A proxy-membrane regression was fixed by copying primitive description fields
+before validation instead of structuredClone on the proxy.
+
+Matt authorized personal gh for this local fixture (not CI/token import). Real
+GitHub observer/component run20260912-010743 passed9/9 and restored the issue.
+This is not gatekeeper/OAuth acceptance. Full missing-input run20260912-011344
+returned2. Published9.4 runtime20260912-010401 still fails3 log secrecy checks
+(103/106); phase4 remains open, no connected snapshot or later-phase acceptance.

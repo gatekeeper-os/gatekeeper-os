@@ -7,7 +7,7 @@ import { Kernel } from "./kernel.js";
 
 // Driver and SDK transport are test doubles; kernel store, grants and hook handlers are real.
 // This does not claim live channel dispatch or upstream hook ordering acceptance.
-const fixture=vi.hoisted(()=>({call:vi.fn(),close:vi.fn(),introduce:vi.fn(),authority:vi.fn(),apply:vi.fn(),reject:vi.fn(),notify:vi.fn()}));
+const fixture=vi.hoisted(()=>({call:vi.fn(),close:vi.fn(),introduce:vi.fn(),authority:vi.fn(),apply:vi.fn(),reject:vi.fn(),notify:vi.fn(),accountDescription:vi.fn()}));
 vi.mock("./upstream/sdk.js",()=>({createPluginRuntimeStore:()=>{let runtime:unknown;return{
   tryGetRuntime:()=>runtime,getRuntime:()=>{if(!runtime)throw new Error("Kernel unavailable");return runtime;},
   setRuntime:(value:unknown)=>{runtime=value;},clearRuntime:()=>{runtime=undefined;},
@@ -20,6 +20,7 @@ vi.mock("./registry.js",()=>({instanceId:()=>"fixture-instance",Registry:class{
   resources(){return[{entry:{vendor:"test"},resource:{urlPattern:"https://fixture.invalid/:id"}}];}
   introduce(...args:unknown[]){fixture.introduce(...args);return Promise.resolve({resource:{type:"item",title:"Fixture"},resourceKey:"fixture"});}
   openSession(){return Promise.resolve({session:{call:fixture.call,close:fixture.close},instanceId:"fixture-instance",gatekeeper:{applyAction:fixture.apply,rejectAction:fixture.reject}});}
+  accountDescription(...args:unknown[]){return fixture.accountDescription(...args);}
   toolNames(){return["gk_test_read"];}
 }}));
 
@@ -39,6 +40,7 @@ async function grant(){
 beforeEach(async()=>{
   vi.stubEnv("OPENCLAW_STATE_DIR",mkdtempSync(join(tmpdir(),"clawos-kernel-hooks-")));
   vi.stubEnv("CLAWOS_CELL","hook-tests");
+  fixture.accountDescription.mockReset().mockResolvedValue({displayName:"Fixture",accountId:"99"});
   fixture.call.mockReset();fixture.close.mockReset();fixture.introduce.mockReset();fixture.authority.mockReset();
   fixture.close.mockResolvedValue(undefined);fixture.apply.mockReset().mockResolvedValue(undefined);fixture.reject.mockReset().mockResolvedValue(undefined);fixture.notify.mockReset().mockResolvedValue(undefined);
   fixture.call.mockImplementation(async(_tool,_params,call)=>call.dryRun?{kind:"observation",description:{title:"Read",description:""}}:{content:[{type:"text",text:"fixture"}]});
@@ -90,7 +92,7 @@ describe("kernel channel-policy regression boundaries",()=>{
     await kernel.onBeforeAgentRun({prompt:"Hello",messages:[],senderId:"observer",senderIsOwner:false},ctx);
     const tool=tools[0];
     if(!tool||typeof tool==="function"||Array.isArray(tool))throw new Error("Unexpected tool registration");
-    await expect(tool.execute("call-a",event.params)).rejects.toThrow("Operation denied.");
+    await expect(tool.execute("call-a",event.params)).resolves.toMatchObject({isError:true,details:{status:"error"}});
     expect(fixture.call).toHaveBeenCalledTimes(1); // dry-run only: no resource read after audience changed
     expect((await kernel.onBeforePromptBuild({prompt:"Read",messages:[]},ctx)).toolsAllow).not.toContain("gk_test_read");
   });
@@ -114,7 +116,7 @@ describe("kernel channel-policy regression boundaries",()=>{
     expect(kernel.capabilityPolicy().evaluate(event,{...ctx,toolName:event.toolName})).toMatchObject({block:true});
     await expect(kernel.resolveGrant(ctx.agentId,ctx.sessionKey,handle)).rejects.toThrow("audience");
     const tool=tools[0];if(!tool||typeof tool==="function"||Array.isArray(tool))throw new Error("Unexpected tool");
-    await expect(tool.execute(event.toolCallId,event.params)).rejects.toThrow("Operation denied");
+    await expect(tool.execute(event.toolCallId,event.params)).resolves.toMatchObject({isError:true,details:{status:"error"}});
     await dispatch();
     expect((await kernel.onBeforePromptBuild({prompt:"Read",messages:[]},ctx)).toolsAllow).not.toContain("gk_test_read");
     expect(fixture.call).toHaveBeenCalledTimes(1);
@@ -153,4 +155,59 @@ it("batches an operator digest once per run, never sends resource descriptions",
   await resolved.queue.submitAction(2,{title:"Private fixture",description:"private body",implementsRevert:false});
   await kernel.onAgentEnd({messages:[],success:true},ctx);await kernel.onAgentEnd({messages:[],success:true},ctx);
   expect(fixture.notify).toHaveBeenCalledExactlyOnceWith({channel:"fixture",target:"operator"},2,0);
+});
+
+
+it("returns payload-free driver failures and audits failure despite a resolved tool promise",async()=>{
+  const {handle}=await grant();
+  const params={grant:handle,body:'private-input-marker'};
+  const event={toolName:"gk_test_read",toolCallId:"failed-call",params};
+  await kernel.onBeforeToolCall(event,{...ctx,toolName:event.toolName});
+  fixture.call.mockRejectedValueOnce(Object.assign(new Error('private-provider-response-marker'),{providerResponseStatus:422}));
+  const tools:Parameters<OpenClawPluginApi["registerTool"]>[0][]=[];
+  kernel.registerGatekeeperTools({registerTool:tool=>{tools.push(tool);}} as OpenClawPluginApi);
+  const tool=tools[0];if(!tool||typeof tool==="function"||Array.isArray(tool))throw new Error("Unexpected tool");
+  const result=await tool.execute(event.toolCallId,params);
+  expect(result).toMatchObject({isError:true,details:{status:"error",providerResponseStatus:422}});
+  expect(JSON.stringify(result)).toContain("Provider response status: 422.");
+  expect(JSON.stringify(result)).not.toMatch(/private-input|private-provider/);
+  await kernel.onAfterToolCall({...event,result},{...ctx,toolName:event.toolName});
+  const audit=(await rpc("os.audit.query",{limit:1000})).output;
+  expect(audit).toEqual(expect.arrayContaining([expect.objectContaining({kind:"tool",title:"gk_test_read",ok:false})]));
+  expect(JSON.stringify(audit)).not.toMatch(/private-input|private-provider/);
+});
+it("protects malformed access requests and unavailable runtimes without leaking errors",async()=>{
+  const p={url:"not a url private-url-marker",reason:"private-reason-marker"};
+  await kernel.onBeforeToolCall({toolName:"os_request_access",toolCallId:"invalid-request",params:p},{...ctx,toolName:"os_request_access"});
+  const result=await kernel.runTool("invalid-request",()=>kernel.requestAccess("invalid-request",p));
+  expect(result).toMatchObject({isError:true});
+  expect(JSON.stringify(result)).not.toMatch(/private-url|private-reason/);
+  await kernel.stop();
+  expect(await kernel.runTool("absent",()=>kernel.listGrantsForCall("absent"))).toMatchObject({isError:true});
+});
+
+
+describe("authenticated account metadata",()=>{
+  it("queries only the paired operator account",async()=>{
+    expect(await rpc("os.gatekeepers.account",{vendor:"test"})).toEqual({ok:true,output:{displayName:"Fixture",accountId:"99"}});
+    expect(fixture.accountDescription).toHaveBeenCalledWith("test","paired-operator");
+    expect(fixture.introduce).not.toHaveBeenCalled();
+  });
+  it("rejects caller-selected account identity",async()=>{
+    expect((await rpc("os.gatekeepers.account",{vendor:"test",operatorId:"other"})).ok).toBe(false);
+    expect(fixture.accountDescription).not.toHaveBeenCalled();
+  });
+  it("requires device-token authentication and operator read authority",async()=>{
+    const handler=kernel.gatewayMethods().find(([name])=>name==="os.gatekeepers.account")![1];
+    for(const client of [{connect:{role:"operator",scopes:["operator.read"]},isDeviceTokenAuth:true},
+      {connect:{role:"operator",scopes:["operator.read"],device:{id:"other"}},isDeviceTokenAuth:false},
+      {connect:{role:"operator",scopes:[],device:{id:"other"}},isDeviceTokenAuth:true},
+      {connect:{role:"node",scopes:["operator.admin"],device:{id:"other"}},isDeviceTokenAuth:true}]){
+      const respond=vi.fn();
+      const options:Partial<Parameters<typeof handler>[0]>={params:{vendor:"test"},client:client as NonNullable<Parameters<typeof handler>[0]["client"]>,respond:(success,value,error)=>{respond(success,value,error);}};
+      await handler(options as Parameters<typeof handler>[0]);
+      expect(respond).toHaveBeenCalledWith(false,undefined,expect.objectContaining({code:"UNAUTHORIZED"}));
+    }
+    expect(fixture.accountDescription).not.toHaveBeenCalled();
+  });
 });

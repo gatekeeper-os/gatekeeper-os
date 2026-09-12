@@ -4,7 +4,7 @@ import { ActionDescriptionSchema, ObservationDescriptionSchema, type ActionDescr
 import { OverlayStore } from "./overlay-store.js";
 import { ActionSequencer } from "./action-sequencer.js";
 import { readJson, writeJsonAtomic } from "./atomic-json.js";
-import { sanitizeError } from "./sanitize.js";
+import { sanitizedFailure } from "./sanitize.js";
 
 /** Side-effect-free description, local simulation, and explicit remote application. */
 export interface ActionImpl<P = Record<string, unknown>> {
@@ -73,7 +73,7 @@ export abstract class KitGatekeeper<State = unknown> implements Gatekeeper {
     return impl;
   }
   async describe() { return { resource: this.resource, title: this.resource.title, suggestedName: this.resource.type.toUpperCase() }; }
-  async getAutoApprovableActions() { return []; }
+  async getAutoApprovableActions(): Promise<import("@clawos/shared").ActionKind[]> { return []; }
   /** Bind a kernel queue; dry passes never read vendors, reserve ids, submit actions or modify overlays. */
   async startSession(queue: ApprovalQueue): Promise<GatekeeperSession> {
     await this.sequence.run(() => this.recoverOverlay());
@@ -121,14 +121,14 @@ export abstract class KitGatekeeper<State = unknown> implements Gatekeeper {
               const value = await impl.simulate!(structuredClone(params), this.overlay, id); live();
               if (!this.overlay.list().some(entry => entry.actionId === id)) throw new Error("Simulation effect missing.");
               return result(value);
-            } catch {
+            } catch (error) {
               this.overlay.remove(id);
               const current = this.record(id);
               if (current.status === "pending") this.save({ ...current, status: "uncertain" });
-              throw new Error("Action did not complete.");
+              throw sanitizedFailure(error);
             }
           });
-        } catch (error) { throw new Error(sanitizeError(error)); }
+        } catch (error) { throw sanitizedFailure(error); }
       },
     };
   }
@@ -140,14 +140,14 @@ export abstract class KitGatekeeper<State = unknown> implements Gatekeeper {
     this.save({ ...record, status: "applying" });
     let applied: Awaited<ReturnType<ActionImpl["apply"]>>;
     try { applied = await this.impl(record.tool).apply(structuredClone(record.params), id); }
-    catch { this.save({ ...record, status: "uncertain" }); throw new Error("Application outcome uncertain."); }
+    catch (error) { this.save({ ...record, status: "uncertain" }); throw sanitizedFailure(error); }
     this.save({ ...record, status: "applied", ...(applied?.remoteId ? { remoteId: applied.remoteId } : {}) });
     this.overlay.remove(id); return applied?.value;
   }
   /** Apply once after the kernel's operator decision. Ambiguous remote failures are never blindly retried. */
   async applyAction(actionId: number): Promise<void> {
     try { await this.sequence.run(async () => { await this.applyRecorded(actionId); }); }
-    catch (error) { throw new Error(sanitizeError(error)); }
+    catch (error) { throw sanitizedFailure(error); }
   }
   /** Remove a pending effect. An ambiguous submission/application requires operator reconciliation instead. */
   async rejectAction(actionId: number): Promise<void> {
@@ -171,7 +171,7 @@ export abstract class KitGatekeeper<State = unknown> implements Gatekeeper {
         catch { this.save({ ...record, status: "uncertain" }); throw new Error("Revert outcome uncertain."); }
         this.save({ ...record, status: "reverted" });
       });
-    } catch (error) { throw new Error(sanitizeError(error)); }
+    } catch (error) { throw sanitizedFailure(error); }
   }
   /** v1 defaults to private-only; granting observers is never inferred from resource metadata. */
   async addObserver(_id: string, _verifier: ObserverVerifier): Promise<void> { throw new Error("Shared access is unavailable."); }

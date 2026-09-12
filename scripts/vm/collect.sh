@@ -4,7 +4,16 @@
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 out="${1:?outdir}"; since="${2:-1 hour ago}"
 grab() { local name="$1"; shift; vm_call exec "$*" > "$out/$name" 2>&1 || true; }
-if [ "${3:-}:${4:-}" = phase-3:full ]; then
+if [ "${3:-}" = phase-4 ]; then
+  # Never collect raw provider/OAuth responses, Gateway logs, or cell state.
+  if [ "${4:-}" = gateway-integration ] || [ "${4:-}" = upstream-logging ]; then
+    vm_call pull /home/tester/phase-4-gateway-evidence/ "$out/" || exit 1
+  elif [ "${4:-}" = observer-live ]; then
+    vm_call pull /home/tester/phase-4-observer-evidence/ "$out/" || exit 1
+  else
+    vm_call pull /home/tester/phase-4-evidence/ "$out/" || exit 1
+  fi
+elif [ "${3:-}:${4:-}" = phase-3:full ]; then
   vm_call pull /home/tester/phase-3-combined-evidence/ "$out/" || exit 1
   # Keep the structural source reports, not just the aggregator's totals. Never
   # collect live cell state, credentials, model bodies, or raw Gateway logs.
@@ -51,6 +60,6 @@ grab audit-log.jsonl             'cat ~/.openclaw/os/audit/*.jsonl 2>/dev/null'
 grab conformance-verdict.json    'cat ~/.openclaw/os/logs/conformance-verdict.json 2>/dev/null'
 grab lockfile.json               'cat ~/.openclaw/os/clawos.lock.json 2>/dev/null'
 fi
-if grep -rEq '(ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,}|xox[baprs]-|[0-9]{8,10}:[A-Za-z0-9_-]{35})' "$out"; then
+if grep -rEq '(gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,}|xox[baprs]-|[0-9]{8,10}:[A-Za-z0-9_-]{35})' "$out"; then
   vm_log "SECRET-LIKE STRING FOUND IN ARTIFACTS — run marked failed"; echo 99 > "$out/exit-code"; exit 99
 fi

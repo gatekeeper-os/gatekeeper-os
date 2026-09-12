@@ -149,7 +149,7 @@ export interface Gatekeeper {
 /** Per-operator account (one OAuth identity or static credential). */
 export interface GatekeeperAccount {
   /** Describe this object without returning credentials. */
-  describe(): Promise<{ email?: string; displayName?: string; expiresAt?: number }>;
+  describe(): Promise<{ email?: string; displayName?: string; expiresAt?: number; accountId?: string }>;
   /** List the resource types supported by this account or vendor. */
   getSupportedResources(): Promise<SupportedResource[]>;
   /** Returns a Gatekeeper for the resource a URL denotes, with credentials bound. Called BEFORE any grant exists. */
@@ -184,6 +184,8 @@ export interface GatekeeperVendor {
   vendor: string;
   /** Version of the OS gatekeeper contract. */
   apiVersion: 1;
+  /** Trusted authorization-server issuer for optional RFC 9207 callback `iss`; exact match, never a request-derived destination. */
+  readonly oauthIssuer?: string;
   /** Describe this object without returning credentials. */
   describe(): Promise<{ title: string; description: string; icon?: string; autoProvisionsAccount?: boolean }>;
   /** Start OAuth (or equivalent). The returned URL must embed a cryptographic nonce. */

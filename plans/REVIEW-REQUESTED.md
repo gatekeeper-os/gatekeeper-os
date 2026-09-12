@@ -156,3 +156,36 @@ The subsequent 2026-09-09 explicit completion authorization covers this already
 presented surface and the remaining beta implementation. Preserve both review
 artifacts and the documented scope; do not request repetitive approval for the
 same work. This authorization does not waive tests or capability invariants.
+
+## GitHub gatekeeper — concrete STOP 2 implementation boundary (2026-09-09)
+
+**Approved under the already-recorded 2026-09-09 instruction to finish the beta.**
+No additional approval is requested and no tests are waived. STOP 1's tool/URL
+surface above is unchanged. This preserves the second review artifact rather
+than silently treating auth implementation as Phase 4 acceptance.
+
+The concrete responsibilities 1–3 boundary is now:
+
+- `vendor.ts`: kernel-owned two-stage nonce binding, supported GitHub OAuth App
+  web flow with S256 PKCE, fixed callback/origin, numeric user-ID revalidation,
+  encrypted `TokenStore`, optional expiring-token refresh, and revocation races.
+- `account.ts`/`urls.ts`: strict canonical GitHub.com introductions, account
+  resource-type scope, fresh repository/item access and stable numeric/node
+  identities, constructor-bound repo/issue/pull objects, account revocation.
+- Strict schemas for the eleven already-reviewed tools; the kernel registers
+  them, not this plugin. No arbitrary API, identifier, credential, or host input.
+- Explicit config mapping: public client ID, env/default client-secret SecretRef,
+  trusted `publicOrigin`; no plaintext credential in source/argv/artifacts. Matt
+  explicitly authorized personal gh on2026-09-11 for the isolated local fixture
+  and independent observer, not token import into the driver or CI.
+
+The existing completion authorization also covers responsibilities 4–7:
+per-session kernel authorization, durable deferred actions and overlays,
+bounded selected caching, node-ID-bound remote writes/reverts, and account-owned
+ACL verifiers. Those are implemented together in this worktree and still require
+parent review and the original live acceptance. Real reads/effects are not
+claimed from mock results. No commits, VM run, provider login, or real GitHub
+mutation were performed by the implementation lane.
+
+Implementation and supported-provider references:
+[`packages/gatekeeper-github/README.md`](../packages/gatekeeper-github/README.md).

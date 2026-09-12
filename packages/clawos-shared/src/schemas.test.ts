@@ -30,7 +30,7 @@ describe("wire contracts", () => {
     [S.ToolResultSchema, { content: [{ type: "text", text: "result" }], details: { items: [1, null, true] } }],
     [S.ObserverVerifierSchema, { vendor: "test", opaque: "test-verifier" }],
     [S.GatekeeperToolDefSchema, { name: "gk_test_item_get", resourceType: "item", kind: "observation", description: "Read item.", parameters: Type.Object({ grant: Type.String() }) }],
-    [S.AccountDescriptionSchema, { displayName: "Operator", expiresAt: 1 }],
+    [S.AccountDescriptionSchema, { displayName: "Operator", expiresAt: 1, accountId: "99" }],
     [S.VendorDescriptionSchema, { title: "Test", description: "" }],
     [S.GatekeeperDescriptionSchema, { resource, title: "Item", suggestedName: "ITEM" }],
     [S.ConnectionResultSchema, { url: "https://example.test/connect" }],
