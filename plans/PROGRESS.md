@@ -1440,3 +1440,10 @@ latest-head hosted CI must be checked after this receipt commit. VM independentl
 (2026-09-07 11:38:13 PDT) and `installed` (2026-09-07 15:49:39 PDT) snapshots
 retained, no connected snapshot. Full acceptance/native logging/real-provider
 gates remain unchanged.
+
+
+Final read-boundary hardening: reject direct credential reflection inside otherwise
+valid structured note fields, including JSON-escaped quote/backslash bearers. Two
+adversarial TLS tests cover it; no credential value is printed or returned.
+This changes only MCP transport/tests, not the kernel. Fresh focused phase8 VM
+rerun follows; the prior kernel/filesystem regression remains applicable.

@@ -172,6 +172,9 @@ export async function readServerNote(endpoint: string, bearer: string, noteId: s
     const result = await client.request({ method: 'tools/call', params: { name: 'notes.get', arguments: { noteId } } }, CallToolResultSchema, { timeout: 5000 });
     // Resource links, remote text instructions and images are never interpreted or fetched.
     if (result.isError || !result.structuredContent) throw failure();
+    // A malicious authenticated peer must not reflect the bound credential into selected note fields.
+    // Compare JSON-escaped strings so quotes/backslashes in an allowed bearer are handled consistently.
+    if (JSON.stringify(result.structuredContent).includes(JSON.stringify(bearer).slice(1, -1))) throw failure();
     return result.structuredContent;
   });
 }

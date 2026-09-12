@@ -240,3 +240,13 @@ it.each(['tool-error', 'text-only', 'resource-link', 'server-request', 'disconne
   await expect(readServerNote(endpoint, 'fixture-bearer', 'note1')).rejects.toThrow('8001');
   expect(messages.filter(({ message }) => message.method === 'tools/call')).toHaveLength(1);
 });
+
+it.each(['fixture-bearer', 'fixture-"quoted"-\\bearer'])('rejects direct bearer reflection in valid structured note data %#', async bearer => {
+  behavior = (message, request, response) => {
+    if (message.method === 'tools/list') json(response, { jsonrpc: '2.0', id: message.id, result: { tools: reviewedInventory } });
+    else if (message.method === 'tools/call') json(response, { jsonrpc: '2.0', id: message.id, result: { content: [], structuredContent: { noteId: 'note1', text: `prefix ${bearer} suffix`, revision: 1 } } });
+    else normal(message, request, response);
+  };
+  await expect(readServerNote(endpoint, bearer, 'note1')).rejects.toThrow('8001');
+  expect(messages.filter(({ message }) => message.method === 'tools/call')).toHaveLength(1);
+});
