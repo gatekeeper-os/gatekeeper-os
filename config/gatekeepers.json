@@ -6,7 +6,8 @@
     "github": { "spec": "npm:@clawkeepers/gatekeeper-github", "status": "v1",
                 "secrets": ["GITHUB_OAUTH_CLIENT_ID", "GITHUB_OAUTH_CLIENT_SECRET"],
                 "deployInputs": "packages/gatekeeper-github/deploy-inputs.json" },
-    "mcp": { "spec": "npm:@clawkeepers/gatekeeper-mcp", "status": "v1.1", "secrets": [] },
+    "mcp": { "spec": "npm:@clawkeepers/gatekeeper-mcp", "status": "v1.1", "secrets": [],
+             "deployInputs": "packages/gatekeeper-mcp/deploy-inputs.json" },
     "http": { "spec": "npm:@clawkeepers/gatekeeper-http", "status": "v1.1", "secrets": [] }
   }
 }

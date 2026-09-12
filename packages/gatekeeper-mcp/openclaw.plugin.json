@@ -1,9 +1,61 @@
 {
   "id": "gatekeeper-mcp",
   "name": "MCP Gatekeeper",
-  "description": "Wraps any MCP server behind the gatekeeper model (v1.1, plan §9 Phase 8).",
-  "contracts": { "tools": [] },
-  "configSchema": { "type": "object", "properties": {}, "additionalProperties": false },
-  "activation": { "onStartup": false },
-  "clawos": { "gatekeeper": { "vendor": "mcp", "apiVersion": 1 } }
+  "description": "Reviewed private MCP observations; native actions remain disabled.",
+  "contracts": {
+    "tools": [
+      "gk_mcp_demo_read_note"
+    ]
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "servers": {
+        "type": "array",
+        "default": [],
+        "maxItems": 16,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "endpoint",
+            "operatorId",
+            "credentialEnv"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "enum": [
+                "demo"
+              ]
+            },
+            "endpoint": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "operatorId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "credentialEnv": {
+              "type": "string",
+              "pattern": "^CLAWOS_MCP_[A-Z][A-Z0-9_]{0,63}$"
+            }
+          }
+        }
+      }
+    }
+  },
+  "activation": {
+    "onStartup": true
+  },
+  "clawos": {
+    "gatekeeper": {
+      "vendor": "mcp",
+      "apiVersion": 1
+    }
+  }
 }

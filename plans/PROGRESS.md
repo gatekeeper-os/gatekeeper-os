@@ -1295,6 +1295,178 @@ is not passed); catalog/secret checks and diff whitespace checks passed. Running
 the helper outside a hosted VM was correctly refused before config/runtime mutation.
 GitHub-hosted live results pending; no local VM phase acceptance run is claimed.
 
+## 2026-09-12 overnight — MCP surface review STOP1
+
+Following requested Phase7→5→6→gatekeeper-mcp order, prepared concrete MCP surface
+and logical grant URL contract in plans/mcp-surface-contract.md, inert src/tools.ts
+and resources.ts, and explicit review request. The existing index remains empty,
+manifest tools empty and activation false; no transport, authentication, invocation,
+registrations, approvals, simulation or observer implementation crosses STOP1.
+
+Proposal: operator-reviewed named tool bindings; initial HTTPS Streamable HTTP only;
+private server grants; no arbitrary model-controlled method/endpoint or discovery.
+Synthetic notes read/append illustrates closed schemas, not a connected service.
+All resource identifiers are reserved .invalid logical names, never network URLs.
+
+Offline verification:15/15 metadata/URL/inert-entry tests pass; package typecheck
+and empty-runtime build pass; catalog/secrets/diff checks pass. No VM test is claimed for inert design,
+no phase acceptance/merge/tag/publication, no personal MCP credentials or production
+changes. Explicit STOP1 decision is required before further MCP implementation;
+full Phase4/native log secrecy and later integrated acceptance remain blockers.
+
+Consolidated morning review: [OVERNIGHT-2026-09-12.md](OVERNIGHT-2026-09-12.md).
+
+## MCP STOP1 approved — STOP2 boundary implementation (2026-09-12)
+
+Matt's “Approved continue” authorizes the concrete PR14 surface. Added static
+operator/endpoint/schema-bound accounts, encrypted credentials, persistent
+revocation tombstones, revalidated introductions and a bounded public-HTTPS
+JSON-only MCP control-plane transport. No session, action or observer execution
+is enabled. No real server/credentials configured. See [mcp-stop2.md](mcp-stop2.md).
+
+Host checkpoint: **492 tests**, workspace build/typecheck, catalog/secrets/diff
+checks and10 package-license checks pass. MCP-specific82 include25 account/surface
+checks and57 actual local-TLS tests with test-only network interception. This is
+not real-provider acceptance or a live tool/effect test.
+
+First VM attempt `20260912-103639-phase-8` exited1:82 package checks passed, but
+`mcp-lifecycle-healthy:false`. The Gateway loaded fs/kernel but not MCP. Inspection
+confirmed the original placeholder manifest still had `onStartup:false`; merely
+adding a service implementation did not activate it. Corrected that manifest for
+explicitly enabled MCP lifecycle startup; tools remain empty. The15 focused
+metadata tests pass after correction. Fresh VM rerun pending, not yet accepted.
+
+Original snapshot registrations were restored from unchanged metadata after a
+read-only disk inventory confirmed base/installed dates. The documented same-user
+virtqemud soft-memlock fallback was restored; no production or global setting changed.
+
+Second boundary VM `20260912-104016-phase-8`:82 package tests pass and actual
+MCP/fs lifecycle health passes. The next harness assertion incorrectly expected
+`os.gatekeepers.connect` to provision immediately. Source `oauth.ts` shows that
+RPC only issues a kernel-owned nonce URL; the browser start route validates the
+account. Corrected the harness to open that exact local URL and require400 for
+the unconfigured account plus replay denial. No runtime authorization weakened.
+
+### MCP STOP2 verified connection-boundary checkpoint
+
+Final focused VM run `20260912-104256-phase-8` on committed `5f4ab6b`:
+**exit0,82/82 MCP package checks and10/10 actual Gateway checks**. Driver and
+filesystem health, paired-device operator, kernel nonce URL, unconfigured
+account denial, consumed-nonce replay denial, unconfigured grant denial,
+shared-token rejection, zero grants and zero model tools all pass.
+
+Full mode `20260912-104444-phase-8` correctly returns **blocked, exit2**:
+STOP2 action/observation review and real-provider acceptance remain outstanding.
+The two preceding failed runs remain saved with their specific causes above.
+No full MCP effect/conformance or beta claim. Host492 tests/build/typecheck,
+82 MCP tests, catalog/secrets/diff checks,10 packed-license checks and package
+inclusion of deploy-inputs/manifest/entry passed. Final hosted CI follows the
+reporting commit; check the PR receipt rather than assuming a green prior head.
+
+**STOP2 decision** is concrete in [mcp-stop2.md](mcp-stop2.md). No real credentials,
+server configuration, native action execution, production installation, phase
+merge, tag, visibility change or publication. Dedicated VM shutdown is recorded
+in the local handoff receipt; original base/installed snapshots preserved.
+
+
+## MCP STOP2 approved — responsibilities4–7 (2026-09-12)
+
+Matt explicitly approved STOP2 under `plans/mcp-surface-contract.md`; no repeated
+review is requested. Generic append retains `awaitDecision:true`,
+`autoApprovable:false`, `implementsRevert:false`, no fabricated simulation and hard
+apply denial. Native execution remains gated by the upstream denied/no-route
+body-logging defect. Append is absent from runtime tools/resource metadata so the
+kernel cannot enter that native approval path; only read-note is active.
+
+Implemented `src/server.ts`: schema-checked private sessions, two awaited read
+checks (before I/O and before release), account/session revocation checks,
+projection/truncation and bounded fresh cache. Transport verifies exact reviewed
+inventory before `notes.get` on the same pinned TLS session and never dispatches
+unreviewed methods. No generic observer oracle, discovery, retry or sharing.
+
+`src/testing/notes-fixture.ts` is excluded from the production entry/bundle and has
+no configuration switch. Its deterministic concatenation/revision semantics use
+normal kit deferred simulation, overlay replay across refresh/restart, operator
+apply/reject and durable uncertain outcomes. `test/fixtures/mcp-notes` plus the
+phase8 Gateway scenario exercise this synthetic provider, not native actions or
+real MCP service effects. Production metadata never enables the fixture.
+
+Host: **513/513 tests**, **103/103 MCP-specific tests**, workspace typecheck/build,
+catalog/secrets/diff checks, frozen-lockfile install and **10 packed-license
+checks** pass. The focused transport tests use real local TLS with test-only
+routing interception; account/session tests are offline fixtures.
+
+Full-mode VM `20260912-113130-phase-8` returned **blocked/exit2** as expected,
+although originally invoked with an environment mode that the runner’s positional
+mode overrides; no passing focused run is claimed from it. Focused
+`20260912-113213-phase-8`: **103/103 package tests +10/10 actual Gateway boundary
+checks**, then **exit1** at synthetic fixture load. Structural diagnostics show
+missing `typebox` in the test fixture’s dependency root. Added a test-only link to
+the MCP package dependencies; no production behavior or policy changed. Failed
+artifacts remain preserved. Fresh focused rerun pending at this documentation
+checkpoint. Original base/installed snapshots and unmodified upstream2026.9.2.
+
+No full native/conformance/beta acceptance, real credentials, configured real
+provider, production change, merge, tag, visibility change or publication.
+
+
+### MCP STOP2 observation/deferred VM checkpoint
+
+Focused clean-snapshot `20260912-113454-phase-8`: **exit0**, **103/103 MCP
+package tests**, **10/10 production-boundary Gateway checks**, and **36/36
+synthetic deferred Gateway checks across8 actual model turns**. Verified kernel
+only grant introduction, paired operator decisions, no effects before approval,
+overlay observation, reject removing only simulated effect, operator apply once,
+duplicate-apply denial, truthful revert denial, cross-agent tool narrowing,
+revocation and observation/decision audits. Fixture provider records exactly one
+synthetic effect; native execution remains false. Post-shutdown secrecy scan
+reports clean; actual file count is in `secrecy.json`. Raw logs remain in the VM.
+
+This is a **synthetic provider**, not a connected real MCP server or full native
+acceptance. `require-approval-roundtrip` is not executed while the upstream logging
+gate remains. The test script records `conformance-scope.json` rather than passing
+native conformance using a fixture. Existing kernel/fs VM regression follows.
+
+
+Final own-branch regression `20260912-113729-phase-3` from original `installed`,
+unmodified upstream2026.9.2: **exit0**, **98/98 structural checks +38/38 live
+conformance checks**, **93 kernel +117 CLI VM tests**. This is the existing
+kernel/filesystem focused checkpoint, not native MCP conformance. MCP synthetic
+secrecy scan covered **4files**, all clean. Production bundle inspection confirms
+`FixtureNotesServer`, `NotesFixture`, and its effect/error marker are absent.
+
+Implementation checkpoint **5f79232** is pushed to draft PR14. No merge is made;
+latest-head hosted CI must be checked after this receipt commit. VM independently verified **shut off** after all runs; original `base`
+(2026-09-07 11:38:13 PDT) and `installed` (2026-09-07 15:49:39 PDT) snapshots
+retained, no connected snapshot. Full acceptance/native logging/real-provider
+gates remain unchanged.
+
+
+Final read-boundary hardening: reject direct credential reflection inside otherwise
+valid structured note fields, including JSON-escaped quote/backslash bearers. Two
+adversarial TLS tests cover it; no credential value is printed or returned.
+This changes only MCP transport/tests, not the kernel. Fresh focused phase8 VM
+rerun follows; the prior kernel/filesystem regression remains applicable.
+
+
+### Final credential-reflection checkpoint
+
+Final runtime code **a503bd1**: **515/515 host tests**, **105/105 focused MCP tests**,
+MCP build/typecheck, catalog/secrets/diff and10 packed-license checks pass. Fresh
+focused VM **`20260912-114258-phase-8`** from original installed snapshot on
+unmodified upstream2026.9.2: **exit0**, **105/105 MCP tests +10/10 production-boundary
+Gateway checks +36/36 synthetic deferred checks (8 actual model turns)**. All
+4 synthetic log/audit files scan clean. Direct credential reflection rejects
+before selected data can reach cache/model output. Prior full-native/real-provider
+acceptance remains blocked, not rerun or waived.
+
+After the last rerun, `virsh domstate clawos-test` independently reports **shut off**;
+original base/installed timestamps remain unchanged and no connected snapshot
+exists. Kernel/filesystem source was unchanged by the reflection fix, so the
+98structural/38live-conformance regression above remains applicable. PR14 remains
+draft/unmerged. Hosted CI for the final documentation head is pending at commit;
+verify the live PR result rather than assuming any prior green head applies.
+
 ## 2026-09-12 — Phase 6 blueprint implementation checkpoint (not accepted)
 
 Matt authorized overnight implementation order **7 → 5 → 6 → MCP**, overriding
@@ -1723,6 +1895,17 @@ second credential source via OPENCLAW_GATEWAY_TOKEN while baseline uses a
 CLAWOS_GATEWAY_TOKEN SecretRef. No exception added. The harness now supplies only
 the existing canonical SecretRef env provider and removes the override; audit,
 baseline and Gateway auth policy remain unchanged. Rerun from installed snapshot.
+
+### MCP candidate integrated with corrected release preparation
+
+Merged release-prep candidate into PR14's branch, resolving six overlapping
+catalog/package/harness/docs conflicts while retaining all phase collectors.
+Renamed new MCP imports/fixtures to @clawkeepers; MCP stays private and outside
+the five-package release set. Runtime tool registration still filters observations
+only: append_note remains unregistered, generic descriptions awaitDecision true /
+implementsRevert false. No native-effects acceptance is claimed.
+Build, ESLint, catalog/secrets and599 host tests pass on the integrated tree.
+Remote merge is held until PR16 merges green and the required VM receipts pass.
 
 
 ### Researcher projection review correction

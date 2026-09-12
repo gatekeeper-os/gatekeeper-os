@@ -10,6 +10,7 @@
     "NOTICE",
     "dist",
     "openclaw.plugin.json",
+    "deploy-inputs.json",
     "config.schema.json",
     "hooks",
     "README.md"
@@ -22,7 +23,9 @@
   },
   "dependencies": {
     "@clawkeepers/shared": "workspace:*",
-    "@clawkeepers/gatekeeper-kit": "workspace:*"
+    "@clawkeepers/gatekeeper-kit": "workspace:*",
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "typebox": "catalog:"
   },
   "peerDependencies": {
     "openclaw": "catalog:"

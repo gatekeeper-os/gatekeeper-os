@@ -5,7 +5,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 phase="${1:?phase, e.g. phase-1}"
 case "$phase" in
   phase-0|phase-1) default_snap=base;;
-  phase-3|phase-4|phase-6|phase-9) default_snap=installed;;
+  phase-3|phase-4|phase-6|phase-8|phase-9) default_snap=installed;;
   phase-5|phase-7) default_snap=connected;;
   phase-2)
     # Explicit library-only exception in docs/vm-testing.md. No VM or Gateway is started.
@@ -29,6 +29,8 @@ snap="${2:-$default_snap}"
 mode="${3:-full}"
 case "$phase:$mode" in
   *:full) install_only=0;;
+  phase-8:mcp-boundary) install_only=0;;
+
   phase-9:prepublish|phase-6:blueprint-sandbox) install_only=0;;
   phase-7:runtime-checkpoint) install_only=0;;
   phase-1:install-only) install_only=1;;

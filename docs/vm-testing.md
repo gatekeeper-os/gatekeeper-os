@@ -309,6 +309,14 @@ stays in the private config/in-memory SDK call; no raw Gateway output is uploade
 Only structural verdict JSON leaves the runner. All full phase acceptance continues
 through the snapshot/reset/sync/collect harness above.
 
+### MCP authoring boundary (2026-09-12)
+
+`./scripts/vm/test.sh phase-8 installed mcp-boundary` restores the original
+installed snapshot, runs account/transport fixtures and the actual Gateway
+empty-config lifecycle/denial probe. No real MCP account or effects are enabled.
+Artifacts explicitly distinguish local TLS fixtures from live-provider acceptance.
+`phase-8 installed full` returns blocked (exit2) at STOP2, never a fabricated pass.
+
 ## Phase 6 blueprint sandbox checkpoint (2026-09-12)
 
 `phase-6 installed blueprint-sandbox` builds and installs the packed CLI in the
