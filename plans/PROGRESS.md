@@ -1294,3 +1294,24 @@ Local verification: workspace build passed; new smoke helper typecheck passed;
 is not passed); catalog/secret checks and diff whitespace checks passed. Running
 the helper outside a hosted VM was correctly refused before config/runtime mutation.
 GitHub-hosted live results pending; no local VM phase acceptance run is claimed.
+
+## 2026-09-12 overnight — MCP surface review STOP1
+
+Following requested Phase7→5→6→gatekeeper-mcp order, prepared concrete MCP surface
+and logical grant URL contract in plans/mcp-surface-contract.md, inert src/tools.ts
+and resources.ts, and explicit review request. The existing index remains empty,
+manifest tools empty and activation false; no transport, authentication, invocation,
+registrations, approvals, simulation or observer implementation crosses STOP1.
+
+Proposal: operator-reviewed named tool bindings; initial HTTPS Streamable HTTP only;
+private server grants; no arbitrary model-controlled method/endpoint or discovery.
+Synthetic notes read/append illustrates closed schemas, not a connected service.
+All resource identifiers are reserved .invalid logical names, never network URLs.
+
+Offline verification:15/15 metadata/URL/inert-entry tests pass; package typecheck
+and empty-runtime build pass; catalog/secrets/diff checks pass. No VM test is claimed for inert design,
+no phase acceptance/merge/tag/publication, no personal MCP credentials or production
+changes. Explicit STOP1 decision is required before further MCP implementation;
+full Phase4/native log secrecy and later integrated acceptance remain blockers.
+
+Consolidated morning review: [OVERNIGHT-2026-09-12.md](OVERNIGHT-2026-09-12.md).

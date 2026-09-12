@@ -156,3 +156,22 @@ The subsequent 2026-09-09 explicit completion authorization covers this already
 presented surface and the remaining beta implementation. Preserve both review
 artifacts and the documented scope; do not request repetitive approval for the
 same work. This authorization does not waive tests or capability invariants.
+
+## MCP gatekeeper — STOP1 pending (2026-09-12 overnight)
+
+Matt requested MCP after Phase7→5→6. Those implementation checkpoints are saved
+separately; this new surface had not yet been presented/approved.
+
+Review [mcp-surface-contract.md](mcp-surface-contract.md): HTTPS Streamable HTTP
+only; fixed named tools from operator-reviewed manifests; owner-only server grant
+`https://mcp.clawkeeper.invalid/servers/:server`; no generic invocation, stdio,
+automatic discovery or cross-server widening. Exact synthetic read/append schemas
+are in `packages/gatekeeper-mcp/src/tools.ts`; canonical resource metadata is in
+`resources.ts`. These files are not exported by the inert plugin entrypoint.
+
+**Decision:** approve this surface/URL/transport scope to proceed to account and
+transport implementation, or specify changes. STOP2 remains separate before later
+action/simulation/observer work. No current runtime or remote server is enabled.
+
+The skill explicitly requires operator review at STOP1; per its unattended rule,
+this run stops MCP implementation here and reports the completed overnight work.
