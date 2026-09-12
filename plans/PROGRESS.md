@@ -1447,3 +1447,22 @@ valid structured note fields, including JSON-escaped quote/backslash bearers. Tw
 adversarial TLS tests cover it; no credential value is printed or returned.
 This changes only MCP transport/tests, not the kernel. Fresh focused phase8 VM
 rerun follows; the prior kernel/filesystem regression remains applicable.
+
+
+### Final credential-reflection checkpoint
+
+Final runtime code **a503bd1**: **515/515 host tests**, **105/105 focused MCP tests**,
+MCP build/typecheck, catalog/secrets/diff and10 packed-license checks pass. Fresh
+focused VM **`20260912-114258-phase-8`** from original installed snapshot on
+unmodified upstream2026.9.2: **exit0**, **105/105 MCP tests +10/10 production-boundary
+Gateway checks +36/36 synthetic deferred checks (8 actual model turns)**. All
+4 synthetic log/audit files scan clean. Direct credential reflection rejects
+before selected data can reach cache/model output. Prior full-native/real-provider
+acceptance remains blocked, not rerun or waived.
+
+After the last rerun, `virsh domstate clawos-test` independently reports **shut off**;
+original base/installed timestamps remain unchanged and no connected snapshot
+exists. Kernel/filesystem source was unchanged by the reflection fix, so the
+98structural/38live-conformance regression above remains applicable. PR14 remains
+draft/unmerged. Hosted CI for the final documentation head is pending at commit;
+verify the live PR result rather than assuming any prior green head applies.
