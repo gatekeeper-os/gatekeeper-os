@@ -54,7 +54,9 @@ merge phase branches, release a beta, publish a package, or deploy to production
 
 ## Evidence scope
 
-See [PROGRESS.md](PROGRESS.md) for completed host/VM receipts. Account unit fixtures,
+Verified:492 host tests,82 MCP package tests in the VM,10 actual Gateway
+checks; focused VM exit0. Full mode exit2blocked. See [PROGRESS.md](PROGRESS.md)
+for the preserved failures and completed host/VM receipts. Account unit fixtures,
 local TLS protocol tests and real Gateway plugin-lifecycle checks are distinct
 claims; none counts as real-provider effect or full conformance acceptance.
 

@@ -95,3 +95,21 @@ No transport/auth/action implementation crosses that boundary. STOP2 remains lat
 **Next review:** approve/change the concrete MCP surface; decide the installed
 coder/ops global-tool policy. Then integrate accepted changes, close missing driver
 and real-transport gates, and rerun full acceptance after a supported logging fix.
+
+
+## Post-report continuation — MCP STOP1 approved (2026-09-12)
+
+Matt approved the concrete STOP1 surface. PR14 now includes the implemented
+connection/grant boundary, not merely the original inert proposal. Code head
+`5f4ab6b` has492 passing host tests,82 passing VM package checks and10 passing
+real Gateway lifecycle/denial checks. Focused VM `20260912-104256-phase-8`
+exited0; full mode `20260912-104444-phase-8` explicitly blocked/exit2.
+
+No real MCP provider or tool effects were enabled. Static credentials remain
+explicit per-operator/per-endpoint bindings, not a generic provider identity or
+OAuth claim. Transport supports the bounded JSON-only HTTPS subset. Phase7/5/6
+and upstream log-secrecy/integration acceptance remain as reported above.
+
+**Next operator review: [MCP STOP2](mcp-stop2.md)** for owner-only queue-authorized
+observations and native-approved, non-autoapplicable, non-reversible actions with
+uncertain-outcome protection. No production change, phase merge or beta tag.

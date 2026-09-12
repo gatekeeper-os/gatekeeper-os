@@ -1346,3 +1346,24 @@ MCP/fs lifecycle health passes. The next harness assertion incorrectly expected
 RPC only issues a kernel-owned nonce URL; the browser start route validates the
 account. Corrected the harness to open that exact local URL and require400 for
 the unconfigured account plus replay denial. No runtime authorization weakened.
+
+### MCP STOP2 verified connection-boundary checkpoint
+
+Final focused VM run `20260912-104256-phase-8` on committed `5f4ab6b`:
+**exit0,82/82 MCP package checks and10/10 actual Gateway checks**. Driver and
+filesystem health, paired-device operator, kernel nonce URL, unconfigured
+account denial, consumed-nonce replay denial, unconfigured grant denial,
+shared-token rejection, zero grants and zero model tools all pass.
+
+Full mode `20260912-104444-phase-8` correctly returns **blocked, exit2**:
+STOP2 action/observation review and real-provider acceptance remain outstanding.
+The two preceding failed runs remain saved with their specific causes above.
+No full MCP effect/conformance or beta claim. Host492 tests/build/typecheck,
+82 MCP tests, catalog/secrets/diff checks,10 packed-license checks and package
+inclusion of deploy-inputs/manifest/entry passed. Final hosted CI follows the
+reporting commit; check the PR receipt rather than assuming a green prior head.
+
+**STOP2 decision** is concrete in [mcp-stop2.md](mcp-stop2.md). No real credentials,
+server configuration, native action execution, production installation, phase
+merge, tag, visibility change or publication. Dedicated VM shutdown is recorded
+in the local handoff receipt; original base/installed snapshots preserved.
