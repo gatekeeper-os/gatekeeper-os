@@ -12,7 +12,7 @@ The counts below are separate branch/checkpoint results, **not an integrated sui
 | Phase7 | [PR11](https://github.com/clawkeeper/openclaw-os/pull/11), `7cc4101` |438 host tests;9 update assertions +42 Gateway/SDK/fs probes; final-head CI green | Reduced runtime checkpoint only; full mode blocked |
 | Phase5 | [PR12](https://github.com/clawkeeper/openclaw-os/pull/12), `91ea034` (code `864df55`) |431 host tests;41 affected tests after final correction;49 real-Gateway synthetic checks; final-head CI green | Real channel/provider secrecy gates remain open |
 | Phase6 | [PR13](https://github.com/clawkeeper/openclaw-os/pull/13), `da458da` |432 host tests;48 blueprint/Docker checks;98 kernel regression +38 conformance; final-head CI green | Missing drivers/global policy and real-provider acceptance |
-| MCP | Current surface-review PR, branch `phase/8-mcp-surface` |15 offline metadata/URL/inert-entry tests; package typecheck/build/catalog/secrets/diff pass | Mandatory STOP1 review pending; no runtime enabled |
+| MCP | [PR14](https://github.com/clawkeeper/openclaw-os/pull/14), branch `phase/8-mcp-surface` |15 offline metadata/URL/inert-entry tests; package typecheck/build/catalog/secrets/diff pass | Mandatory STOP1 review pending; no runtime enabled |
 
 ## What changed
 
@@ -74,7 +74,7 @@ Synthetic note read/append schemas make the API review concrete. The plugin entr
 is still empty, manifest tools empty, startup disabled; no server was contacted.
 
 The [authoring skill](../.agents/skills/write-gatekeeper/SKILL.md) requires
-“STOP1 — present the tool surface and URL patterns for operator review” and no
+“STOP 1 — present the tool surface and URL patterns for operator review” and no
 implementation past that gate without operator approval. Your overnight instruction
 preceded this particular surface; it did not approve an unseen endpoint/tool scope.
 No transport/auth/action implementation crosses that boundary. STOP2 remains later.
