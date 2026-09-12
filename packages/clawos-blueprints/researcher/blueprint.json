@@ -18,7 +18,8 @@
       "group:runtime",
       "group:fs",
       "group:automation",
-      "browser"
+      "browser",
+      "session_status"
     ]
   },
   "sandbox": {

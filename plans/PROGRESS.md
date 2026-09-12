@@ -1723,3 +1723,14 @@ second credential source via OPENCLAW_GATEWAY_TOKEN while baseline uses a
 CLAWOS_GATEWAY_TOKEN SecretRef. No exception added. The harness now supplies only
 the existing canonical SecretRef env provider and removes the override; audit,
 baseline and Gateway auth policy remain unchanged. Rerun from installed snapshot.
+
+
+### Researcher projection review correction
+
+Pinned profile and explicit allow are intersected; an allow list cannot add web
+tools to the minimal profile. Review found researcher would therefore have no
+web tools. Preserve minimal profile, extend it with alsoAllow web_search/web_fetch
+without kernel tools, and explicitly deny minimal's session_status tool. This
+produces the required web-only surface without any global-policy change. The
+active VM uses its already-synced previous source, not these edits; its outcome
+will be retained separately and a fresh full dual-cell run will verify the fix.

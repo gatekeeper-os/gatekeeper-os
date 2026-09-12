@@ -21,7 +21,7 @@ describe('blueprint safety and provisioning',()=>{
   });
   it('requires all sandbox on runtime blueprint even without an exec tool entry',()=>{const b=load().blueprint;b.toolPolicy.allow=[];b.sandbox.mode='non-main';expect(()=>validateBlueprint(b,catalog)).toThrow(/sandbox.mode all/);});
   it('researcher exposes only native web tools, not messaging, fs, shell or kernel tools',()=>{
-    expect(blueprintEntry(load('researcher').blueprint,'/workspace').tools).toMatchObject({profile:'minimal',allow:['web_search','web_fetch'],exec:{mode:'deny'}});
+    expect(blueprintEntry(load('researcher').blueprint,'/workspace').tools).toMatchObject({profile:'minimal',alsoAllow:['web_search','web_fetch'],deny:expect.arrayContaining(['session_status']),exec:{mode:'deny'}});
   });
 
   it.each(['assistant','coder','ops','researcher'])('loads complete %s template without changing dependencies',name=>{const result=load(name);expect(result.files['README.md']).toBeTruthy();expect(result.files['AGENTS.md']).toContain('os_request_access');expect(result.blueprint.expectedGatekeepers).not.toContain('http');expect(result.blueprint.policy).toBe(name==='coder'?'runtime':'messaging');});
