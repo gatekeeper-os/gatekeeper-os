@@ -1412,3 +1412,8 @@ full nightly update matrix, later schema-bump migrations and non-Linux runtime a
 The CLI requires a reviewed full adapter and has no smoke-bypass flag. The test-only
 runtime substitution cannot close the release gate. Phase 5 may proceed next under
 Matt's implementation-order instruction; it must preserve these acceptance limits.
+
+VM cleanup verified: `clawos-test` is **shut off**. The original `base` snapshot
+(2026-09-07 11:38:13 -0700) and `installed` snapshot (2026-09-07 15:49:39 -0700)
+are intact; no new snapshot was created. VM ownership returned to the parent for
+Phase 5. These final documentation/reporting commits change no updater runtime code.
