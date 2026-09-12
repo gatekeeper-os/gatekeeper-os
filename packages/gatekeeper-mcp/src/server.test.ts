@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { mkdtempSync, rmSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { TestApprovalQueue } from "@clawos/gatekeeper-kit";
+import { TestApprovalQueue } from "@clawkeepers/gatekeeper-kit";
 import { McpServer, describeAppend, projectNote } from "./server.js";
 import { FixtureNotesServer, NotesFixture } from "./testing/notes-fixture.js";
 const dirs: string[] = [];

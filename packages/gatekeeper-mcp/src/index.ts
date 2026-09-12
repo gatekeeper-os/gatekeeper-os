@@ -1,4 +1,4 @@
-import { defineGatekeeper } from "@clawos/gatekeeper-kit";
+import { defineGatekeeper } from "@clawkeepers/gatekeeper-kit";
 import { boundaryResource } from "./manifest.js";
 import { mcpTools } from "./tools.js";
 import { McpVendor } from "./vendor.js";

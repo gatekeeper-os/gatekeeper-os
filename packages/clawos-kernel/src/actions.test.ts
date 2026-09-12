@@ -2,7 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import type { ActionDescription, Gatekeeper } from "@clawos/shared";
+import type { ActionDescription, Gatekeeper } from "@clawkeepers/shared";
 import { Store } from "./store.js";
 import { AuditLog } from "./audit.js";
 import { ActionCoordinator } from "./actions.js";

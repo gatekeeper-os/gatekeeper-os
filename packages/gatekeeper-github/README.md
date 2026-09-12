@@ -1,4 +1,4 @@
-# @clawos/gatekeeper-github
+# @clawkeepers/gatekeeper-github
 
 Reference driver (Phase 4). Resources `repo`, `issue`, `pull` with the same URL patterns as cloudflare-os. Observer strategy B
 (`hasRepoAccess`: 403/404 → false, other errors → throw). Simulation: overlay-at-read for all four actions. Revert: delete

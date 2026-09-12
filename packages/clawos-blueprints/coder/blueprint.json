@@ -4,15 +4,15 @@
   "description": "Sandboxed coding agent with scoped filesystem and exec inside a container.",
   "workspaceFiles": [
     "AGENTS.md",
-    "SOUL.md"
+    "SOUL.md",
+    "README.md"
   ],
   "skills": [],
   "toolPolicy": {
     "profile": "messaging",
     "allow": [
       "group:fs",
-      "exec",
-      "process"
+      "exec"
     ],
     "deny": [
       "browser"
@@ -25,5 +25,6 @@
   "expectedGatekeepers": [
     "fs",
     "github"
-  ]
+  ],
+  "policy": "runtime"
 }

@@ -1,4 +1,4 @@
-# @clawos/gatekeeper-mcp
+# @clawkeepers/gatekeeper-mcp
 
 **STOP2 approved: private observations implemented; generic native actions disabled.**
 
@@ -33,8 +33,8 @@ outcomes in unit tests and the disposable Gateway fixture. This is not a real
 provider or native action acceptance claim.
 
 ```sh
-pnpm --filter @clawos/gatekeeper-mcp typecheck
-pnpm --filter @clawos/gatekeeper-mcp test
+pnpm --filter @clawkeepers/gatekeeper-mcp typecheck
+pnpm --filter @clawkeepers/gatekeeper-mcp test
 scripts/vm/test.sh phase-8 installed mcp-boundary
 ```
 

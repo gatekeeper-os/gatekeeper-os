@@ -1,4 +1,4 @@
-import { defineGatekeeper } from "@clawos/gatekeeper-kit";
+import { defineGatekeeper } from "@clawkeepers/gatekeeper-kit";
 import { GitHubVendor } from "./vendor.js";
 import { resources } from "./resources.js";
 import { tools } from "./tools.js";

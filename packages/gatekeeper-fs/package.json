@@ -1,17 +1,17 @@
 {
-  "name": "@clawos/gatekeeper-fs",
-  "version": "0.1.0",
+  "name": "@clawkeepers/gatekeeper-fs",
+  "version": "0.1.0-beta.1",
   "description": "Scoped host-directory gatekeeper for OpenClaw OS.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
+    "dist",
     "LICENSE",
     "NOTICE",
-    "dist",
+    "README.md",
     "openclaw.plugin.json",
-    "deploy-inputs.json",
-    "README.md"
+    "deploy-inputs.json"
   ],
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean",
@@ -20,8 +20,8 @@
     "validate": "node ../../scripts/check-plugin-metadata.mjs ."
   },
   "dependencies": {
-    "@clawos/shared": "workspace:*",
-    "@clawos/gatekeeper-kit": "workspace:*",
+    "@clawkeepers/shared": "workspace:*",
+    "@clawkeepers/gatekeeper-kit": "workspace:*",
     "typebox": "catalog:"
   },
   "peerDependencies": {
@@ -34,7 +34,9 @@
     "@types/node": "catalog:"
   },
   "openclaw": {
-    "extensions": ["./dist/index.js"],
+    "extensions": [
+      "./dist/index.js"
+    ],
     "compat": {
       "pluginApi": ">=2026.9.2 <2026.11.0",
       "minGatewayVersion": "2026.9.2"
@@ -47,7 +49,20 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ControlStackAI/openclaw-os.git",
+    "url": "git+https://github.com/clawkeeper/openclaw-os.git",
     "directory": "packages/gatekeeper-fs"
+  },
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "engines": {
+    "node": ">=22.22.3"
   }
 }

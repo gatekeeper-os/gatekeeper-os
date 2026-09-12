@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { Value } from "typebox/value";
-import { CacheMutationStore, KitGatekeeper, OverlayStore } from "@clawos/gatekeeper-kit";
-import type { ActionDescription, ApprovalQueue, GatekeeperSession } from "@clawos/shared";
+import { CacheMutationStore, KitGatekeeper, OverlayStore } from "@clawkeepers/gatekeeper-kit";
+import type { ActionDescription, ApprovalQueue, GatekeeperSession } from "@clawkeepers/shared";
 import { boundaryResource, denied } from "./manifest.js";
 import { proposedTools } from "./tools.js";
 

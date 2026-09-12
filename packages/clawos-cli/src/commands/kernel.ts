@@ -1,4 +1,5 @@
 /** Operator command grammar. No caller-supplied operator identity or arbitrary RPC dispatch. */
+import { approvalView } from './approvals-view.js';
 import type { GlobalOptions } from '../options.js';
 import { kernelRpc } from '../util/kernel-rpc.js';
 import { StepError } from '../util/proc.js';
@@ -40,14 +41,16 @@ export function kernelRequest(command: string, args: string[]): Request {
     if (!Number.isInteger(limit) || limit < 1 || limit > 1000) throw new StepError('audit --limit must be 1–1000');
     return { method: 'os.audit.query', params: { limit } };
   }
+  if (command === 'approvals' && action === 'preview') { exact([], 1); const ids = positional[0]!; if (ids !== 'all' && (!/^[1-9][0-9]*(?:,[1-9][0-9]*)*$/.test(ids) || ids.split(',').length > 100 || ids.split(',').some(id => !Number.isSafeInteger(Number(id))) || new Set(ids.split(',')).size !== ids.split(',').length)) throw new StepError('Use positive, distinct action IDs or all'); return { method: 'os.approvals.list', params: { includeDecided: true } }; }
   if (command === 'approvals' && action === 'list') { exact([], 0); return { method: 'os.approvals.list', params: {} }; }
   if (command === 'approvals' && ['apply', 'reject', 'revert', 'grant', 'reject-request'].includes(action ?? '')) {
     exact([], 1); const ids = positional[0] === 'all' ? 'all' : positional[0]!.split(',').map(Number);
-    if (ids !== 'all' && (ids.some(id => !Number.isSafeInteger(id) || id < 1) || new Set(ids).size !== ids.length)) throw new StepError('Use positive, distinct action IDs or all');
+    if (ids !== 'all' && (!/^[1-9][0-9]*(?:,[1-9][0-9]*)*$/.test(positional[0]!) || ids.length > 100 || ids.some(id => !Number.isSafeInteger(id) || id < 1) || new Set(ids).size !== ids.length)) throw new StepError('Use positive, distinct action IDs or all');
     return { method: action === 'grant' ? 'os.requests.approve' : action === 'reject-request' ? 'os.requests.reject' : `os.approvals.${action}`, params: { ids } };
   }
   if (command === 'gatekeeper' && action === 'connect') { exact([], 1); if (!/^[a-z][a-z0-9_]{0,63}$/.test(positional[0]!)) throw new StepError('Invalid vendor'); return { method: 'os.gatekeepers.connect', params: {vendor: positional[0]} }; }
   if (command === 'gatekeeper' && action === 'list') { exact([], 0); return { method: 'os.gatekeepers.list', params: {} }; }
+  if (command === 'kernel' && action === 'maintenance') { exact([],1); if(!['on','off'].includes(positional[0]!)) throw new StepError('kernel maintenance on|off'); return {method:'os.maintenance.set',params:{enabled:positional[0]==='on'}}; }
   if (command === 'kernel' && action === 'status') { exact([], 0); return { method: 'os.status', params: {} }; }
   throw new StepError('usage: clawos grant add|list|revoke; audit tail [--limit 1–1000]; approvals list|apply|reject|revert; gatekeeper list|connect; kernel status');
 }
@@ -55,6 +58,14 @@ export function kernelRequest(command: string, args: string[]): Request {
 /** Execute one operator command and print only the kernel's credential-free response, never transport diagnostics. */
 export async function kernelCommand(command: string, args: string[], globals: GlobalOptions): Promise<number> {
   const request = kernelRequest(command, args);
-  console.log(JSON.stringify(kernelRpc(globals.cell, request.method, request.params), null, globals.json ? undefined : 2));
+  let result = kernelRpc(globals.cell, request.method, request.params);
+  if (command === 'approvals' && args[0] === 'preview' && args[1] !== 'all') {
+    if (!result || typeof result !== 'object' || !('actions' in result) || !Array.isArray(result.actions)) throw new StepError('Invalid approval response');
+    const ids = args[1]!.split(',').map(Number);
+    const actions = result.actions.filter((row: {id:number}) => ids.includes(row.id));
+    if (actions.length !== ids.length) throw new StepError('Requested action is unavailable in this bounded response');
+    result = {...result, actions};
+  }
+  console.log(command === 'approvals' && ['list', 'preview'].includes(args[0] ?? '') && !globals.json ? approvalView(result, args[0] === 'preview') : JSON.stringify(result, null, globals.json ? undefined : 2));
   return 0;
 }

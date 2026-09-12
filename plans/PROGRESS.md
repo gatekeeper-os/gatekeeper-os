@@ -288,7 +288,7 @@ Ubuntu 24.04, OpenClaw 2026.9.2. Host: 88 unit tests pass; `check:catalog`, `che
    closed only in the observable direction, backed by upstream's own snapshot guard.
    Proven in the VM, not just asserted: an external `openclaw config set gateway.bind lan` makes
    `clawos config apply` exit 1 naming `gateway.bind`, write nothing, and recover under `--force`.
-2. **§10.2's `curl … | bash` does not exist.** The repository is private and no `@clawos/*` package
+2. **§10.2's `curl … | bash` does not exist.** The repository is private and no `@clawkeepers/*` package
    is published, so there is no registry path either. The installer now detects the
    piped-without-a-checkout case and reports what is missing; the plan no longer advertises it.
 3. **§10.3 step 6 (plugins) is deferred, not done.** `clawos install` reports `deferred` for the
@@ -519,8 +519,8 @@ were not modified. To inspect this checkpoint: `cat plans/PROGRESS.md` from the 
   bounded nonrecursive listing, external-edit refusal and owner-only audience requirements.
   These runtime requirements are proposed, not implemented or tested by schema checks.
 - Checks passed: `pnpm install --frozen-lockfile --offline --ignore-scripts` (488 cached
-  packages, no downloads); `pnpm --filter @clawos/gatekeeper-fs... build`;
-  `pnpm --filter @clawos/gatekeeper-fs typecheck`; `pnpm check:catalog`;
+  packages, no downloads); `pnpm --filter @clawkeepers/gatekeeper-fs... build`;
+  `pnpm --filter @clawkeepers/gatekeeper-fs typecheck`; `pnpm check:catalog`;
   `pnpm check:secrets`; `git diff --check`. A TypeBox metadata smoke check validated all
   three definitions, representative inputs/outputs, resource mapping, malformed-handle
   refusal, caller identity-field rejection and description rules.
@@ -1044,7 +1044,7 @@ Runtime plugin staging now requires reviewed MIT metadata and copies mandatory
 LICENSE/NOTICE files without silently accepting their absence. Both bundled
 plugins and the standalone install-policy payload retain the TypeBox notice.
 
-Checks: `pnpm --filter @clawos/cli... build`,
+Checks: `pnpm --filter @clawkeepers/cli... build`,
 `node scripts/check-package-licenses.mjs --pack` (10/10 actual tarballs, including
 nested runtime artifacts), catalog, secret scan and diff whitespace checks pass.
 This is distribution preparation, not beta or full Phase 3 acceptance. No release
@@ -1466,3 +1466,443 @@ exists. Kernel/filesystem source was unchanged by the reflection fix, so the
 98structural/38live-conformance regression above remains applicable. PR14 remains
 draft/unmerged. Hosted CI for the final documentation head is pending at commit;
 verify the live PR result rather than assuming any prior green head applies.
+
+## 2026-09-12 — Phase 6 blueprint implementation checkpoint (not accepted)
+
+Matt authorized overnight implementation order **7 → 5 → 6 → MCP**, overriding
+numerical sequence but not release/security gates. Branch `phase/6-blueprints`
+starts from `origin/main` `f4f66c7`; it does not merge unaccepted Phase 4/5/7.
+
+Implemented:
+- Dependency-free CLI `blueprint list|lint|apply|diff`, bundled schema/templates,
+  assistant/coder/ops/researcher guidance, exact file snapshots, idempotence,
+  path-only drift reports, refusal of existing-agent adoption and interrupted
+  provisioning journals. Other agents and global tool policy are preserved.
+- Mandatory all-turn sandbox for runtime tools; Docker agent scope, network:none,
+  read-only root, dropped capabilities, sandbox-only exec and no elevated mode.
+  Inherited Docker binds and later fragment overrides are refused.
+- Kernel prompt-cap repair: retain native groups within the already-authorized
+  upstream tool set, never pass through arbitrary plugin groups or ungranted gk
+  tools. Kernel request tools explicitly remain visible in sandboxed roles.
+- Published upstream does not bootstrap README; its guide is included in managed
+  AGENTS.md. Added `docs/blueprints.md`, VM procedure and source references.
+
+Verification:
+- **432 host tests** (31 files), full workspace typecheck/build and **10 packed
+  package-license checks** passed. Catalog, secret and whitespace checks pass.
+- **21 blueprint tests** passed inside the VM, as well as on the host.
+- `CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state scripts/vm/test.sh phase-6 installed blueprint-sandbox`
+  → `vm-artifacts/20260912-083358-phase-6/`, **exit 0, 48/48 checks, four turns**.
+  Real Gateway/OpenClaw **2026.9.2**, real Docker, synthetic loopback model; no
+  personal provider/account credentials. Packed CLI provisioning, idempotence,
+  drift/refusal, access-request visibility, ungranted gk hiding, noncoder runtime
+  denial and actual coder command effect all pass. Exact workspace mount selects
+  the coder container; network:none/read-only root/no Docker socket verified.
+- Existing kernel/filesystem runtime regression:
+  `vm-artifacts/20260912-084434-phase-3/`, **exit 0**, **98/98 structural checks**,
+  **38/38 live conformance checks**, **94 kernel + 138 CLI guest tests**. Its
+  narrowing assertions now retain native tools while enforcing the exact granted
+  gk set; the old total-tool count incorrectly encoded native-tool stripping.
+- Full-mode acceptance: `vm-artifacts/20260912-084641-phase-6/`, **blocked exit 2**,
+  explicit missing-driver and effective-policy reasons; `fullPhaseAcceptance:false`.
+- `pnpm lint` is **blocked (exit 2)** by main's missing ESLint v9 flat configuration.
+  Catalog and secret checks were run separately and pass.
+- Installed/default config hash matches after restore. VM **shut off**; original
+  `base` and `installed` snapshots retain Sep 7 timestamps. No credential snapshot.
+
+Earlier deterministic failures are retained, not counted as passes: unsupported
+fixture reload mode (`hot` corrected to `hybrid`), main kernel cap removing native
+exec, a local syntax error caught by both build paths, and verifier assuming
+agent-named containers (upstream uses workspace hashes). The last clean run above
+includes those corrections. No in-flight script was edited.
+
+Full Phase 6 remains **blocked**: `gatekeeper-http` is still absent and the
+GitHub acceptance dependency remains separate; no expectedGatekeepers entry was
+removed. The installed baseline globally denies runtime/fs/automation, which
+per-agent allow cannot restore. This checkpoint uses a separate explicit fixture
+policy, never silently relaxes that baseline, and is not four production-ready
+role acceptance. Phase 4 upstream approval-body logging remains a release gate.
+No merge, phase tag, package publication, visibility change or production action.
+## 2026-09-12 overnight — Phase5 approvals implementation checkpoint
+
+Matt's requested implementation order is 7 → 5 → 6 → gatekeeper-mcp; acceptance
+requirements remain unchanged. This branch is independent from `origin/main`
+`f4f66c7`, not merged with the unaccepted Phase4 or Phase7 branches.
+
+Implemented bounded terminal-escaped approval tables, explicit operator previews,
+strict `/approvals apply`, `/reject`, `/grant` aliases, silent unauthorized dispatch, and
+immediate ordered auto-drain after manual decisions. Existing timer and once/run
+notification claims are tested through real Gateway/model/SDK/message CLI flows
+with a synthetic driver/channel. This is not a full-screen interactive TUI.
+
+The first attempted VM run stopped before guest execution because libvirt had lost
+snapshot metadata. Verified original disk snapshots, then restored same-user
+virtqemud soft memlock0/hard8MiB and re-registered unchanged original XML. No host
+production service, global setting, credential, or snapshot content changed.
+
+Runtime checkpoints:
+- `20260912-073450-phase-5`:11 structural checks passed, then digest timeout.
+  Direct CLI diagnostic proved the fixture lacked a valid target resolver. Fixed
+  only the local channel adapter using the public declared messaging contract.
+- `20260912-073813-phase-5`:32 checks passed, then forged-command silence failed.
+  Model/effect denial held, but the late empty reply counted as delivery. Fixed
+  early dispatch to claim recognized commands even when authority resolution fails;
+  untrusted text can select denial only, never an operation or identity.
+- Fresh reset run on the corrected source is pending; no passing checkpoint yet.
+
+Host:427 tests initially passed; new malformed-authority regression brings focused
+kernel coverage to26 passing tests. Workspace build/typecheck/catalog/secrets and
+10 package-license checks passed before the last kernel correction; corrected
+kernel typecheck passes. Final full host rerun underway. Lint remains unavailable
+on baseline (no ESLint9 configuration); no unrelated lint configuration invented.
+
+Full/default mode remains blocked pending accepted Phase4 secrecy and a real
+operator-channel receipt. Synthetic notification receipts and the reused filesystem
+contract name are not real-provider or filesystem acceptance. No merge/tag/release.
+
+- `20260912-074046-phase-5`: forged-command silence now passes. The harness reused
+  the same inbound MessageSid for subsequent commands, causing duplicate-message
+  handling to suppress the next decision. Fixture now gives each inbound message
+  a unique serial; no command authorization or acceptance assertion weakened.
+
+- `20260912-074253-phase-5`: unique MessageSid fixed delivery, but `/approve`
+  returned native-command usage and did not decide the deferred action. Upstream
+  built-in handler reserves this command before agent reply dispatch. Removed the
+  dead/colliding alias; the test now requires native usage/no deferred effect then
+  exercises `/approvals apply`. Plan corrected, native approval enforcement intact.
+
+### Phase5 verified runtime checkpoint
+
+`CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=<phase0>/scripts/vm/.state scripts/vm/test.sh phase-5 installed approvals-live`
+finished **exit0**, `vm-artifacts/20260912-074628-phase-5/`, upstream2026.9.2:
+**49/49 structural checks**, six real Gateway/model turns. Timer-only effect applied
+in **10,812ms**. Both eligibility negatives, ordered stop/resume, bounded packed-CLI
+table/preview/revert, two-actions/one-run digest, private/outsider/group/forged command
+handling, deferred apply/reject, native `/approve` preservation, explicit grant and
+read-only decision denial passed. No pending synthetic actions remained.
+
+Host:431 tests passed before the reserved-command correction; all41 affected kernel/
+command tests and corrected kernel typecheck passed after it. Complete workspace
+build/typechecks/catalog/secrets and10 package-license checks passed. Hosted checks
+for final correction pending. Artifacts contain structural receipts only. Full
+acceptance remains false; fixture provider/channel do not prove real transports.
+
+Final full-mode probe `20260912-074825-phase-5` returned **blocked/exit2**, explicitly
+requiring accepted GitHub/log secrecy and a configured real operator channel.
+Implementation committed/pushed as `178b9e1` + `864df55`, draft PR12. The final
+correction's hosted CI is running. VM `clawos-test` verified **shut off**; original
+base/installed snapshots retain2026-09-07 creation dates. VM ownership released
+for Phase6. No personal credentials, production changes, phase acceptance or merge.
+
+## 2026-09-11 overnight — Phase 7 implementation checkpoint (not phase acceptance)
+
+Matt authorized implementation order **7 → 5 → 6 → gatekeeper-mcp** and reviewable
+remote progress for the morning. This branch starts at `origin/main` `f4f66c7`; it
+intentionally does not merge the unaccepted Phase 4 branch. No phase advance/tag/release.
+
+Implemented the durable nine-step host transaction, per-cell immutable runtime selection
+through an OS-owned systemd drop-in, verified archive restoration with old-runtime scratch
+state, availability checks, strict run/version-bound full-conformance validation, and
+crash recovery. Added admin-only persisted maintenance, active-run/effect accounting, and
+kernel-schema startup guards. Schema-0 legacy cells with **no database** get an installer-only
+initial schema pin before the first kernel startup; existing databases cannot use this path.
+The updated operator reference is repository-owned skill source, not Workshop content.
+
+The plan now corrects two unsafe assumptions: step-three-only backups can miss later grant
+changes, so maintenance refreshes the archive after draining; global activation would affect
+other cells, so each cell selects a retained immutable runtime without touching upstream's
+installation or unit. Admission reopens only after the verified commit is durable. Downgrades
+use matching rollback archives, not direct activation of old binaries against new state.
+
+Host checkpoint: full typechecks/build/catalog/secrets and **434/434 tests** passed before
+subsequent source-helper/forward-only validation additions; final rerun is pending.
+VM attempts through `scripts/vm/test.sh phase-7 installed runtime-checkpoint`:
+
+- `20260912-062225-phase-7`: failed initial strict schema check on legacy schema-0/no-DB
+  installed snapshot; fixed installer initial-pin sequencing, without relaxing update guards.
+- `20260912-062507-phase-7`: installer sequencing bug (local variable before initialization);
+  fixed by reading the initial pin before service startup.
+- `20260912-062734-phase-7`: current kernel installation, actual filesystem grant and
+  availability check passed; source-tsx RPC helper resolution failed before step 5. The
+  negative harness now also requires the failure to occur at step 5 (not any blocked result).
+- Fresh rerun is in progress; no successful update/rollback evidence claimed yet.
+
+The VM driver encountered the already documented process-local QEMU io_uring ENOMEM.
+Verified disk snapshots remained intact; restored the same-user virtqemud soft-memlock=0,
+hard=8MiB fallback and re-registered unchanged original base/installed metadata. No production,
+host-global, unrelated VM, real GitHub account or personal credential changes.
+
+**Acceptance remains open:** the runtime checkpoint substitutes a narrow real Gateway/SDK/fs
+probe only inside the test harness. It reports `fullConformance:false` and production CLI
+validation rejects it. Full Phase 4-linked conformance, native log secrecy, post-activation
+model observation, automatic scheduler delivery and full nightly matrix remain outstanding.
+No credential-bearing connected snapshot is created or required by this reduced checkpoint.
+
+### 2026-09-12 — verification and checkpoint continuation
+
+Current host checks: **438/438 tests**, full workspace build/typecheck, catalog and
+secret checks pass; 10 packed-package license checks pass. `pnpm lint` is blocked
+by the repository's pre-existing missing ESLint v9 configuration (no eslint.config.*
+exists); this branch does not invent an unrelated lint configuration.
+
+`20260912-064127-phase-7` staged the real 2026.9.4 runtime and passed both real
+14-check Gateway/SDK/filesystem probes. Target activation reached verification,
+then automatic rollback restored the prior runtime successfully. The failure was
+our use of mutable `/proc/<pid>/cmdline` as a runtime identity contract. Verification
+now checks systemd's effective ExecStart selection and the authenticated public SDK
+runtime version instead. A bounded follow-up diagnostic verified the target and
+restored the previous runtime; this diagnostic is **not** a phase acceptance run.
+Fixed structural `check`/`failedCheck` fields now distinguish verification failures
+without retaining raw upstream errors.
+
+A new reset/sync/collect runtime checkpoint is running on frozen source, including
+the copied-metadata compatibility rejection, successful nine-step update, explicit
+rollback, and killed-activation recovery. Final VM counts/exit and PR/CI links will
+be appended when the run finishes. Full Phase 7 acceptance remains open.
+
+### 2026-09-12 — Phase 7 runtime checkpoint passed; full gate remains blocked
+
+Implementation checkpoint: `db17a1d`, [draft PR #11](https://github.com/clawkeeper/openclaw-os/pull/11).
+No merge, phase tag or acceptance advance.
+
+Exact runtime command (shared state is the original Phase 0 worktree):
+
+```sh
+CLAWOS_VM_DRIVER=libvirt \
+CLAWOS_VM_STATE_DIR=/home/matthew/projects/Personal/openclaw-os-agent-kit/openclaw-os-worktrees/phase-0-bootstrap/scripts/vm/.state \
+  scripts/vm/test.sh phase-7 installed runtime-checkpoint
+```
+
+**`vm-artifacts/20260912-065811-phase-7/`: exit 0, 482 seconds, Node v24.20.0.**
+Nine checkpoint assertions passed. Each of the three actual staged **2026.9.4**
+Gateway/SDK/filesystem probes passed **14 checks** (42 probe checks total). The
+active cell began at the lock's **2026.9.2** pin with a real filesystem grant.
+
+- Installed the current strict kernel and created the disposable filesystem grant.
+- Availability check resolved current latest and all installed plugin ranges.
+- Copied incompatible kernel metadata was rejected at **step 2**, without changing live config.
+- A successful real runtime probe followed by intentional conformance rejection stopped at
+  **step 5**, before maintenance/activation; the production full-conformance validator still
+  rejects this deliberately reduced probe.
+- Real successful transaction recorded **all nine completed steps**, selected 2026.9.4 in
+  systemd, verified authenticated runtime version/schema/grants/audit, and reopened admission.
+- Explicit rollback restored a healthy 2026.9.2 cell with identical grants.
+- SIGKILL during activation recovered via the same rollback implementation. A read-only
+  post-run journal check confirms `state=rolled-back`, `step=7`, completed steps **1–6**,
+  `from=2026.9.2`, `target=2026.9.4`, `kernelSchema=1` (`recovery-journal-proof.json`).
+- Final kernel was healthy, schema 1, maintenance false. No real GitHub credentials, model
+  credentials, outbound provider mutations, or connected credential snapshot were used.
+
+The subsequent default/full-gate run `scripts/vm/test.sh phase-7 installed full`
+correctly returned **exit 2 / blocked** with structural evidence at
+`vm-artifacts/20260912-070750-phase-7/`. Its reporting branch now preserves a blocked
+verdict instead of becoming a secondary collection error. It performed no update.
+
+Host checks: **438/438 tests**, complete build/typecheck/catalog/secrets/diff checks;
+**10/10 packed-license checks**. Lint remains unavailable because the base repository
+has no ESLint v9 config. Hosted candidate checks on `db17a1d` are green:
+[build-test](https://github.com/clawkeeper/openclaw-os/actions/runs/34679634343),
+[compatibility smoke + update-contract regression](https://github.com/clawkeeper/openclaw-os/actions/runs/34679634309).
+The older extended-stable tag remains explicitly unsupported, not a live test pass.
+
+**Not accepted:** full connected-provider/Phase 4-linked conformance (including native
+secrecy), post-activation model-driven observation, scheduler registration/delivery,
+full nightly update matrix, later schema-bump migrations and non-Linux runtime activation.
+The CLI requires a reviewed full adapter and has no smoke-bypass flag. The test-only
+runtime substitution cannot close the release gate. Phase 5 may proceed next under
+Matt's implementation-order instruction; it must preserve these acceptance limits.
+
+VM cleanup verified: `clawos-test` is **shut off**. The original `base` snapshot
+(2026-09-07 11:38:13 -0700) and `installed` snapshot (2026-09-07 15:49:39 -0700)
+are intact; no new snapshot was created. VM ownership returned to the parent for
+Phase 5. These final documentation/reporting commits change no updater runtime code.
+
+### 2026-09-12 — integration and first-release preparation; publication blocked
+
+PRs [#11](https://github.com/clawkeeper/openclaw-os/pull/11),
+[#12](https://github.com/clawkeeper/openclaw-os/pull/12), and
+[#13](https://github.com/clawkeeper/openclaw-os/pull/13) are merged, with their
+overlapping kernel changes resolved together. Integrated head `c691bf2` passed
+481 host tests and VM `20260912-112504-phase-3`: **exit 0, 98 structural + 38
+conformance checks**. Required URL PR [#9](https://github.com/clawkeeper/openclaw-os/pull/9)
+is also merged; main is `6b1996d`.
+
+The exact disk addendum is incorporated in the single
+[plan PR #15](https://github.com/clawkeeper/openclaw-os/pull/15), head `66b59db`,
+ready with green CI. **The earlier `gatekeepers/mcp/` instruction is withdrawn;
+`packages/gatekeeper-mcp` in core is correct.** All four reference drivers remain
+in core. Community Tier 0 is [gatekeepers PR #6](https://github.com/clawkeeper/gatekeepers/pull/6),
+head `6d2d2d5`: real inert template files typecheck/build/import against the local
+kit, five wanted issues carry the publication note, and the authoring skill is
+byte-identical to core. Its CI diff is blocked on private cross-repository read
+access, not a local byte mismatch. No access credential or visibility change was
+made. The org-profile scope correction is [.github PR #1](https://github.com/clawkeeper/.github/pull/1).
+
+Release preparation is [draft PR #16](https://github.com/clawkeeper/openclaw-os/pull/16).
+The scope-only rename is `c2b9de4`. Five packages are prepared at `0.1.0-beta.1`:
+shared, gatekeeper-kit, kernel, gatekeeper-fs and cli. Everything else, including
+the spike, is private. ESLint 9 works; CI requires the fail-closed secrets job
+before build/test. Merge protection itself could not be configured under the
+current private-repository entitlement (403). The guarded release script and
+OIDC/provenance workflow are written but have not tagged or published anything.
+
+Hardening found and fixed the persisted-pause check in post-decision draining
+(`f0cec34`), with a reproducer and 256 parameter-rewrite/replay fuzz cases. The
+final runtime passed **483 tests in hosted CI** (`bc33baa`, run `34692506245`),
+then CI failed the new packed-entry gate. Final local build/types/lint/catalog/
+secrets, utility controls and **10 packed-license checks** pass. The actual
+`npm_config_git_checks=false pnpm -r publish --dry-run` exited 0 and selected
+exactly the five beta packages; no registry writes or npm login. The one-command
+override only allows the preparation git branch during dry-run.
+
+Blueprint VM `20260912-120458-phase-9` on runtime `b91ab92`: **48 structural
+checks + four synthetic-model turns passed; overall exit 1** because every deep
+audit returned warnings. All four returned parseable JSON/exit 0, not clean
+security verdicts. Findings: missing trusted proxies and failed deep Gateway
+probe on all roles, sandbox-host-with-sandbox-off on assistant/ops, full exec
+trust on coder. Coder's real Docker network/read-only/socket boundaries passed.
+The isolated audit states did not establish a successful deep Gateway probe;
+no claim of deep acceptance. Proxy/exec policy was not relaxed to erase warnings.
+The final kernel and audit-script SHA-256 values independently matched the guest.
+
+Retained failed precursor runs: `20260912-114956-phase-9` (renamed CLI collision
+with original snapshot package, fixed by isolated test prefix); and
+`20260912-115446-phase-9` (invalid audit projection, fixed by preserving explicit
+ownership and main-target references). Running scripts were never edited.
+
+**Publication is blocked.** Pinned `plugins validate --entry` rejects ordinary
+plugin entries without tool/feature authoring metadata. The command actually
+runs on packed artifacts and is not waived. Blueprint audit findings also remain
+open; private source blocks the later provenance workflow. No publish-ready
+`v0.1.0-beta.1` commit exists and no `phase-9` tag was made. Exact conditional
+handoff commands and threat-review scope are in
+[RELEASE-PREPARATION-2026-09-12.md](RELEASE-PREPARATION-2026-09-12.md).
+
+MCP [PR #14](https://github.com/clawkeeper/openclaw-os/pull/14) remains unmerged
+at `8e51394`, final CI green: 105 MCP tests, 10 production-boundary + 36 synthetic
+deferred Gateway checks, eight model turns, four clean structural secrecy scans.
+Its separate kernel regression passed 98 structural + 38 conformance checks.
+Generic actions retain `awaitDecision:true` / `implementsRevert:false`; native
+execution/full acceptance remain gated by upstream logging. No upstream post or
+production change was made.
+
+Final release-runtime checkpoint `20260912-121809-phase-3` on `b91ab92`:
+**exit 0; 120 kernel tests + 163 CLI tests, 98 structural checks and all 38
+selected live conformance checks passed** on unmodified OpenClaw 2026.9.2.
+Guest kernel/harness SHA-256 matched the host source. The preceding attempt
+`20260912-121504-phase-3` stopped during graceful reset, before any test ran;
+it is **NOT RUN**, not a test failure or acceptance result. Guest systemd
+poweroff succeeded and the retry used the unchanged original installed snapshot.
+No forced power-off was used.
+
+Final independent cleanup: `virsh domstate clawos-test` reports **shut off**;
+only original `base` (2026-09-07 11:38:13 -0700) and `installed`
+(2026-09-07 15:49:39 -0700) snapshots exist. No connected or replacement snapshot.
+Durable host/VM receipts are in the kit's `release-prep-20260912/` directory;
+VM artifacts remain local and uncommitted. This final reporting change contains
+no runtime modification, tag, merge or publish.
+
+## 2026-09-12 — release-gate correction stopped at upstream policy prerequisite
+
+Matt authorized replacement of authoring-metadata validation with packed loading,
+role-specific baseline policy, exact-code audit exceptions, ordered merges
+(#15 → #16 → #14), community Tier 0 merge, and a **local-only** beta tag. No
+publication, tag push, visibility change, or upstream post is authorized.
+
+Preflight verified the unchanged live open heads: core #15 `66b59db`, #16
+`81b0bd9`, #14 `8e51394`; community gatekeepers #6 exists and remains open at
+`6d2d2d5`. None was merged in this continuation.
+
+**STOP — the explicit step-2 prerequisite fails on pinned OpenClaw 2026.9.2.**
+`docs/upstream-reference.md`'s Phase 6 section and the pinned bundled
+`docs/tools/multi-agent-sandbox-tools.md:195–230` describe intersecting policies:
+agent policy cannot restore global denials. They do not establish an overridable
+`agents.defaults.tools` policy. An actual isolated CLI schema probe confirms the
+proposed key is unsupported:
+
+- Existing top-level `tools.deny` / `tools.exec.mode: deny` control:
+  `node <pinned-openclaw>/openclaw.mjs config validate --json` → exit 0,
+  `valid: true`, no warnings.
+- Same denials and exec mode moved to `agents.defaults.tools`: identical command
+  → exit 1, `valid: false`, issue at `agents.defaults`:
+  `Unrecognized key: "tools"`.
+
+Both invocations explicitly scoped `OPENCLAW_STATE_DIR` and
+`OPENCLAW_CONFIG_PATH` to separate directories outside production/shared runtime
+state, with resolved-path boundary assertions. Receipt and exact synthetic
+configs are in
+`/home/matthew/projects/Personal/openclaw-os-agent-kit/release-gates-20260912/`
+(`schema-receipt.json`, `control/`, `defaults-tools/`). No Gateway was started.
+
+Per Matt's instruction to stop if the override contract does not hold, no baseline
+policy was moved or relaxed and no alternative policy was invented. No runtime
+or CI corrections, VM checkpoints, merges, release-script invocation, tag or
+publish were performed. The packed-authoring gate withdrawal is accepted as a
+decision but its replacement is not yet implemented. Resume requires a supported
+policy design or a separately approved upstream-pin change; do not remove the
+global ceiling to force the requested config to validate.
+
+## Release-gate resume — cell profiles (2026-09-12)
+
+Matt replaced the unsupported agent-default tool override with explicit cell policy
+profiles and authorized ordered green merges #15 → #16 → #14 → gatekeepers #6 →
+.github #1, then a **local-only** v0.1.0-beta.1 tag. No publish, tag push, visibility
+change or upstream post is authorized.
+
+- PR15 green build-test34691503571 merged as2a48d4d. The release-prep PR corrects
+  §7.2 and withdraws authoring-metadata validation in favor of packed install/load.
+- `00-baseline.json5` unchanged. Messaging copies the existing set; runtime adds
+  `05-policy-runtime.json5` and omits `20-sandbox.json5` so non-main cannot overwrite
+  all-turn sandboxing. Runtime global explicit fs/exec allow and sandbox are coupled;
+  config apply rejects a missing/weakened sandbox, even in later local overrides.
+- Both merged policy sets validate on unmodified pinned2026.9.2, exit0, no warnings;
+  isolated receipt `release-gates-20260912/cell-policy/schema-receipt.json`.
+  Blueprint policy preflight uses upstream config get, refuses coder on messaging
+  before any mutation, gives a separate runtime-cell command; no global relaxation.
+- Least non-deny exec mode is allowlist with explicit sandbox host. Pinned runtime
+  host allowlist gate is gateway/node-only; Docker is the sandbox execution boundary.
+  Coder permits fs+exec only, researcher web-only; HTTP planned after beta, not expected.
+- Focused CLI41 tests and full host493 tests pass. Typecheck/build/ESLint pass.
+- VM preflight found missing libvirt snapshot registrations, not missing disk
+  snapshots. Same-user virtqemud process-only soft-memlock0 fallback restored;
+  unchanged saved metadata re-registered. Original base/installed Sep7 dates intact.
+  Fresh Phase9 dual-cell provisioning/audit checkpoint is running; not yet accepted.
+
+
+## 2026-09-12 — community ownership and release-plan maintenance
+
+Matt withdrew the earlier `gatekeepers/mcp/` instruction: MCP belongs in core at
+`packages/gatekeeper-mcp`, alongside fs, github, and http. The npm scope is
+`@clawkeepers` (organization exists; Matt owns it). Community Tier 0 is docs and
+an inert, locally typechecked template; registry builds wait for kit/shared publication.
+
+The exact addendum arrived on disk during execution and is now included in this
+same plan-maintenance PR. §8 includes Tier 0/Tier 1 and the reference-driver rule;
+Phase 9 now has all ten ordered deliverables verbatim. First release is
+`0.1.0-beta.1` for shared, gatekeeper-kit, kernel, gatekeeper-fs, and cli only.
+GitHub/MCP wait for acceptance. The earlier temporary missing-input note is
+superseded. No visibility change, package publish, phase tag, or upstream post.
+
+
+### Dual-cell audit fixture correction
+
+Run20260912-154325-phase-9 passed runtime coder provisioning/idempotence and all
+fresh model/Docker checks, including exec.mode allowlist actual command execution,
+read/write positive controls, network:none, read-only root and no socket/host access.
+The deep probe authenticated successfully. The audit correctly failed on the
+unaccepted `gateway.env_token_overrides_config` warning: the harness injected a
+second credential source via OPENCLAW_GATEWAY_TOKEN while baseline uses a
+CLAWOS_GATEWAY_TOKEN SecretRef. No exception added. The harness now supplies only
+the existing canonical SecretRef env provider and removes the override; audit,
+baseline and Gateway auth policy remain unchanged. Rerun from installed snapshot.
+
+### MCP candidate integrated with corrected release preparation
+
+Merged release-prep candidate into PR14's branch, resolving six overlapping
+catalog/package/harness/docs conflicts while retaining all phase collectors.
+Renamed new MCP imports/fixtures to @clawkeepers; MCP stays private and outside
+the five-package release set. Runtime tool registration still filters observations
+only: append_note remains unregistered, generic descriptions awaitDecision true /
+implementsRevert false. No native-effects acceptance is claimed.
+Build, ESLint, catalog/secrets and599 host tests pass on the integrated tree.
+Remote merge is held until PR16 merges green and the required VM receipts pass.

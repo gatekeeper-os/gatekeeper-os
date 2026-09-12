@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { join } from "node:path";
-import type { GatekeeperAccount, ObserverVerifier } from "@clawos/shared";
+import type { GatekeeperAccount, ObserverVerifier } from "@clawkeepers/shared";
 import { FsDirectory } from "./directory.js";
 import { contains, denied, DirectoryBinding, directoryUrl } from "./paths.js";
 import { privateDirectory, readState, writeState } from "./state.js";

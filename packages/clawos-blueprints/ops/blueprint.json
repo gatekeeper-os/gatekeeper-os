@@ -1,17 +1,16 @@
 {
   "name": "ops",
   "version": "0.1.0",
-  "description": "Scheduled operations agent: cron-driven summaries and notifications.",
+  "description": "Messaging-only operations summaries and notifications; scheduling is operator-owned.",
   "workspaceFiles": [
     "AGENTS.md",
-    "SOUL.md"
+    "SOUL.md",
+    "README.md"
   ],
   "skills": [],
   "toolPolicy": {
     "profile": "messaging",
-    "allow": [
-      "cron"
-    ],
+    "allow": [],
     "deny": [
       "group:runtime",
       "group:fs",
@@ -22,7 +21,7 @@
     "mode": "off"
   },
   "expectedGatekeepers": [
-    "github",
-    "http"
-  ]
+    "github"
+  ],
+  "policy": "messaging"
 }

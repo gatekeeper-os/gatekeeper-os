@@ -15,13 +15,14 @@ trap cleanup EXIT
 printf '%s\n' '{"mode":"channel-ingress","realSlackAcceptance":false,"controlUiGatewayAcceptance":true,"fullPhaseAcceptance":false,"realFilesystemWritesEnabled":false}' > "$evidence/scope.json"
 node --version > "$evidence/node-version"
 pnpm install --frozen-lockfile --ignore-scripts > /home/tester/kernel-deps.log 2>&1
-pnpm --filter @clawos/kernel... --filter @clawos/gatekeeper-fs... --filter @clawos/conformance... --filter @clawos/cli build > /home/tester/kernel-build.log 2>&1
+pnpm --filter @clawkeepers/kernel... --filter @clawkeepers/gatekeeper-fs... --filter @clawkeepers/conformance... --filter @clawkeepers/cli build > /home/tester/kernel-build.log 2>&1
 mkdir -p /home/tester/kernel-cli-package
-pnpm --filter @clawos/cli pack --pack-destination /home/tester/kernel-cli-package > /home/tester/kernel-cli-pack.log 2>&1
-npm install -g /home/tester/kernel-cli-package/clawos-cli-0.1.0.tgz --ignore-scripts > /home/tester/kernel-cli-install.log 2>&1
-pnpm --filter @clawos/kernel typecheck
-pnpm --filter @clawos/kernel exec vitest run --reporter=default --reporter=json --outputFile="$evidence/kernel-tests.json"
-pnpm --filter @clawos/cli exec vitest run --reporter=default --reporter=json --outputFile="$evidence/cli-tests.json"
+cli_archive=$(node scripts/pack-cli.mjs /home/tester/kernel-cli-package)
+npm install -g --prefix /home/tester/phase-checkpoint-cli "$cli_archive" --ignore-scripts > /home/tester/kernel-cli-install.log 2>&1
+export PATH="/home/tester/phase-checkpoint-cli/bin:$PATH"
+pnpm --filter @clawkeepers/kernel typecheck
+pnpm --filter @clawkeepers/kernel exec vitest run --reporter=default --reporter=json --outputFile="$evidence/kernel-tests.json"
+pnpm --filter @clawkeepers/cli exec vitest run --reporter=default --reporter=json --outputFile="$evidence/cli-tests.json"
 pnpm exec tsx test/scripts/channel-config.mjs
 openclaw --version > "$evidence/upstream-version"
 openclaw config validate > /home/tester/kernel-validation.log 2>&1

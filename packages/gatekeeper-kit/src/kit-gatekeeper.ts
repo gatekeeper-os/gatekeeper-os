@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from "node:util";
 import { Value } from "typebox/value";
-import { ActionDescriptionSchema, ObservationDescriptionSchema, type ActionDescription, type ApprovalQueue, type Gatekeeper, type GatekeeperSession, type ObserverVerifier, type SessionCallContext, type SupportedResource, type ToolResult } from "@clawos/shared";
+import { ActionDescriptionSchema, ObservationDescriptionSchema, type ActionDescription, type ApprovalQueue, type Gatekeeper, type GatekeeperSession, type ObserverVerifier, type SessionCallContext, type SupportedResource, type ToolResult } from "@clawkeepers/shared";
 import { OverlayStore } from "./overlay-store.js";
 import { ActionSequencer } from "./action-sequencer.js";
 import { readJson, writeJsonAtomic } from "./atomic-json.js";
@@ -15,7 +15,7 @@ export interface ActionImpl<P = Record<string, unknown>> {
 }
 /** Observations describe before reading; the kit owns authorization and never hands them a write queue. */
 export interface ObservationImpl<P = Record<string, unknown>> {
-  describe(params: P): import("@clawos/shared").ObservationDescription | Promise<import("@clawos/shared").ObservationDescription>;
+  describe(params: P): import("@clawkeepers/shared").ObservationDescription | Promise<import("@clawkeepers/shared").ObservationDescription>;
   read(params: P): Promise<unknown>;
 }
 type Status = "submitting" | "pending" | "applying" | "applied" | "rejected" | "reverting" | "reverted" | "uncertain";

@@ -316,3 +316,86 @@ installed snapshot, runs account/transport fixtures and the actual Gateway
 empty-config lifecycle/denial probe. No real MCP account or effects are enabled.
 Artifacts explicitly distinguish local TLS fixtures from live-provider acceptance.
 `phase-8 installed full` returns blocked (exit2) at STOP2, never a fabricated pass.
+
+## Phase 6 blueprint sandbox checkpoint (2026-09-12)
+
+`phase-6 installed blueprint-sandbox` builds and installs the packed CLI in the
+VM's isolated checkpoint prefix. It creates two actual cells via `clawos cell
+create`: `blueprint-runtime` on 19100 and `blueprint-messaging` on 19110. A synthetic
+model listens on loopback 19101. These ports are guest-only and checked by cell
+creation; no host service binds them.
+
+The runtime cell provisions coder, verifies idempotence/drift and runs native exec
+inside real Docker. Container inspection checks network:none, read-only root and no
+Docker socket, plus an inaccessible host-only file and a positive workspace write.
+The messaging cell refuses coder before creating any agent and must print
+`clawos cell create blueprint-messaging-runtime --port 19111 --policy runtime`.
+Assistant, ops and researcher then provision idempotently and execute synthetic
+Gateway turns: denied runtime/fs tools remain absent, positive allowed tools are
+present, and researcher has only web tools. Each role uses a fresh session.
+
+The fixture only supplies a synthetic model; it does not replace cell policy.
+`00-baseline.json5` must equal the repository template byte for byte, and only the
+runtime cell gets `05-policy-runtime.json5`. The minimal Debian sandbox image is
+not proof of the upstream development image's inventory. GitHub integration remains
+pending and HTTP is deferred beyond beta. `full` returns blocked, exit 2.
+Only structural `phase-6-evidence/` files are collected, never configs, tokens,
+model bodies or raw Gateway logs.
+
+## Phase 5 approvals-live checkpoint
+
+`CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=<original-phase0>/scripts/vm/.state
+scripts/vm/test.sh phase-5 installed approvals-live` resets the original unconnected
+snapshot. It uses a synthetic driver with the existing filesystem contract name,
+not an actual filesystem/GitHub provider, and a local synthetic channel. Real
+Gateway/model dispatch, authenticated SDK RPCs, packed CLI and message CLI exercise
+queue order, timer, previews, operator commands, and digest delivery. Only structural
+`phase-5-evidence` files are collected. No personal credentials or external message.
+Default/full mode returns blocked; this checkpoint cannot claim full acceptance.
+
+## Phase 7 runtime checkpoint (implementation branch)
+
+`CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=<shared original state>
+scripts/vm/test.sh phase-7 installed runtime-checkpoint` restores the original installed
+snapshot, installs the current kernel, and introduces a disposable filesystem grant. No
+personal credentials or connected snapshot. Collection is restricted to structural
+`phase-7-evidence/` files; raw configs, tokens, vendor output, journals and backups stay in
+private guest state.
+
+The checkpoint exercises actual npm staging, Gateway/SDK health and grant operations,
+systemd activation, verified archive restoration and an interrupted transaction. Its
+step-five runtime probe is explicitly substituted by the test harness and cannot pass
+production full-conformance validation. Both evidence files and command output distinguish
+this checkpoint from full Phase 7 acceptance; the `full` mode currently returns blocked.
+
+## Phase 9 prepublish checkpoint
+
+```sh
+CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=<original-phase0>/scripts/vm/.state \
+  scripts/vm/test.sh phase-9 installed prepublish
+```
+
+This resets the original installed snapshot, rebuilds and packs the current CLI,
+and runs the two-cell Phase 6 checkpoint. After each cell's role scenarios,
+`openclaw security audit --deep --json` audits that actual cell with its own
+Gateway still running. The cell token is supplied through child environment
+`OPENCLAW_GATEWAY_TOKEN`, not argv; the original state identity is preserved.
+
+The gate requires zero critical findings and a successful authenticated deep probe.
+Only the exact warning codes and per-cell predicates in `docs/blueprints.md` are
+accepted. Runtime sandbox defaults and every effective agent mode are read from
+upstream's public redacted config surface in the same run; messaging's global
+denials and loopback bind are likewise checked. Unknown warnings, suppressions,
+command/parse failures and `gateway.probe_failed` fail closed. Reports retain only
+IDs, severities and structural predicate/probe results. Pure gate tests run with
+`node --test test/scripts/blueprint-audit-gate.test.mjs`.
+
+Phase 3/5/6/7 packed-CLI checkpoints now install with the isolated prefix
+`/home/tester/phase-checkpoint-cli`; its bin directory is prepended for the test.
+This prevents the new npm scope from colliding with the original snapshot's CLI
+without overwriting or uninstalling it. Actual tarball names come from pnpm pack,
+not the old npm scope. No snapshot is modified or replaced.
+
+This command never publishes, logs into npm, tags, or claims the later npm-only
+Phase 9 acceptance. The release's kernel changes also require the independent
+`phase-3 installed kernel-live` checkpoint. Preserve failed runs as failed evidence.

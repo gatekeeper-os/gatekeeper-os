@@ -1,19 +1,17 @@
 {
-  "name": "@clawos/cli",
-  "version": "0.1.0",
+  "name": "@clawkeepers/cli",
+  "version": "0.1.0-beta.1",
   "description": "The clawos binary: install, cells, status, doctor, config apply, backups.",
   "type": "module",
   "bin": {
-    "clawos": "./bin/clawos.js"
+    "clawos": "./dist/bin/clawos.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
+    "dist",
     "LICENSE",
     "NOTICE",
-    "dist",
-    "bin",
-    "templates",
     "README.md"
   ],
   "scripts": {
@@ -27,14 +25,27 @@
     "typescript": "catalog:",
     "vitest": "catalog:",
     "@types/node": "catalog:",
-    "@clawos/kernel": "workspace:*",
-    "@clawos/gatekeeper-fs": "workspace:*",
-    "@clawos/shared": "workspace:*"
+    "@clawkeepers/kernel": "workspace:*",
+    "@clawkeepers/gatekeeper-fs": "workspace:*",
+    "@clawkeepers/shared": "workspace:*"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ControlStackAI/openclaw-os.git",
+    "url": "git+https://github.com/clawkeeper/openclaw-os.git",
     "directory": "packages/clawos-cli"
+  },
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "engines": {
+    "node": ">=22.22.3"
   }
 }

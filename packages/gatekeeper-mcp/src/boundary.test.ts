@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, mkdirSync, writeFileSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { TokenStore } from "@clawos/gatekeeper-kit";
+import { TokenStore } from "@clawkeepers/gatekeeper-kit";
 import { bindingKey, boundaryResource, canonical, checkInventory, configuredServers, reviewedInventory } from "./manifest.js";
 import { McpVendor } from "./vendor.js";
 import { proposedResourceUrl } from "./resources.js";

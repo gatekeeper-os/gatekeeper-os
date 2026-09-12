@@ -1,5 +1,5 @@
 import { Type } from "typebox";
-import type { GatekeeperToolDef } from "@clawos/shared";
+import type { GatekeeperToolDef } from "@clawkeepers/shared";
 /** Operator-reviewed metadata; append remains excluded from runtime registration. */
 export interface ProposedMcpTool {
   readonly name: string;

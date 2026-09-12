@@ -1,13 +1,13 @@
 {
   "$comment": "Catalog of known gatekeepers for `clawos gatekeeper add <vendor>`. Secrets are prompted, never stored here.",
   "gatekeepers": {
-    "fs": { "spec": "npm:@clawos/gatekeeper-fs", "status": "v1", "secrets": [],
+    "fs": { "spec": "npm:@clawkeepers/gatekeeper-fs", "status": "v1", "secrets": [],
             "deployInputs": "packages/gatekeeper-fs/deploy-inputs.json" },
-    "github": { "spec": "npm:@clawos/gatekeeper-github", "status": "v1",
+    "github": { "spec": "npm:@clawkeepers/gatekeeper-github", "status": "v1",
                 "secrets": ["GITHUB_OAUTH_CLIENT_ID", "GITHUB_OAUTH_CLIENT_SECRET"],
                 "deployInputs": "packages/gatekeeper-github/deploy-inputs.json" },
-    "mcp": { "spec": "npm:@clawos/gatekeeper-mcp", "status": "v1.1", "secrets": [],
+    "mcp": { "spec": "npm:@clawkeepers/gatekeeper-mcp", "status": "v1.1", "secrets": [],
              "deployInputs": "packages/gatekeeper-mcp/deploy-inputs.json" },
-    "http": { "spec": "npm:@clawos/gatekeeper-http", "status": "v1.1", "secrets": [] }
+    "http": { "spec": "npm:@clawkeepers/gatekeeper-http", "status": "v1.1", "secrets": [] }
   }
 }

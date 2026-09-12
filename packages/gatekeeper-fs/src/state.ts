@@ -34,6 +34,8 @@ export function writeState(path: string, value: unknown): void {
   } catch { throw denied(); }
   finally {
     if (fd !== undefined) closeSync(fd);
+    // Cleanup failure must remain fatal even after publication; never report clean persistence.
+    // eslint-disable-next-line no-unsafe-finally
     try { unlinkSync(temp); } catch (e) { if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw denied(); }
   }
 }

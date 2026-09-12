@@ -17,6 +17,8 @@ export function writeJsonAtomic(path: string, value: unknown): void {
     try { fsyncSync(directory); } finally { closeSync(directory); }
   } finally {
     if (fd !== undefined) closeSync(fd);
+    // Cleanup failure must remain fatal even after publication; never report clean persistence.
+    // eslint-disable-next-line no-unsafe-finally
     try { unlinkSync(temp); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
   }
 }

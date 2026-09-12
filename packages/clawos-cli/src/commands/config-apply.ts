@@ -9,6 +9,7 @@ import { resolveCell, resolveCellFromRegistry } from "../util/cell.js";
 import { writeFileIfChanged, writeJson } from "../util/fsx.js";
 import { parseFragment, type Json } from "../util/json5.js";
 import { digest, readLockfile, writeLockfile } from "../util/lockfile.js";
+import { assertRuntimeSandbox } from "../util/policy.js";
 import { canonicalize, diffPaths, mergeAll, type ConfigChange } from "../util/merge.js";
 import { configRevision, transactionalPatch, openclaw, ownedSlice, readOwnedConfig, RESTART_REQUIRING } from "../util/openclaw.js";
 import { StepError } from "../util/proc.js";
@@ -34,7 +35,12 @@ export function mergeFragments(configD: string): Json {
     .filter((name) => name.endsWith(".json5") || name.endsWith(".json"))
     .sort();
   if (files.length === 0) throw new StepError(`no config fragments in ${configD}`);
-  return mergeAll(files.map((name) => parseFragment(readFileSync(join(configD, name), "utf8"), name)));
+  const fragments = files.map((name) => parseFragment(readFileSync(join(configD, name), "utf8"), name));
+  const runtime = files.findIndex(name => /^05-policy-runtime\.json5?$/.test(name));
+  if (runtime !== -1) assertRuntimeSandbox(fragments[runtime]!);
+  const merged = mergeAll(fragments);
+  if (runtime !== -1) assertRuntimeSandbox(merged);
+  return merged;
 }
 
 /**

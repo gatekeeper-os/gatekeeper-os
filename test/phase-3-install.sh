@@ -22,12 +22,12 @@ jq -e 'length == 0' /home/tester/installed-grants.json >/dev/null
 printf 'PASS installed-kernel-fs-no-grants\n'
 node test/scripts/install-scenarios.mjs > "$EV/scenarios.json"
 export CLAWOS_KERNEL_VM=1 CLAWOS_SCENARIO_RUN="$CLAWOS_TEST_START" CLAWOS_SCENARIO_REPORT="$EV/scenarios.json"
-pnpm --filter @clawos/conformance... build
+pnpm --filter @clawkeepers/conformance... build
 pnpm conformance --only install-gate --verdict "$EV/install-verdict.json"
-pnpm --filter @clawos/shared exec vitest run src/install-policy.test.ts --reporter=json --outputFile="$EV/policy-tests.json"
-pnpm --filter @clawos/cli exec vitest run --reporter=json --outputFile="$EV/cli-tests.json"
-pnpm --filter @clawos/kernel typecheck
-pnpm --filter @clawos/cli typecheck
+pnpm --filter @clawkeepers/shared exec vitest run src/install-policy.test.ts --reporter=json --outputFile="$EV/policy-tests.json"
+pnpm --filter @clawkeepers/cli exec vitest run --reporter=json --outputFile="$EV/cli-tests.json"
+pnpm --filter @clawkeepers/kernel typecheck
+pnpm --filter @clawkeepers/cli typecheck
 pnpm check:catalog
 pnpm check:secrets
 printf 'installer-policy: PASS (focused checkpoint, not full Phase 3)\n'

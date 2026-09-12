@@ -11,6 +11,7 @@ import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
+import { committedRuntime } from "./runtime.js";
 import type { Cell } from "./cell.js";
 import type { Json } from "./json5.js";
 import { getPath } from "./merge.js";
@@ -49,19 +50,19 @@ export const RESTART_REQUIRING = ["gateway.port", "gateway.bind", "gateway.auth"
 
 /** Run the upstream CLI for a cell. Secrets are passed through `env`, never through `args`. */
 export function openclaw(cell: Cell, args: string[], extraEnv?: NodeJS.ProcessEnv): RunResult {
-  return run("openclaw", args, { ...cell.env, ...extraEnv });
+  return run(committedRuntime(cell) ?? "openclaw", args, { ...cell.env, ...extraEnv });
 }
 
 /** Run the upstream CLI and parse JSON stdout. */
 export function openclawJson<T>(cell: Cell, args: string[], extraEnv?: NodeJS.ProcessEnv): T | undefined {
-  return runJson<T>("openclaw", args, { ...cell.env, ...extraEnv });
+  return runJson<T>(committedRuntime(cell) ?? "openclaw", args, { ...cell.env, ...extraEnv });
 }
 
 /** Installed upstream version, e.g. `2026.9.2`, or `undefined` when `openclaw` is absent or unreadable. */
 export function installedVersion(cell: Cell): string | undefined {
   const result = openclaw(cell, ["--version"]);
   if (result.code !== 0) return undefined;
-  return /[0-9]{4}\.[0-9]+\.[0-9]+/.exec(result.stdout)?.[0];
+  return /[0-9]{4}\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9]+(?:[.-][A-Za-z0-9]+)*)?/.exec(result.stdout)?.[0];
 }
 
 /**
@@ -139,9 +140,10 @@ export function configRevision(cell: Cell): string {
 
 /** Commit through the installed public SDK in a separate cell-scoped process, without config in argv. */
 export function transactionalPatch(cell: Cell, file: string, revision: string): string {
-  const binary = run("sh", ["-c", "command -v openclaw"]);
+  const selected = committedRuntime(cell);
+  const binary = selected ? {code:0,stdout:selected} : run("sh", ["-c", "command -v openclaw"]);
   if (binary.code !== 0) throw new StepError("openclaw is not on PATH");
-  const helper = join(dirname(fileURLToPath(import.meta.url)), "..", "bin", "config-transaction.mjs");
+  const helper = join(dirname(fileURLToPath(import.meta.url)), "bin", "config-transaction.mjs");
   const result = run(process.execPath, [helper, binary.stdout.trim(), file, revision], cell.env);
   if (result.code !== 0) throw new StepError("config transaction refused: config changed or validation failed; retry after reviewing live config");
   try {

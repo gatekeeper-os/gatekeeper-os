@@ -15,7 +15,7 @@ trap cleanup EXIT
 printf '%s\n' '{"mode":"install-hook","fullPhaseAcceptance":false,"primaryRulesIndependentlyControlled":true,"realFilesystemWritesEnabled":false}' > "$EV/scope.json"
 node --version > "$EV/node-version"
 pnpm install --frozen-lockfile --ignore-scripts > /home/tester/install-hook-deps.log 2>&1
-pnpm --filter @clawos/kernel... --filter @clawos/gatekeeper-fs... --filter @clawos/conformance... build > /home/tester/install-hook-build.log 2>&1
+pnpm --filter @clawkeepers/kernel... --filter @clawkeepers/gatekeeper-fs... --filter @clawkeepers/conformance... build > /home/tester/install-hook-build.log 2>&1
 pnpm exec tsup test/scripts/install-hook-primary.ts --format esm --target node22 --out-dir /home/tester/install-hook-build > /home/tester/install-hook-primary-build.log 2>&1
 pnpm exec tsx test/scripts/kernel-config.mjs
 node test/scripts/install-hook-config.mjs
@@ -42,8 +42,8 @@ node test/scripts/install-hook-config.mjs allow
 start_gateway
 node test/scripts/install-hook-scenarios.mjs allow
 pnpm conformance --only install-hook --verdict "$EV/hook-verdict.json"
-pnpm --filter @clawos/kernel typecheck
-pnpm --filter @clawos/shared exec vitest run src/install-policy.test.ts --reporter=json --outputFile="$EV/policy-tests.json"
+pnpm --filter @clawkeepers/kernel typecheck
+pnpm --filter @clawkeepers/shared exec vitest run src/install-policy.test.ts --reporter=json --outputFile="$EV/policy-tests.json"
 pnpm check:catalog
 pnpm check:secrets
 printf 'install-hook: PASS (focused checkpoint, not full Phase 3)\n'

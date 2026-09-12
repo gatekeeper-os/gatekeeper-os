@@ -1,5 +1,5 @@
-import { type TokenStore } from "@clawos/gatekeeper-kit";
-import type { GatekeeperAccount, ObserverVerifier } from "@clawos/shared";
+import { type TokenStore } from "@clawkeepers/gatekeeper-kit";
+import type { GatekeeperAccount, ObserverVerifier } from "@clawkeepers/shared";
 import { bindingKey, boundaryResource, checkInventory, denied, type ServerBinding } from "./manifest.js";
 import { parseProposedResourceUrl } from "./resources.js";
 import { join } from "node:path";

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { SupportedResource } from "@clawos/shared";
+import type { SupportedResource } from "@clawkeepers/shared";
 import { proposedResourceUrl } from "./resources.js";
 import { proposedTools, mcpTools } from "./tools.js";
 

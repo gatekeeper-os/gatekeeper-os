@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { evaluateInstall, type InstallMaterial } from "./install-policy.js";
 const dirs: string[] = [];
 afterEach(() => { for (const dir of dirs.splice(0)) rmSync(dir, {recursive:true,force:true}); });
-const material: InstallMaterial = {targetType:"plugin",sourcePath:"/staging/plugin",sourcePathKind:"directory",request:{kind:"plugin-install",mode:"install",requestedSpecifier:"npm:@clawos/kernel@0.1.0"}};
+const material: InstallMaterial = {targetType:"plugin",sourcePath:"/staging/plugin",sourcePathKind:"directory",request:{kind:"plugin-install",mode:"install",requestedSpecifier:"npm:@clawkeepers/kernel@0.1.0"}};
 describe("shared install boundary", () => {
   it("denies absent/empty/malformed rules and missing requested identity", () => {
     for (const rules of [undefined,{}, {allowSources:[]}]) expect(evaluateInstall(rules,material).decision).toBe("block");
@@ -14,15 +14,15 @@ describe("shared install boundary", () => {
     expect(evaluateInstall({allowSources:[""]},material).decision).toBe("block");
   });
   it("matches the entire source, escapes regex, and covers updates and skills", () => {
-    const rules={allowSources:["npm:@clawos/*"]};
+    const rules={allowSources:["npm:@clawkeepers/*"]};
     expect(evaluateInstall(rules,material).decision).toBe("allow");
-    for (const requestedSpecifier of ["npm:@clawos-evil/kernel","https://evil/npm:@clawos/kernel", "npm:@clawos/kernel\n"]) expect(evaluateInstall(rules,{...material,request:{...material.request,requestedSpecifier}}).decision).toBe("block");
+    for (const requestedSpecifier of ["npm:@clawkeepers-evil/kernel","https://evil/npm:@clawkeepers/kernel", "npm:@clawkeepers/kernel\n"]) expect(evaluateInstall(rules,{...material,request:{...material.request,requestedSpecifier}}).decision).toBe("block");
     expect(evaluateInstall({allowSources:["clawhub:reviewed@1.0.0"]},{...material,targetType:"skill",request:{kind:"skill-install",mode:"update",requestedSpecifier:"clawhub:reviewed@1x0x0"}}).decision).toBe("block");
     expect(evaluateInstall(rules,{...material,targetType:"skill",request:{...material.request,mode:"update"}}).decision).toBe("allow");
   });
   it("does not let registry namespace wildcards authorize URL, file or alias overrides", () => {
-    for (const requestedSpecifier of ["npm:@clawos/kernel@https://evil.invalid/p.tgz", "npm:@clawos/kernel@/tmp/evil", "npm:@clawos/kernel@npm:evil@1", "clawhub:@clawos/kernel@file:/tmp/evil", "@clawos/kernel@../evil"]) {
-      expect(evaluateInstall({allowSources:["npm:@clawos/*","clawhub:@clawos/*","@clawos/*"]},{...material,request:{...material.request,requestedSpecifier}}).decision).toBe("block");
+    for (const requestedSpecifier of ["npm:@clawkeepers/kernel@https://evil.invalid/p.tgz", "npm:@clawkeepers/kernel@/tmp/evil", "npm:@clawkeepers/kernel@npm:evil@1", "clawhub:@clawkeepers/kernel@file:/tmp/evil", "@clawkeepers/kernel@../evil"]) {
+      expect(evaluateInstall({allowSources:["npm:@clawkeepers/*","clawhub:@clawkeepers/*","@clawkeepers/*"]},{...material,request:{...material.request,requestedSpecifier}}).decision).toBe("block");
     }
   });
   it("hashes staged bytes, rejects changed content, symlinks and unmeasured directories", () => {

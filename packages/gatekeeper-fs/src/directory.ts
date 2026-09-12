@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { Value } from "typebox/value";
-import type { ActionDescription, ApprovalQueue, GatekeeperSession, ObservationDescription } from "@clawos/shared";
-import { KitGatekeeper, OverlayStore } from "@clawos/gatekeeper-kit";
+import type { ActionDescription, ApprovalQueue, GatekeeperSession, ObservationDescription } from "@clawkeepers/shared";
+import { KitGatekeeper, OverlayStore } from "@clawkeepers/gatekeeper-kit";
 import { DirectoryBinding, denied } from "./paths.js";
 import { fsResources } from "./resources.js";
 import { fsTools } from "./tools.js";

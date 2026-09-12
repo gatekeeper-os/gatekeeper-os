@@ -2,7 +2,7 @@
 import { appendFileSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { Value } from "typebox/value";
-import { AuditRecordSchema, type AuditRecord } from "@clawos/shared";
+import { AuditRecordSchema, type AuditRecord } from "@clawkeepers/shared";
 export class AuditLog {
   constructor(private readonly dir:string){mkdirSync(dir,{recursive:true,mode:0o700});}
   write(record:AuditRecord):void{if(!Value.Check(AuditRecordSchema,record))throw new Error("Invalid audit record.");const day=record.ts.slice(0,10);appendFileSync(join(this.dir,`${day}.jsonl`),`${JSON.stringify(record)}\n`,{mode:0o600});}

@@ -4,14 +4,14 @@ import { Socket } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { GatekeeperAccount, GatekeeperVendor } from "@clawos/shared";
-import type { GatekeeperRuntime } from "@clawos/gatekeeper-kit";
+import type { GatekeeperAccount, GatekeeperVendor } from "@clawkeepers/shared";
+import type { GatekeeperRuntime } from "@clawkeepers/gatekeeper-kit";
 import { Registry } from "./registry.js";
 import { OAuthRouter } from "./oauth.js";
 
 const runtime = vi.hoisted(() => new Map<string, GatekeeperRuntime>());
-vi.mock("@clawos/gatekeeper-kit", async importOriginal => ({
-  ...await importOriginal<typeof import("@clawos/gatekeeper-kit")>(),
+vi.mock("@clawkeepers/gatekeeper-kit", async importOriginal => ({
+  ...await importOriginal<typeof import("@clawkeepers/gatekeeper-kit")>(),
   gatekeeperRuntimeSlot: (id: string) => ({ tryGetRuntime: () => runtime.get(id) }),
 }));
 

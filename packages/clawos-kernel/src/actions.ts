@@ -1,6 +1,6 @@
 /** Serialized approval decisions and conservative, ordered automatic draining. */
-import type { ActionDescription, Gatekeeper, PendingAction } from "@clawos/shared";
-import { ActionDescriptionSchema } from "@clawos/shared";
+import type { ActionDescription, Gatekeeper, PendingAction } from "@clawkeepers/shared";
+import { ActionDescriptionSchema } from "@clawkeepers/shared";
 import { Value } from "typebox/value";
 import type { Store } from "./store.js";
 import type { AuditLog } from "./audit.js";
@@ -47,6 +47,9 @@ export class ActionCoordinator {
       }
     })));
   }
+
+  /** Outstanding serialized approval effects, used by the update admission barrier. */
+  get activeEffects():number{return this.flights.size;}
 
   /** Stop new work and wait for existing effects before SQLite is closed. */
   async stop(): Promise<void> { this.stopped = true; await Promise.allSettled([...this.flights.values()]); }

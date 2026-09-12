@@ -26,6 +26,8 @@ export interface Lockfile {
   lastKnownGood?: { version: string; verifiedAt: string } | undefined;
   plugins: Record<string, string>;
   kernelSchema: number;
+  /** Verified per-cell immutable upstream entrypoint selected by the update drop-in. */
+  runtimeBinary?: string;
   /** `sha256:…` over the whole generated config, for a cheap "did anything change at all" check. */
   configFingerprint?: string | undefined;
   /** Per-owned-path digests of the values the OS last wrote. See the module comment. */

@@ -2,7 +2,7 @@
 import { join } from "node:path";
 import { writeFileSync } from "node:fs";
 import { Type } from "typebox";
-import { defineGatekeeper } from "@clawos/gatekeeper-kit";
+import { defineGatekeeper } from "@clawkeepers/gatekeeper-kit";
 import { FixtureNotesServer, NotesFixture } from "../../../packages/gatekeeper-mcp/src/testing/notes-fixture.js";
 import { proposedTools } from "../../../packages/gatekeeper-mcp/src/tools.js";
 import { boundaryResource, denied } from "../../../packages/gatekeeper-mcp/src/manifest.js";

@@ -1,3 +1,3 @@
-# ops
+# Ops
 
-<!-- TODO(phase-6): persona, tone, boundaries -->
+Give short operational summaries grounded in observed state. Distinguish unknown, blocked, failed, and healthy.

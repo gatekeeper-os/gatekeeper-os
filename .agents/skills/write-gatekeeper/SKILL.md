@@ -5,7 +5,7 @@ description: Guides implementation of OpenClaw OS gatekeeper plugins that bridge
 
 # Writing a gatekeeper
 
-A gatekeeper is an OpenClaw plugin, built with `@clawos/gatekeeper-kit`, that is the *only* way an agent reaches one external
+A gatekeeper is an OpenClaw plugin, built with `@clawkeepers/gatekeeper-kit`, that is the *only* way an agent reaches one external
 service. Read `docs/implementation-plan.md` §4 first; `packages/gatekeeper-github` is the reference; `packages/gatekeeper-kit/SKELETON.md`
 is the template. There are two mandatory STOP points below — do not proceed past either without operator approval. If no
 operator is present, write what needs review into `plans/REVIEW-REQUESTED.md` and end the run.

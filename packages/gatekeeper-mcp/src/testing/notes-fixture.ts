@@ -1,5 +1,5 @@
 // TEST ONLY: not imported by the runtime entrypoint or emitted in its bundle.
-import { KitGatekeeper } from "@clawos/gatekeeper-kit";
+import { KitGatekeeper } from "@clawkeepers/gatekeeper-kit";
 import { McpServer, describeAppend, type Note } from "../server.js";
 import { proposedTools } from "../tools.js";
 

@@ -26,7 +26,8 @@
       "os.approvals.revert",
       "os.gatekeepers.list",
       "os.gatekeepers.connect",
-      "os.audit.query"
+      "os.audit.query",
+      "os.maintenance.set"
     ]
   },
   "activation": {
@@ -131,5 +132,6 @@
       "description": "OpenClaw OS kernel administration",
       "hasSubcommands": true
     }
-  ]
+  ],
+  "version": "0.1.0-beta.1"
 }

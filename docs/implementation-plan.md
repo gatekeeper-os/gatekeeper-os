@@ -300,7 +300,7 @@ Live attachment uses the public `openclaw/plugin-sdk/runtime-store` object-form 
 Installing a gatekeeper is therefore purely:
 
 ```bash
-openclaw plugins install npm:@clawos/gatekeeper-github@1.2.0 --pin --accept-capabilities
+openclaw plugins install npm:@clawkeepers/gatekeeper-github@1.2.0 --pin --accept-capabilities
 openclaw config patch --stdin <<'EOF'
 { plugins: { entries: { "gatekeeper-github": { enabled: true, config: { clientId: "${GITHUB_OAUTH_CLIENT_ID}" } } } } }
 EOF
@@ -568,7 +568,7 @@ mode, prompt-phase, and shared-state corrections verified by S-1.
 ```jsonc
 // packages/clawos-kernel/package.json (relevant part)
 {
-  "name": "@clawos/kernel",
+  "name": "@clawkeepers/kernel",
   "version": "1.0.0",
   "type": "module",
   "peerDependencies": { "openclaw": ">=2026.9.2 <2026.11.0" },
@@ -791,23 +791,51 @@ Why not `$include`: the 2026.9.2 docs state that root includes, include arrays, 
 
 ### 6.4 The update pipeline (`clawos update`)
 
-Ported from `cloudflare-os-starter/docs/customization.md` §Upgrade, adapted for a daemon:
+Implemented host transaction (Phase 7 branch, not yet accepted):
 
+```text
+clawos update --check [--to <exact-version>|--channel stable|extended-stable|beta]
+clawos update --to <version> --conformance /absolute/reviewed-runner.mjs --yes
+clawos rollback --yes
 ```
-clawos update [--to <version> | --channel stable|extended-stable|beta] [--dry-run] [--yes]
-```
 
-1. **Resolve target.** Query npm dist-tags (`npm view openclaw dist-tags --json`); resolve the target version. Refuse `dev` (git main) unless `--allow-dev`.
-2. **Preflight compat.** Compare the target against every installed OS plugin's `openclaw.compat.pluginApi` range (read from the lockfile + package metadata). If any plugin is out of range, stop and print which plugin needs a release — unless `--force-compat`, which continues but marks the run *experimental*.
-3. **Record rollback point.** `lastKnownGood ← current`. `openclaw backup create --output ~/.clawos/backups/<cell>/ --verify` (**not** `os/backups/` — upstream rejects an output path inside the source state tree; see the §3.3 correction); also tar `os/` (excluding `backups/`).
-4. **Stage.** `npm install -g openclaw@<target> --allow-scripts=openclaw` into a **staging prefix** (`os/staging/npm-prefix`, via `npm --prefix`) so the running Gateway is untouched. (Upstream's own `openclaw update` also validates the new version while the current Gateway keeps serving — **VERIFIED** — but we need the conformance step in between, which upstream cannot run for us.)
-5. **Conformance.** Start a throwaway Gateway from the staged binary with `OPENCLAW_STATE_DIR=os/staging/state`, a copied config, port `+1000`, and `--profile clawos-staging`; run `clawos-conformance` against it (§8.3). Any failure → abort, staging discarded, nothing changed.
-6. **Maintenance window.** Set cell `maintenance=true` (new turns are gently refused by `before_agent_run`), wait up to 60 s for in-flight runs (`os.status` shows active runs), `openclaw gateway stop`.
-7. **Activate.** `openclaw update --tag <target>` (persisting nothing — `--tag` is one-off, **VERIFIED**) *or* promote the staged prefix by re-running the global install; then `clawos config apply` (re-applies fragments after any doctor migration), `openclaw doctor --fix --non-interactive`, `openclaw gateway restart`.
-8. **Verify.** Poll `/startupz` then `/readyz` (60 s budget); `openclaw plugins list --json` shows kernel + gatekeepers enabled; `os.status` healthy; `openclaw security audit` has no new *critical* findings versus the pre-update snapshot; smoke test: one gatekeeper observation through a test grant.
-9. **Commit or roll back.** On success write the new pin and `lastKnownGood`; widen nothing automatically. On failure: `clawos rollback` — reinstall `lastKnownGood.version`, restore `os/` from the tar, restore config from `openclaw backup`, restart, verify, and print the failing step. Rollback is refused if the kernel schema advanced during the failed run (it never does before step 9 succeeds — migrations run only after the pin is committed, which is what makes rollback schema-neutral).
+1. Resolve one exact registry release; do not persist moving tags or allow git/package-spec input.
+2. Compare every locked OS plugin's installed metadata and API range with the target. Require
+   the kernel's schema/drain protocol and record baseline critical audit finding identifiers.
+3. Create a verified upstream backup outside the cell's state tree.
+4. Stage an immutable **per-cell** npm prefix under `~/.clawos/runtimes/<cell>/<transaction>/`.
+   Do not replace a global/shared binary or edit the upstream installation. Paths stay outside
+   archived state so later backups do not recursively archive whole runtimes.
+5. Run a reviewed conformance adapter with explicit fresh state/config boundaries. Require the
+   exact transaction ID, target version, live scope, full-conformance flag and all required
+   nonempty unskipped suites. A compatibility-smoke or runtime-checkpoint report never passes.
+   Full Phase 4-linked conformance remains blocked; there is no default false-green adapter.
+6. Persist operator-only maintenance, refuse new turns and resource/approval mutations, and
+   drain tracked agent runs plus approval effects. Unknown run identity fails closed. Refresh
+   the verified backup **after draining**, then stop the selected Gateway. This refresh fixes
+   the original plan's race: a step-three-only archive could resurrect later-revoked grants.
+7. Persist `activating` before changing only an OS-owned systemd drop-in to select the staged
+   runtime; validate config and start the selected service. Upstream's original unit and runtime
+   remain intact. Do not run automatic doctor/config rewrites over operator edits.
+8. Verify startup/readiness, healthy kernel/drivers, same kernel schema, identical grants, and
+   no new critical security finding IDs. Runtime-checkpoint evidence is distinguished from
+   full observation/approval conformance.
+9. Atomically commit the version and per-cell runtime selection to the cell lock; reopen
+   admission. On any possibly activated failure restore the verified archive through public
+   upstream backup commands, restore the old OS drop-in, restart the retained old runtime and
+   verify before reopening. The old binary handles restoration only with an empty scratch
+   state; it never opens candidate-migrated live state before restoration. Failed state is kept.
 
-`clawos update --check` (scheduled via `openclaw cron` in the default cell) runs steps 1–2 only and posts "update 2026.9.3 available, all plugins compatible" to the operator channel.
+The fsynced journal lives outside restored state at `~/.clawos/updates/<cell>/current.json`.
+A killed process leaves an activation/recovery record. `rollback --yes` refuses a live updater,
+a kernel-schema mismatch, newer operator config, or grants changed since a committed update.
+Kernel startup never rewrites an existing schema and refuses a mismatched lock or future schema.
+Upstream schemas are never inspected directly. Schema-bump migrations are not implemented and
+cannot be silently enabled during activation.
+
+`update --check` produces a safe availability message/JSON only. An operator must configure
+scheduler-native delivery and an actual destination; no channel is guessed or embedded in the
+command. Cron registration and a full conformance adapter remain outstanding acceptance work.
 
 ### 6.5 Compatibility discipline (CI)
 
@@ -862,7 +890,26 @@ Derived from the upstream security page's hardened baseline (**VERIFIED**) plus 
 }
 ```
 
-Blueprints re-enable capabilities deliberately: a "coder" blueprint sets `agents.entries.coder.tools.allow: ["group:fs", "exec"]` *together with* `sandbox.mode: "all"` — never one without the other (enforced by `clawos blueprint lint`).
+Blueprints never widen a cell's global policy. The baseline above remains unchanged.
+`clawos cell create <name> --port <n> --policy messaging|runtime` selects a cell
+policy at creation; messaging is the default and keeps today's fragment set.
+A runtime cell additionally copies `05-policy-runtime.json5` and omits
+`20-sandbox.json5`: the one runtime fragment replaces global runtime/fs denials
+with an explicit `tools.allow` for fs, exec, the kernel and session status, keeps
+browser/automation/process/code_execution denied, sets exec host `sandbox` and
+mode `allowlist`, and requires `agents.defaults.sandbox.mode: "all"`. The mode is
+the least non-deny mode supported by sandboxed exec on the pin; no host exec is
+authorized. `clawos config apply` rejects a runtime fragment missing the all-turn
+sandbox, including when a later fragment weakens it.
+
+Blueprint schema `policy` is runtime for coder and messaging for assistant, ops,
+and researcher. Lint requires all-turn sandbox for runtime blueprints. Apply reads
+the cell's config through upstream `config get` (not OS fragments), refuses a
+runtime blueprint above the global ceiling with an exact separate-cell creation
+command, and never patches an existing cell's global baseline. Coder permits fs
+and sandboxed exec; assistant/ops deny both; researcher exposes web tools only.
+HTTP is planned after this beta, not an expected provisioned driver. Upstream
+`agents.defaults.tools` is unsupported (VERIFIED schema probe, upstream reference).
 
 ### 7.3 Sandboxing
 
@@ -888,6 +935,24 @@ version, target type and fixture mode were retained. See `plans/spike-S1.md`.
 ---
 
 ## 8. Repository layout and tooling
+
+### Two-repository ownership
+
+Two public repos under `clawkeeper`, plus `.github` for the org profile.
+
+- **`clawkeeper/openclaw-os`** (core, kernel review bar): everything in §8 as written, including the four **reference drivers** `gatekeeper-fs`, `gatekeeper-github`, `gatekeeper-mcp`, `gatekeeper-http` in `packages/`. Reference drivers never move out; they need atomic kernel+driver changes, the VM harness and the conformance runner.
+- **`clawkeeper/gatekeepers`** (community, normal review bar): one folder per vendor at the repo root, built against the **published** `@clawkeepers/gatekeeper-kit` and `@clawkeepers/shared`. It exists so contributors don't need the core repo's bar or its VM harness. It has two tiers of readiness:
+  - **Tier 0 — hub (before any package is published; do now, docs only):** README states that the four reference drivers live in core and that community drivers land here once the kit is on npm; `template/` holds the skeleton as real files (`openclaw.plugin.json`, `package.json`, `deploy-inputs.json`, `README.md`, `src/{index,vendor,account,tools,resources,simulate,api}.ts` stubs that type-check against the kit); CONTRIBUTING and the five `gatekeeper-wanted` issues carry a one-line "tool-surface PRs welcome now; builds here start once the kit is published" note; `.agents/skills/write-gatekeeper` matches core's copy (core is the source of truth; a CI check diffs them).
+  - **Tier 1 — buildable (after Phase 9 publishes):** pnpm workspace with each vendor folder a package depending on published `@clawkeepers/*` versions (no `workspace:` links to core); `catalog.json` at the root listing each driver's npm spec, required secrets and status (`draft`/`alpha`/`stable`) — the same shape as core's `config/gatekeepers.json` so `clawos gatekeeper add <vendor>` can read either; CI on hosted runners: install pinned upstream + published kernel/kit, build every driver, run its kit-harness tests, run `defineGatekeeper()` rule checks and the secret grep, then the hosted compatibility smoke (real Gateway, no VM) from core's `scripts/ci/live-smoke.ts` pattern. VM acceptance stays in core; a community driver reaching `stable` needs one VM run recorded in core's evidence tree.
+- **`.github`**: profile README, SECURITY, CONTRIBUTING, CoC, templates (seeded).
+
+
+**Current execution boundary:** “public” above describes the target layout. Both
+repositories remain private; no visibility change is authorized by this addendum
+execution. Reference-driver location is not a claim of completed acceptance.
+The npm organization `@clawkeepers` exists and Matt owns it.
+
+The core workspace remains:
 
 ```
 openclaw-os/
@@ -1117,6 +1182,19 @@ This implements §4.7's original private-only beta boundary, not v1.1 sharing.
 
 **Acceptance.** An action with tag `github.issue.comment` auto-applies within 30 s when the rule exists and the gatekeeper marked it `autoApprovable`; not when either is missing; drainer stops at the first non-eligible action and resumes after it is decided; digest arrives once per run, not once per action.
 
+**2026-09-12 implementation checkpoint (not acceptance).** The operator CLI now has
+bounded, terminal-escaped tables and explicit `approvals preview IDs|all`; it is a
+line-oriented interface, not a full-screen interactive selector. Upstream reserves
+`/approve <native-id> <decision>` before plugin dispatch; deferred actions use
+`/approvals apply IDs`, and the originally planned short `/approve` alias is not
+implemented because it would collide with native approval enforcement. Chat aliases use
+trusted private operator dispatch; shared, non-owner, or forged command contexts
+are silently claimed without model fallthrough. Manual decisions immediately resume
+the ordered drainer. The existing timer and per-run digest mechanism are exercised
+in `phase-5 installed approvals-live` with a local synthetic provider/channel.
+This does not establish real GitHub or real messaging transport acceptance; full
+mode remains blocked until the Phase 4 secrecy gate and real-channel receipt pass.
+
 ### Phase 6 — Blueprints and shell (3–4 days)
 
 **Deliverables:** `packages/clawos-blueprints` with `assistant` (messaging-only, no fs/exec), `coder` (sandboxed fs+exec, `gatekeeper-fs` + `gatekeeper-github` expected), `ops` (cron + notifications), `researcher` (web tools + `gatekeeper-http`); `blueprint.json` schema (`name`, `version`, `workspaceFiles`, `skills`, `toolPolicy`, `sandbox`, `expectedGatekeepers`, `bindingsHint`); `clawos blueprint list|apply|diff|lint`; `write-blueprint` skill.
@@ -1124,6 +1202,14 @@ This implements §4.7's original private-only beta boundary, not v1.1 sharing.
 `clawos blueprint apply coder --agent dev` does: `openclaw agents add dev --workspace ~/.openclaw/agents/dev/workspace [--bind <channel:account>] --non-interactive` (**VERIFIED** flags; non-interactive mode requires `--workspace`) → copies workspace files into the agent's workspace → writes `os/config.d/30-agents.json5` entry for `agents.entries.dev` (tools, sandbox, skills) → `clawos config apply` → records the applied snapshot in `os/blueprints/dev/`. `diff` shows drift between the snapshot and the live workspace/config.
 
 **Acceptance.** Applying each blueprint to a fresh cell yields a working agent; `blueprint lint` rejects a blueprint that grants `exec` without `sandbox.mode: "all"`; re-applying is idempotent.
+
+### Authorized implementation order (2026-09-11 overnight)
+
+Matt explicitly requested implementation in this order: **Phase 7 → Phase 5 → Phase 6 → gatekeeper-mcp**.
+This changes scheduling only, not the acceptance dependencies, gatekeeper STOP points, secrecy rules,
+or the prohibition on upstream patches. Incomplete or failing full conformance still blocks activation
+in the operator CLI and blocks phase acceptance. The earlier numerical-order convention remains the
+normal default outside this explicitly authorized work.
 
 ### Phase 7 — Update, rollback, and compatibility pipeline (3–4 days)
 
@@ -1135,9 +1221,29 @@ This implements §4.7's original private-only beta boundary, not v1.1 sharing.
 
 `gatekeeper-mcp` (wrap any MCP server: each MCP tool becomes an observation or action per a per-server manifest; resources are "server" and optional per-tool grants; this alone gives the OS access to the whole MCP ecosystem with approvals and audit), `gatekeeper-http` (OpenAPI-driven generic driver, GET = observation, others = actions with `awaitDecision` by default), `gatekeeper-google` (Gmail A, Docs B, Drive B, Calendar B), `gatekeeper-slack`, `gatekeeper-notion`, `gatekeeper-homeassistant`; observer strategies B/C/D live (§4.7) with group-chat detection; Control UI approvals panel via `registerControlUiDescriptor()`; code-mode `.d.ts` generation per grant.
 
-### Phase 9 — Hardening and release (1 week)
+### Phase 9 — Hardening and release (ten ordered deliverables)
 
-Threat-model review against `REVIEW.md`; fuzz `before_tool_call` param rewriting; secret-leak grep gates in CI; `openclaw security audit` clean on every blueprint; docs complete; `clawos --version`, changelog, signed npm releases under `@clawos/*`; publish the gatekeeper catalog to ClawHub (`clawhub package publish`, **VERIFIED** command) so `openclaw plugins install clawhub:@clawos/gatekeeper-github` works.
+Order matters: publish nothing until `main` carries the prompt-narrowing fix from PR #13 (native tools were being stripped) and PR #9 (repository URLs).
+
+1. **Integrate** PRs #11, #12, #13 onto `main` with one combined regression (kernel edits overlap); rerun the Phase 3 kernel-live and conformance suites on the integrated head.
+2. **Hardening** (as in the plan): threat-model re-review against `REVIEW.md` after integration; fuzz `before_tool_call` param rewriting; secret-leak grep as a required CI gate; `openclaw security audit --deep` with no critical findings in each cell type and only the exact conditional warning codes documented in `docs/blueprints.md`; fix the missing ESLint 9 flat config so `pnpm lint` runs.
+3. **Package metadata**, per publishable package — `@clawkeepers/shared`, `@clawkeepers/gatekeeper-kit`, `@clawkeepers/kernel`, `@clawkeepers/gatekeeper-fs`, `@clawkeepers/cli` in the first release; `@clawkeepers/gatekeeper-github` and `@clawkeepers/gatekeeper-mcp` only after their acceptance: `private:false`, `publishConfig.access:"public"`, `files` limited to `dist/`, manifests, `LICENSE`, `NOTICE`, `README`; `exports`/`main`/`types` pointing at `dist`; `openclaw.extensions` paths valid inside the packed tarball; `peerDependencies.openclaw` byte-identical to the catalog range (`pnpm check:catalog`); `repository.url` = clawkeeper. `pnpm pack` every package; retain the manifest inspector and all ten packed-license checks. The authoring-metadata `plugins validate --entry` gate is withdrawn: ordinary `definePluginEntry` plugins do not expose that metadata. Instead, install each publishable plugin tarball with `openclaw plugins install <tarball> --force --accept-capabilities` in explicitly isolated state/config, start a loopback Gateway on a free port, and require `plugins list --json` enabled/loaded with no diagnostics plus an authenticated live kernel probe. The three non-plugin packages get real npm-installed import/bin smoke checks; a read-only local registry fixture resolves unpublished same-release dependencies without workspace links or publication. Run this packed-load check in CI.
+4. **Scope rename `@clawos` → `@clawkeepers`** in one commit across the workspace: package names, `catalog:` entries, every import, `openclaw.plugin.json` ids/contracts where the scope appears, `config/gatekeepers.json`, `install.allowSources` (`npm:@clawkeepers/*`, `clawhub:@clawkeepers/*`), installer, docs, org README. Plugin *ids* (`clawos-kernel`, `gatekeeper-fs`) and the `clawos` CLI binary do not change. Full build/test/catalog/secrets after the rename.
+5. **First publish** (Matt, once, from a clean checkout of the tagged commit): `npm login` with 2FA, then `pnpm -r publish --access public --tag beta` (pnpm rewrites `workspace:` and `catalog:` specs to concrete versions on publish). Version `0.1.0-beta.1`, git tag `v0.1.0-beta.1`. Dry-run first with `pnpm -r publish --dry-run`. The agent prepares everything up to this step and verifies the dry run; it never holds the npm credential.
+6. **Subsequent releases via CI with trusted publishing.** After the packages exist, configure each on npmjs.com with a trusted publisher pointing at `clawkeeper/openclaw-os` and a `release.yml` workflow; the workflow publishes with `--provenance` on `v*` tags using OIDC, no long-lived token. `scripts/release.ts` bumps versions, updates `clawos.lock.json` plugin versions, writes the changelog entry, and tags.
+7. **Installer and docs switch** from source install to `openclaw plugins install npm:@clawkeepers/kernel@<ver> --pin --accept-capabilities` (with `--force` until ClawHub listing, per the plan's §7.5 note); org README "Try it" section updated; `clawos install` uses the lockfile pin.
+8. **ClawHub**: `clawhub package publish` for kernel and reference drivers so `clawhub:@clawkeepers/*` installs work; `allowSources` lists both prefixes.
+9. **Community repo Tier 1** (section A) lands immediately after step 6.
+10. **Release verification**: fresh VM, install from npm only (no repo clone), run the Phase 3 acceptance path; record in `plans/PROGRESS.md`; tag `phase-9`.
+
+
+**Preparation boundary:** this task prepares steps 1–4, the step-5 dry run, and
+step-6 automation source only. Matt performs the first publish; no npm credential
+is handled by the agent. Steps 7–10 are later work. Full acceptance and the known
+upstream logging blocker are not waived. No release tag is ready while release
+checks fail. Once corrected gates and ordered merges pass, create only the local
+`v0.1.0-beta.1` tag; Matt pushes it after the first manual publish. No `phase-9`
+tag before step 10.
 
 ---
 
@@ -1151,17 +1257,17 @@ Linux with systemd (Ubuntu 22.04+/Debian 12+/Arch/Fedora 39+), macOS 13+, or Win
 
 **CORRECTION 2026-09-07 (Phase 1).** The `curl … | bash` one-liner below is **not available yet** and the
 installer no longer pretends otherwise. It needs either a public repository or an authenticated fetch, and
-`ControlStackAI/openclaw-os` is private; no `@clawos/*` package is published to npm, so there is no registry
+`clawkeeper/openclaw-os` is private; no `@clawkeepers/*` package is published to npm, so there is no registry
 fallback either. `installer/install.sh` detects the piped-without-a-checkout case and reports exactly what is
 missing instead of failing obscurely on a 404. The source install below is the supported path today, and it is
 what Phase 1 acceptance exercises. The one-liner becomes real when the packages are published.
 
 ```bash
 # 1. Install OpenClaw OS from a clone (the supported path today)
-git clone https://github.com/ControlStackAI/openclaw-os.git && cd openclaw-os && ./installer/install.sh
+git clone https://github.com/clawkeeper/openclaw-os.git && cd openclaw-os && ./installer/install.sh
 
 #    NOT YET AVAILABLE (private repo, nothing published) — see the correction above:
-#    curl -fsSL https://raw.githubusercontent.com/ControlStackAI/openclaw-os/main/installer/install.sh | bash
+#    curl -fsSL https://raw.githubusercontent.com/clawkeeper/openclaw-os/main/installer/install.sh | bash
 
 # The installer runs, in order:
 #   preflight.sh                                   → OS/Node/Docker/port checks
@@ -1182,7 +1288,7 @@ clawos blueprint apply assistant --agent home
 openclaw agents list --bindings
 
 # 5. Add a gatekeeper and connect your account
-clawos gatekeeper add github     # installs @clawos/gatekeeper-github, prompts for OAuth app id/secret
+clawos gatekeeper add github     # installs @clawkeepers/gatekeeper-github, prompts for OAuth app id/secret
 clawos gatekeeper connect github # prints the OAuth URL; complete it in a browser
 
 # 6. Introduce a resource and use it
@@ -1198,7 +1304,7 @@ clawos status
 [2/12] upstream             npm install -g openclaw@<pin> --allow-scripts=openclaw ; openclaw --version == pin
 [3/12] state dir            mkdir -p ~/.openclaw/os/{config.d,audit,gatekeepers,blueprints,backups,logs} (700)
 [4/12] keys                 os/cell.key (600) ; CLAWOS_GATEWAY_TOKEN → ~/.openclaw/.env (600)
-[5/12] config               write minimal openclaw.json if absent (600) ; copy config/config.d/* → os/config.d/
+[5/12] config               write minimal openclaw.json if absent (600) ; copy selected messaging/runtime fragment set → os/config.d/
 [6/12] plugins              Install the CLI's bundled first-party kernel/fs artifacts under
                             <stateDir>/os/plugins/<content-hash>/; generate gatekeepers.json
                             and 15-runtime.json with exact roots, explicit plugin allow/load
@@ -1234,7 +1340,7 @@ Each cell has its own state dir, token, key, plugins config, gatekeeper accounts
 
 ### 10.6 Docker
 
-For container hosts, `deploy/docker/` provides a `Dockerfile` that layers on `ghcr.io/openclaw/openclaw:<pin>` (**VERIFIED** image) — adding only the `@clawos/*` packages and the `clawos` binary, never modifying upstream layers — and a `compose.yml` that mounts `/home/node/.openclaw` (state, including `os/`) and runs `clawos install --in-container` at first start. Sandboxing inside Docker requires the Docker socket or `OPENCLAW_SANDBOX=1` per upstream's `scripts/docker/setup.sh` conventions; the compose file documents both.
+For container hosts, `deploy/docker/` provides a `Dockerfile` that layers on `ghcr.io/openclaw/openclaw:<pin>` (**VERIFIED** image) — adding only the `@clawkeepers/*` packages and the `clawos` binary, never modifying upstream layers — and a `compose.yml` that mounts `/home/node/.openclaw` (state, including `os/`) and runs `clawos install --in-container` at first start. Sandboxing inside Docker requires the Docker socket or `OPENCLAW_SANDBOX=1` per upstream's `scripts/docker/setup.sh` conventions; the compose file documents both.
 
 ### 10.7 Uninstall
 
@@ -1277,7 +1383,7 @@ For container hosts, `deploy/docker/` provides a `Dockerfile` that layers on `gh
       "clawos-kernel": { enabled: true, config: {
         operators: [],                       // [{channel:"telegram", senderId:"…"}], filled by `clawos operator add`
         autoApprove: [],                     // ["github.issue.comment"]
-        install: { allowSources: ["npm:@clawos/*", "clawhub:@clawos/*"] },
+        install: { allowSources: ["npm:@clawkeepers/*", "clawhub:@clawkeepers/*"] },
         egress: { denyPatterns: ["(?i)api[_-]?key\\s*[:=]", "grant:[a-z0-9]{8}"] },
         audit: { llm: false },
       } },
@@ -1302,7 +1408,7 @@ For container hosts, `deploy/docker/` provides a `Dockerfile` that layers on `gh
 
 ```typescript
 // packages/gatekeeper-github/src/index.ts
-import { defineGatekeeper } from "@clawos/gatekeeper-kit";
+import { defineGatekeeper } from "@clawkeepers/gatekeeper-kit";
 import { Type } from "typebox";
 import { GitHubVendor } from "./vendor.js";
 
@@ -1386,3 +1492,38 @@ entries continue to take precedence. Filesystem roots remain empty by default.
 Primary live CLI install acceptance, shared evaluator regressions and the
 secondary hook typecheck are separate; no hook-backed Gateway install claim
 follows from CLI evidence.
+
+## Phase 6 implementation checkpoint — 2026-09-12
+
+Matt's overnight instruction explicitly orders implementation 7 → 5 → 6 → MCP;
+this overrides numerical sequencing, not acceptance/security gates. Phase 6 is
+isolated from unaccepted Phase 4/5/7 branches.
+
+Two scaffold assumptions are corrected by the published 2026.9.2 documentation:
+1. Global tool denials cannot be restored by agent overrides. The installed
+   baseline denies runtime/fs/automation, so application records policy conflicts
+   without loosening the cell. Choosing a production-ready coder/ops baseline is
+   an explicit operator policy decision, not an automatic blueprint side effect.
+2. README is not an accepted basename for upstream bootstrap-extra-files. Its
+   content is appended to managed AGENTS.md during application, with both files
+   covered by snapshot hashes; no new bootstrap hook or upstream patch is needed.
+
+The foundation implements list/lint/apply/diff and all four role templates, with
+strict schema/path checks, per-agent sandbox safety, drift refusal and interrupted
+operation journals. HTTP remains missing and GitHub remains a separate unaccepted
+integration; expectedGatekeepers are unchanged. Reduced VM checkpoint and full
+blocked exit are distinct. See docs/blueprints.md for the operator contract.
+
+The first runtime checkpoint also found that the existing kernel's prompt cap
+stripped every native tool, including explicitly authorized sandbox exec. Phase 6
+repairs that integration by preserving native tool groups under upstream's
+existing policy intersection. Only granted gk tools remain in the cap; capability
+policy, before-tool grant enforcement, and operator denials are unchanged.
+Blueprint projection explicitly permits the kernel plugin at both profile and
+sandbox tool-policy layers so agents can request access without initial grants.
+
+The existing kernel-live fixture formerly asserted total tool counts 2/5, which
+encoded the native-tool stripping bug. It now asserts the exact gatekeeper set
+(0 without a grant, precisely 3 filesystem tools after a grant), both OS tools,
+and preservation of configured native exec. No grant authorization assertion is
+removed or made optional.

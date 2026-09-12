@@ -1,9 +1,12 @@
 /**
  * `clawos` CLI entry point.
  *
- * Host layer: install, cell, status, doctor, config apply, backup. Kernel administration uses paired operator RPC. Blueprint, update and rollback remain later-phase work.
+ * Host layer: install, cell, status, doctor, config apply, backup. Kernel administration uses paired operator RPC. Blueprints provision versioned agent workspaces. Update and rollback remain separate-phase work.
  */
 
+import { readFileSync } from "node:fs";
+import { blueprint } from "./commands/blueprint.js";
+import { update, rollback } from "./commands/update.js";
 import { kernelCommand } from "./commands/kernel.js";
 import { backup } from "./commands/backup.js";
 import { cell } from "./commands/cell.js";
@@ -19,7 +22,10 @@ type Command = (args: string[], globals: GlobalOptions) => Promise<number>;
 
 const COMMANDS: Record<string, Command> = {
   ...Object.fromEntries(["grant", "audit", "approvals", "gatekeeper", "kernel"].map(name => [name, (args: string[], globals: GlobalOptions) => kernelCommand(name, args, globals)])),
+  blueprint,
   install,
+  update,
+  rollback,
   "install-policy": installPolicy,
   status,
   doctor,
@@ -39,9 +45,12 @@ function usage(): number {
       "",
       "  install [--environment-file <absolute-path>]",
       "                             install or converge this cell (idempotent)",
+      "  blueprint list|lint|apply|diff  versioned agent workspaces (apply requires --agent and --yes)",
+      "  update --check|--to      guarded update with live conformance",
+      "  rollback --yes          recover a journaled update",
       "  status                     report cell health",
       "  doctor                     host-layer diagnostics with fix hints",
-      "  cell create <name> --port  create an additional cell",
+      "  cell create <name> --port <n> [--policy messaging|runtime]",
       "  cell list                  list registered cells",
       "  config apply               reconcile os/config.d/*.json5 into openclaw.json",
       "  backup create|restore      archive and roll back a cell",
@@ -53,6 +62,7 @@ function usage(): number {
 }
 
 export async function main(argv: string[]): Promise<void> {
+  if (argv.length === 1 && argv[0] === "--version") { console.log(JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version); return; }
   let code: number;
   try {
     const { globals, rest } = parseGlobals(argv);

@@ -2,7 +2,7 @@
 import { mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname } from "node:path";
-import type { ActionDescription, Grant, GrantStatus, PendingAction } from "@clawos/shared";
+import type { ActionDescription, Grant, GrantStatus, PendingAction } from "@clawkeepers/shared";
 
 type Database = import("node:sqlite").DatabaseSync;
 const { DatabaseSync } = createRequire(import.meta.url)("node:sqlite") as typeof import("node:sqlite");
@@ -25,7 +25,8 @@ INSERT OR REPLACE INTO meta(k,v) VALUES('schema','1');`;
 export class Store {
   private readonly db: Database;
   constructor(path:string){ mkdirSync(dirname(path),{recursive:true,mode:0o700}); this.db=new DatabaseSync(path); this.db.exec("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;"); }
-  migrate():void{ this.db.exec(SCHEMA); }
+  /** Refuse forward-schema rollback; an existing current schema is never rewritten at startup. */
+  migrate():void{const exists=this.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='meta'").get();if(exists){const schema=this.db.prepare("SELECT v FROM meta WHERE k='schema'").get();if(schema?.v!=="1")throw new Error("Kernel schema incompatible.");return;}this.db.exec(SCHEMA); }
   close():void{ this.db.close(); }
   getGrant(handle:string):Grant|null{ return grantRow(this.db.prepare("SELECT * FROM grants WHERE handle=?").get(handle)); }
   isActiveHandle(handle:unknown,now=Date.now()):boolean{ if(typeof handle!=="string")return false; const g=this.getGrant(handle); return g?.status==="active"&&(g.expiresAt===undefined||g.expiresAt>now); }

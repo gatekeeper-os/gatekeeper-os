@@ -19,8 +19,8 @@ cleanup(){ rc=$?; trap - EXIT; if [ -n "$gateway_pid" ]; then kill "$gateway_pid
 trap cleanup EXIT
 pnpm install --frozen-lockfile --ignore-scripts > /home/tester/mcp-deps.log 2>&1
 pnpm build > /home/tester/mcp-build.log 2>&1
-pnpm --filter @clawos/gatekeeper-mcp typecheck
-pnpm --filter @clawos/gatekeeper-mcp exec vitest run --reporter=default --reporter=json --outputFile="$evidence/mcp-tests.json"
+pnpm --filter @clawkeepers/gatekeeper-mcp typecheck
+pnpm --filter @clawkeepers/gatekeeper-mcp exec vitest run --reporter=default --reporter=json --outputFile="$evidence/mcp-tests.json"
 pnpm exec tsx test/scripts/kernel-config.mjs
 pnpm exec tsx test/scripts/mcp-boundary-config.mjs
 openclaw --version > "$evidence/upstream-version"
@@ -37,7 +37,7 @@ start_gateway boundary
 node test/scripts/mcp-boundary-scenarios.mjs
 kill "$gateway_pid"; wait "$gateway_pid" || true; gateway_pid=''
 ln -s ../../../packages/gatekeeper-mcp/node_modules test/fixtures/mcp-notes/node_modules
-pnpm exec tsup test/fixtures/mcp-notes/index.ts --format esm --out-dir test/fixtures/mcp-notes/dist --external @clawos/gatekeeper-kit --external typebox > /home/tester/mcp-fixture-build.log 2>&1
+pnpm exec tsup test/fixtures/mcp-notes/index.ts --format esm --out-dir test/fixtures/mcp-notes/dist --external @clawkeepers/gatekeeper-kit --external typebox > /home/tester/mcp-fixture-build.log 2>&1
 pnpm exec tsx test/scripts/mcp-boundary-config.mjs fixture
 openclaw config validate > /home/tester/mcp-fixture-validation.log 2>&1
 start_gateway fixture

@@ -1,7 +1,7 @@
 import { constants, closeSync, fstatSync, openSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { TokenStore, type VendorContext } from "@clawos/gatekeeper-kit";
-import type { GatekeeperAccount, GatekeeperVendor } from "@clawos/shared";
+import { TokenStore, type VendorContext } from "@clawkeepers/gatekeeper-kit";
+import type { GatekeeperAccount, GatekeeperVendor } from "@clawkeepers/shared";
 import { McpAccount, type CredentialRecord } from "./account.js";
 import { bindingKey, boundaryResource, checkInventory, configuredServers, denied, type ServerBinding } from "./manifest.js";
 import { mcpTools } from "./tools.js";
