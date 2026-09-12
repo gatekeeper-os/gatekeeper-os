@@ -1365,3 +1365,126 @@ Implementation committed/pushed as `178b9e1` + `864df55`, draft PR12. The final
 correction's hosted CI is running. VM `clawos-test` verified **shut off**; original
 base/installed snapshots retain2026-09-07 creation dates. VM ownership released
 for Phase6. No personal credentials, production changes, phase acceptance or merge.
+
+## 2026-09-11 overnight — Phase 7 implementation checkpoint (not phase acceptance)
+
+Matt authorized implementation order **7 → 5 → 6 → gatekeeper-mcp** and reviewable
+remote progress for the morning. This branch starts at `origin/main` `f4f66c7`; it
+intentionally does not merge the unaccepted Phase 4 branch. No phase advance/tag/release.
+
+Implemented the durable nine-step host transaction, per-cell immutable runtime selection
+through an OS-owned systemd drop-in, verified archive restoration with old-runtime scratch
+state, availability checks, strict run/version-bound full-conformance validation, and
+crash recovery. Added admin-only persisted maintenance, active-run/effect accounting, and
+kernel-schema startup guards. Schema-0 legacy cells with **no database** get an installer-only
+initial schema pin before the first kernel startup; existing databases cannot use this path.
+The updated operator reference is repository-owned skill source, not Workshop content.
+
+The plan now corrects two unsafe assumptions: step-three-only backups can miss later grant
+changes, so maintenance refreshes the archive after draining; global activation would affect
+other cells, so each cell selects a retained immutable runtime without touching upstream's
+installation or unit. Admission reopens only after the verified commit is durable. Downgrades
+use matching rollback archives, not direct activation of old binaries against new state.
+
+Host checkpoint: full typechecks/build/catalog/secrets and **434/434 tests** passed before
+subsequent source-helper/forward-only validation additions; final rerun is pending.
+VM attempts through `scripts/vm/test.sh phase-7 installed runtime-checkpoint`:
+
+- `20260912-062225-phase-7`: failed initial strict schema check on legacy schema-0/no-DB
+  installed snapshot; fixed installer initial-pin sequencing, without relaxing update guards.
+- `20260912-062507-phase-7`: installer sequencing bug (local variable before initialization);
+  fixed by reading the initial pin before service startup.
+- `20260912-062734-phase-7`: current kernel installation, actual filesystem grant and
+  availability check passed; source-tsx RPC helper resolution failed before step 5. The
+  negative harness now also requires the failure to occur at step 5 (not any blocked result).
+- Fresh rerun is in progress; no successful update/rollback evidence claimed yet.
+
+The VM driver encountered the already documented process-local QEMU io_uring ENOMEM.
+Verified disk snapshots remained intact; restored the same-user virtqemud soft-memlock=0,
+hard=8MiB fallback and re-registered unchanged original base/installed metadata. No production,
+host-global, unrelated VM, real GitHub account or personal credential changes.
+
+**Acceptance remains open:** the runtime checkpoint substitutes a narrow real Gateway/SDK/fs
+probe only inside the test harness. It reports `fullConformance:false` and production CLI
+validation rejects it. Full Phase 4-linked conformance, native log secrecy, post-activation
+model observation, automatic scheduler delivery and full nightly matrix remain outstanding.
+No credential-bearing connected snapshot is created or required by this reduced checkpoint.
+
+### 2026-09-12 — verification and checkpoint continuation
+
+Current host checks: **438/438 tests**, full workspace build/typecheck, catalog and
+secret checks pass; 10 packed-package license checks pass. `pnpm lint` is blocked
+by the repository's pre-existing missing ESLint v9 configuration (no eslint.config.*
+exists); this branch does not invent an unrelated lint configuration.
+
+`20260912-064127-phase-7` staged the real 2026.9.4 runtime and passed both real
+14-check Gateway/SDK/filesystem probes. Target activation reached verification,
+then automatic rollback restored the prior runtime successfully. The failure was
+our use of mutable `/proc/<pid>/cmdline` as a runtime identity contract. Verification
+now checks systemd's effective ExecStart selection and the authenticated public SDK
+runtime version instead. A bounded follow-up diagnostic verified the target and
+restored the previous runtime; this diagnostic is **not** a phase acceptance run.
+Fixed structural `check`/`failedCheck` fields now distinguish verification failures
+without retaining raw upstream errors.
+
+A new reset/sync/collect runtime checkpoint is running on frozen source, including
+the copied-metadata compatibility rejection, successful nine-step update, explicit
+rollback, and killed-activation recovery. Final VM counts/exit and PR/CI links will
+be appended when the run finishes. Full Phase 7 acceptance remains open.
+
+### 2026-09-12 — Phase 7 runtime checkpoint passed; full gate remains blocked
+
+Implementation checkpoint: `db17a1d`, [draft PR #11](https://github.com/clawkeeper/openclaw-os/pull/11).
+No merge, phase tag or acceptance advance.
+
+Exact runtime command (shared state is the original Phase 0 worktree):
+
+```sh
+CLAWOS_VM_DRIVER=libvirt \
+CLAWOS_VM_STATE_DIR=/home/matthew/projects/Personal/openclaw-os-agent-kit/openclaw-os-worktrees/phase-0-bootstrap/scripts/vm/.state \
+  scripts/vm/test.sh phase-7 installed runtime-checkpoint
+```
+
+**`vm-artifacts/20260912-065811-phase-7/`: exit 0, 482 seconds, Node v24.20.0.**
+Nine checkpoint assertions passed. Each of the three actual staged **2026.9.4**
+Gateway/SDK/filesystem probes passed **14 checks** (42 probe checks total). The
+active cell began at the lock's **2026.9.2** pin with a real filesystem grant.
+
+- Installed the current strict kernel and created the disposable filesystem grant.
+- Availability check resolved current latest and all installed plugin ranges.
+- Copied incompatible kernel metadata was rejected at **step 2**, without changing live config.
+- A successful real runtime probe followed by intentional conformance rejection stopped at
+  **step 5**, before maintenance/activation; the production full-conformance validator still
+  rejects this deliberately reduced probe.
+- Real successful transaction recorded **all nine completed steps**, selected 2026.9.4 in
+  systemd, verified authenticated runtime version/schema/grants/audit, and reopened admission.
+- Explicit rollback restored a healthy 2026.9.2 cell with identical grants.
+- SIGKILL during activation recovered via the same rollback implementation. A read-only
+  post-run journal check confirms `state=rolled-back`, `step=7`, completed steps **1–6**,
+  `from=2026.9.2`, `target=2026.9.4`, `kernelSchema=1` (`recovery-journal-proof.json`).
+- Final kernel was healthy, schema 1, maintenance false. No real GitHub credentials, model
+  credentials, outbound provider mutations, or connected credential snapshot were used.
+
+The subsequent default/full-gate run `scripts/vm/test.sh phase-7 installed full`
+correctly returned **exit 2 / blocked** with structural evidence at
+`vm-artifacts/20260912-070750-phase-7/`. Its reporting branch now preserves a blocked
+verdict instead of becoming a secondary collection error. It performed no update.
+
+Host checks: **438/438 tests**, complete build/typecheck/catalog/secrets/diff checks;
+**10/10 packed-license checks**. Lint remains unavailable because the base repository
+has no ESLint v9 config. Hosted candidate checks on `db17a1d` are green:
+[build-test](https://github.com/clawkeeper/openclaw-os/actions/runs/34679634343),
+[compatibility smoke + update-contract regression](https://github.com/clawkeeper/openclaw-os/actions/runs/34679634309).
+The older extended-stable tag remains explicitly unsupported, not a live test pass.
+
+**Not accepted:** full connected-provider/Phase 4-linked conformance (including native
+secrecy), post-activation model-driven observation, scheduler registration/delivery,
+full nightly update matrix, later schema-bump migrations and non-Linux runtime activation.
+The CLI requires a reviewed full adapter and has no smoke-bypass flag. The test-only
+runtime substitution cannot close the release gate. Phase 5 may proceed next under
+Matt's implementation-order instruction; it must preserve these acceptance limits.
+
+VM cleanup verified: `clawos-test` is **shut off**. The original `base` snapshot
+(2026-09-07 11:38:13 -0700) and `installed` snapshot (2026-09-07 15:49:39 -0700)
+are intact; no new snapshot was created. VM ownership returned to the parent for
+Phase 5. These final documentation/reporting commits change no updater runtime code.

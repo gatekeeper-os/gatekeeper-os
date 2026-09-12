@@ -781,23 +781,51 @@ Why not `$include`: the 2026.9.2 docs state that root includes, include arrays, 
 
 ### 6.4 The update pipeline (`clawos update`)
 
-Ported from `cloudflare-os-starter/docs/customization.md` §Upgrade, adapted for a daemon:
+Implemented host transaction (Phase 7 branch, not yet accepted):
 
+```text
+clawos update --check [--to <exact-version>|--channel stable|extended-stable|beta]
+clawos update --to <version> --conformance /absolute/reviewed-runner.mjs --yes
+clawos rollback --yes
 ```
-clawos update [--to <version> | --channel stable|extended-stable|beta] [--dry-run] [--yes]
-```
 
-1. **Resolve target.** Query npm dist-tags (`npm view openclaw dist-tags --json`); resolve the target version. Refuse `dev` (git main) unless `--allow-dev`.
-2. **Preflight compat.** Compare the target against every installed OS plugin's `openclaw.compat.pluginApi` range (read from the lockfile + package metadata). If any plugin is out of range, stop and print which plugin needs a release — unless `--force-compat`, which continues but marks the run *experimental*.
-3. **Record rollback point.** `lastKnownGood ← current`. `openclaw backup create --output ~/.clawos/backups/<cell>/ --verify` (**not** `os/backups/` — upstream rejects an output path inside the source state tree; see the §3.3 correction); also tar `os/` (excluding `backups/`).
-4. **Stage.** `npm install -g openclaw@<target> --allow-scripts=openclaw` into a **staging prefix** (`os/staging/npm-prefix`, via `npm --prefix`) so the running Gateway is untouched. (Upstream's own `openclaw update` also validates the new version while the current Gateway keeps serving — **VERIFIED** — but we need the conformance step in between, which upstream cannot run for us.)
-5. **Conformance.** Start a throwaway Gateway from the staged binary with `OPENCLAW_STATE_DIR=os/staging/state`, a copied config, port `+1000`, and `--profile clawos-staging`; run `clawos-conformance` against it (§8.3). Any failure → abort, staging discarded, nothing changed.
-6. **Maintenance window.** Set cell `maintenance=true` (new turns are gently refused by `before_agent_run`), wait up to 60 s for in-flight runs (`os.status` shows active runs), `openclaw gateway stop`.
-7. **Activate.** `openclaw update --tag <target>` (persisting nothing — `--tag` is one-off, **VERIFIED**) *or* promote the staged prefix by re-running the global install; then `clawos config apply` (re-applies fragments after any doctor migration), `openclaw doctor --fix --non-interactive`, `openclaw gateway restart`.
-8. **Verify.** Poll `/startupz` then `/readyz` (60 s budget); `openclaw plugins list --json` shows kernel + gatekeepers enabled; `os.status` healthy; `openclaw security audit` has no new *critical* findings versus the pre-update snapshot; smoke test: one gatekeeper observation through a test grant.
-9. **Commit or roll back.** On success write the new pin and `lastKnownGood`; widen nothing automatically. On failure: `clawos rollback` — reinstall `lastKnownGood.version`, restore `os/` from the tar, restore config from `openclaw backup`, restart, verify, and print the failing step. Rollback is refused if the kernel schema advanced during the failed run (it never does before step 9 succeeds — migrations run only after the pin is committed, which is what makes rollback schema-neutral).
+1. Resolve one exact registry release; do not persist moving tags or allow git/package-spec input.
+2. Compare every locked OS plugin's installed metadata and API range with the target. Require
+   the kernel's schema/drain protocol and record baseline critical audit finding identifiers.
+3. Create a verified upstream backup outside the cell's state tree.
+4. Stage an immutable **per-cell** npm prefix under `~/.clawos/runtimes/<cell>/<transaction>/`.
+   Do not replace a global/shared binary or edit the upstream installation. Paths stay outside
+   archived state so later backups do not recursively archive whole runtimes.
+5. Run a reviewed conformance adapter with explicit fresh state/config boundaries. Require the
+   exact transaction ID, target version, live scope, full-conformance flag and all required
+   nonempty unskipped suites. A compatibility-smoke or runtime-checkpoint report never passes.
+   Full Phase 4-linked conformance remains blocked; there is no default false-green adapter.
+6. Persist operator-only maintenance, refuse new turns and resource/approval mutations, and
+   drain tracked agent runs plus approval effects. Unknown run identity fails closed. Refresh
+   the verified backup **after draining**, then stop the selected Gateway. This refresh fixes
+   the original plan's race: a step-three-only archive could resurrect later-revoked grants.
+7. Persist `activating` before changing only an OS-owned systemd drop-in to select the staged
+   runtime; validate config and start the selected service. Upstream's original unit and runtime
+   remain intact. Do not run automatic doctor/config rewrites over operator edits.
+8. Verify startup/readiness, healthy kernel/drivers, same kernel schema, identical grants, and
+   no new critical security finding IDs. Runtime-checkpoint evidence is distinguished from
+   full observation/approval conformance.
+9. Atomically commit the version and per-cell runtime selection to the cell lock; reopen
+   admission. On any possibly activated failure restore the verified archive through public
+   upstream backup commands, restore the old OS drop-in, restart the retained old runtime and
+   verify before reopening. The old binary handles restoration only with an empty scratch
+   state; it never opens candidate-migrated live state before restoration. Failed state is kept.
 
-`clawos update --check` (scheduled via `openclaw cron` in the default cell) runs steps 1–2 only and posts "update 2026.9.3 available, all plugins compatible" to the operator channel.
+The fsynced journal lives outside restored state at `~/.clawos/updates/<cell>/current.json`.
+A killed process leaves an activation/recovery record. `rollback --yes` refuses a live updater,
+a kernel-schema mismatch, newer operator config, or grants changed since a committed update.
+Kernel startup never rewrites an existing schema and refuses a mismatched lock or future schema.
+Upstream schemas are never inspected directly. Schema-bump migrations are not implemented and
+cannot be silently enabled during activation.
+
+`update --check` produces a safe availability message/JSON only. An operator must configure
+scheduler-native delivery and an actual destination; no channel is guessed or embedded in the
+command. Cron registration and a full conformance adapter remain outstanding acceptance work.
 
 ### 6.5 Compatibility discipline (CI)
 
@@ -1130,9 +1158,11 @@ mode remains blocked until the Phase 4 secrecy gate and real-channel receipt pas
 
 ### Authorized implementation order (2026-09-11 overnight)
 
-Matt requested **Phase 7 → Phase 5 → Phase 6 → gatekeeper-mcp** for overnight
-implementation. This overrides numerical scheduling only, not acceptance dependencies,
-secrecy invariants, or gatekeeper review STOP points. No unaccepted merge or phase tag.
+Matt explicitly requested implementation in this order: **Phase 7 → Phase 5 → Phase 6 → gatekeeper-mcp**.
+This changes scheduling only, not the acceptance dependencies, gatekeeper STOP points, secrecy rules,
+or the prohibition on upstream patches. Incomplete or failing full conformance still blocks activation
+in the operator CLI and blocks phase acceptance. The earlier numerical-order convention remains the
+normal default outside this explicitly authorized work.
 
 ### Phase 7 — Update, rollback, and compatibility pipeline (3–4 days)
 

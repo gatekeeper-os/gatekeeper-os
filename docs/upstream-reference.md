@@ -552,3 +552,17 @@ before agent `reply_dispatch`. A real synthetic channel turn to `/approve 6`
 returns native usage and leaves the deferred action pending. Keep this command
 reserved; use `/approvals apply IDs` for the separate deferred queue. No native
 approval hook or upstream command is overridden.
+
+## Phase 7 runtime selection and maintenance (2026-09-11)
+
+- Published pinned public `OpenClawPluginApi.runtime.version` (`PluginRuntimeCore.version`)
+  supplies the actual running version. The kernel no longer reports a copied version pin.
+  Access is isolated in `src/upstream/runtime-version.ts`; no private SDK import is added.
+- Existing public `gateway run`/`gateway --port`, `config validate`, backup create/verify/restore,
+  public GatewayClient and ordinary plugin metadata are reused. No upstream update internals,
+  state SQLite reads, install-root writes, or edits to an upstream systemd unit.
+- New `os.maintenance.set` is an OS-owned admin-device RPC, declared in the kernel manifest.
+  The barrier persists in OS-owned state; ordinary mutation RPCs cannot operate while paused.
+  `os.status` reports kernel schema, actual SDK version, active runs/effects and tracking completeness.
+- The concrete per-cell runtime drop-in and backup-restore sequence is undergoing disposable VM
+  verification; do not read this implementation record as successful Phase 7 acceptance.

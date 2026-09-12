@@ -119,13 +119,20 @@ under the explicit Telegram-only validation deferral, after candidate CI/merge.
 
 ## Phase 7 — Update and rollback
 
+**2026-09-12 implementation checkpoint, not full acceptance:** draft PR #11 implements the
+host pipeline and passes `phase-7 installed runtime-checkpoint` (artifact
+`20260912-065811-phase-7`, 9 checkpoint assertions + three 14-check real Gateway probes).
+This proves reduced runtime update/rollback and rejection behavior without accepting the
+full connected-provider conformance flow; full mode remains blocked (artifact
+`20260912-070750-phase-7`, exit 2). See `plans/PROGRESS.md` for exact scope and open gates.
+
 - [ ] `clawos update --to <latest>` from snapshot `connected` completes all nine pipeline steps; grants intact afterwards — evidence:
 - [ ] Compat-range block stops at step 2 with a clear message — evidence:
 - [ ] Injected conformance failure stops at step 5 with nothing changed (`openclaw --version` unchanged, lockfile unchanged) — evidence:
 - [ ] Kill during step 7 → `clawos rollback` restores a healthy previous version with grants intact — evidence:
 - [ ] `clawos update --check` posts an availability message — evidence:
 - [ ] `.github/workflows/conformance-matrix.yml` runs against `latest`, `beta`, `extended-stable` and reports verdicts — evidence: workflow run URL
-- [ ] `docs/updating.md` and the operator skill's upgrade/rollback reference written — evidence:
+- [x] `docs/updating.md` and the operator skill's upgrade/rollback reference written — evidence: `db17a1d`, draft PR #11; runtime/full-gate distinction and recovery procedure documented.
 - [ ] Tag `phase-7`
 
 ## Definition of done (engagement)
