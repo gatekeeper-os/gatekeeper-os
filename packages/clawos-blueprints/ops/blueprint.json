@@ -4,7 +4,8 @@
   "description": "Scheduled operations agent: cron-driven summaries and notifications.",
   "workspaceFiles": [
     "AGENTS.md",
-    "SOUL.md"
+    "SOUL.md",
+    "README.md"
   ],
   "skills": [],
   "toolPolicy": {

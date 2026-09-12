@@ -49,6 +49,13 @@ beforeEach(async()=>{
 afterEach(async()=>{await kernel.stop();vi.unstubAllEnvs();});
 
 describe("kernel channel-policy regression boundaries",()=>{
+  it("preserves only native groups under upstream policy without exposing ungranted plugin tools",async()=>{
+    const result=await kernel.onBeforePromptBuild({prompt:"Read",messages:[]},ctx);
+    expect(result.toolsAllow).toEqual(["group:openclaw","group:fs","group:runtime","os_request_access","os_list_grants"]);
+    expect(result.toolsAllow).not.toContain("group:plugins");
+    expect(result.toolsAllow).not.toContain("gk_test_read");
+  });
+
   it("consumes a queued session introduction notice even when prompt context has a run ID",async()=>{
     const{prompt}=await grant();
     expect(prompt.appendContext).toContain("You now have access to test item");

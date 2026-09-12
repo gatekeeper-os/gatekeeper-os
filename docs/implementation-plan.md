@@ -1376,3 +1376,38 @@ entries continue to take precedence. Filesystem roots remain empty by default.
 Primary live CLI install acceptance, shared evaluator regressions and the
 secondary hook typecheck are separate; no hook-backed Gateway install claim
 follows from CLI evidence.
+
+## Phase 6 implementation checkpoint — 2026-09-12
+
+Matt's overnight instruction explicitly orders implementation 7 → 5 → 6 → MCP;
+this overrides numerical sequencing, not acceptance/security gates. Phase 6 is
+isolated from unaccepted Phase 4/5/7 branches.
+
+Two scaffold assumptions are corrected by the published 2026.9.2 documentation:
+1. Global tool denials cannot be restored by agent overrides. The installed
+   baseline denies runtime/fs/automation, so application records policy conflicts
+   without loosening the cell. Choosing a production-ready coder/ops baseline is
+   an explicit operator policy decision, not an automatic blueprint side effect.
+2. README is not an accepted basename for upstream bootstrap-extra-files. Its
+   content is appended to managed AGENTS.md during application, with both files
+   covered by snapshot hashes; no new bootstrap hook or upstream patch is needed.
+
+The foundation implements list/lint/apply/diff and all four role templates, with
+strict schema/path checks, per-agent sandbox safety, drift refusal and interrupted
+operation journals. HTTP remains missing and GitHub remains a separate unaccepted
+integration; expectedGatekeepers are unchanged. Reduced VM checkpoint and full
+blocked exit are distinct. See docs/blueprints.md for the operator contract.
+
+The first runtime checkpoint also found that the existing kernel's prompt cap
+stripped every native tool, including explicitly authorized sandbox exec. Phase 6
+repairs that integration by preserving native tool groups under upstream's
+existing policy intersection. Only granted gk tools remain in the cap; capability
+policy, before-tool grant enforcement, and operator denials are unchanged.
+Blueprint projection explicitly permits the kernel plugin at both profile and
+sandbox tool-policy layers so agents can request access without initial grants.
+
+The existing kernel-live fixture formerly asserted total tool counts 2/5, which
+encoded the native-tool stripping bug. It now asserts the exact gatekeeper set
+(0 without a grant, precisely 3 filesystem tools after a grant), both OS tools,
+and preservation of configured native exec. No grant authorization assertion is
+removed or made optional.

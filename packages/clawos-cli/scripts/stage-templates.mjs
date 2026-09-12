@@ -19,3 +19,6 @@ copyFileSync(join(repoRoot, "clawos.lock.json"), join(templates, "clawos.lock.js
 copyFileSync(join(repoRoot, "installer", "systemd", "clawos.conf"), join(templates, "clawos.conf"));
 
 console.log(`staged templates → ${templates}`);
+
+cpSync(join(repoRoot, "packages", "clawos-blueprints"), join(templates, "blueprints"), { recursive: true, filter: path => !path.includes("node_modules") });
+copyFileSync(join(repoRoot, "config", "gatekeepers.json"), join(templates, "gatekeepers.json"));

@@ -111,10 +111,16 @@ under the explicit Telegram-only validation deferral, after candidate CI/merge.
 
 ## Phase 6 — Blueprints
 
+2026-09-12 implementation checkpoint: **48/48 VM checks, four synthetic-model
+turns through the real Gateway**; no full acceptance or tag. All four templates
+provision, but HTTP is missing, GitHub integration is separate, and the default
+global deny policy still needs an explicit operator decision for coder/ops.
+The VM uses an isolated fixture policy; production/default baseline is unchanged.
+
 - [ ] `assistant`, `coder`, `ops`, `researcher` apply to a fresh cell and produce working agents — evidence:
-- [ ] `blueprint lint` rejects `exec` without `sandbox.mode: "all"` — evidence:
-- [ ] Re-apply is idempotent; `blueprint diff` shows drift after a manual edit — evidence:
-- [ ] `coder` executes a command inside a Docker sandbox with `network: none` — evidence:
+- [x] `blueprint lint` rejects `exec` without `sandbox.mode: "all"` — `vm-artifacts/20260912-083358-phase-6/scenarios.json`, `unsafe-lint-rejected`; 21 blueprint unit checks also pass.
+- [x] Re-apply is idempotent; `blueprint diff` shows drift after a manual edit — same artifact, four `idempotent-*` checks, `workspace-drift` and `drift-reapply-refused`.
+- [x] `coder` executes a command inside a Docker sandbox with `network: none` — same artifact, native exec/tool result, workspace effect, exact-mount container identity, network:none/read-only root/no socket. Synthetic local model, real Gateway and Docker.
 - [ ] Tag `phase-6`
 
 ## Phase 7 — Update and rollback
