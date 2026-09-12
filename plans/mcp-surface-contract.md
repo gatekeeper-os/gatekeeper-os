@@ -1,10 +1,11 @@
 # MCP gatekeeper — concrete STOP1 contract
 
-Status: **proposed, awaiting operator review**. No account/transport/session/action
-implementation is enabled. This is the next item in Matt's overnight order after
+Status: **STOP1 approved by Matt: “Approved continue”, 2026-09-12.**
+Account/transport boundary implementation follows the approved review; sessions/actions
+remain disabled. This is the next item in Matt's overnight order after
 Phase7, Phase5 and Phase6, not full Phase8 or beta acceptance.
 
-## Decision requested
+## Approved STOP1 decision
 
 Approve the following initial boundary: **HTTPS Streamable HTTP only**, individually
 named tools compiled from an operator-reviewed per-server manifest, and owner-only
@@ -66,7 +67,7 @@ not silently gain authority. MCP readOnly/destructive/idempotent annotations are
 untrusted hints, not permission or proof of safety. Parameter and output schema
 support must be explicitly bounded; do not accept arbitrary schemas or callbacks.
 
-## Transport/account boundary (not implemented)
+## Reviewed transport/account boundary
 
 Initial scope is HTTPS Streamable HTTP, fixed operator-configured origins, bounded
 messages/timeouts, no implicit redirects or arbitrary URL fetching, and no
@@ -115,10 +116,11 @@ STOP1 approval does not waive this or authorize runtime publication.
 6. Bounded/disconnected/malicious server behavior and all excluded client requests.
 7. Existing kernel/fs regression and actual disposable-VM conformance.
 
-The current offline tests cover only proposal metadata, canonical identifiers and
-an inert entrypoint. They do not satisfy any transport/effect acceptance gate.
+At the original STOP1 checkpoint, offline tests covered only proposal metadata,
+canonical identifiers and an inert entrypoint. New connection-boundary evidence
+is recorded separately in [mcp-stop2.md](mcp-stop2.md) and PROGRESS.md.
 
-## Why work stops here
+## Historical STOP1 boundary
 
 [write-gatekeeper/SKILL.md](../.agents/skills/write-gatekeeper/SKILL.md) states:
 “STOP 1 — present the tool surface and URL patterns for operator review” and
@@ -126,3 +128,11 @@ an inert entrypoint. They do not satisfy any transport/effect acceptance gate.
 request preceded this specific MCP surface. This artifact supplies the concrete
 review; no vendor/account/transport, catalog activation or action implementation
 has been added. Historical filesystem/GitHub approvals remain unchanged.
+
+## STOP1 continuation
+
+Matt approved this contract on 2026-09-12. The implemented connection boundary and
+remaining concrete review are recorded in [mcp-stop2.md](mcp-stop2.md). JSON-only
+Streamable HTTP is the supported subset; other transports deny. No tool execution
+is enabled. The initial compiled surface remains demo only, not an arbitrary
+server discovery service.

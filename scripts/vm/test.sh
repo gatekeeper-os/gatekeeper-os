@@ -5,7 +5,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 phase="${1:?phase, e.g. phase-1}"
 case "$phase" in
   phase-0|phase-1) default_snap=base;;
-  phase-3|phase-4|phase-6) default_snap=installed;;
+  phase-3|phase-4|phase-6|phase-8) default_snap=installed;;
   phase-5|phase-7) default_snap=connected;;
   phase-2)
     # Explicit library-only exception in docs/vm-testing.md. No VM or Gateway is started.
@@ -29,6 +29,7 @@ snap="${2:-$default_snap}"
 mode="${3:-full}"
 case "$phase:$mode" in
   *:full) install_only=0;;
+  phase-8:mcp-boundary) install_only=0;;
   phase-1:install-only) install_only=1;;
   phase-3:fs-boundary|phase-3:fs-enforcement|phase-3:conformance-runner|phase-3:kernel-live|phase-3:install-integration|phase-3:install-hook|phase-3:plugin-install-hook|phase-3:channel-ingress) install_only=0;;
   *) vm_die "unsupported acceptance mode: $phase $mode";;

@@ -5,9 +5,9 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["LICENSE", "NOTICE", "dist", "openclaw.plugin.json", "config.schema.json", "hooks", "README.md"],
+  "files": ["LICENSE", "NOTICE", "dist", "openclaw.plugin.json", "deploy-inputs.json", "config.schema.json", "hooks", "README.md"],
   "scripts": { "build": "tsup src/index.ts --format esm --dts --clean", "test": "vitest run", "typecheck": "tsc -p tsconfig.json --noEmit", "validate": "node ../../scripts/check-plugin-metadata.mjs ." },
-  "dependencies": { "@clawos/shared": "workspace:*", "@clawos/gatekeeper-kit": "workspace:*" },
+  "dependencies": { "@clawos/shared": "workspace:*", "@clawos/gatekeeper-kit": "workspace:*", "@modelcontextprotocol/sdk": "1.30.0" },
   "peerDependencies": { "openclaw": "catalog:" },
   "devDependencies": { "tsup": "catalog:", "typescript": "catalog:", "vitest": "catalog:", "@types/node": "catalog:" },
   "openclaw": {

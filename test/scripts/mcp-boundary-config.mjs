@@ -1,0 +1,10 @@
+import {readFileSync,writeFileSync} from 'node:fs';
+import {resolve,join} from 'node:path';
+if(process.cwd()!=='/home/tester/src'||process.env.OPENCLAW_STATE_DIR!=='/home/tester/.openclaw-kernel-test'||process.env.OPENCLAW_CONFIG_PATH!=='/home/tester/.openclaw-kernel-test/openclaw.json')throw new Error('VM required');
+const cfg=JSON.parse(readFileSync(process.env.OPENCLAW_CONFIG_PATH,'utf8'));
+cfg.plugins.allow.push('gatekeeper-mcp');cfg.plugins.load.paths.push(resolve('packages/gatekeeper-mcp'));
+cfg.plugins.entries['gatekeeper-mcp']={enabled:true,config:{servers:[]}};
+writeFileSync(process.env.OPENCLAW_CONFIG_PATH,JSON.stringify(cfg),{mode:0o600});
+const file=join(process.env.OPENCLAW_STATE_DIR,'os/gatekeepers.json'),catalog=JSON.parse(readFileSync(file,'utf8'));
+catalog.gatekeepers.push({pluginId:'gatekeeper-mcp',vendor:'mcp',apiVersion:1,root:resolve('packages/gatekeeper-mcp'),tools:[],resources:[]});
+writeFileSync(file,JSON.stringify(catalog),{mode:0o600});

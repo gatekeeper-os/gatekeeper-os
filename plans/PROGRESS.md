@@ -1315,3 +1315,27 @@ changes. Explicit STOP1 decision is required before further MCP implementation;
 full Phase4/native log secrecy and later integrated acceptance remain blockers.
 
 Consolidated morning review: [OVERNIGHT-2026-09-12.md](OVERNIGHT-2026-09-12.md).
+
+## MCP STOP1 approved — STOP2 boundary implementation (2026-09-12)
+
+Matt's “Approved continue” authorizes the concrete PR14 surface. Added static
+operator/endpoint/schema-bound accounts, encrypted credentials, persistent
+revocation tombstones, revalidated introductions and a bounded public-HTTPS
+JSON-only MCP control-plane transport. No session, action or observer execution
+is enabled. No real server/credentials configured. See [mcp-stop2.md](mcp-stop2.md).
+
+Host checkpoint: **492 tests**, workspace build/typecheck, catalog/secrets/diff
+checks and10 package-license checks pass. MCP-specific82 include25 account/surface
+checks and57 actual local-TLS tests with test-only network interception. This is
+not real-provider acceptance or a live tool/effect test.
+
+First VM attempt `20260912-103639-phase-8` exited1:82 package checks passed, but
+`mcp-lifecycle-healthy:false`. The Gateway loaded fs/kernel but not MCP. Inspection
+confirmed the original placeholder manifest still had `onStartup:false`; merely
+adding a service implementation did not activate it. Corrected that manifest for
+explicitly enabled MCP lifecycle startup; tools remain empty. The15 focused
+metadata tests pass after correction. Fresh VM rerun pending, not yet accepted.
+
+Original snapshot registrations were restored from unchanged metadata after a
+read-only disk inventory confirmed base/installed dates. The documented same-user
+virtqemud soft-memlock fallback was restored; no production or global setting changed.
