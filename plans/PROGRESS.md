@@ -1294,3 +1294,69 @@ Local verification: workspace build passed; new smoke helper typecheck passed;
 is not passed); catalog/secret checks and diff whitespace checks passed. Running
 the helper outside a hosted VM was correctly refused before config/runtime mutation.
 GitHub-hosted live results pending; no local VM phase acceptance run is claimed.
+
+## 2026-09-11 overnight — Phase 7 implementation checkpoint (not phase acceptance)
+
+Matt authorized implementation order **7 → 5 → 6 → gatekeeper-mcp** and reviewable
+remote progress for the morning. This branch starts at `origin/main` `f4f66c7`; it
+intentionally does not merge the unaccepted Phase 4 branch. No phase advance/tag/release.
+
+Implemented the durable nine-step host transaction, per-cell immutable runtime selection
+through an OS-owned systemd drop-in, verified archive restoration with old-runtime scratch
+state, availability checks, strict run/version-bound full-conformance validation, and
+crash recovery. Added admin-only persisted maintenance, active-run/effect accounting, and
+kernel-schema startup guards. Schema-0 legacy cells with **no database** get an installer-only
+initial schema pin before the first kernel startup; existing databases cannot use this path.
+The updated operator reference is repository-owned skill source, not Workshop content.
+
+The plan now corrects two unsafe assumptions: step-three-only backups can miss later grant
+changes, so maintenance refreshes the archive after draining; global activation would affect
+other cells, so each cell selects a retained immutable runtime without touching upstream's
+installation or unit. Admission reopens only after the verified commit is durable. Downgrades
+use matching rollback archives, not direct activation of old binaries against new state.
+
+Host checkpoint: full typechecks/build/catalog/secrets and **434/434 tests** passed before
+subsequent source-helper/forward-only validation additions; final rerun is pending.
+VM attempts through `scripts/vm/test.sh phase-7 installed runtime-checkpoint`:
+
+- `20260912-062225-phase-7`: failed initial strict schema check on legacy schema-0/no-DB
+  installed snapshot; fixed installer initial-pin sequencing, without relaxing update guards.
+- `20260912-062507-phase-7`: installer sequencing bug (local variable before initialization);
+  fixed by reading the initial pin before service startup.
+- `20260912-062734-phase-7`: current kernel installation, actual filesystem grant and
+  availability check passed; source-tsx RPC helper resolution failed before step 5. The
+  negative harness now also requires the failure to occur at step 5 (not any blocked result).
+- Fresh rerun is in progress; no successful update/rollback evidence claimed yet.
+
+The VM driver encountered the already documented process-local QEMU io_uring ENOMEM.
+Verified disk snapshots remained intact; restored the same-user virtqemud soft-memlock=0,
+hard=8MiB fallback and re-registered unchanged original base/installed metadata. No production,
+host-global, unrelated VM, real GitHub account or personal credential changes.
+
+**Acceptance remains open:** the runtime checkpoint substitutes a narrow real Gateway/SDK/fs
+probe only inside the test harness. It reports `fullConformance:false` and production CLI
+validation rejects it. Full Phase 4-linked conformance, native log secrecy, post-activation
+model observation, automatic scheduler delivery and full nightly matrix remain outstanding.
+No credential-bearing connected snapshot is created or required by this reduced checkpoint.
+
+### 2026-09-12 — verification and checkpoint continuation
+
+Current host checks: **438/438 tests**, full workspace build/typecheck, catalog and
+secret checks pass; 10 packed-package license checks pass. `pnpm lint` is blocked
+by the repository's pre-existing missing ESLint v9 configuration (no eslint.config.*
+exists); this branch does not invent an unrelated lint configuration.
+
+`20260912-064127-phase-7` staged the real 2026.9.4 runtime and passed both real
+14-check Gateway/SDK/filesystem probes. Target activation reached verification,
+then automatic rollback restored the prior runtime successfully. The failure was
+our use of mutable `/proc/<pid>/cmdline` as a runtime identity contract. Verification
+now checks systemd's effective ExecStart selection and the authenticated public SDK
+runtime version instead. A bounded follow-up diagnostic verified the target and
+restored the previous runtime; this diagnostic is **not** a phase acceptance run.
+Fixed structural `check`/`failedCheck` fields now distinguish verification failures
+without retaining raw upstream errors.
+
+A new reset/sync/collect runtime checkpoint is running on frozen source, including
+the copied-metadata compatibility rejection, successful nine-step update, explicit
+rollback, and killed-activation recovery. Final VM counts/exit and PR/CI links will
+be appended when the run finishes. Full Phase 7 acceptance remains open.

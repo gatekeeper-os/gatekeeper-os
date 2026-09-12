@@ -13,7 +13,7 @@ try {
   let input = '';
   for await (const chunk of process.stdin) { input += chunk; if (input.length > 65536) throw new Error(); }
   const { method, params } = JSON.parse(input);
-  if (!['os.status', 'os.grants.list', 'os.grants.introduce', 'os.grants.revoke', 'os.audit.query', 'os.approvals.list', 'os.approvals.apply', 'os.approvals.reject', 'os.approvals.revert', 'os.gatekeepers.list', 'os.gatekeepers.connect', 'os.requests.approve', 'os.requests.reject'].includes(method)) throw new Error();
+  if (!['os.maintenance.set', 'os.status', 'os.grants.list', 'os.grants.introduce', 'os.grants.revoke', 'os.audit.query', 'os.approvals.list', 'os.approvals.apply', 'os.approvals.reject', 'os.approvals.revert', 'os.gatekeepers.list', 'os.gatekeepers.connect', 'os.requests.approve', 'os.requests.reject'].includes(method)) throw new Error();
   // Installer-created cells use an env SecretRef. Resolve only that exact local field, never arbitrary providers.
   const config = JSON.parse(readFileSync(process.env.OPENCLAW_CONFIG_PATH, 'utf8'));
   const auth = config.gateway?.auth;

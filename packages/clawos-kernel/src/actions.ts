@@ -48,6 +48,9 @@ export class ActionCoordinator {
     })));
   }
 
+  /** Outstanding serialized approval effects, used by the update admission barrier. */
+  get activeEffects():number{return this.flights.size;}
+
   /** Stop new work and wait for existing effects before SQLite is closed. */
   async stop(): Promise<void> { this.stopped = true; await Promise.allSettled([...this.flights.values()]); }
 

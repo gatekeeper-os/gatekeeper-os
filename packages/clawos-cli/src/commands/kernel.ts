@@ -48,6 +48,7 @@ export function kernelRequest(command: string, args: string[]): Request {
   }
   if (command === 'gatekeeper' && action === 'connect') { exact([], 1); if (!/^[a-z][a-z0-9_]{0,63}$/.test(positional[0]!)) throw new StepError('Invalid vendor'); return { method: 'os.gatekeepers.connect', params: {vendor: positional[0]} }; }
   if (command === 'gatekeeper' && action === 'list') { exact([], 0); return { method: 'os.gatekeepers.list', params: {} }; }
+  if (command === 'kernel' && action === 'maintenance') { exact([],1); if(!['on','off'].includes(positional[0]!)) throw new StepError('kernel maintenance on|off'); return {method:'os.maintenance.set',params:{enabled:positional[0]==='on'}}; }
   if (command === 'kernel' && action === 'status') { exact([], 0); return { method: 'os.status', params: {} }; }
   throw new StepError('usage: clawos grant add|list|revoke; audit tail [--limit 1–1000]; approvals list|apply|reject|revert; gatekeeper list|connect; kernel status');
 }
