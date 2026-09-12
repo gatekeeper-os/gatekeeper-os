@@ -39,3 +39,4 @@ jobs:
           printf '%s\n' "$actual"
           [[ "$actual" == "OpenClaw $pin" || "$actual" == "OpenClaw $pin "* ]]
           pnpm run validate:plugins
+          node scripts/check-package-licenses.mjs --pack --validate
