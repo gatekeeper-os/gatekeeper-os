@@ -1906,3 +1906,14 @@ only: append_note remains unregistered, generic descriptions awaitDecision true 
 implementsRevert false. No native-effects acceptance is claimed.
 Build, ESLint, catalog/secrets and599 host tests pass on the integrated tree.
 Remote merge is held until PR16 merges green and the required VM receipts pass.
+
+
+### Researcher projection review correction
+
+Pinned profile and explicit allow are intersected; an allow list cannot add web
+tools to the minimal profile. Review found researcher would therefore have no
+web tools. Preserve minimal profile, extend it with alsoAllow web_search/web_fetch
+without kernel tools, and explicitly deny minimal's session_status tool. This
+produces the required web-only surface without any global-policy change. The
+active VM uses its already-synced previous source, not these edits; its outcome
+will be retained separately and a fresh full dual-cell run will verify the fix.

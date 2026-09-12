@@ -68,7 +68,7 @@ export function loadBlueprint(root: string, catalog: string[]): {blueprint: Blue
 export function blueprintEntry(b: Blueprint, workspace: string): Record<string,Json> {
   const runtime=b.toolPolicy.profile==='coding'||b.toolPolicy.allow.some(x=>['exec','bash','process','code_execution','group:runtime'].includes(x));
   return {workspace,skills:b.skills,...(b.model?{model:{primary:b.model}}:{}),tools:{profile:b.toolPolicy.profile,
-    ...(b.name==='researcher'?{allow:b.toolPolicy.allow}:{alsoAllow:[...new Set(['clawos-kernel',...b.toolPolicy.allow])]}),deny:b.toolPolicy.deny,
+    ...(b.name==='researcher'?{alsoAllow:b.toolPolicy.allow}:{alsoAllow:[...new Set(['clawos-kernel',...b.toolPolicy.allow])]}),deny:b.toolPolicy.deny,
     ...(b.sandbox.mode!=='off'?{sandbox:{tools:{alsoAllow:[...new Set(['clawos-kernel',...b.toolPolicy.allow])]}}}:{}),
     elevated:{enabled:false},exec:{host:'sandbox',mode:runtime?'allowlist':'deny'}},
     sandbox:{...b.sandbox,...(b.sandbox.mode!=='off'?{scope:'agent',backend:'docker',docker:{network:'none',readOnlyRoot:true,capDrop:['ALL']}}:{})}};
