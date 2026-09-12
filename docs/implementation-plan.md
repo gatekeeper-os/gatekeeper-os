@@ -926,6 +926,24 @@ version, target type and fixture mode were retained. See `plans/spike-S1.md`.
 
 ## 8. Repository layout and tooling
 
+### Two-repository ownership
+
+Two public repos under `clawkeeper`, plus `.github` for the org profile.
+
+- **`clawkeeper/openclaw-os`** (core, kernel review bar): everything in §8 as written, including the four **reference drivers** `gatekeeper-fs`, `gatekeeper-github`, `gatekeeper-mcp`, `gatekeeper-http` in `packages/`. Reference drivers never move out; they need atomic kernel+driver changes, the VM harness and the conformance runner.
+- **`clawkeeper/gatekeepers`** (community, normal review bar): one folder per vendor at the repo root, built against the **published** `@clawkeepers/gatekeeper-kit` and `@clawkeepers/shared`. It exists so contributors don't need the core repo's bar or its VM harness. It has two tiers of readiness:
+  - **Tier 0 — hub (before any package is published; do now, docs only):** README states that the four reference drivers live in core and that community drivers land here once the kit is on npm; `template/` holds the skeleton as real files (`openclaw.plugin.json`, `package.json`, `deploy-inputs.json`, `README.md`, `src/{index,vendor,account,tools,resources,simulate,api}.ts` stubs that type-check against the kit); CONTRIBUTING and the five `gatekeeper-wanted` issues carry a one-line "tool-surface PRs welcome now; builds here start once the kit is published" note; `.agents/skills/write-gatekeeper` matches core's copy (core is the source of truth; a CI check diffs them).
+  - **Tier 1 — buildable (after Phase 9 publishes):** pnpm workspace with each vendor folder a package depending on published `@clawkeepers/*` versions (no `workspace:` links to core); `catalog.json` at the root listing each driver's npm spec, required secrets and status (`draft`/`alpha`/`stable`) — the same shape as core's `config/gatekeepers.json` so `clawos gatekeeper add <vendor>` can read either; CI on hosted runners: install pinned upstream + published kernel/kit, build every driver, run its kit-harness tests, run `defineGatekeeper()` rule checks and the secret grep, then the hosted compatibility smoke (real Gateway, no VM) from core's `scripts/ci/live-smoke.ts` pattern. VM acceptance stays in core; a community driver reaching `stable` needs one VM run recorded in core's evidence tree.
+- **`.github`**: profile README, SECURITY, CONTRIBUTING, CoC, templates (seeded).
+
+
+**Current execution boundary:** “public” above describes the target layout. Both
+repositories remain private; no visibility change is authorized by this addendum
+execution. Reference-driver location is not a claim of completed acceptance.
+The npm organization `@clawkeepers` exists and Matt owns it.
+
+The core workspace remains:
+
 ```
 openclaw-os/
 ├── AGENTS.md                      # agent operating rules: kernel bar, invariants, review order
@@ -1193,9 +1211,29 @@ normal default outside this explicitly authorized work.
 
 `gatekeeper-mcp` (wrap any MCP server: each MCP tool becomes an observation or action per a per-server manifest; resources are "server" and optional per-tool grants; this alone gives the OS access to the whole MCP ecosystem with approvals and audit), `gatekeeper-http` (OpenAPI-driven generic driver, GET = observation, others = actions with `awaitDecision` by default), `gatekeeper-google` (Gmail A, Docs B, Drive B, Calendar B), `gatekeeper-slack`, `gatekeeper-notion`, `gatekeeper-homeassistant`; observer strategies B/C/D live (§4.7) with group-chat detection; Control UI approvals panel via `registerControlUiDescriptor()`; code-mode `.d.ts` generation per grant.
 
-### Phase 9 — Hardening and release (1 week)
+### Phase 9 — Hardening and release (ten ordered deliverables)
 
-Threat-model review against `REVIEW.md`; fuzz `before_tool_call` param rewriting; secret-leak grep gates in CI; `openclaw security audit` clean on every blueprint; docs complete; `clawos --version`, changelog, signed npm releases under `@clawkeepers/*`; publish the gatekeeper catalog to ClawHub (`clawhub package publish`, **VERIFIED** command) so `openclaw plugins install clawhub:@clawkeepers/gatekeeper-github` works.
+Order matters: publish nothing until `main` carries the prompt-narrowing fix from PR #13 (native tools were being stripped) and PR #9 (repository URLs).
+
+1. **Integrate** PRs #11, #12, #13 onto `main` with one combined regression (kernel edits overlap); rerun the Phase 3 kernel-live and conformance suites on the integrated head.
+2. **Hardening** (as in the plan): threat-model re-review against `REVIEW.md` after integration; fuzz `before_tool_call` param rewriting; secret-leak grep as a required CI gate; `openclaw security audit --deep` with no critical findings in each cell type and only the exact conditional warning codes documented in `docs/blueprints.md`; fix the missing ESLint 9 flat config so `pnpm lint` runs.
+3. **Package metadata**, per publishable package — `@clawkeepers/shared`, `@clawkeepers/gatekeeper-kit`, `@clawkeepers/kernel`, `@clawkeepers/gatekeeper-fs`, `@clawkeepers/cli` in the first release; `@clawkeepers/gatekeeper-github` and `@clawkeepers/gatekeeper-mcp` only after their acceptance: `private:false`, `publishConfig.access:"public"`, `files` limited to `dist/`, manifests, `LICENSE`, `NOTICE`, `README`; `exports`/`main`/`types` pointing at `dist`; `openclaw.extensions` paths valid inside the packed tarball; `peerDependencies.openclaw` byte-identical to the catalog range (`pnpm check:catalog`); `repository.url` = clawkeeper. `pnpm pack` every package; retain the manifest inspector and all ten packed-license checks. The authoring-metadata `plugins validate --entry` gate is withdrawn: ordinary `definePluginEntry` plugins do not expose that metadata. Instead, install each publishable plugin tarball with `openclaw plugins install <tarball> --force --accept-capabilities` in explicitly isolated state/config, start a loopback Gateway on a free port, and require `plugins list --json` enabled/loaded with no diagnostics plus an authenticated live kernel probe. The three non-plugin packages get real npm-installed import/bin smoke checks; a read-only local registry fixture resolves unpublished same-release dependencies without workspace links or publication. Run this packed-load check in CI.
+4. **Scope rename `@clawos` → `@clawkeepers`** in one commit across the workspace: package names, `catalog:` entries, every import, `openclaw.plugin.json` ids/contracts where the scope appears, `config/gatekeepers.json`, `install.allowSources` (`npm:@clawkeepers/*`, `clawhub:@clawkeepers/*`), installer, docs, org README. Plugin *ids* (`clawos-kernel`, `gatekeeper-fs`) and the `clawos` CLI binary do not change. Full build/test/catalog/secrets after the rename.
+5. **First publish** (Matt, once, from a clean checkout of the tagged commit): `npm login` with 2FA, then `pnpm -r publish --access public --tag beta` (pnpm rewrites `workspace:` and `catalog:` specs to concrete versions on publish). Version `0.1.0-beta.1`, git tag `v0.1.0-beta.1`. Dry-run first with `pnpm -r publish --dry-run`. The agent prepares everything up to this step and verifies the dry run; it never holds the npm credential.
+6. **Subsequent releases via CI with trusted publishing.** After the packages exist, configure each on npmjs.com with a trusted publisher pointing at `clawkeeper/openclaw-os` and a `release.yml` workflow; the workflow publishes with `--provenance` on `v*` tags using OIDC, no long-lived token. `scripts/release.ts` bumps versions, updates `clawos.lock.json` plugin versions, writes the changelog entry, and tags.
+7. **Installer and docs switch** from source install to `openclaw plugins install npm:@clawkeepers/kernel@<ver> --pin --accept-capabilities` (with `--force` until ClawHub listing, per the plan's §7.5 note); org README "Try it" section updated; `clawos install` uses the lockfile pin.
+8. **ClawHub**: `clawhub package publish` for kernel and reference drivers so `clawhub:@clawkeepers/*` installs work; `allowSources` lists both prefixes.
+9. **Community repo Tier 1** (section A) lands immediately after step 6.
+10. **Release verification**: fresh VM, install from npm only (no repo clone), run the Phase 3 acceptance path; record in `plans/PROGRESS.md`; tag `phase-9`.
+
+
+**Preparation boundary:** this task prepares steps 1–4, the step-5 dry run, and
+step-6 automation source only. Matt performs the first publish; no npm credential
+is handled by the agent. Steps 7–10 are later work. Full acceptance and the known
+upstream logging blocker are not waived. No release tag is ready while release
+checks fail. Once corrected gates and ordered merges pass, create only the local
+`v0.1.0-beta.1` tag; Matt pushes it after the first manual publish. No `phase-9`
+tag before step 10.
 
 ---
 
