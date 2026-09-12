@@ -155,6 +155,33 @@ it("batches an operator digest once per run, never sends resource descriptions",
   await kernel.onAgentEnd({messages:[],success:true},ctx);await kernel.onAgentEnd({messages:[],success:true},ctx);
   expect(fixture.notify).toHaveBeenCalledExactlyOnceWith({channel:"fixture",target:"operator"},2,0);
 });
+it('resumes eligible work immediately after its non-eligible head is rejected',async()=>{
+  api.pluginConfig={...api.pluginConfig,autoApprove:['github.issue.comment']};
+  const {handle}=await grant();const resolved=await kernel.resolveGrant(ctx.agentId,ctx.sessionKey,handle);
+  const d={title:'Fixture',description:'',implementsRevert:false,autoApprovable:true,actionKind:{tag:'github.issue.comment',label:'Comment'}};
+  await resolved.queue.submitAction(1,{...d,autoApprovable:false});await resolved.queue.submitAction(2,d);
+  await kernel.onAgentEnd({messages:[],success:true},ctx);expect(fixture.apply).not.toHaveBeenCalled();
+  expect((await rpc('os.approvals.reject',{ids:[1]})).ok).toBe(true);expect(fixture.apply).toHaveBeenCalledExactlyOnceWith(2);
+});
+it('only returns decided previews through explicitly requested authenticated list',async()=>{
+  const{handle}=await grant();const resolved=await kernel.resolveGrant(ctx.agentId,ctx.sessionKey,handle);
+  await resolved.queue.submitAction(1,{title:'Fixture',description:'',implementsRevert:false});
+  await rpc('os.approvals.reject',{ids:[1]});expect((await rpc('os.approvals.list')).output).toMatchObject({actions:[]});
+  expect((await rpc('os.approvals.list',{includeDecided:true})).output).toMatchObject({actions:[{id:1,status:'rejected'}]});
+});
+it.each(['/approvals apply 1','/reject 1','/grant https://fixture.invalid/item','/approvals'])('silently claims unauthorized %s at trusted dispatch',async body=>{
+  fixture.authority.mockReturnValue({...ctx,senderId:'outsider',senderIsOwner:false,privateAudience:true,text:body});
+  const sendFinalReply=vi.fn();const dispatchCtx={cfg:{},dispatcher:{sendFinalReply,sendToolResult:vi.fn(),sendBlockReply:vi.fn(),waitForIdle:async()=>{},getFailedCounts:()=>({tool:0,block:0,final:0}),markComplete:()=>{},getQueuedCounts:()=>({tool:0,block:0,final:0})},recordProcessed:vi.fn(),markIdle:vi.fn()};
+  const result=await kernel.onReplyDispatch({} as HookEvent<'reply_dispatch'>,dispatchCtx as HookCtx<'reply_dispatch'>);
+  expect(result).toMatchObject({handled:true,queuedFinal:false});expect(sendFinalReply).not.toHaveBeenCalled();expect(fixture.introduce).not.toHaveBeenCalled();
+});
+
+it.each(['/approvals apply 1','/reject 1','/grant https://fixture.invalid/item','/approvals'])('silently claims malformed-authority %s without granting authority',async body=>{
+  fixture.authority.mockReturnValue(undefined);
+  const sendFinalReply=vi.fn();const dispatchCtx={dispatchKind:"agent",cfg:{},dispatcher:{sendFinalReply,sendToolResult:vi.fn(),sendBlockReply:vi.fn(),waitForIdle:async()=>{},getFailedCounts:()=>({tool:0,block:0,final:0}),markComplete:()=>{},getQueuedCounts:()=>({tool:0,block:0,final:0})},recordProcessed:vi.fn(),markIdle:vi.fn()};
+  const result=await kernel.onReplyDispatch({ctx:{commandText:body}} as HookEvent<'reply_dispatch'>,dispatchCtx as HookCtx<'reply_dispatch'>);
+  expect(result).toMatchObject({handled:true,queuedFinal:false});expect(sendFinalReply).not.toHaveBeenCalled();expect(fixture.introduce).not.toHaveBeenCalled();
+});
 
 describe('update maintenance barrier',()=>{
   it('tracks admitted runs and removes only the completed run',async()=>{

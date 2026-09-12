@@ -1135,6 +1135,19 @@ This implements §4.7's original private-only beta boundary, not v1.1 sharing.
 
 **Acceptance.** An action with tag `github.issue.comment` auto-applies within 30 s when the rule exists and the gatekeeper marked it `autoApprovable`; not when either is missing; drainer stops at the first non-eligible action and resumes after it is decided; digest arrives once per run, not once per action.
 
+**2026-09-12 implementation checkpoint (not acceptance).** The operator CLI now has
+bounded, terminal-escaped tables and explicit `approvals preview IDs|all`; it is a
+line-oriented interface, not a full-screen interactive selector. Upstream reserves
+`/approve <native-id> <decision>` before plugin dispatch; deferred actions use
+`/approvals apply IDs`, and the originally planned short `/approve` alias is not
+implemented because it would collide with native approval enforcement. Chat aliases use
+trusted private operator dispatch; shared, non-owner, or forged command contexts
+are silently claimed without model fallthrough. Manual decisions immediately resume
+the ordered drainer. The existing timer and per-run digest mechanism are exercised
+in `phase-5 installed approvals-live` with a local synthetic provider/channel.
+This does not establish real GitHub or real messaging transport acceptance; full
+mode remains blocked until the Phase 4 secrecy gate and real-channel receipt pass.
+
 ### Phase 6 — Blueprints and shell (3–4 days)
 
 **Deliverables:** `packages/clawos-blueprints` with `assistant` (messaging-only, no fs/exec), `coder` (sandboxed fs+exec, `gatekeeper-fs` + `gatekeeper-github` expected), `ops` (cron + notifications), `researcher` (web tools + `gatekeeper-http`); `blueprint.json` schema (`name`, `version`, `workspaceFiles`, `skills`, `toolPolicy`, `sandbox`, `expectedGatekeepers`, `bindingsHint`); `clawos blueprint list|apply|diff|lint`; `write-blueprint` skill.

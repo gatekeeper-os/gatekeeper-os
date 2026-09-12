@@ -538,6 +538,21 @@ The late Claim hook handles only denial fallthrough. `registerCommand.requiredSc
 is also host-enforced, but external handlers lack the complete finalized audience
 context; no raw-label shortcut or bundled-only `exposeSenderIsOwner` is used.
 
+### Phase5 local channel outbound target (2026-09-12)
+Public plugin channel contract verified in pinned2026.9.2 exported declaration types:
+`messaging.normalizeTarget`, `messaging.targetResolver.looksLikeId`, and
+`outbound.resolveTarget({to}) -> {ok:true,to}|{ok:false,error}`. The synthetic
+channel initially omitted target resolution; actual `openclaw message send`
+rejected its fixed operator target. The corrected fixture accepts only `operator`.
+No production transport or private upstream import.
+
+### Reserved native approval command (Phase5,2026-09-12)
+Pinned2026.9.2 handles `/approve <id> <decision>` in its built-in command handler
+before agent `reply_dispatch`. A real synthetic channel turn to `/approve 6`
+returns native usage and leaves the deferred action pending. Keep this command
+reserved; use `/approvals apply IDs` for the separate deferred queue. No native
+approval hook or upstream command is overridden.
+
 ## Phase 7 runtime selection and maintenance (2026-09-11)
 
 - Published pinned public `OpenClawPluginApi.runtime.version` (`PluginRuntimeCore.version`)

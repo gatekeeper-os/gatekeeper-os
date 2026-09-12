@@ -1295,6 +1295,77 @@ is not passed); catalog/secret checks and diff whitespace checks passed. Running
 the helper outside a hosted VM was correctly refused before config/runtime mutation.
 GitHub-hosted live results pending; no local VM phase acceptance run is claimed.
 
+## 2026-09-12 overnight — Phase5 approvals implementation checkpoint
+
+Matt's requested implementation order is 7 → 5 → 6 → gatekeeper-mcp; acceptance
+requirements remain unchanged. This branch is independent from `origin/main`
+`f4f66c7`, not merged with the unaccepted Phase4 or Phase7 branches.
+
+Implemented bounded terminal-escaped approval tables, explicit operator previews,
+strict `/approvals apply`, `/reject`, `/grant` aliases, silent unauthorized dispatch, and
+immediate ordered auto-drain after manual decisions. Existing timer and once/run
+notification claims are tested through real Gateway/model/SDK/message CLI flows
+with a synthetic driver/channel. This is not a full-screen interactive TUI.
+
+The first attempted VM run stopped before guest execution because libvirt had lost
+snapshot metadata. Verified original disk snapshots, then restored same-user
+virtqemud soft memlock0/hard8MiB and re-registered unchanged original XML. No host
+production service, global setting, credential, or snapshot content changed.
+
+Runtime checkpoints:
+- `20260912-073450-phase-5`:11 structural checks passed, then digest timeout.
+  Direct CLI diagnostic proved the fixture lacked a valid target resolver. Fixed
+  only the local channel adapter using the public declared messaging contract.
+- `20260912-073813-phase-5`:32 checks passed, then forged-command silence failed.
+  Model/effect denial held, but the late empty reply counted as delivery. Fixed
+  early dispatch to claim recognized commands even when authority resolution fails;
+  untrusted text can select denial only, never an operation or identity.
+- Fresh reset run on the corrected source is pending; no passing checkpoint yet.
+
+Host:427 tests initially passed; new malformed-authority regression brings focused
+kernel coverage to26 passing tests. Workspace build/typecheck/catalog/secrets and
+10 package-license checks passed before the last kernel correction; corrected
+kernel typecheck passes. Final full host rerun underway. Lint remains unavailable
+on baseline (no ESLint9 configuration); no unrelated lint configuration invented.
+
+Full/default mode remains blocked pending accepted Phase4 secrecy and a real
+operator-channel receipt. Synthetic notification receipts and the reused filesystem
+contract name are not real-provider or filesystem acceptance. No merge/tag/release.
+
+- `20260912-074046-phase-5`: forged-command silence now passes. The harness reused
+  the same inbound MessageSid for subsequent commands, causing duplicate-message
+  handling to suppress the next decision. Fixture now gives each inbound message
+  a unique serial; no command authorization or acceptance assertion weakened.
+
+- `20260912-074253-phase-5`: unique MessageSid fixed delivery, but `/approve`
+  returned native-command usage and did not decide the deferred action. Upstream
+  built-in handler reserves this command before agent reply dispatch. Removed the
+  dead/colliding alias; the test now requires native usage/no deferred effect then
+  exercises `/approvals apply`. Plan corrected, native approval enforcement intact.
+
+### Phase5 verified runtime checkpoint
+
+`CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=<phase0>/scripts/vm/.state scripts/vm/test.sh phase-5 installed approvals-live`
+finished **exit0**, `vm-artifacts/20260912-074628-phase-5/`, upstream2026.9.2:
+**49/49 structural checks**, six real Gateway/model turns. Timer-only effect applied
+in **10,812ms**. Both eligibility negatives, ordered stop/resume, bounded packed-CLI
+table/preview/revert, two-actions/one-run digest, private/outsider/group/forged command
+handling, deferred apply/reject, native `/approve` preservation, explicit grant and
+read-only decision denial passed. No pending synthetic actions remained.
+
+Host:431 tests passed before the reserved-command correction; all41 affected kernel/
+command tests and corrected kernel typecheck passed after it. Complete workspace
+build/typechecks/catalog/secrets and10 package-license checks passed. Hosted checks
+for final correction pending. Artifacts contain structural receipts only. Full
+acceptance remains false; fixture provider/channel do not prove real transports.
+
+Final full-mode probe `20260912-074825-phase-5` returned **blocked/exit2**, explicitly
+requiring accepted GitHub/log secrecy and a configured real operator channel.
+Implementation committed/pushed as `178b9e1` + `864df55`, draft PR12. The final
+correction's hosted CI is running. VM `clawos-test` verified **shut off**; original
+base/installed snapshots retain2026-09-07 creation dates. VM ownership released
+for Phase6. No personal credentials, production changes, phase acceptance or merge.
+
 ## 2026-09-11 overnight — Phase 7 implementation checkpoint (not phase acceptance)
 
 Matt authorized implementation order **7 → 5 → 6 → gatekeeper-mcp** and reviewable
