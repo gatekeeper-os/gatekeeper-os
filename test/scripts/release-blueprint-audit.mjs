@@ -14,10 +14,12 @@ function configGet(path) {
 const agents = configGet('agents'), tools = configGet('tools'), gateway = configGet('gateway');
 const token = readFileSync(`${state}/.env`, 'utf8').split('\n').find(line => line.startsWith('CLAWOS_GATEWAY_TOKEN='))?.slice('CLAWOS_GATEWAY_TOKEN='.length);
 if (!token || !/^[a-f0-9]{64}$/.test(token)) throw new Error('Cell token unavailable');
-// Pinned docs/cli/security.md and audit source support OPENCLAW_GATEWAY_TOKEN
-// for the read-only deep probe. Secrets stay in child env; no argv or raw logs.
+// Resolve the existing gateway.auth.token SecretRef through its canonical env
+// provider. OPENCLAW_GATEWAY_TOKEN would introduce a competing credential source.
+const auditEnv = { ...process.env, CLAWOS_GATEWAY_TOKEN: token };
+delete auditEnv.OPENCLAW_GATEWAY_TOKEN;
 const run = spawnSync('openclaw', ['security', 'audit', '--deep', '--json'], {
-  env: { ...process.env, OPENCLAW_GATEWAY_TOKEN: token, CLAWOS_GATEWAY_TOKEN: token },
+  env: auditEnv,
   encoding: 'utf8', timeout: 180000, maxBuffer: 8 * 1024 * 1024,
 });
 let report; try { report = JSON.parse(run.stdout); } catch {}

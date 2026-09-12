@@ -1710,3 +1710,16 @@ Phase 9 now has all ten ordered deliverables verbatim. First release is
 `0.1.0-beta.1` for shared, gatekeeper-kit, kernel, gatekeeper-fs, and cli only.
 GitHub/MCP wait for acceptance. The earlier temporary missing-input note is
 superseded. No visibility change, package publish, phase tag, or upstream post.
+
+
+### Dual-cell audit fixture correction
+
+Run20260912-154325-phase-9 passed runtime coder provisioning/idempotence and all
+fresh model/Docker checks, including exec.mode allowlist actual command execution,
+read/write positive controls, network:none, read-only root and no socket/host access.
+The deep probe authenticated successfully. The audit correctly failed on the
+unaccepted `gateway.env_token_overrides_config` warning: the harness injected a
+second credential source via OPENCLAW_GATEWAY_TOKEN while baseline uses a
+CLAWOS_GATEWAY_TOKEN SecretRef. No exception added. The harness now supplies only
+the existing canonical SecretRef env provider and removes the override; audit,
+baseline and Gateway auth policy remain unchanged. Rerun from installed snapshot.
