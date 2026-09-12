@@ -930,7 +930,7 @@ Live fixture results: block denied installation, `{}` denied installation,
 allow permitted installation; allow was evaluated twice. Only input key names,
 version, target type and fixture mode were retained. See `plans/spike-S1.md`.
 
-`security.installPolicy` (**VERIFIED** primary boundary: a trusted local command after staging, covering plugins and skills and failing closed when unavailable) is generated in `15-runtime.json` with `enabled:true` and a protected standalone policy script invoked through an absolute Node executable. It evaluates `plugins.entries.clawos-kernel.config.install`; `before_install` re-checks the same rules. `plugins.allow` positively selects enabled first-party plugins; explicit `plugins.deny` entries remain authoritative. The source installer deploys bundled first-party artifacts to cell-local `plugins.load.paths`; it does not fetch nonexistent npm releases. Third-party CLI installation still uses upstream's policy/provenance checks (`--force` never bypasses the policy). `openclaw security audit --deep` runs after source installation, and missing/invalid verdicts or critical findings fail installation.
+`security.installPolicy` (**VERIFIED** primary boundary: a trusted local command after staging, covering plugins and skills and failing closed when unavailable) is generated in `15-runtime.json` with `enabled:true` and a protected standalone policy script invoked through an absolute Node executable. It evaluates `plugins.entries.clawos-kernel.config.install`; `before_install` re-checks the same rules. `plugins.allow` positively selects enabled first-party plugins; explicit `plugins.deny` entries remain authoritative. The source installer deploys bundled first-party artifacts to cell-local `plugins.load.paths`; it does not fetch registry releases; the five beta packages are now also available on npm. Third-party CLI installation still uses upstream's policy/provenance checks (`--force` never bypasses the policy). `openclaw security audit --deep` runs after source installation, and missing/invalid verdicts or critical findings fail installation.
 
 ---
 
@@ -1255,18 +1255,20 @@ Linux with systemd (Ubuntu 22.04+/Debian 12+/Arch/Fedora 39+), macOS 13+, or Win
 
 ### 10.2 Fresh install (recommended path)
 
-**CORRECTION 2026-09-07 (Phase 1).** The `curl … | bash` one-liner below is **not available yet** and the
-installer no longer pretends otherwise. It needs either a public repository or an authenticated fetch, and
-`clawkeeper/openclaw-os` is private; no `@clawkeepers/*` package is published to npm, so there is no registry
-fallback either. `installer/install.sh` detects the piped-without-a-checkout case and reports exactly what is
-missing instead of failing obscurely on a 404. The source install below is the supported path today, and it is
-what Phase 1 acceptance exercises. The one-liner becomes real when the packages are published.
+**Registry update 2026-09-12.** The five first-release packages are published at
+`0.1.0-beta.1`. Install the CLI with `npm install --global @clawkeepers/cli@beta`,
+then use `clawos cell create evaluation --port 19100 --policy messaging` on a disposable host.
+`latest` currently resolves to this beta because no stable release exists. A clean
+prefix CLI install/version smoke passed; npm-only cell acceptance remains a separate
+VM gate. The source-install path below remains the Phase 1 evaluation route.
+The unauthenticated `curl … | bash` route is still unavailable while the source
+repository is private; registry availability does not make that URL public.
 
 ```bash
-# 1. Install OpenClaw OS from a clone (the supported path today)
+# 1. Source-install evaluation inside a disposable VM (repository access required)
 git clone https://github.com/clawkeeper/openclaw-os.git && cd openclaw-os && ./installer/install.sh
 
-#    NOT YET AVAILABLE (private repo, nothing published) — see the correction above:
+#    NOT YET AVAILABLE (private source repository):
 #    curl -fsSL https://raw.githubusercontent.com/clawkeeper/openclaw-os/main/installer/install.sh | bash
 
 # The installer runs, in order:

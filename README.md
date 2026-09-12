@@ -13,11 +13,11 @@ than handing the agent unrestricted service credentials.
 agent environments. This is **not a Linux distribution**, an OpenClaw fork, or a
 Cloudflare product. It is an independent project built on those projects' work.
 
-**Status: pre-beta.** Phase 3 is merged and tagged; Phase 4, the GitHub reference
-gatekeeper, is in progress. The repository is currently private, with an
-open-source beta planned. There is no published beta or supported npm
-installation yet. A dedicated GitHub organization is under consideration;
-the name and transfer have not been decided.
+**Status: published beta.** `@clawkeepers/{shared,gatekeeper-kit,kernel,gatekeeper-fs,cli}@0.1.0-beta.1`
+are public on npm. Use `@beta` explicitly: `latest` currently resolves to the beta
+because no stable release exists. The clawkeeper repositories remain private
+pending the coordinated public release. Publication does not close the acceptance
+limitations below; npm-only fresh-VM acceptance is still pending.
 
 [Architecture](docs/implementation-plan.md) · [Acceptance status](docs/phase-checklist.md) ·
 [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) ·
@@ -105,6 +105,22 @@ These are milestone-specific results, not a substitute for remaining beta gates.
 See the [phase checklist](docs/phase-checklist.md) for evidence and the
 [Telegram deferral](plans/telegram-validation-deferred.md) for its exact scope.
 
+## Try it from npm
+
+On a disposable evaluation machine with Node 22.22.3+:
+
+```sh
+npm install --global @clawkeepers/cli@beta
+clawos --version
+clawos cell create evaluation --port 19100 --policy messaging
+```
+
+The CLI install and version command were verified from a clean npm prefix on
+2026-09-12. Cell provisioning is evaluated separately in the fresh-VM acceptance
+run; this install smoke is not end-to-end acceptance. The first beta also publishes
+`@clawkeepers/shared`, `@clawkeepers/gatekeeper-kit`, `@clawkeepers/kernel`, and
+`@clawkeepers/gatekeeper-fs`. No stable version or ClawHub listing exists yet.
+
 ## Getting started as a developer
 
 Repository access is currently required. Use the Node version in
@@ -146,8 +162,8 @@ clawos audit tail --limit 20 --json
 
 The installer provisions the cell; model credentials and channel configuration
 are separate operator setup. Installation does not grant access to arbitrary
-directories or external accounts. There is no supported `curl | bash` or npm
-registry install for this project yet. See the
+directories or external accounts. The npm CLI is available above; `curl | bash` remains unavailable while the
+source repository is private. See the
 [CLI documentation](packages/clawos-cli/README.md) for command details.
 
 ## Security boundaries
@@ -191,15 +207,12 @@ test results do not imply an independent security audit.
 
 ## Road to the open-source beta
 
-Finish the original Phase 4–7 work and acceptance, complete the public-release
-checks, and publish a beta with accurate installation instructions, limitations
-and release notes. No remaining acceptance gate is silently waived by the intent
-to publish. The existing Telegram deferral stays visible.
-
-A new GitHub organization is being considered, not announced. Until ownership
-and naming are settled, this repository remains the development home. The
-[publication checklist](docs/open-source-release.md) records the remaining
-release and transfer checks without changing the implementation sequence.
+The five-package beta is published under `@clawkeepers`; the repositories remain
+private in the clawkeeper organization. Public visibility, trusted publishing,
+community registry builds, and npm-only fresh-VM acceptance are separate gates.
+No remaining acceptance gate is silently waived by publication. The existing
+Telegram deferral stays visible. The [publication checklist](docs/open-source-release.md)
+records the remaining release checks.
 
 ## Acknowledgments
 

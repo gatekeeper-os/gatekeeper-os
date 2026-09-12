@@ -8,11 +8,9 @@
 #   ./installer/install.sh                                     from a checkout (the supported path today)
 #   CLAWOS_FROM_SOURCE=/path/to/checkout bash installer/install.sh
 #
-# NOT yet supported: `curl -fsSL …/install.sh | bash`. That form needs either a public repository or an
-# authenticated fetch, and `ControlStackAI/openclaw-os` is private. No `@clawkeepers/*` package is published to npm
-# either, so there is no registry path to fall back to. Rather than shipping a one-liner that cannot work, this
-# script detects the piped-without-a-checkout case and reports exactly what is missing. Plan §10.2 is corrected
-# to match; the one-liner becomes real when the packages are published.
+# `curl -fsSL …/install.sh | bash` still requires source access while clawkeeper/openclaw-os is private.
+# The npm beta is available separately: npm install --global @clawkeepers/cli@beta.
+# This script remains the source-install VM evaluation route; it requires a checkout.
 set -euo pipefail
 
 CLAWOS_CELL="${CLAWOS_CELL:-default}"
@@ -23,7 +21,7 @@ CLAWOS_ALLOW_NODE_PROVISION="${CLAWOS_ALLOW_NODE_PROVISION:-0}"
 log()  { printf '\033[1;36m[clawos-install]\033[0m %s\n' "$*"; }
 fail() { printf '\033[1;31m[clawos-install]\033[0m %s\n' "$*" >&2; exit 1; }
 
-# 0. Locate the source checkout. Everything is installed from it; there is no registry path yet.
+# 0. Locate the source checkout. This evaluation route installs from it.
 here="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || true)"
 src_root="${CLAWOS_FROM_SOURCE:-}"
 if [ -z "$src_root" ] && [ -n "$here" ] && [ -f "$here/../clawos.lock.json" ]; then
@@ -31,9 +29,10 @@ if [ -z "$src_root" ] && [ -n "$here" ] && [ -f "$here/../clawos.lock.json" ]; t
 fi
 [ -n "$src_root" ] && [ -f "$src_root/clawos.lock.json" ] || fail \
 "no source checkout found.
-  OpenClaw OS has no published packages and its repository is private, so there is no
-  curl-to-bash install yet. Clone the repository and run the script from it:
-      git clone https://github.com/ControlStackAI/openclaw-os.git
+  The npm beta is available: npm install --global @clawkeepers/cli@beta
+  This source evaluation script needs repository access; curl-to-bash is not available.
+  Clone the private repository and run the script from it:
+      git clone https://github.com/clawkeeper/openclaw-os.git
       cd openclaw-os && ./installer/install.sh
   or set CLAWOS_FROM_SOURCE=/path/to/checkout."
 log "source checkout: $src_root"

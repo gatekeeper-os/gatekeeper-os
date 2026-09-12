@@ -3,6 +3,20 @@
 Host orchestration uses upstream CLI/config APIs. Capability operations use the live
 Gateway's paired-device operator RPCs; the CLI never opens the kernel database.
 
+## Install the beta
+
+```sh
+npm install --global @clawkeepers/cli@beta
+clawos --version
+clawos cell create evaluation --port 19100 --policy messaging
+```
+
+Use a disposable machine for provisioning. `latest` currently resolves to
+`0.1.0-beta.1` because no stable release exists. A clean-prefix registry install
+and version smoke is verified; npm-only fresh-VM acceptance is separate. The
+[source installer](../../README.md#getting-started-as-a-developer) remains the
+VM evaluation route for a checkout. No ClawHub listing is claimed.
+
 Implemented commands:
 
 ```text

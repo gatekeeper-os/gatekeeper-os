@@ -202,7 +202,7 @@ directly from them:
 - Also on the API: `registerToolMetadata`, `registerControlUiDescriptor`, `registerRuntimeLifecycle`, `registerSecurityAuditCollector`, `registerConfigMigration`, `registerReload({ restartPrefixes, hotPrefixes })`, `enqueueNextTurnInjection`, `api.source`, `api.rootDir`.
 - `security.installPolicy` (operator config) runs a trusted local command that returns `allow` / `warn` / `block` for skill and plugin installs after staging; it is the primary install boundary and fails closed when enabled but unavailable. `before_install` is a secondary plugin-runtime hook that trusted/bundled install paths may skip. `plugins.installs`, `plugins.load`, and `security.installPolicy` changes: installPolicy hot-applies; `plugins.load`/`plugins.installs` need a restart.
 - `openclaw backup create` sources: the state directory (usually `~/.openclaw`, so `os/` is included), the active config path, `credentials/` if outside the state dir, and every configured agent directory.
-- Trusted sources for install are ClawHub packages and the bundled/official catalog; arbitrary npm/git/local sources warn and need `--force` non-interactively. The OS source installer now projects its bundled first-party artifacts through `plugins.load.paths`; there are no published `@clawkeepers/*` packages to install from npm.
+- Trusted sources for install are ClawHub packages and the bundled/official catalog; arbitrary npm/git/local sources warn and need `--force` non-interactively. The OS source installer now projects its bundled first-party artifacts through `plugins.load.paths`; the five first-release `@clawkeepers/*` packages are now published at `0.1.0-beta.1` (registry verified 2026-09-12).
 
 ## 10. Historical S-1 observations and discrepancy (2026-09-07)
 
@@ -451,7 +451,7 @@ publication after a policy decision; this is not an OS atomic-publication claim.
 Missing policy, malformed input and unavailable execution deny, including `--force`.
 
 First-party source deployment uses documented `plugins.load.paths` with explicit
-`plugins.allow` and plugin entries, not nonexistent npm releases. The CLI bundles
+`plugins.allow` and plugin entries, independently of registry availability. The CLI bundles
 workspace libraries into reviewed artifacts, keeps public SDK imports external,
 and copies them into content-addressed `<stateDir>/os/plugins/` directories.
 Gatekeeper catalog roots refer to those exact paths. OS reconciliation also owns
