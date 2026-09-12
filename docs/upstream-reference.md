@@ -202,7 +202,7 @@ directly from them:
 - Also on the API: `registerToolMetadata`, `registerControlUiDescriptor`, `registerRuntimeLifecycle`, `registerSecurityAuditCollector`, `registerConfigMigration`, `registerReload({ restartPrefixes, hotPrefixes })`, `enqueueNextTurnInjection`, `api.source`, `api.rootDir`.
 - `security.installPolicy` (operator config) runs a trusted local command that returns `allow` / `warn` / `block` for skill and plugin installs after staging; it is the primary install boundary and fails closed when enabled but unavailable. `before_install` is a secondary plugin-runtime hook that trusted/bundled install paths may skip. `plugins.installs`, `plugins.load`, and `security.installPolicy` changes: installPolicy hot-applies; `plugins.load`/`plugins.installs` need a restart.
 - `openclaw backup create` sources: the state directory (usually `~/.openclaw`, so `os/` is included), the active config path, `credentials/` if outside the state dir, and every configured agent directory.
-- Trusted sources for install are ClawHub packages and the bundled/official catalog; arbitrary npm/git/local sources warn and need `--force` non-interactively. The OS source installer now projects its bundled first-party artifacts through `plugins.load.paths`; there are no published `@clawos/*` packages to install from npm.
+- Trusted sources for install are ClawHub packages and the bundled/official catalog; arbitrary npm/git/local sources warn and need `--force` non-interactively. The OS source installer now projects its bundled first-party artifacts through `plugins.load.paths`; there are no published `@clawkeepers/*` packages to install from npm.
 
 ## 10. Historical S-1 observations and discrepancy (2026-09-07)
 
@@ -293,6 +293,25 @@ snapshot path (no `--runtime`), with entries disabled in a fresh isolated config
 It validates discovery/config-schema presence and rejects error diagnostics; it
 does **not** claim plugin execution or runtime conformance. The executable
 entrypoints are built and checked to remain inside their package roots.
+
+**Reverified 2026-09-12, release preparation:** the requested packed-output
+`plugins validate --root <extracted-package> --entry ./dist/index.js --json`
+fails with the same missing-authoring-metadata diagnostic on the ordinary kernel
+entry. Sources: pinned `docs/cli/plugins.md` (Build and validate) and the actual
+PR #16 CI run `34692506245`. This is a blocking gate, not an accepted replacement
+by manifest inspection. The checker resolves internal dependencies from extracted
+tarballs and runs the pin with both state/config under a fresh temporary directory;
+neither production state tree is used.
+
+**VERIFIED 2026-09-12, npm release workflow:** npm trusted publishing uses GitHub
+Actions OIDC with `id-token: write`, a supported npm CLI (the workflow installs
+npm 11), and per-package trusted-publisher configuration. Source:
+<https://docs.npmjs.com/trusted-publishers/>. npm provenance generation requires
+public source and a public package; source:
+<https://docs.npmjs.com/generating-provenance-statements/>. A private core repo
+therefore does not satisfy the prepared provenance workflow; its public-source
+guard deliberately fails. This observation authorizes neither visibility changes
+nor an npm login. The first manual publish remains Matt's addendum step 5.
 
 ## Completed continuation retest (2026-09-07)
 
@@ -591,3 +610,30 @@ approval hook or upstream command is overridden.
   `os.status` reports kernel schema, actual SDK version, active runs/effects and tracking completeness.
 - The concrete per-cell runtime drop-in and backup-restore sequence is undergoing disposable VM
   verification; do not read this implementation record as successful Phase 7 acceptance.
+
+
+### VERIFIED 2026-09-12: cell policy schema and exec boundary
+
+Pinned OpenClaw **2026.9.2** `config validate --json` in isolated state/config
+accepts the unchanged top-level tool-policy control and rejects
+`agents.defaults.tools`: `agents.defaults: Unrecognized key: "tools"` (exit 1).
+The paired evidence is `release-gates-20260912/schema-receipt.json` outside the
+repository. No agent-default tool-policy override exists on this pin.
+Global `tools.allow`/`deny` is a ceiling; per-agent policies intersect it and
+cannot restore a global denial (bundled `docs/gateway/sandbox-vs-tool-policy-vs-elevated.md`).
+
+Cell policy profiles therefore select fragments at creation. The runtime profile
+pairs explicit global fs/exec permission with `agents.defaults.sandbox.mode=all`
+in **one** fragment and omits the messaging `20-sandbox` fragment that would
+otherwise replace all with non-main. Blueprint application uses the public
+`config get <root> --json` redacted authored/effective config surface, never local
+fragments as evidence of the cell's active policy.
+
+Pinned `docs/tools/exec.md` defines modes deny/allowlist/ask/auto/full. The installed
+exec implementation rejects explicit deny before sandbox dispatch; host command
+allowlist/approval processing applies to gateway/node dispatch, not sandbox
+execution. Thus runtime profile and coder use the least non-deny mode
+`allowlist`, explicit `host=sandbox`, elevated disabled and all-turn Docker
+sandboxing. This is not a command allowlist **inside** Docker; the container is
+the execution boundary. Actual Docker and fresh tool-surface assertions remain
+required VM evidence, not inferred from schema validation.

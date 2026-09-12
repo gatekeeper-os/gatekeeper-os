@@ -21,6 +21,7 @@ import { installedVersion, openclaw, waitForEndpoint } from "../util/openclaw.js
 import { has, run, StepError } from "../util/proc.js";
 import { readJson } from "../util/fsx.js";
 import { reconcile } from "./config-apply.js";
+import { parseCellPolicy, policyFragments } from "../util/policy.js";
 import type { GlobalOptions } from "../options.js";
 
 /** Verdict for one installer step. */
@@ -42,8 +43,8 @@ export interface InstallResult {
 
 /** Where the installer looks for fragment templates and the drop-in template. */
 function templateRoot(): string {
-  // In the packed tarball, templates sit next to `dist/`. From a source checkout, they are the repo's `config/`.
-  const packaged = join(dirname(new URL(import.meta.url).pathname), "..", "templates");
+  // In the packed tarball, templates sit inside `dist/`. From a source checkout, they are the repo's `config/`.
+  const packaged = join(dirname(new URL(import.meta.url).pathname), "templates");
   if (existsSync(join(packaged, "config.d"))) return packaged;
   const fromSource = process.env.CLAWOS_FROM_SOURCE;
   if (fromSource && existsSync(join(fromSource, "config", "config.d"))) return join(fromSource, "config");
@@ -92,6 +93,13 @@ export async function install(args: string[], globals: GlobalOptions): Promise<n
   const cell = resolveCell(globals.cell, port);
   const recordedCell = readRegistry().find((entry) => entry.name === cell.name);
   const environmentFile = validateEnvironmentFile(optional(args, "--environment-file") ?? recordedCell?.environmentFile);
+  const requestedPolicy = optional(args, "--policy");
+  const runtimeFragment = join(cell.osDir, "config.d", "05-policy-runtime.json5");
+  const existingPolicy = existsSync(runtimeFragment) ? "runtime" : "messaging";
+  const policy = parseCellPolicy(requestedPolicy ?? (existsSync(cell.osDir) ? existingPolicy : "messaging"));
+  if (existsSync(cell.osDir) && policy !== existingPolicy) {
+    throw new StepError("existing cell policy cannot be changed by install; create a separate cell with --policy runtime");
+  }
   const steps: StepResult[] = [];
   const record = (step: string, state: StepResult["state"], detail?: string) => steps.push({ step, state, detail });
 
@@ -150,7 +158,7 @@ export async function install(args: string[], globals: GlobalOptions): Promise<n
     configChanged = true;
   }
   const templates = join(templateRoot(), "config.d");
-  for (const name of readdirSync(templates)) {
+  for (const name of policyFragments(readdirSync(templates), policy)) {
     const target = join(cell.osDir, "config.d", name);
     if (existsSync(target)) continue; // never clobber an operator's fragment
     copyFileSync(join(templates, name), target);

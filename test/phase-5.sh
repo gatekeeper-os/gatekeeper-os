@@ -19,10 +19,11 @@ cleanup(){ rc=$?; trap - EXIT; if [ -n "$gateway_pid" ]; then kill "$gateway_pid
 trap cleanup EXIT
 node --version > "$evidence/node-version"
 pnpm install --frozen-lockfile --ignore-scripts > /home/tester/phase5-deps.log 2>&1
-pnpm --filter @clawos/kernel... --filter @clawos/gatekeeper-fs... --filter @clawos/conformance... --filter @clawos/cli build > /home/tester/phase5-build.log 2>&1
+pnpm --filter @clawkeepers/kernel... --filter @clawkeepers/gatekeeper-fs... --filter @clawkeepers/conformance... --filter @clawkeepers/cli build > /home/tester/phase5-build.log 2>&1
 mkdir -p /home/tester/phase5-cli-package
-pnpm --filter @clawos/cli pack --pack-destination /home/tester/phase5-cli-package > /home/tester/phase5-pack.log 2>&1
-npm install -g /home/tester/phase5-cli-package/clawos-cli-0.1.0.tgz --ignore-scripts > /home/tester/phase5-install.log 2>&1
+cli_archive=$(node scripts/pack-cli.mjs /home/tester/phase5-cli-package)
+npm install -g --prefix /home/tester/phase-checkpoint-cli "$cli_archive" --ignore-scripts > /home/tester/phase5-install.log 2>&1
+export PATH="/home/tester/phase-checkpoint-cli/bin:$PATH"
 pnpm exec tsx test/scripts/phase5-config.mjs
 openclaw --version > "$evidence/upstream-version"
 openclaw config validate > /home/tester/phase5-validation.log 2>&1

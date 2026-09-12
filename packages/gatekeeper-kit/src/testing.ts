@@ -1,4 +1,4 @@
-import type { ActionDescription, ApprovalQueue, ObservationDescription, SessionCallContext } from "@clawos/shared";
+import type { ActionDescription, ApprovalQueue, ObservationDescription, SessionCallContext } from "@clawkeepers/shared";
 
 /** Offline unit-test queue; never use it as a production authority or conformance substitute. */
 export class TestApprovalQueue implements ApprovalQueue {

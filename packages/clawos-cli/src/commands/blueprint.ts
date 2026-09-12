@@ -9,6 +9,7 @@ import { digest } from '../util/lockfile.js';
 import { canonicalize, getPath } from '../util/merge.js';
 import { parseFragment, type Json } from '../util/json5.js';
 import { configRevision, openclaw, readOwnedConfig } from '../util/openclaw.js';
+import { runtimeCell, type CellPolicy } from '../util/policy.js';
 import { StepError } from '../util/proc.js';
 import { reconcile, mergeFragments } from './config-apply.js';
 
@@ -19,27 +20,29 @@ const keys = (v: Record<string, Json>, allowed: string[]) => Object.keys(v).ever
 function fail(code: string): never { throw new StepError(`blueprint: ${code}`); }
 /** Validated blueprint; policy supports explicit names/groups, never wildcard authority. */
 export interface Blueprint {
-  name: string; version: string; description?: string; workspaceFiles: string[]; skills: string[];
+  name: string; version: string; policy: CellPolicy; description?: string; workspaceFiles: string[]; skills: string[];
   toolPolicy: {profile: 'minimal'|'messaging'|'coding'; allow: string[]; deny: string[]};
   sandbox: {mode: 'off'|'non-main'|'all'; workspaceAccess?: 'none'|'ro'|'rw'};
   expectedGatekeepers: string[]; model?: string; bindingsHint?: string;
 }
 /** Reject malformed schema, unsafe profiles and unsupported references before any side effect. */
 export function validateBlueprint(value: unknown, catalog: string[]): Blueprint {
-  if (!object(value) || !keys(value,['name','version','description','workspaceFiles','skills','toolPolicy','sandbox','expectedGatekeepers','model','bindingsHint'])) return fail('invalid schema');
+  if (!object(value) || !keys(value,['name','version','policy','description','workspaceFiles','skills','toolPolicy','sandbox','expectedGatekeepers','model','bindingsHint'])) return fail('invalid schema');
   if (typeof value.name !== 'string' || !ID.test(value.name) || typeof value.version !== 'string' || !/^\d+\.\d+\.\d+$/.test(value.version)) return fail('invalid name/version');
   for(const k of ['description','bindingsHint','model']) if(value[k] !== undefined && (typeof value[k] !== 'string' || (value[k] as string).length > 2000)) return fail('invalid text field');
   if(!strings(value.workspaceFiles) || !value.workspaceFiles.includes('AGENTS.md') || !value.workspaceFiles.includes('SOUL.md') || !value.workspaceFiles.every(x => ['AGENTS.md','SOUL.md','USER.md','IDENTITY.md','BOOT.md','README.md'].includes(x))) return fail('invalid workspace files');
   if(!strings(value.skills) || !value.skills.every(x=>ID.test(x))) return fail('invalid skills');
   if(!strings(value.expectedGatekeepers) || !value.expectedGatekeepers.every(x=>catalog.includes(x))) return fail('unknown gatekeeper');
+  if(!['messaging','runtime'].includes(String(value.policy)))return fail('invalid cell policy');
   const t=value.toolPolicy,s=value.sandbox;
   if(!object(t)||!keys(t,['profile','allow','deny'])||!['minimal','messaging','coding'].includes(String(t.profile))||!strings(t.allow)||!strings(t.deny)||![...t.allow,...t.deny].every(x=>/^[a-z][a-z0-9_:-]*$/.test(x))) return fail('invalid tool policy');
   if([...t.allow,...t.deny].some(x=>x.startsWith('group:')&&!['group:runtime','group:fs','group:memory','group:sessions','group:web','group:ui','group:automation','group:messaging'].includes(x)))return fail('unsupported tool group');
   if(!object(s)||!keys(s,['mode','workspaceAccess'])||!['off','non-main','all'].includes(String(s.mode))||(s.workspaceAccess!==undefined&&!['none','ro','rw'].includes(String(s.workspaceAccess))))return fail('invalid sandbox');
   const runtime=t.profile==='coding'||t.allow.some(x=>['exec','bash','process','code_execution','group:runtime'].includes(x));
   const fs=runtime||t.allow.some(x=>['read','write','edit','apply_patch','ls','group:fs'].includes(x));
-  if(runtime&&s.mode!=='all')return fail('exec requires sandbox.mode all');
+  if((runtime||value.policy==='runtime')&&s.mode!=='all')return fail('exec requires sandbox.mode all');
   if(fs&&s.mode==='off')return fail('filesystem requires sandbox');
+  if(fs&&value.policy!=='runtime')return fail('filesystem/exec requires runtime cell policy');
   return value as unknown as Blueprint;
 }
 /** Refuse symlink traversal in authored trees and managed destinations, including ancestor components. */
@@ -65,9 +68,9 @@ export function loadBlueprint(root: string, catalog: string[]): {blueprint: Blue
 export function blueprintEntry(b: Blueprint, workspace: string): Record<string,Json> {
   const runtime=b.toolPolicy.profile==='coding'||b.toolPolicy.allow.some(x=>['exec','bash','process','code_execution','group:runtime'].includes(x));
   return {workspace,skills:b.skills,...(b.model?{model:{primary:b.model}}:{}),tools:{profile:b.toolPolicy.profile,
-    alsoAllow:[...new Set(['clawos-kernel',...b.toolPolicy.allow])],deny:b.toolPolicy.deny,
+    ...(b.name==='researcher'?{alsoAllow:b.toolPolicy.allow}:{alsoAllow:[...new Set(['clawos-kernel',...b.toolPolicy.allow])]}),deny:b.toolPolicy.deny,
     ...(b.sandbox.mode!=='off'?{sandbox:{tools:{alsoAllow:[...new Set(['clawos-kernel',...b.toolPolicy.allow])]}}}:{}),
-    elevated:{enabled:false},exec:{host:'sandbox',mode:runtime?'full':'deny'}},
+    elevated:{enabled:false},exec:{host:'sandbox',mode:runtime?'allowlist':'deny'}},
     sandbox:{...b.sandbox,...(b.sandbox.mode!=='off'?{scope:'agent',backend:'docker',docker:{network:'none',readOnlyRoot:true,capDrop:['ALL']}}:{})}};
 }
 interface Snapshot {version:1; blueprint:string; fingerprint:string; workspace:string; files:Record<string,string>; entry:Record<string,Json>}
@@ -79,7 +82,7 @@ export function blueprintDrift(snapshot: Snapshot, liveEntry: Json|undefined): s
   return paths;
 }
 function templateRoot():string {
-  const packaged=join(dirname(fileURLToPath(import.meta.url)),'..','templates');
+  const packaged=join(dirname(fileURLToPath(import.meta.url)),'templates');
   if(existsSync(join(packaged,'blueprints')))return packaged;
   if(process.env.CLAWOS_FROM_SOURCE)return resolve(process.env.CLAWOS_FROM_SOURCE);
   return fail('templates unavailable');
@@ -101,6 +104,10 @@ export async function applyBlueprint(cell:Cell,root:string,id:string,catalog:str
   const fragment=join(cell.osDir,'config.d','30-agents.json5');
   for(const path of [workspace,snapshotDir,fragment])assertPlainPath(path);
   const before=configRevision(cell),config=readOwnedConfig(cell);if(configRevision(cell)!==before)fail('config changed during preflight');
+  if(b.policy==='runtime'&&!runtimeCell(config)) {
+    const name=cell.name.slice(0,23)+'-runtime',port=cell.port===65535?65534:cell.port+1;
+    fail(`requires a runtime cell; run: clawos cell create ${name} --port ${port} --policy runtime`);
+  }
   const existing=liveEntry(config,id),entry=blueprintEntry(b,workspace);
   const inheritedBinds=getPath(config,'agents.defaults.sandbox.docker.binds');
   if(b.sandbox.mode!=='off'&&Array.isArray(inheritedBinds)&&inheritedBinds.length)fail('inherited Docker bind mounts require explicit review');
@@ -159,7 +166,7 @@ export async function blueprint(args:string[],globals:GlobalOptions):Promise<num
     if(flags.some(x=>x!=='--agent')||flags.length>1||rest.length!==(flags.length?2:command==='diff'&&name?1:0)||flags.length&&rest[0]!=='--agent')fail('invalid or duplicate command arguments');
   }
   let result:unknown;
-  if(command==='list'){result=readdirSync(existsSync(join(root,'blueprints'))?join(root,'blueprints'):join(root,'packages/clawos-blueprints')).filter(n=>ID.test(n)&&existsSync(join(blueprintRoot(root,n),'blueprint.json'))).sort().map(n=>{const {blueprint:b}=loadBlueprint(blueprintRoot(root,n),catalog);return {name:b.name,version:b.version,expectedGatekeepers:b.expectedGatekeepers};});}
+  if(command==='list'){result=readdirSync(existsSync(join(root,'blueprints'))?join(root,'blueprints'):join(root,'packages/clawos-blueprints')).filter(n=>ID.test(n)&&existsSync(join(blueprintRoot(root,n),'blueprint.json'))).sort().map(n=>{const {blueprint:b}=loadBlueprint(blueprintRoot(root,n),catalog);return {name:b.name,version:b.version,policy:b.policy,expectedGatekeepers:b.expectedGatekeepers};});}
   else if(command==='lint'&&name){loadBlueprint(isAbsolute(name)||name.includes('/')?resolve(name):blueprintRoot(root,name),catalog);result={valid:true};}
   else if(command==='apply'&&name){if(!globals.yes)fail('apply requires --yes');const id=optionValue(args,'--agent');if(!id)fail('--agent required');result=await applyBlueprint(resolveCellFromRegistry(globals.cell),blueprintRoot(root,name),id,catalog);}
   else if(command==='diff'){const id=optionValue(args,'--agent')??name;if(!id||!ID.test(id))fail('--agent required');const cell=resolveCellFromRegistry(globals.cell),path=join(cell.osDir,'blueprints',id,'snapshot.json');assertPlainPath(path);if(!existsSync(path))fail('no applied snapshot');const snapshot=JSON.parse(readFileSync(path,'utf8')) as Snapshot;if(snapshot.workspace!==join(cell.stateDir,'agents',id,'workspace'))fail('invalid snapshot workspace');const paths=blueprintDrift(snapshot,liveEntry(readOwnedConfig(cell),id));const fragment=parseFragment(readFileSync(join(cell.osDir,'config.d','30-agents.json5'),'utf8'),'30-agents.json5');if(canonicalize(getPath(fragment,`agents.entries.${id}`))!==canonicalize(snapshot.entry))paths.push('fragment/agent');result={changed:paths.length>0,paths};}

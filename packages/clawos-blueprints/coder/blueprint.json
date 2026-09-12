@@ -12,8 +12,7 @@
     "profile": "messaging",
     "allow": [
       "group:fs",
-      "exec",
-      "process"
+      "exec"
     ],
     "deny": [
       "browser"
@@ -26,5 +25,6 @@
   "expectedGatekeepers": [
     "fs",
     "github"
-  ]
+  ],
+  "policy": "runtime"
 }

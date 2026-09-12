@@ -1,6 +1,6 @@
 /** STOP 1-approved filesystem surface; STOP 2 approved; host-file application remains fail closed. */
 import { Type } from "typebox";
-import { GrantHandle, type GatekeeperToolDef } from "@clawos/shared";
+import { GrantHandle, type GatekeeperToolDef } from "@clawkeepers/shared";
 
 const closed = { additionalProperties: false };
 const relativePath = Type.String({ minLength: 1, maxLength: 4096 });

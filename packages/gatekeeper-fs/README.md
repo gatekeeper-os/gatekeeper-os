@@ -1,4 +1,4 @@
-# @clawos/gatekeeper-fs
+# @clawkeepers/gatekeeper-fs
 
 Phase 3's first driver, currently at the **STOP 2 account/resource checkpoint**.
 No OAuth or external credentials. Explicit `config.roots` is an allowlist; empty roots

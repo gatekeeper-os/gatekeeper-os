@@ -1,6 +1,6 @@
 // Excerpt from plan Appendix B — the shape every action follows. TODO(phase-4): complete after STOP 1 approval.
-import { KitGatekeeper, OverlayStore } from "@clawos/gatekeeper-kit";
-import type { ObserverVerifier, SupportedResource } from "@clawos/shared";
+import { KitGatekeeper, OverlayStore } from "@clawkeepers/gatekeeper-kit";
+import type { ObserverVerifier, SupportedResource } from "@clawkeepers/shared";
 import { resources } from "./resources.js";
 
 export class IssueGatekeeper extends KitGatekeeper {

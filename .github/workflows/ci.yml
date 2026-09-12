@@ -3,7 +3,13 @@ on:
   push: { branches: [main, "phase/**"] }
   pull_request:
 jobs:
+  secret-scan:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/check-secrets.sh
   build-test:
+    needs: secret-scan
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -11,6 +17,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version-file: .node-version, cache: pnpm }
       - run: pnpm install --frozen-lockfile
+      - run: pnpm exec eslint .
       - run: pnpm run check:catalog
       - run: pnpm run check:secrets
       - run: node scripts/check-package-licenses.mjs
@@ -18,7 +25,9 @@ jobs:
       - run: pnpm build
       - run: node scripts/check-package-licenses.mjs --pack
       - run: pnpm test
-      - name: Install pinned upstream and validate plugin metadata
+      - run: pnpm exec tsx --test scripts/release.test.ts
+      - run: node --test scripts/check-secrets.test.mjs scripts/packed-load.test.mjs test/scripts/blueprint-audit-gate.test.mjs
+      - name: Inspect manifests and load packed plugins with pinned upstream
         env:
           OPENCLAW_STATE_DIR: ${{ runner.temp }}/clawos-pin-check
           OPENCLAW_CONFIG_PATH: ${{ runner.temp }}/clawos-pin-check/openclaw.json
@@ -32,3 +41,4 @@ jobs:
           printf '%s\n' "$actual"
           [[ "$actual" == "OpenClaw $pin" || "$actual" == "OpenClaw $pin "* ]]
           pnpm run validate:plugins
+          node scripts/check-package-licenses.mjs --pack --validate

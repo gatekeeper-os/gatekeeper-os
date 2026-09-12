@@ -4,7 +4,7 @@ import { chmodSync, existsSync, linkSync, lstatSync, mkdirSync, mkdtempSync, rea
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { pathToFileURL } from "node:url";
-import { TestApprovalQueue } from "@clawos/gatekeeper-kit";
+import { TestApprovalQueue } from "@clawkeepers/gatekeeper-kit";
 import { FsVendor } from "./vendor.js";
 import { ConfinedIO, relativePath, textBytes } from "./io.js";
 import { DirectoryBinding } from "./paths.js";

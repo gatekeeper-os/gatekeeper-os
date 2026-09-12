@@ -9,7 +9,7 @@
 #   CLAWOS_FROM_SOURCE=/path/to/checkout bash installer/install.sh
 #
 # NOT yet supported: `curl -fsSL …/install.sh | bash`. That form needs either a public repository or an
-# authenticated fetch, and `ControlStackAI/openclaw-os` is private. No `@clawos/*` package is published to npm
+# authenticated fetch, and `ControlStackAI/openclaw-os` is private. No `@clawkeepers/*` package is published to npm
 # either, so there is no registry path to fall back to. Rather than shipping a one-liner that cannot work, this
 # script detects the piped-without-a-checkout case and reports exactly what is missing. Plan §10.2 is corrected
 # to match; the one-liner becomes real when the packages are published.
@@ -99,7 +99,7 @@ log "pnpm $(pnpm --version)"
   # Fail closed. A frozen install that fell back to resolving a fresh lockfile would silently install dependency
   # versions nobody reviewed, which defeats the point of committing a lockfile (plan §7.5).
   pnpm install --frozen-lockfile
-  pnpm --filter @clawos/cli... run build
+  pnpm --filter @clawkeepers/cli... run build
 )
 
 pack_dir="$(mktemp -d)"

@@ -143,7 +143,7 @@ export function transactionalPatch(cell: Cell, file: string, revision: string): 
   const selected = committedRuntime(cell);
   const binary = selected ? {code:0,stdout:selected} : run("sh", ["-c", "command -v openclaw"]);
   if (binary.code !== 0) throw new StepError("openclaw is not on PATH");
-  const helper = join(dirname(fileURLToPath(import.meta.url)), "..", "bin", "config-transaction.mjs");
+  const helper = join(dirname(fileURLToPath(import.meta.url)), "bin", "config-transaction.mjs");
   const result = run(process.execPath, [helper, binary.stdout.trim(), file, revision], cell.env);
   if (result.code !== 0) throw new StepError("config transaction refused: config changed or validation failed; retry after reviewing live config");
   try {

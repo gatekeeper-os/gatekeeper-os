@@ -24,5 +24,6 @@
   },
   "expectedGatekeepers": [
     "github"
-  ]
+  ],
+  "policy": "runtime"
 }

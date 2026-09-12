@@ -3,8 +3,8 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { randomBytes } from "node:crypto";
 import { join } from "node:path";
 import { existsSync, readFileSync, writeFileSync, renameSync, unlinkSync } from "node:fs";
-import type { ApprovalQueue, DryRunResult, GatekeeperSession, Grant, ToolResult } from "@clawos/shared";
-import { evaluateInstall, ApprovalDecisionParams, ConnectGatekeeperParams, IntroduceParams, ListGrantsParams, RevokeGrantParams } from "@clawos/shared";
+import type { ApprovalQueue, DryRunResult, GatekeeperSession, Grant, ToolResult } from "@clawkeepers/shared";
+import { evaluateInstall, ApprovalDecisionParams, ConnectGatekeeperParams, IntroduceParams, ListGrantsParams, RevokeGrantParams } from "@clawkeepers/shared";
 import { Type, type TSchema } from "typebox";
 import { Value } from "typebox/value";
 import type { GatewayMethodOptions, HookCtx, HookEvent, HookResult, OpenClawPluginApi, OpenClawPluginServiceContext, PluginTrustedToolPolicyRegistration } from "./upstream/sdk.js";
@@ -26,6 +26,8 @@ interface Runtime{store:Store;registry:Registry;audit:AuditLog;approvals:Approva
 type GatewayMethod=(opts:GatewayMethodOptions)=>Promise<void>|void;
 const slot=createPluginRuntimeStore<Runtime>({pluginId:"clawos-kernel",errorMessage:"Kernel unavailable."});
 const text=(value:string)=>({content:[{type:"text" as const,text:value}],details:{}});
+/** Version of the loaded package, not a copied development pin. */
+const kernelVersion: string = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
 const EmptyParams=Type.Object({},{additionalProperties:false});
 const ApprovalListParams=Type.Object({includeDecided:Type.Optional(Type.Boolean())},{additionalProperties:false});
 const AuditQueryParams=Type.Object({limit:Type.Optional(Type.Integer({minimum:1,maximum:1000}))},{additionalProperties:false});
@@ -86,7 +88,7 @@ export class Kernel{
   private pending(includeDecided=false){const r=this.runtime();const actions=r.store.listActions(!includeDecided);return{actions:actions.slice(0,100),requests:r.store.listIntroductions(),truncated:actions.length>100};}
   private preview(ids:number[]|"all"){const rows=this.runtime().store.listActions(false);const selected=ids==="all"?rows:ids.map(id=>{const row=rows.find(a=>a.id===id);if(!row)throw new Error("No such action.");return row;});return{actions:selected.slice(0,100),truncated:selected.length>100};}
   private async decideRequests(params:{ids:number[]|"all"},allow:boolean,operator:string){const r=this.runtime(),pending=r.store.listIntroductions(),ids=params.ids==="all"?pending.map(p=>p.id):[...params.ids].sort((a,b)=>a-b);for(const id of ids){const request=pending.find(p=>p.id===id);if(!request||!r.store.claimIntroduction(id))throw new Error("Request unavailable.");try{if(allow){if(!request.sessionKey||r.store.observers(request.sessionKey).length)throw new Error();await this.introduce(request.agentId,request.sessionKey,request.url,operator,"agent-request");}r.store.finishIntroduction(id,allow?"granted":"rejected");}catch{r.store.finishIntroduction(id,"failed");throw new Error("Request could not be resolved.");}}return{ids};}
-  private async decide(params:unknown,verb:"apply"|"reject"|"revert",operator:string){const r=this.runtime();const result=await r.actions.decide((params as{ids:number[]|"all"}).ids,verb,operator);await r.actions.drain(this.config().maintenance?[]:this.config().autoApprove??[]);return result;}
+  private async decide(params:unknown,verb:"apply"|"reject"|"revert",operator:string){const r=this.runtime();const result=await r.actions.decide((params as{ids:number[]|"all"}).ids,verb,operator);await r.actions.drain(this.maintenance()?[]:this.config().autoApprove??[]);return result;}
   async oauthRouter(req:IncomingMessage,res:ServerResponse):Promise<boolean>{const r=slot.tryGetRuntime();if(!r){res.statusCode=503;res.end("Kernel unavailable.");return true;}return r.oauth.handle(req,res);}
   /** Start one shared-runtime timer; lifecycle order does not grant authority. */
   startDrainer(_ctx?:OpenClawPluginServiceContext):void{const r=slot.tryGetRuntime();if(!r||r.timer)return;r.timer=setInterval(()=>{void r.actions.drain(this.maintenance()?[]:this.config().autoApprove??[]);},30_000);r.timer.unref();}
@@ -98,7 +100,7 @@ export class Kernel{
   async onBeforeInstall(e:HookEvent<"before_install">,_ctx:HookCtx<"before_install">){const verdict=evaluateInstall(this.config().install,e);return verdict.decision==="allow"?undefined:{block:true,blockReason:verdict.reason!};}
   async onAgentEnd(_e:HookEvent<"agent_end">,ctx:HookCtx<"agent_end">){if(ctx.runId)this.activeRuns.delete(ctx.runId);const r=slot.tryGetRuntime();if(!r)return;await r.actions.drain(this.maintenance()?[]:this.config().autoApprove??[]);const notify=this.config().notify,actions=r.store.countPending(),requests=r.store.countPendingRequests();if(!notify||!ctx.runId||!(actions+requests)||!r.store.claimNotification(ctx.runId))return;try{await sendOperatorDigest(notify,actions,requests);}catch{r.audit.write({ts:new Date().toISOString(),cell:cell(),kind:"tool",title:"Operator digest delivery unconfirmed",ok:false});}}
   async onSessionEnd(_e:HookEvent<"session_end">,ctx:HookCtx<"session_end">){if(!ctx.sessionKey)return;const r=slot.tryGetRuntime(),sessions=r?.sessions.get(ctx.sessionKey);if(!sessions)return;for(const session of sessions.keys())await session.close().catch(()=>{});r!.sessions.delete(ctx.sessionKey);}
-  async status(){const r=this.runtime();return{cell:cell(),upstreamVersion:runtimeVersion(this.api),kernelVersion:"0.1.0",healthy:true,kernelSchema:1,activeRuns:this.activeRuns.size+this.unknownRuns,activeEffects:r.actions.activeEffects,activeRunTrackingComplete:this.unknownRuns===0,maintenance:this.maintenance()===true,gatekeepers:r.registry.health(),pendingApprovals:r.store.countPending(),pendingRequests:r.store.countPendingRequests()};}
+  async status(){const r=this.runtime();return{cell:cell(),upstreamVersion:runtimeVersion(this.api),kernelVersion,healthy:true,kernelSchema:1,activeRuns:this.activeRuns.size+this.unknownRuns,activeEffects:r.actions.activeEffects,activeRunTrackingComplete:this.unknownRuns===0,maintenance:this.maintenance()===true,gatekeepers:r.registry.health(),pendingApprovals:r.store.countPending(),pendingRequests:r.store.countPendingRequests()};}
 }
 function toolResult(result:ToolResult|DryRunResult){if("content" in result)return{content:result.content,details:result.details??{}};return text(JSON.stringify(result));}
 function checked<T>(schema:TSchema,value:unknown):T{if(!Value.Check(schema,value))throw new Error();return value as T;}

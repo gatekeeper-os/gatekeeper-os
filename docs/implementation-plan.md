@@ -290,7 +290,7 @@ Live attachment uses the public `openclaw/plugin-sdk/runtime-store` object-form 
 Installing a gatekeeper is therefore purely:
 
 ```bash
-openclaw plugins install npm:@clawos/gatekeeper-github@1.2.0 --pin --accept-capabilities
+openclaw plugins install npm:@clawkeepers/gatekeeper-github@1.2.0 --pin --accept-capabilities
 openclaw config patch --stdin <<'EOF'
 { plugins: { entries: { "gatekeeper-github": { enabled: true, config: { clientId: "${GITHUB_OAUTH_CLIENT_ID}" } } } } }
 EOF
@@ -558,7 +558,7 @@ mode, prompt-phase, and shared-state corrections verified by S-1.
 ```jsonc
 // packages/clawos-kernel/package.json (relevant part)
 {
-  "name": "@clawos/kernel",
+  "name": "@clawkeepers/kernel",
   "version": "1.0.0",
   "type": "module",
   "peerDependencies": { "openclaw": ">=2026.9.2 <2026.11.0" },
@@ -880,7 +880,26 @@ Derived from the upstream security page's hardened baseline (**VERIFIED**) plus 
 }
 ```
 
-Blueprints re-enable capabilities deliberately: a "coder" blueprint sets `agents.entries.coder.tools.allow: ["group:fs", "exec"]` *together with* `sandbox.mode: "all"` — never one without the other (enforced by `clawos blueprint lint`).
+Blueprints never widen a cell's global policy. The baseline above remains unchanged.
+`clawos cell create <name> --port <n> --policy messaging|runtime` selects a cell
+policy at creation; messaging is the default and keeps today's fragment set.
+A runtime cell additionally copies `05-policy-runtime.json5` and omits
+`20-sandbox.json5`: the one runtime fragment replaces global runtime/fs denials
+with an explicit `tools.allow` for fs, exec, the kernel and session status, keeps
+browser/automation/process/code_execution denied, sets exec host `sandbox` and
+mode `allowlist`, and requires `agents.defaults.sandbox.mode: "all"`. The mode is
+the least non-deny mode supported by sandboxed exec on the pin; no host exec is
+authorized. `clawos config apply` rejects a runtime fragment missing the all-turn
+sandbox, including when a later fragment weakens it.
+
+Blueprint schema `policy` is runtime for coder and messaging for assistant, ops,
+and researcher. Lint requires all-turn sandbox for runtime blueprints. Apply reads
+the cell's config through upstream `config get` (not OS fragments), refuses a
+runtime blueprint above the global ceiling with an exact separate-cell creation
+command, and never patches an existing cell's global baseline. Coder permits fs
+and sandboxed exec; assistant/ops deny both; researcher exposes web tools only.
+HTTP is planned after this beta, not an expected provisioned driver. Upstream
+`agents.defaults.tools` is unsupported (VERIFIED schema probe, upstream reference).
 
 ### 7.3 Sandboxing
 
@@ -1197,8 +1216,8 @@ normal default outside this explicitly authorized work.
 Order matters: publish nothing until `main` carries the prompt-narrowing fix from PR #13 (native tools were being stripped) and PR #9 (repository URLs).
 
 1. **Integrate** PRs #11, #12, #13 onto `main` with one combined regression (kernel edits overlap); rerun the Phase 3 kernel-live and conformance suites on the integrated head.
-2. **Hardening** (as in the plan): threat-model re-review against `REVIEW.md` after integration; fuzz `before_tool_call` param rewriting; secret-leak grep as a required CI gate; `openclaw security audit --deep` clean on every blueprint; fix the missing ESLint 9 flat config so `pnpm lint` runs.
-3. **Package metadata**, per publishable package — `@clawkeepers/shared`, `@clawkeepers/gatekeeper-kit`, `@clawkeepers/kernel`, `@clawkeepers/gatekeeper-fs`, `@clawkeepers/cli` in the first release; `@clawkeepers/gatekeeper-github` and `@clawkeepers/gatekeeper-mcp` only after their acceptance: `private:false`, `publishConfig.access:"public"`, `files` limited to `dist/`, manifests, `LICENSE`, `NOTICE`, `README`; `exports`/`main`/`types` pointing at `dist`; `openclaw.extensions` paths valid inside the packed tarball; `peerDependencies.openclaw` byte-identical to the catalog range (`pnpm check:catalog`); `repository.url` = clawkeeper. `pnpm pack` every package and validate with `openclaw plugins validate --entry` on the *packed* output, not the workspace (the packed-license check already runs; extend it to entry validation).
+2. **Hardening** (as in the plan): threat-model re-review against `REVIEW.md` after integration; fuzz `before_tool_call` param rewriting; secret-leak grep as a required CI gate; `openclaw security audit --deep` with no critical findings in each cell type and only the exact conditional warning codes documented in `docs/blueprints.md`; fix the missing ESLint 9 flat config so `pnpm lint` runs.
+3. **Package metadata**, per publishable package — `@clawkeepers/shared`, `@clawkeepers/gatekeeper-kit`, `@clawkeepers/kernel`, `@clawkeepers/gatekeeper-fs`, `@clawkeepers/cli` in the first release; `@clawkeepers/gatekeeper-github` and `@clawkeepers/gatekeeper-mcp` only after their acceptance: `private:false`, `publishConfig.access:"public"`, `files` limited to `dist/`, manifests, `LICENSE`, `NOTICE`, `README`; `exports`/`main`/`types` pointing at `dist`; `openclaw.extensions` paths valid inside the packed tarball; `peerDependencies.openclaw` byte-identical to the catalog range (`pnpm check:catalog`); `repository.url` = clawkeeper. `pnpm pack` every package; retain the manifest inspector and all ten packed-license checks. The authoring-metadata `plugins validate --entry` gate is withdrawn: ordinary `definePluginEntry` plugins do not expose that metadata. Instead, install each publishable plugin tarball with `openclaw plugins install <tarball> --force --accept-capabilities` in explicitly isolated state/config, start a loopback Gateway on a free port, and require `plugins list --json` enabled/loaded with no diagnostics plus an authenticated live kernel probe. The three non-plugin packages get real npm-installed import/bin smoke checks; a read-only local registry fixture resolves unpublished same-release dependencies without workspace links or publication. Run this packed-load check in CI.
 4. **Scope rename `@clawos` → `@clawkeepers`** in one commit across the workspace: package names, `catalog:` entries, every import, `openclaw.plugin.json` ids/contracts where the scope appears, `config/gatekeepers.json`, `install.allowSources` (`npm:@clawkeepers/*`, `clawhub:@clawkeepers/*`), installer, docs, org README. Plugin *ids* (`clawos-kernel`, `gatekeeper-fs`) and the `clawos` CLI binary do not change. Full build/test/catalog/secrets after the rename.
 5. **First publish** (Matt, once, from a clean checkout of the tagged commit): `npm login` with 2FA, then `pnpm -r publish --access public --tag beta` (pnpm rewrites `workspace:` and `catalog:` specs to concrete versions on publish). Version `0.1.0-beta.1`, git tag `v0.1.0-beta.1`. Dry-run first with `pnpm -r publish --dry-run`. The agent prepares everything up to this step and verifies the dry run; it never holds the npm credential.
 6. **Subsequent releases via CI with trusted publishing.** After the packages exist, configure each on npmjs.com with a trusted publisher pointing at `clawkeeper/openclaw-os` and a `release.yml` workflow; the workflow publishes with `--provenance` on `v*` tags using OIDC, no long-lived token. `scripts/release.ts` bumps versions, updates `clawos.lock.json` plugin versions, writes the changelog entry, and tags.
@@ -1212,7 +1231,9 @@ Order matters: publish nothing until `main` carries the prompt-narrowing fix fro
 step-6 automation source only. Matt performs the first publish; no npm credential
 is handled by the agent. Steps 7–10 are later work. Full acceptance and the known
 upstream logging blocker are not waived. No release tag is ready while release
-checks fail; no `phase-9` tag before step 10.
+checks fail. Once corrected gates and ordered merges pass, create only the local
+`v0.1.0-beta.1` tag; Matt pushes it after the first manual publish. No `phase-9`
+tag before step 10.
 
 ---
 
@@ -1226,7 +1247,7 @@ Linux with systemd (Ubuntu 22.04+/Debian 12+/Arch/Fedora 39+), macOS 13+, or Win
 
 **CORRECTION 2026-09-07 (Phase 1).** The `curl … | bash` one-liner below is **not available yet** and the
 installer no longer pretends otherwise. It needs either a public repository or an authenticated fetch, and
-`clawkeeper/openclaw-os` is private; no `@clawos/*` package is published to npm, so there is no registry
+`clawkeeper/openclaw-os` is private; no `@clawkeepers/*` package is published to npm, so there is no registry
 fallback either. `installer/install.sh` detects the piped-without-a-checkout case and reports exactly what is
 missing instead of failing obscurely on a 404. The source install below is the supported path today, and it is
 what Phase 1 acceptance exercises. The one-liner becomes real when the packages are published.
@@ -1257,7 +1278,7 @@ clawos blueprint apply assistant --agent home
 openclaw agents list --bindings
 
 # 5. Add a gatekeeper and connect your account
-clawos gatekeeper add github     # installs @clawos/gatekeeper-github, prompts for OAuth app id/secret
+clawos gatekeeper add github     # installs @clawkeepers/gatekeeper-github, prompts for OAuth app id/secret
 clawos gatekeeper connect github # prints the OAuth URL; complete it in a browser
 
 # 6. Introduce a resource and use it
@@ -1273,7 +1294,7 @@ clawos status
 [2/12] upstream             npm install -g openclaw@<pin> --allow-scripts=openclaw ; openclaw --version == pin
 [3/12] state dir            mkdir -p ~/.openclaw/os/{config.d,audit,gatekeepers,blueprints,backups,logs} (700)
 [4/12] keys                 os/cell.key (600) ; CLAWOS_GATEWAY_TOKEN → ~/.openclaw/.env (600)
-[5/12] config               write minimal openclaw.json if absent (600) ; copy config/config.d/* → os/config.d/
+[5/12] config               write minimal openclaw.json if absent (600) ; copy selected messaging/runtime fragment set → os/config.d/
 [6/12] plugins              Install the CLI's bundled first-party kernel/fs artifacts under
                             <stateDir>/os/plugins/<content-hash>/; generate gatekeepers.json
                             and 15-runtime.json with exact roots, explicit plugin allow/load
@@ -1309,7 +1330,7 @@ Each cell has its own state dir, token, key, plugins config, gatekeeper accounts
 
 ### 10.6 Docker
 
-For container hosts, `deploy/docker/` provides a `Dockerfile` that layers on `ghcr.io/openclaw/openclaw:<pin>` (**VERIFIED** image) — adding only the `@clawos/*` packages and the `clawos` binary, never modifying upstream layers — and a `compose.yml` that mounts `/home/node/.openclaw` (state, including `os/`) and runs `clawos install --in-container` at first start. Sandboxing inside Docker requires the Docker socket or `OPENCLAW_SANDBOX=1` per upstream's `scripts/docker/setup.sh` conventions; the compose file documents both.
+For container hosts, `deploy/docker/` provides a `Dockerfile` that layers on `ghcr.io/openclaw/openclaw:<pin>` (**VERIFIED** image) — adding only the `@clawkeepers/*` packages and the `clawos` binary, never modifying upstream layers — and a `compose.yml` that mounts `/home/node/.openclaw` (state, including `os/`) and runs `clawos install --in-container` at first start. Sandboxing inside Docker requires the Docker socket or `OPENCLAW_SANDBOX=1` per upstream's `scripts/docker/setup.sh` conventions; the compose file documents both.
 
 ### 10.7 Uninstall
 
@@ -1352,7 +1373,7 @@ For container hosts, `deploy/docker/` provides a `Dockerfile` that layers on `gh
       "clawos-kernel": { enabled: true, config: {
         operators: [],                       // [{channel:"telegram", senderId:"…"}], filled by `clawos operator add`
         autoApprove: [],                     // ["github.issue.comment"]
-        install: { allowSources: ["npm:@clawos/*", "clawhub:@clawos/*"] },
+        install: { allowSources: ["npm:@clawkeepers/*", "clawhub:@clawkeepers/*"] },
         egress: { denyPatterns: ["(?i)api[_-]?key\\s*[:=]", "grant:[a-z0-9]{8}"] },
         audit: { llm: false },
       } },
@@ -1377,7 +1398,7 @@ For container hosts, `deploy/docker/` provides a `Dockerfile` that layers on `gh
 
 ```typescript
 // packages/gatekeeper-github/src/index.ts
-import { defineGatekeeper } from "@clawos/gatekeeper-kit";
+import { defineGatekeeper } from "@clawkeepers/gatekeeper-kit";
 import { Type } from "typebox";
 import { GitHubVendor } from "./vendor.js";
 

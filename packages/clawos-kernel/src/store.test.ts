@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { Store } from "./store.js";
-import type { Grant } from "@clawos/shared";
+import type { Grant } from "@clawkeepers/shared";
 
 describe("Store", () => {
   it("migrates and answers isActiveHandle=false for unknown handles", () => {

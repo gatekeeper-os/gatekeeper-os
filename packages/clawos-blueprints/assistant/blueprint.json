@@ -22,5 +22,6 @@
   },
   "expectedGatekeepers": [
     "github"
-  ]
+  ],
+  "policy": "messaging"
 }

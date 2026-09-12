@@ -1,4 +1,4 @@
-# @clawos/shared
+# @clawkeepers/shared
 
 Contracts for plan §4.3. **Kernel bar:** every exported member is documented. This package depends only on TypeBox.
 
@@ -14,4 +14,4 @@ Metadata schemas do not prove authorization or validate vendor business rules; t
 Grant handles use eight lowercase Crockford base32 symbols (`0-9a-hjkmnp-tv-z`), including the plan's `7k3m9q2p` example.
 The old scaffold's all-alphanumeric regex was not base32. No runtime grant data has shipped yet.
 
-Checks: `pnpm --filter @clawos/shared test` and `pnpm --filter @clawos/shared typecheck`.
+Checks: `pnpm --filter @clawkeepers/shared test` and `pnpm --filter @clawkeepers/shared typecheck`.

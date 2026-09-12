@@ -3,8 +3,8 @@ import { mkdtempSync, mkdirSync, realpathSync, renameSync, rmSync, symlinkSync, 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import type { VendorContext } from "@clawos/gatekeeper-kit";
-import { TestApprovalQueue } from "@clawos/gatekeeper-kit";
+import type { VendorContext } from "@clawkeepers/gatekeeper-kit";
+import { TestApprovalQueue } from "@clawkeepers/gatekeeper-kit";
 import { FsVendor } from "./vendor.js";
 import { directoryUrl } from "./paths.js";
 

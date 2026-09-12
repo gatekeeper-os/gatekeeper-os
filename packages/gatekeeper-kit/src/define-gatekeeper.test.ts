@@ -24,7 +24,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, vi } from "vitest";
 import type { OpenClawPluginApi, OpenClawPluginService } from "openclaw/plugin-sdk/plugin-entry";
-import type { GatekeeperVendor } from "@clawos/shared";
+import type { GatekeeperVendor } from "@clawkeepers/shared";
 import { gatekeeperRuntimeSlot } from "./define-gatekeeper.js";
 const dirs: string[] = [];
 afterEach(() => { gatekeeperRuntimeSlot("gatekeeper-x").tryGetRuntime()?.revoke(); gatekeeperRuntimeSlot("gatekeeper-x").clearRuntime(); for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true }); });
@@ -80,12 +80,12 @@ describe("builder validation and lifecycle", () => {
 describe("retained nested runtime handles", () => {
   it("revokes retained resource sessions as well as the top-level vendor", async () => {
     const call = vi.fn(async () => ({ content: [{ type: "text" as const, text: "ok" }] }));
-    const gatekeeper: import("@clawos/shared").Gatekeeper = {
+    const gatekeeper: import("@clawkeepers/shared").Gatekeeper = {
       describe: async () => ({ resource: base.resources[0]!, title: "T", suggestedName: "T" }),
       getAutoApprovableActions: async () => [], startSession: async () => ({ call, close: async () => {} }),
       applyAction: async () => {}, rejectAction: async () => {}, addObserver: async () => {}, removeObserver: async () => {},
     };
-    const account: import("@clawos/shared").GatekeeperAccount = {
+    const account: import("@clawkeepers/shared").GatekeeperAccount = {
       describe: async () => ({}), getSupportedResources: async () => base.resources,
       getGatekeeperFor: async () => ({ gatekeeper, resource: base.resources[0]!, resourceKey: "id" }),
       getVerifier: async () => ({ vendor: "x", opaque: "fixture" }), revoke: async () => {}, reconnect: async () => ({ url: "https://example.test" }),

@@ -1,6 +1,6 @@
 /** Serialized approval decisions and conservative, ordered automatic draining. */
-import type { ActionDescription, Gatekeeper, PendingAction } from "@clawos/shared";
-import { ActionDescriptionSchema } from "@clawos/shared";
+import type { ActionDescription, Gatekeeper, PendingAction } from "@clawkeepers/shared";
+import { ActionDescriptionSchema } from "@clawkeepers/shared";
 import { Value } from "typebox/value";
 import type { Store } from "./store.js";
 import type { AuditLog } from "./audit.js";

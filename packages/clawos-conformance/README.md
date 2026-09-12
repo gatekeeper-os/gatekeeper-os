@@ -1,4 +1,4 @@
-# @clawos/conformance
+# @clawkeepers/conformance
 
 Runs against a **real** Gateway (never mocks of upstream — mocks hide drift). Each test exercises one dependency the OS has on
 upstream (plan §8.3). Prints a verdict JSON consumed by `clawos update` step 5 and the nightly matrix.

@@ -1,5 +1,5 @@
 {
-  "name": "@clawos/conformance",
+  "name": "@clawkeepers/conformance",
   "version": "0.1.0",
   "description": "Conformance suite run against a live Gateway; defines 'compatible' for an upstream version.",
   "type": "module",
@@ -20,7 +20,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@clawos/shared": "workspace:*"
+    "@clawkeepers/shared": "workspace:*"
   },
   "devDependencies": {
     "tsup": "catalog:",
@@ -35,7 +35,8 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ControlStackAI/openclaw-os.git",
+    "url": "git+https://github.com/clawkeeper/openclaw-os.git",
     "directory": "packages/clawos-conformance"
-  }
+  },
+  "private": true
 }

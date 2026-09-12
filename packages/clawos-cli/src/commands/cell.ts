@@ -14,6 +14,7 @@ import { installedVersion } from "../util/openclaw.js";
 import { readLockfile } from "../util/lockfile.js";
 import { unitIsActive } from "./status.js";
 import { install } from "./install.js";
+import { parseCellPolicy } from "../util/policy.js";
 import { optionValue } from "../options.js";
 import type { GlobalOptions } from "../options.js";
 
@@ -27,7 +28,7 @@ export async function cell(args: string[], globals: GlobalOptions): Promise<numb
   const sub = args[0];
   if (sub === "create") return cellCreate(args.slice(1), globals);
   if (sub === "list") return cellList(globals);
-  console.error("usage: clawos cell create <name> --port <n> [--yes] | clawos cell list");
+  console.error("usage: clawos cell create <name> --port <n> [--policy messaging|runtime] [--yes] | clawos cell list");
   return 2;
 }
 
@@ -37,6 +38,7 @@ async function cellCreate(args: string[], globals: GlobalOptions): Promise<numbe
   assertCellName(name);
   if (name === "default") throw new StepError("the default cell is created by `clawos install`");
 
+  const policy = parseCellPolicy(optionValue(args, "--policy") ?? "messaging");
   const portArg = optionValue(args, "--port");
   if (!portArg) throw new StepError("clawos cell create requires --port <n>");
   const port = Number(portArg);
@@ -56,7 +58,7 @@ async function cellCreate(args: string[], globals: GlobalOptions): Promise<numbe
     console.log(`cell ${name} already exists at ${target.stateDir}; re-running install to converge`);
   }
 
-  return install(["--port", String(port)], { ...globals, cell: name, yes: true });
+  return install(["--port", String(port), "--policy", policy], { ...globals, cell: name, yes: true });
 }
 
 function cellList(globals: GlobalOptions): number {

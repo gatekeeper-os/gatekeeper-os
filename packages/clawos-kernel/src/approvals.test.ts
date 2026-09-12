@@ -1,7 +1,7 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Grant } from "@clawos/shared";
+import type { Grant } from "@clawkeepers/shared";
 import { describe, expect, it } from "vitest";
 import { ApprovalQueueImpl } from "./approvals.js";
 import { AuditLog } from "./audit.js";

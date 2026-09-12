@@ -61,7 +61,7 @@ Once the owner chooses the destination, prepare the transfer as a concrete chang
   integrations, security reporting, secrets, package ownership and release rights.
 - Update repository/package metadata, installer and documentation links, badges,
   workflow references and support contacts; verify old-link redirects separately.
-- Decide whether the existing `@clawos/*` package namespace is available and
+- Decide whether the existing `@clawkeepers/*` package namespace is available and
   appropriate; a GitHub organization does not reserve an npm scope.
 - Verify the destination, visibility and access after transfer, then test the
   published installation instructions from a clean environment.

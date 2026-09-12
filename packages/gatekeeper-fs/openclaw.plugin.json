@@ -2,8 +2,29 @@
   "id": "gatekeeper-fs",
   "name": "Filesystem Gatekeeper",
   "description": "Mediates agent access to specific host directories.",
-  "contracts": { "tools": [] },
-  "activation": { "onStartup": true },
-  "configSchema": { "type": "object", "additionalProperties": false, "properties": { "roots": { "type": "array", "items": { "type": "string" } } } },
-  "clawos": { "gatekeeper": { "vendor": "fs", "apiVersion": 1 } }
+  "contracts": {
+    "tools": []
+  },
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "roots": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "clawos": {
+    "gatekeeper": {
+      "vendor": "fs",
+      "apiVersion": 1
+    }
+  },
+  "version": "0.1.0-beta.1"
 }
