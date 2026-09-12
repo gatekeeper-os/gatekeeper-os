@@ -36,7 +36,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm exec tsx --test scripts/release.test.ts
-      - run: node --test scripts/check-secrets.test.mjs scripts/packed-load.test.mjs test/scripts/blueprint-audit-gate.test.mjs
+      - run: node --test scripts/release-published.test.mjs scripts/check-secrets.test.mjs scripts/packed-load.test.mjs test/scripts/blueprint-audit-gate.test.mjs
       - name: Load the actual packed artifacts in an isolated Gateway
         run: node scripts/check-package-licenses.mjs --pack --validate
       - name: Pack all release packages before publishing any
@@ -48,5 +48,11 @@ jobs:
           dist_tag=latest
           if [[ "$version" == *-* ]]; then dist_tag=beta; fi
           while IFS= read -r archive; do
+            if node scripts/release-published.mjs "$archive"; then
+              continue
+            else
+              lookup_status=$?
+              test "$lookup_status" -eq 1 || exit "$lookup_status"
+            fi
             npm publish "$archive" --access public --tag "$dist_tag" --provenance
           done < "$RUNNER_TEMP/clawkeeper-release/archives.txt"
