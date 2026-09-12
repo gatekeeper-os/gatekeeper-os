@@ -5,7 +5,9 @@
   "description": "An operating-system layer over upstream OpenClaw, modeled on Cloudflare OS gatekeepers.",
   "type": "module",
   "packageManager": "pnpm@10.15.0",
-  "engines": { "node": ">=22.22.3" },
+  "engines": {
+    "node": ">=22.22.3"
+  },
   "scripts": {
     "build": "pnpm -r --filter './packages/**' run build",
     "typecheck": "pnpm build && pnpm -r --filter './packages/**' run typecheck",
@@ -21,6 +23,7 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "@typescript-eslint/parser": "8.42.0",
     "eslint": "catalog:",
     "tsup": "catalog:",
     "tsx": "catalog:",
@@ -28,5 +31,8 @@
     "vitest": "catalog:"
   },
   "license": "MIT",
-  "repository": {"type": "git", "url": "git+https://github.com/ControlStackAI/openclaw-os.git"}
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ControlStackAI/openclaw-os.git"
+  }
 }

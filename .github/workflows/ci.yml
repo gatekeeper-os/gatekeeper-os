@@ -3,7 +3,13 @@ on:
   push: { branches: [main, "phase/**"] }
   pull_request:
 jobs:
+  secret-scan:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/check-secrets.sh
   build-test:
+    needs: secret-scan
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -11,6 +17,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version-file: .node-version, cache: pnpm }
       - run: pnpm install --frozen-lockfile
+      - run: pnpm exec eslint .
       - run: pnpm run check:catalog
       - run: pnpm run check:secrets
       - run: node scripts/check-package-licenses.mjs
