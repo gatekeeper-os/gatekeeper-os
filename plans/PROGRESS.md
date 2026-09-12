@@ -1917,3 +1917,82 @@ without kernel tools, and explicitly deny minimal's session_status tool. This
 produces the required web-only surface without any global-policy change. The
 active VM uses its already-synced previous source, not these edits; its outcome
 will be retained separately and a fresh full dual-cell run will verify the fix.
+
+
+## 2026-09-12 — corrected release gates complete; local beta tag checkpoint
+
+The revised cell-policy instruction supersedes the unsupported agents.defaults.tools
+proposal. Baseline 00-baseline.json5 is byte-identical to 81b0bd9. Runtime widening
+and all-turn Docker sandboxing are coupled in 05-policy-runtime.json5; messaging
+is unchanged/default. Blueprint apply consults upstream effective config and never
+widens an existing cell. Researcher exposes exactly web_fetch and web_search;
+gatekeeper-http is planned after beta. Append_note remains unregistered, native
+MCP execution disabled; synthetic deferred evidence is not native acceptance.
+
+### Green candidates and ordered merges
+
+| Repository / PR | Candidate CI run | Merge commit |
+| --- | --- | --- |
+| openclaw-os #15 | 34691503571 | 2a48d4d3e627c658a7edf6a47aff08c1aa40f76f |
+| openclaw-os #16 | 34703749393 | 79ce9bed7996f194e47eca8b8d3f3180ed7275f2 |
+| openclaw-os #14 | 34704321136 | dc5ba82e519aef71b15b01f5cb2e2339b9217606 |
+| gatekeepers #6 | 34704657509 | f84c1db3d8609a4c6d4a2276b4c16e9f571bd9f2 |
+| .github #1 | 34703293034 | ca1a5fb749086cab610800d512ed42fd76b3d9af |
+
+Merged in exactly that order, after green candidate checks. MCP final candidate
+9ff60767 has the identical tree to c0727d3b used for its fresh VM checkpoint;
+the final merge only reconciled squash history. Community skill bytes match core
+dc5ba82e and its pinned checksum CI passes. Tier 0 explicitly checks snapshot
+integrity, not live private-core synchronization; Tier 1 restores live sync.
+
+### Actual passing receipts
+
+- Dual-cell Phase 6/9 blueprint checkpoint: 20260912-155827-phase-9, exit 0,
+  runtime 28 checks / one model turn, messaging 34 checks / three model turns.
+  Runtime coder Docker boundaries and actual fs/exec positives passed. Messaging
+  refused coder with `clawos cell create blueprint-messaging-runtime --port 19111
+  --policy runtime` before mutation; assistant, ops and researcher provisioned.
+- Both deep audits authenticated the cell-token probe, produced JSON, and had no
+  critical findings. Runtime accepted only loopback trusted_proxies_missing;
+  messaging additionally accepted host_sandbox_no_sandbox_agents. The conditional
+  security_full_configured exception still requires runtime/all in that same run.
+  Unexpected warning codes fail; no fictitious proxies or extra exceptions added.
+- Failed dual-cell runs 154325 (competing token override) and 154901 (minimal profile
+  intersected explicit allow, leaving researcher without web tools) remain recorded.
+  Canonical token SecretRef and minimal+alsoAllow web projection fixed them; neither
+  failure was reclassified as a pass.
+- Fresh MCP VM: 20260912-160720-phase-8, exit 0, 105 package tests, 46 Gateway
+  checks, eight synthetic model turns; secrecy clean, nativeDenialNotTested true.
+- Final integrated Phase 3 kernel-live: 20260912-161612-phase-3 on dc5ba82e,
+  exit 0: 120 kernel tests, 174 CLI tests, 98 structural checks, 38/38 selected
+  live conformance checks; catalog/secrets clean. This is the requested focused
+  regression, not full connected-channel/driver or npm-only Phase 3 acceptance.
+- Initial final-Phase-3 preflight 161520 did not run: a fresh virtqemud process had
+  dropped snapshot registrations. Original qcow2 snapshots and saved XML remained.
+  Same-user process-only memlock fallback and XML re-registration restored them;
+  no new snapshot, disk replacement, forced power-off, or host-config edit.
+- Integrated host suite: 599 tests, build/typecheck/lint/catalog/secrets pass.
+  CI includes actual isolated packed install/load and live Gateway checks, all
+  ten packed-license checks, manifest inspection and exact-code audit-gate tests.
+- Clean integrated build and `pnpm -r publish --dry-run --access public --tag beta`
+  exited 0, selecting only shared, gatekeeper-kit, kernel, gatekeeper-fs and cli at
+  0.1.0-beta.1. No registry writes. Release version-plan dry run reports zero edits.
+
+Structural receipts and CI/merge JSON are retained outside the repository under
+`../../release-gates-20260912/final`; VM run artifacts remain
+in their originating worktrees. The original user-supplied addendum was preserved
+byte-for-byte in release-gates-20260912/original-input before fast-forwarding main.
+
+VM confirmed shut off; original base/installed snapshots retain their Sep 7
+11:38:13 and 15:49:39 creation timestamps.
+
+### Authorized local-tag boundary
+
+This final receipt commit changes documentation only after the integrated runtime
+checkpoint. From clean main, run the requested release.ts --version 0.1.0-beta.1
+--notes-file plans/release-notes.md --tag command; it reruns host and packed gates
+before creating the local annotated tag. Its exact commit SHA is reported in the
+handoff and external final receipt, avoiding a self-referential commit hash here.
+No package publish, tag push, visibility change or upstream post. Post-publish
+work and exact manual commands are in RELEASE-PREPARATION-2026-09-12.md. No phase-9
+tag: npm-only fresh-VM acceptance remains a later explicit checkpoint.

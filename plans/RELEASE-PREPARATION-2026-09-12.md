@@ -37,7 +37,9 @@ Exactly five packages at `0.1.0-beta.1`: `@clawkeepers/shared`,
 `@clawkeepers/gatekeeper-fs`, and `@clawkeepers/cli`. All others remain private.
 The scope-only migration is `c2b9de4`; plugin IDs and CLI binary are unchanged.
 PRs #9 and #11–13 were integrated previously. The requested final merge order is
-#15 → #16 → #14 → gatekeepers #6 → .github #1; #15 is merged as `2a48d4d`.
+#15 → #16 → #14 → gatekeepers #6 → .github #1; all five are now merged.
+The final integrated kernel-live checkpoint passed on `dc5ba82e` (98 structural
+and 38 selected conformance checks); final receipts are in `plans/PROGRESS.md`.
 
 `plans/PROGRESS.md` is the append-only verification/merge ledger, including failed
 runs and their causes. The old release blockers are superseded only by the
