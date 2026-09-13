@@ -15,7 +15,7 @@ case "$phase" in
     printf 'library-acceptance\n' > "$out/mode"
     (cd "$REPO_ROOT" && git rev-parse HEAD) > "$out/revision"
     node --version > "$out/node-version"
-    node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).upstream.version)' "$REPO_ROOT/clawos.lock.json" > "$out/upstream-pin"
+    node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).upstream.version)' "$REPO_ROOT/gkos.lock.json" > "$out/upstream-pin"
     set +e
     (cd "$REPO_ROOT" && bash test/phase-2.sh) 2>&1 | tee "$out/run.log"
     rc=${PIPESTATUS[0]}
@@ -61,7 +61,7 @@ if [ "$phase:$mode" = phase-3:channel-ingress ]; then test_script=test/phase-3-c
 
 start_ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 set +e
-vm_call exec "cd $VM_SRC && env CLAWOS_TEST_MODE=$mode CLAWOS_TEST_INSTALL_ONLY=$install_only CLAWOS_TEST_START='$start_ts' bash $test_script" 2>&1 | tee "$out/run.log"
+vm_call exec "cd $VM_SRC && env GKOS_TEST_MODE=$mode GKOS_TEST_INSTALL_ONLY=$install_only GKOS_TEST_START='$start_ts' bash $test_script" 2>&1 | tee "$out/run.log"
 rc=${PIPESTATUS[0]}
 set -e
 echo "$rc" > "$out/exit-code"

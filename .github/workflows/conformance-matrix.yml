@@ -24,8 +24,8 @@ jobs:
         with: { node-version: "24", cache: pnpm }
       - name: Select isolated runner state
         run: |
-          printf 'OPENCLAW_STATE_DIR=%s/clawos-nightly\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
-          printf 'OPENCLAW_CONFIG_PATH=%s/clawos-nightly/openclaw.json\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'OPENCLAW_STATE_DIR=%s/gkos-nightly\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'OPENCLAW_CONFIG_PATH=%s/gkos-nightly/openclaw.json\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - run: node --test scripts/ci/report.test.mjs
       - name: Resolve upstream and declared compatibility
         id: upstream
@@ -76,7 +76,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - name: Update transaction and fail-closed evidence contract
-        run: pnpm exec vitest run packages/clawos-cli/src/util/update-transaction.test.ts packages/clawos-kernel/src/kernel.test.ts
+        run: pnpm exec vitest run packages/gkos-cli/src/util/update-transaction.test.ts packages/gkos-kernel/src/kernel.test.ts
       - name: State evidence scope
         if: always()
         run: |

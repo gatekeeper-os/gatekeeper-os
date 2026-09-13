@@ -1,1 +1,1 @@
-{"id":"gatekeeper-fs","activation":{"onStartup":true},"configSchema":{"type":"object","additionalProperties":false,"properties":{}}}
+{"id":"gkos-gatekeeper-fs","activation":{"onStartup":true},"configSchema":{"type":"object","additionalProperties":false,"properties":{}}}

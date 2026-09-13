@@ -15,8 +15,8 @@ per-tool grants and arbitrary discovery are excluded from this first slice.
 
 ## Exact grant identifiers
 
-- Pattern: `https://mcp.clawkeeper.invalid/servers/:server`
-- Example: `https://mcp.clawkeeper.invalid/servers/demo`
+- Pattern: `https://mcp.gatekeeper-os.invalid/servers/:server`
+- Example: `https://mcp.gatekeeper-os.invalid/servers/demo`
 - Server IDs: lower-case letter followed by zero to15 lower-case letters/digits.
 - This reserved `.invalid` URL is **an identifier, never a fetch destination**.
   It maps to an already configured server and cannot introduce a new endpoint.
@@ -48,7 +48,7 @@ service connection or a promised general-purpose notes product:
 | `gk_mcp_demo_read_note` | `notes.get` | observation | `noteId`:1–128 alnum/underscore/hyphen | noteId, bounded text, revision, explicit truncation |
 | `gk_mcp_demo_append_note` | `notes.append` | action | same noteId; text1–8192 chars | noteId, revision, confirmed append status |
 
-The closed parameter schemas in `packages/gatekeeper-mcp/src/tools.ts` contain
+The closed parameter schemas in `packages/gkos-gatekeeper-mcp/src/tools.ts` contain
 no tool selector, endpoint, headers, credentials, subprocess command, or resource
 URL. Tool descriptions are operator-reviewed operation descriptions, not copied
 server prose. `upstreamName` is binding metadata, never a model-controlled argument.

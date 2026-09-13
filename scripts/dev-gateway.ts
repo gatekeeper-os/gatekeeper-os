@@ -5,10 +5,10 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-if (process.env.CLAWOS_SPIKE_VM !== '1') throw new Error('Run dev:gateway inside the test VM');
-const port = Number(process.env.CLAWOS_DEV_PORT ?? 19110);
+if (process.env.GKOS_SPIKE_VM !== '1') throw new Error('Run dev:gateway inside the test VM');
+const port = Number(process.env.GKOS_DEV_PORT ?? 19110);
 if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Invalid development port');
-const state = mkdtempSync(join(tmpdir(), 'clawos-dev-'));
+const state = mkdtempSync(join(tmpdir(), 'gkos-dev-'));
 const config = join(state, 'openclaw.json');
 mkdirSync(join(state, 'workspace'), { mode: 0o700 });
 writeFileSync(config, JSON.stringify({ gateway: { mode: 'local', bind: 'loopback', port,

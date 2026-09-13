@@ -1,4 +1,4 @@
-# OpenClaw OS — Implementation Plan
+# GatekeeperOS — Implementation Plan
 
 **Version:** 1.0 · **Date:** 2026-09-06 · **Status:** Ready to build
 **Upstream pin at time of writing:** `openclaw@2026.9.2` (npm dist-tag `latest`) · **Reference model:** `cloudflare/cloudflare-os` @ `main`, `cloudflare/cloudflare-os-starter` @ `main`
@@ -7,7 +7,7 @@
 
 ## 0. How to use this document
 
-This plan is written so that an autonomous coding agent (or a human) can build OpenClaw OS end-to-end without further design decisions. It is organized as: principles → architecture → contracts → phased build plan → installation → operations. Each phase ends with acceptance criteria that must pass before the next phase begins.
+This plan is written so that an autonomous coding agent (or a human) can build GatekeeperOS end-to-end without further design decisions. It is organized as: principles → architecture → contracts → phased build plan → installation → operations. Each phase ends with acceptance criteria that must pass before the next phase begins.
 
 Conventions used throughout:
 
@@ -20,7 +20,7 @@ Conventions used throughout:
 
 The two hard constraints from the project brief are restated here as invariants because everything else follows from them:
 
-> **INVARIANT 1 — No upstream modification.** OpenClaw OS never patches, forks, vendors, or monkey-patches the `openclaw` package. All behavior is added through OpenClaw's public extension surfaces (plugins, plugin hooks, internal hooks, config, skills, CLI, HTTP/WebSocket API) and through host tooling that sits *outside* the OpenClaw process. Any file under the upstream install root is read-only to us.
+> **INVARIANT 1 — No upstream modification.** GatekeeperOS never patches, forks, vendors, or monkey-patches the `openclaw` package. All behavior is added through OpenClaw's public extension surfaces (plugins, plugin hooks, internal hooks, config, skills, CLI, HTTP/WebSocket API) and through host tooling that sits *outside* the OpenClaw process. Any file under the upstream install root is read-only to us.
 >
 > **INVARIANT 2 — Upstream must remain updatable.** A user must be able to move to a newer OpenClaw release with one OS command, and the OS must detect incompatibility *before* activating the new version and roll back cleanly if it fails. All OS state lives in OS-owned paths so an upstream update (or reinstall) never destroys it.
 
@@ -28,9 +28,9 @@ The two hard constraints from the project brief are restated here as invariants 
 
 ## 1. Goals, non-goals, principles
 
-### 1.1 What "OpenClaw OS" means
+### 1.1 What "GatekeeperOS" means
 
-Cloudflare OS uses "operating system" in two senses, and we adopt both: an operating system *for a person or company to be productive with AI safely*, and an operating system *for AI workloads*, in the sense that a traditional OS manages compute workloads. Concretely, OpenClaw OS adds to upstream OpenClaw the four things an OS provides that a bare agent runtime does not:
+Cloudflare OS uses "operating system" in two senses, and we adopt both: an operating system *for a person or company to be productive with AI safely*, and an operating system *for AI workloads*, in the sense that a traditional OS manages compute workloads. Concretely, GatekeeperOS adds to upstream OpenClaw the four things an OS provides that a bare agent runtime does not:
 
 1. **A capability model.** Each agent starts with access to nothing. Resources (a GitHub repo, a Google Doc, a folder, an MCP server) are *introduced* to an agent one at a time, and the agent can only reach them through a mediating driver — a **Gatekeeper**.
 2. **Drivers with human-in-the-loop that doesn't block.** Gatekeepers log every observation, queue every side-effecting action for approval, and *simulate* the effect locally so the agent keeps working while the human approves later, in bulk, when convenient.
@@ -39,13 +39,13 @@ Cloudflare OS uses "operating system" in two senses, and we adopt both: an opera
 
 ### 1.2 Non-goals
 
-OpenClaw OS does not replace the OpenClaw Gateway, its Control UI, its channels, or its model routing; it does not attempt hostile multi-tenant isolation inside one Gateway (upstream explicitly does not support it — **VERIFIED**, `gateway/security`); it does not re-implement OAuth flows that a gatekeeper can delegate to an existing OpenClaw provider; and it does not target Windows natively in v1 (WSL2 is supported because upstream supports it).
+GatekeeperOS does not replace the OpenClaw Gateway, its Control UI, its channels, or its model routing; it does not attempt hostile multi-tenant isolation inside one Gateway (upstream explicitly does not support it — **VERIFIED**, `gateway/security`); it does not re-implement OAuth flows that a gatekeeper can delegate to an existing OpenClaw provider; and it does not target Windows natively in v1 (WSL2 is supported because upstream supports it).
 
 ### 1.3 Design principles (carried over from Cloudflare OS, adapted)
 
-**Capabilities, not ACLs.** "Each agent, and each Gadget, by default has access to nothing… you must *introduce* each agent to any particular resources you want it to access" (cloudflare-os README). In OpenClaw OS the introduction primitive is a URL; a grant is an opaque handle the agent passes to gatekeeper tools.
+**Capabilities, not ACLs.** "Each agent, and each Gadget, by default has access to nothing… you must *introduce* each agent to any particular resources you want it to access" (cloudflare-os README). In GatekeeperOS the introduction primitive is a URL; a grant is an opaque handle the agent passes to gatekeeper tools.
 
-**The kernel is small and held to a higher bar.** Cloudflare OS reviews *every line* of `workshop-backend`. Our kernel is one plugin (`clawos-kernel`) plus one shared contracts package; gatekeepers and UI are held to a normal bar. Fewer kernel lines = easier review.
+**The kernel is small and held to a higher bar.** Cloudflare OS reviews *every line* of `workshop-backend`. Our kernel is one plugin (`gkos-kernel`) plus one shared contracts package; gatekeepers and UI are held to a normal bar. Fewer kernel lines = easier review.
 
 **Prefer wrapper-owned components over patches.** From `cloudflare-os-starter/docs/customization.md`: "Prefer wrapper-owned Workers and service bindings over patches inside the submodule." Translated: prefer an OS plugin over a config hack, and a config hack over anything touching upstream files (which is forbidden anyway).
 
@@ -67,11 +67,11 @@ This section is the factual foundation. Every claim here was checked on 2026-09-
 
 ### 2.1 Cloudflare OS: the concepts we port
 
-| Normal OS | Cloudflare OS (verbatim from README) | OpenClaw OS (this plan) |
+| Normal OS | Cloudflare OS (verbatim from README) | GatekeeperOS (this plan) |
 |---|---|---|
-| kernel | `packages/workshop-backend` | OpenClaw Gateway (upstream, untouched) **+** `packages/clawos-kernel` plugin |
+| kernel | `packages/workshop-backend` | OpenClaw Gateway (upstream, untouched) **+** `packages/gkos-kernel` plugin |
 | device drivers | `packages/gatekeeper-*` | `packages/gatekeeper-*` OpenClaw plugins |
-| shell | `packages/workshop-frontend` | OpenClaw Control UI / channels / TUI (untouched) **+** `clawos` CLI **+** `os.*` gateway methods |
+| shell | `packages/workshop-frontend` | OpenClaw Control UI / channels / TUI (untouched) **+** `gkos` CLI **+** `os.*` gateway methods |
 | processes | gadgets | agent sessions and subagent runs (one OpenClaw agent = one long-lived process) |
 | executables | blueprints | **Blueprints**: versioned agent templates (workspace files, skills, tool policy, sandbox profile, bindings) |
 | users | users | operators (paired senders and devices) |
@@ -123,15 +123,15 @@ Additional **VERIFIED** SDK facts used by the kernel: `api.registerTool` tools e
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │  L6  SHELL        Control UI · channels (WhatsApp/Telegram/Slack/…) · TUI    │
-│                   clawos CLI · `openclaw os …` · os.* gateway RPC methods     │
+│                   gkos CLI · `openclaw os …` · os.* gateway RPC methods     │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │  L5  BLUEPRINTS   versioned agent templates → provisioned agents/sessions    │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│  L4  DRIVERS      gatekeeper-github · gatekeeper-google · gatekeeper-fs ·    │
-│                   gatekeeper-mcp (wraps any MCP server) · gatekeeper-http …   │
+│  L4  DRIVERS      gkos-gatekeeper-github · gatekeeper-google · gkos-gatekeeper-fs ·    │
+│                   gkos-gatekeeper-mcp (wraps any MCP server) · gatekeeper-http …   │
 │                   (each = one OpenClaw plugin built on gatekeeper-kit)        │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│  L3  KERNEL       clawos-kernel plugin: capability store (grants), gatekeeper │
+│  L3  KERNEL       gkos-kernel plugin: capability store (grants), gatekeeper │
 │                   registry, policy pipeline (hooks), approval queue,          │
 │                   simulation coordinator, audit log, os.* RPC, CLI            │
 ├──────────────────────────────────────────────────────────────────────────────┤
@@ -142,7 +142,7 @@ Additional **VERIFIED** SDK facts used by the kernel: `api.registerTool` tools e
 │                   systemd unit, config fragments, backups                     │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │  L0  HOST         Linux (systemd) or macOS · Node 22.22.3+ · Docker/Podman   │
-│                   for sandboxes · clawos installer & supervisor scripts       │
+│                   for sandboxes · gkos installer & supervisor scripts       │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -174,31 +174,31 @@ inbound message ─► [reply_dispatch: kernel] ── channel owner + configure
                 ─► [after_tool_call: kernel] ── audit
                 ─► reply ─► [message_sending: kernel] ── egress/DLP policy
                 ─► [agent_end: kernel] ── audit, drain auto-approvable actions
-later, human:   clawos approvals list / apply / reject  (or /approve in chat)
+later, human:   gkos approvals list / apply / reject  (or /approve in chat)
                 ─► kernel → gatekeeper.applyAction(id) | rejectAction(id)
 ```
 
 ### 3.2 Components
 
-**`openclaw` (upstream, L2).** Installed globally from npm at a pinned version recorded in `clawos.lock.json`. The OS never writes inside its install root. Auto-update is disabled (`update.auto.enabled: false` and `OPENCLAW_NO_AUTO_UPDATE=1` in the service environment) because the OS owns the update lifecycle.
+**`openclaw` (upstream, L2).** Installed globally from npm at a pinned version recorded in `gkos.lock.json`. The OS never writes inside its install root. Auto-update is disabled (`update.auto.enabled: false` and `OPENCLAW_NO_AUTO_UPDATE=1` in the service environment) because the OS owns the update lifecycle.
 
-**`clawos-kernel` (L3).** A single OpenClaw plugin. It owns: the capability store (grants, introductions, pending requests), the gatekeeper registry (OS-owned catalog metadata plus lifecycle-owned live driver slots), the policy pipeline (hooks listed above), the approval queue and simulation coordinator (the counterpart of Cloudflare OS's `ApprovalQueue` + `AutoApprovalDrainer`), the audit log, the `os.*` gateway RPC methods, and the `openclaw os …` CLI subcommands. It is the only OS component that makes security decisions.
+**`gkos-kernel` (L3).** A single OpenClaw plugin. It owns: the capability store (grants, introductions, pending requests), the gatekeeper registry (OS-owned catalog metadata plus lifecycle-owned live driver slots), the policy pipeline (hooks listed above), the approval queue and simulation coordinator (the counterpart of Cloudflare OS's `ApprovalQueue` + `AutoApprovalDrainer`), the audit log, the `os.*` gateway RPC methods, and the `openclaw os …` CLI subcommands. It is the only OS component that makes security decisions.
 
-**`clawos-shared` (L3, library).** TypeScript contracts: `Gatekeeper`, `GatekeeperVendor`, `GatekeeperAccount`, `Session`, `ApprovalQueue`, `ObservationDescription`, `ActionDescription`, `ActionKind`, `SupportedResource`, `Grant`. The kernel and every gatekeeper depend on it; it depends on nothing but TypeBox.
+**`gkos-shared` (L3, library).** TypeScript contracts: `Gatekeeper`, `GatekeeperVendor`, `GatekeeperAccount`, `Session`, `ApprovalQueue`, `ObservationDescription`, `ActionDescription`, `ActionKind`, `SupportedResource`, `Grant`. The kernel and every gatekeeper depend on it; it depends on nothing but TypeBox.
 
 **`gatekeeper-kit` (L4, library).** The security-critical boilerplate that "a new gatekeeper author is most likely to get subtly wrong" (cloudflare-os `plans/gatekeeper-kit.md`): OAuth nonce lifecycle and token refresh coalescing, the cache-overlay simulation store, action id sequencing, observer admission helpers, and a `defineGatekeeper()` builder that turns a gatekeeper definition into an OpenClaw plugin entry with correctly namespaced tools and HTTP routes.
 
-**`gatekeeper-*` (L4).** One OpenClaw plugin per external service. v1 ships four: `gatekeeper-github` (reference implementation, mirrors cloudflare-os's), `gatekeeper-fs` (scoped directories on the host — the OpenClaw equivalent of a file capability), `gatekeeper-mcp` (wraps any MCP server behind the gatekeeper model, mirroring cloudflare-os `gatekeeper-mcp`), and `gatekeeper-http` (a generic REST/OpenAPI gatekeeper for services without a dedicated driver). Google, Slack, Notion, Linear, Home Assistant follow in v1.1.
+**`gatekeeper-*` (L4).** One OpenClaw plugin per external service. v1 ships four: `gkos-gatekeeper-github` (reference implementation, mirrors cloudflare-os's), `gkos-gatekeeper-fs` (scoped directories on the host — the OpenClaw equivalent of a file capability), `gkos-gatekeeper-mcp` (wraps any MCP server behind the gatekeeper model, mirroring cloudflare-os `gkos-gatekeeper-mcp`), and `gatekeeper-http` (a generic REST/OpenAPI gatekeeper for services without a dedicated driver). Google, Slack, Notion, Linear, Home Assistant follow in v1.1.
 
-**`clawos-blueprints` (L5).** A directory of versioned blueprint packages (`blueprint.json` + workspace files + skills + policy fragment). `clawos blueprint apply <name> --agent <id>` provisions an agent via `openclaw agents add` and `openclaw config patch`.
+**`gkos-blueprints` (L5).** A directory of versioned blueprint packages (`blueprint.json` + workspace files + skills + policy fragment). `gkos blueprint apply <name> --agent <id>` provisions an agent via `openclaw agents add` and `openclaw config patch`.
 
-**`clawos-cli` (L6).** An npm package with a `clawos` binary. It is a thin host-side orchestrator: it shells out to `openclaw` for anything OpenClaw already does, talks to the kernel over the Gateway WebSocket (`os.*` methods) for capability operations, and owns host-only concerns (install, cells, update, rollback, backups). The same commands are also mounted as `openclaw os <cmd>` via `api.registerCli` so users who live in the `openclaw` CLI never need a second binary.
+**`gkos-cli` (L6).** An npm package with a `gkos` binary. It is a thin host-side orchestrator: it shells out to `openclaw` for anything OpenClaw already does, talks to the kernel over the Gateway WebSocket (`os.*` methods) for capability operations, and owns host-only concerns (install, cells, update, rollback, backups). The same commands are also mounted as `openclaw os <cmd>` via `api.registerCli` so users who live in the `openclaw` CLI never need a second binary.
 
-**`clawos-conformance` (tooling).** The test suite that decides whether a given upstream version is compatible with the OS. It runs the kernel and reference gatekeeper against a real Gateway, exercising every hook and RPC the OS depends on. It is what makes INVARIANT 2 enforceable.
+**`gkos-conformance` (tooling).** The test suite that decides whether a given upstream version is compatible with the OS. It runs the kernel and reference gatekeeper against a real Gateway, exercising every hook and RPC the OS depends on. It is what makes INVARIANT 2 enforceable.
 
 ### 3.3 Filesystem layout (per cell)
 
-All OS state lives under `<stateDir>/os/`, where `<stateDir>` is `~/.openclaw` for the default cell or `~/.openclaw-<profile>` for a named cell (upstream's `OPENCLAW_PROFILE` convention, **VERIFIED**). This keeps OS state inside upstream's backup scope (`openclaw backup create` — confirm in S-1 that it includes unknown subdirectories; if not, `clawos backup` archives `os/` separately).
+All OS state lives under `<stateDir>/os/`, where `<stateDir>` is `~/.openclaw` for the default cell or `~/.openclaw-<profile>` for a named cell (upstream's `OPENCLAW_PROFILE` convention, **VERIFIED**). This keeps OS state inside upstream's backup scope (`openclaw backup create` — confirm in S-1 that it includes unknown subdirectories; if not, `gkos backup` archives `os/` separately).
 
 ```
 ~/.openclaw/                          # upstream state dir (cell "default")
@@ -209,7 +209,7 @@ All OS state lives under `<stateDir>/os/`, where `<stateDir>` is `~/.openclaw` f
 ├── hooks/                            # internal hooks (upstream dir; OS may drop
 │                                     #   HOOK.md bundles here — see §5.6)
 └── os/                               # ─── OS-owned, upstream never touches ───
-    ├── clawos.lock.json              # pinned upstream version, plugin versions,
+    ├── gkos.lock.json              # pinned upstream version, plugin versions,
     │                                 #   last-known-good, install fingerprint
     ├── config.d/                     # desired-state config fragments (JSON5)
     │   ├── 00-baseline.json5         #   hardened gateway/tools baseline
@@ -218,7 +218,7 @@ All OS state lives under `<stateDir>/os/`, where `<stateDir>` is `~/.openclaw` f
     │   ├── 30-agents.json5           #   blueprint-provisioned agents
     │   └── 90-local.json5            #   operator overrides (last wins)
     ├── config.generated.json         # last merged fragment set (for diff)
-    ├── clawos.sqlite                 # kernel store: grants, actions, audit index
+    ├── gkos.sqlite                 # kernel store: grants, actions, audit index
     ├── audit/YYYY-MM-DD.jsonl        # append-only audit log
     ├── gatekeepers/<vendor>/         # per-gatekeeper private state
     │   ├── accounts/                 #   encrypted tokens (see §7.4)
@@ -230,36 +230,36 @@ All OS state lives under `<stateDir>/os/`, where `<stateDir>` is `~/.openclaw` f
 
 **CORRECTION 2026-09-07 (Phase 1).** `os/backups/` cannot be the output directory for `openclaw backup create`.
 Upstream rejects output paths inside the source state or workspace tree to avoid self-inclusion, and `os/` is
-inside the state directory. Archives therefore live at `~/.clawos/backups/<cell>/`, alongside the host-level cell
+inside the state directory. Archives therefore live at `~/.gkos/backups/<cell>/`, alongside the host-level cell
 registry. `os/backups/` remains only for tars the OS writes itself.
 
-A second constraint shapes `clawos backup restore`: upstream restore is **never in place**. It requires a fresh
-empty target, has no `--force`, and leaves activation to the operator. `clawos backup restore` therefore performs
+A second constraint shapes `gkos backup restore`: upstream restore is **never in place**. It requires a fresh
+empty target, has no `--force`, and leaves activation to the operator. `gkos backup restore` therefore performs
 upstream's documented activation sequence — verify, extract to a staging directory outside the state tree, stop
 the unit, move the current state aside (never delete it), move the extracted state asset into place using the
 manifest's `assets[]` entry of kind `state`, run `doctor`, restart, and confirm `/readyz`. The displaced state is
 kept at `<stateDir>.pre-restore-<ts>`, so a failed restore is always recoverable.
 
-Environment for a named cell (written into its systemd unit by `clawos cell create`):
+Environment for a named cell (written into its systemd unit by `gkos cell create`):
 
 ```
 OPENCLAW_PROFILE=<name>           # → ~/.openclaw-<name>
 OPENCLAW_GATEWAY_PORT=<port>      # unique per cell
 OPENCLAW_NO_AUTO_UPDATE=1
-CLAWOS_CELL=<name>
+GKOS_CELL=<name>
 ```
 
 ### 3.4 Naming and namespaces (DECISION)
 
 | Thing | Convention | Why |
 |---|---|---|
-| Kernel plugin id | `clawos-kernel` | — |
+| Kernel plugin id | `gkos-kernel` | — |
 | Gatekeeper plugin id | `gatekeeper-<vendor>` | Mirrors cloudflare-os package naming; the kernel discovers gatekeepers by this prefix **and** the manifest marker below. |
-| Gatekeeper manifest marker | `openclaw.plugin.json` → `"clawos": { "gatekeeper": { "vendor": "<vendor>", "apiVersion": 1 } }` | Extra top-level keys in the manifest are the portable analogue of the `GATEKEEPER_` binding prefix. (**VERIFIED** for the S-1 probe on 2026.9.2: unknown `clawos` metadata permits actual load/RPC; `plugins validate` is an authoring-metadata validator, not an ordinary-plugin validator.) |
+| Gatekeeper manifest marker | `openclaw.plugin.json` → `"gkos": { "gatekeeper": { "vendor": "<vendor>", "apiVersion": 1 } }` | Extra top-level keys in the manifest are the portable analogue of the `GATEKEEPER_` binding prefix. (**VERIFIED** for the S-1 probe on 2026.9.2: unknown `gkos` metadata permits actual load/RPC; `plugins validate` is an authoring-metadata validator, not an ordinary-plugin validator.) |
 | Gatekeeper tool names | `gk_<vendor>_<resource>_<verb>` e.g. `gk_github_repo_list_issues`; entire name ≤64 ASCII characters, lowercase letters/digits/underscores only | Kernel matcher lists explicit `gk_*` tool IDs; unambiguous audit. Provider-documentation intersection, not an upstream registration limit; reject overlong/invalid names instead of truncating. |
 | Kernel tools (agent-facing) | `os_request_access`, `os_list_grants` | The only two tools the kernel exposes to models. |
 | Gateway RPC methods | `os.grants.*`, `os.approvals.*`, `os.gatekeepers.*`, `os.audit.*`, `os.status` | Avoids reserved `config.*`, `exec.approvals.*`, `wizard.*`, `update.*`. |
-| CLI | `clawos <group> <cmd>` and `openclaw os <group> <cmd>` | Same code path. |
+| CLI | `gkos <group> <cmd>` and `openclaw os <group> <cmd>` | Same code path. |
 | HTTP routes | `/os/gatekeeper/<vendor>/oauth/…`, `/os/approvals` | Registered via `api.registerHttpRoute`. |
 | Grant handle (agent-visible) | `grant:<8-char base32>` | Opaque; never encodes the resource. |
 | Action id | integer, per-gatekeeper monotonic | Same as cloudflare-os `submitAction(action: number)`. |
@@ -291,7 +291,7 @@ real-provider/native/full acceptance. See `plans/mcp-surface-contract.md`.
 
 ### 4.2 Registration and discovery
 
-A gatekeeper is an ordinary OpenClaw plugin whose manifest carries the `clawos.gatekeeper` marker. S-1 selects the OS-owned catalog fallback: the kernel reads configured, canonical package roots from `os/gatekeepers.json`, validates each manifest's plugin id/vendor/API version, and registers cached tool shapes synchronously (§5.1). A manifest on disk is metadata, **not** proof of a loaded driver.
+A gatekeeper is an ordinary OpenClaw plugin whose manifest carries the `gkos.gatekeeper` marker. S-1 selects the OS-owned catalog fallback: the kernel reads configured, canonical package roots from `os/gatekeepers.json`, validates each manifest's plugin id/vendor/API version, and registers cached tool shapes synchronously (§5.1). A manifest on disk is metadata, **not** proof of a loaded driver.
 
 Live attachment uses the public `openclaw/plugin-sdk/runtime-store` object-form store keyed by plugin id. A gatekeeper's `registerService().start()` publishes its driver together with cell/root/API-version identity; `stop()` revokes retained handles and clears only its own current slot. The kernel resolves that live slot at use time and fails closed before startup, after stop, for disabled/missing entries, or for cell/root/version mismatch. Do not rely on service ordering or retain a stale driver across replacement. Discovery modes declare inert capabilities but never publish a driver. Kernel integration and its negative conformance remain Phase 3 work; S-1 tests the transport with a no-tool/no-session fixture.
 
@@ -300,18 +300,18 @@ Live attachment uses the public `openclaw/plugin-sdk/runtime-store` object-form 
 Installing a gatekeeper is therefore purely:
 
 ```bash
-openclaw plugins install npm:@clawkeepers/gatekeeper-github@1.2.0 --pin --accept-capabilities
+openclaw plugins install npm:@gatekeeper-os/gatekeeper-github@1.2.0 --pin --accept-capabilities
 openclaw config patch --stdin <<'EOF'
-{ plugins: { entries: { "gatekeeper-github": { enabled: true, config: { clientId: "${GITHUB_OAUTH_CLIENT_ID}" } } } } }
+{ plugins: { entries: { "gkos-gatekeeper-github": { enabled: true, config: { clientId: "${GITHUB_OAUTH_CLIENT_ID}" } } } } }
 EOF
 openclaw gateway restart      # plugin metadata snapshot is immutable per session (VERIFIED)
 ```
 
-`clawos gatekeeper add github` wraps exactly those three steps plus the secret prompt.
+`gkos gatekeeper add github` wraps exactly those three steps plus the secret prompt.
 
 The kernel's enforcement chokepoint (the analogue of `getGatekeeperClassFor()` in cloudflare-os `user.ts`): **`Kernel.resolveGrant(agentId, sessionKey, handle)`** is the single function that turns a handle into a live gatekeeper session. Every path that lets an agent reach a gatekeeper goes through it. **INVARIANT:** no code path may mint or use a gatekeeper session without `resolveGrant`; reviewers flag any new one.
 
-### 4.3 Contracts (`packages/clawos-shared/src/gatekeeper.ts`)
+### 4.3 Contracts (`packages/gkos-shared/src/gatekeeper.ts`)
 
 These are the TypeScript contracts, adapted from `cloudflare-os/packages/workshop-shared/src/gatekeeper.ts` for a single-process, tool-calling runtime. Doc-comment every exported member (cloudflare-os `REVIEW.md` rule).
 
@@ -461,10 +461,10 @@ grant {
 Introductions happen in three ways, all creating a `pending` grant that only an operator can activate:
 
 1. **Operator pastes a URL** in a channel the agent is bound to. The candidate kernel extracts current-message URLs at `reply_dispatch`, using the public `command-auth` owner resolver on finalized ingress plus its configured channel/sender operator match. Gateway-scoped, internal, provenance-bearing, missing-identity, and ambiguous-agent turns cannot introduce resources. The late `before_agent_run` gate no longer introduces URLs. **Acceptance pending:** prove first-request tools and notice through real public-SDK dispatch, followed by dedicated Telegram transport testing; unit mocks and RPC introductions do not establish channel acceptance. The earlier implementation incorrectly assumed that `before_agent_run` preceded prompt construction.
-2. **Operator runs** `clawos grant add --agent ops https://github.com/owner/repo` (→ `os.grants.introduce`).
-3. **The agent requests access** with the kernel tool `os_request_access({ url, reason })`. The kernel records a `pending` grant, notifies operators (via `openclaw message` on the cell's notification channel, and in `clawos approvals list`), and returns "Access requested; you will be told when it is granted." The agent is never blocked waiting.
+2. **Operator runs** `gkos grant add --agent ops https://github.com/owner/repo` (→ `os.grants.introduce`).
+3. **The agent requests access** with the kernel tool `os_request_access({ url, reason })`. The kernel records a `pending` grant, notifies operators (via `openclaw message` on the cell's notification channel, and in `gkos approvals list`), and returns "Access requested; you will be told when it is granted." The agent is never blocked waiting.
 
-Revocation (`clawos grant revoke <handle>`) closes live sessions, and the next `before_prompt_build` removes the tools.
+Revocation (`gkos grant revoke <handle>`) closes live sessions, and the next `before_prompt_build` removes the tools.
 
 The **grant table** the agent sees (injected by `before_prompt_build`, bounded to 100 rows / 8 KB — the cloudflare-os `AGENT_CATALOG` bounding rule) contains only handle, vendor, resource *type*, and a short title the operator chose; never the raw resource identifier unless the operator marked it visible. Suggested names reflect the type (`GITHUB_REPO`), "since the coding agent will be able to see the name and the user may or may not intend to reveal the resource title."
 
@@ -474,7 +474,7 @@ This is the heart of the port. The kernel implements `ApprovalQueue` and passes 
 
 **Observations.** `authorizeObservation(d)` runs the policy pipeline synchronously (it must be fast — it is inside a tool call): it checks the grant is `active`, not in `lockdown`; if the session has observers and `d.prohibitAllSharing` or `d.excludeObservers` intersects them, it throws (and, for `prohibitAllSharing`, moves the grant to `lockdown` — "the gadget goes into lockdown mode where it can no longer perform any actions, only make observations"). Then it appends an `observation` audit record and returns. The gatekeeper may call it *after* fetching but must await it *before* returning anything (cloudflare-os rule).
 
-**Actions.** `submitAction(id, d)` records `{gatekeeperInstance, actionId, description, status: "pending"}` in `clawos.sqlite`, appends an audit record, and returns immediately. The gatekeeper then applies the action to its **simulation overlay** and returns a success result to the agent as if the action had happened. Two implementation strategies are offered by `gatekeeper-kit` and the author chooses per resource type: *mutate-the-cache* (apply to cached data on submit; invalidate/rebuild on reject; re-apply queued actions whenever the cache refreshes) or *overlay-at-read* (store pending actions separately and merge at read time — "cleaner separation"). The kit's default is overlay-at-read.
+**Actions.** `submitAction(id, d)` records `{gatekeeperInstance, actionId, description, status: "pending"}` in `gkos.sqlite`, appends an audit record, and returns immediately. The gatekeeper then applies the action to its **simulation overlay** and returns a success result to the agent as if the action had happened. Two implementation strategies are offered by `gatekeeper-kit` and the author chooses per resource type: *mutate-the-cache* (apply to cached data on submit; invalidate/rebuild on reject; re-apply queued actions whenever the cache refreshes) or *overlay-at-read* (store pending actions separately and merge at read time — "cleaner separation"). The kit's default is overlay-at-read.
 
 **When simulation is not implemented** for an action, the gatekeeper sets `awaitDecision: true`. The kernel then translates this into OpenClaw's native synchronous approval by returning `requireApproval` from `before_tool_call` (**VERIFIED** shape: `{ title, description, severity, timeoutMs, allowedDecisions: ["allow-once","allow-always","deny"], onResolution }`). This is the escape hatch, not the norm, because "an agent that keeps going would observe a world where its action 'didn't happen' — and tends to get confused."
 
@@ -482,9 +482,9 @@ Note the ordering subtlety: `before_tool_call` runs *before* the tool executes, 
 
 **Decisions.** `os.approvals.list` returns pending actions per gatekeeper instance with their descriptions and previews. `os.approvals.apply(ids)` calls `gatekeeper.applyAction(id)` in id order; on success the record becomes `applied` and the overlay entry is retired. `os.approvals.reject(ids)` calls `rejectAction` and removes the simulated effect; if the gatekeeper reports `{restart: true}`, the kernel resets the affected session (via the session RPC upstream exposes — **UNVERIFIED** method name, S-1; fallback: inject a next-turn note through `api.session.workflow.enqueueNextTurnInjection()` telling the agent the action was rejected).
 
-**Auto-approval.** An action is auto-applied only when *both* the operator has a rule for its `actionKind.tag` (`os/config.d/…` → `clawos.autoApprove: ["github.issue.comment"]`) *and* the gatekeeper marked that specific action `autoApprovable: true`. The `AutoApprovalDrainer` runs on `agent_end` and on a 30 s timer: per gatekeeper instance, it applies eligible pending actions in id order, single-flight, stopping at the first non-eligible action (so ordering is preserved).
+**Auto-approval.** An action is auto-applied only when *both* the operator has a rule for its `actionKind.tag` (`os/config.d/…` → `gkos.autoApprove: ["github.issue.comment"]`) *and* the gatekeeper marked that specific action `autoApprovable: true`. The `AutoApprovalDrainer` runs on `agent_end` and on a 30 s timer: per gatekeeper instance, it applies eligible pending actions in id order, single-flight, stopping at the first non-eligible action (so ordering is preserved).
 
-**Surfaces for the human.** `clawos approvals` (CLI/TUI table), a chat command `/approvals` claimed by authenticated `reply_dispatch` (so it never reaches the model; the pinned `before_agent_reply` context has no trusted owner/audience facts, so it only denies command fallthrough), and the OpenClaw Control UI via a `registerControlUiDescriptor()` panel in v1.1.
+**Surfaces for the human.** `gkos approvals` (CLI/TUI table), a chat command `/approvals` claimed by authenticated `reply_dispatch` (so it never reaches the model; the pinned `before_agent_reply` context has no trusted owner/audience facts, so it only denies command fallthrough), and the OpenClaw Control UI via a `registerControlUiDescriptor()` panel in v1.1.
 
 ### 4.6 Authoring a gatekeeper (the `write-gatekeeper` skill, ported)
 
@@ -495,7 +495,7 @@ The repository ships `.agents/skills/write-gatekeeper/SKILL.md` with this proced
 2. Design the tool surface in `src/tools.ts`: one small group of tools per resource type; every tool takes `grant`; structured inputs and outputs, not raw API payloads; simplify for the common case. Decide which URL patterns `getGatekeeperFor()` matches.
 3. **STOP. Present the tool surface for operator review. Do not proceed without approval** — "the API is the most important and delicate part of a gatekeeper; getting it wrong means rebuilding."
 4. Implement from `packages/gatekeeper-kit/SKELETON.md` (vendor, account store, OAuth routes with two-stage nonce, per-resource gatekeeper, session).
-5. Register: `openclaw.plugin.json` with the `clawos.gatekeeper` marker; `package.json` with `openclaw.compat`; add to `config/gatekeepers.json` catalog.
+5. Register: `openclaw.plugin.json` with the `gkos.gatekeeper` marker; `package.json` with `openclaw.compat`; add to `config/gatekeepers.json` catalog.
 6. **STOP. Ask the operator whether to proceed to Phase 2.**
 
 **Phase 2 — responsibilities 4–7.**
@@ -507,7 +507,7 @@ Package structure:
 
 ```
 packages/gatekeeper-<vendor>/
-├── openclaw.plugin.json     # id gatekeeper-<vendor>, contracts.tools, clawos.gatekeeper marker
+├── openclaw.plugin.json     # id gatekeeper-<vendor>, contracts.tools, gkos.gatekeeper marker
 ├── package.json             # openclaw.extensions, openclaw.compat, peerDependencies.openclaw
 ├── src/
 │   ├── index.ts             # export default defineGatekeeper({...})  (kit)
@@ -532,43 +532,43 @@ Strategies, chosen per resource type: **A private-only** (always throw — a mai
 
 ### 4.8 Audit log
 
-Every observation, action submission, decision, grant change, and gatekeeper auth event is appended to `os/audit/YYYY-MM-DD.jsonl` (one JSON object per line, `{ts, cell, agentId, sessionKey, kind, vendor, resourceType, handle, actionId?, title, decision?, by?}`) and indexed in `clawos.sqlite` for `clawos audit` queries. Titles and descriptions are included; request/response bodies, tokens, headers, prompts, and raw error strings from vendors are not (a vendor error can echo a caller-supplied value — log only numeric codes, per cloudflare-os `gatekeeper-cloudflare`). `after_tool_call` supplies duration and success/failure; `llm_input`/`llm_output` are *not* logged by default (opt-in `clawos.audit.llm: true` writes token counts only).
+Every observation, action submission, decision, grant change, and gatekeeper auth event is appended to `os/audit/YYYY-MM-DD.jsonl` (one JSON object per line, `{ts, cell, agentId, sessionKey, kind, vendor, resourceType, handle, actionId?, title, decision?, by?}`) and indexed in `gkos.sqlite` for `gkos audit` queries. Titles and descriptions are included; request/response bodies, tokens, headers, prompts, and raw error strings from vendors are not (a vendor error can echo a caller-supplied value — log only numeric codes, per cloudflare-os `gatekeeper-cloudflare`). `after_tool_call` supplies duration and success/failure; `llm_input`/`llm_output` are *not* logged by default (opt-in `gkos.audit.llm: true` writes token counts only).
 
 ---
 
-## 5. Kernel design (`packages/clawos-kernel`)
+## 5. Kernel design (`packages/gkos-kernel`)
 
 ### 5.1 Plugin skeleton
 
 This is the corrected design sketch, not a claim that the kernel scaffold below
-`packages/clawos-kernel/src/` implements these contracts. Phase 0 changes exercise
+`packages/gkos-kernel/src/` implements these contracts. Phase 0 changes exercise
 the throwaway probe; kernel runtime integration and negative authorization
 conformance belong to Phase 3. The source scaffold still requires the registration
 mode, prompt-phase, and shared-state corrections verified by S-1.
 
 ```jsonc
-// packages/clawos-kernel/openclaw.plugin.json
+// packages/gkos-kernel/openclaw.plugin.json
 {
-  "id": "clawos-kernel",
-  "name": "OpenClaw OS Kernel",
-  "description": "Capability model, gatekeeper registry, approval queue, and audit for OpenClaw OS.",
+  "id": "gkos-kernel",
+  "name": "GatekeeperOS Kernel",
+  "description": "Capability model, gatekeeper registry, approval queue, and audit for GatekeeperOS.",
   "contracts": {
     "tools": ["os_request_access", "os_list_grants"],
-    "trustedToolPolicies": ["clawos-capability-policy"],
+    "trustedToolPolicies": ["gkos-capability-policy"],
     "gatewayMethodDispatch": ["os.status", "os.grants.list", "os.grants.introduce", "os.grants.revoke",
       "os.approvals.list", "os.approvals.apply", "os.approvals.reject", "os.approvals.revert",
       "os.gatekeepers.list", "os.gatekeepers.connect", "os.audit.query"]
   },
   "activation": { "onStartup": true },
   "configSchema": { "$ref": "./config.schema.json" },
-  "clawos": { "kernel": true, "apiVersion": 1 }
+  "gkos": { "kernel": true, "apiVersion": 1 }
 }
 ```
 
 ```jsonc
-// packages/clawos-kernel/package.json (relevant part)
+// packages/gkos-kernel/package.json (relevant part)
 {
-  "name": "@clawkeepers/kernel",
+  "name": "@gatekeeper-os/kernel",
   "version": "1.0.0",
   "type": "module",
   "peerDependencies": { "openclaw": ">=2026.9.2 <2026.11.0" },
@@ -583,21 +583,21 @@ mode, prompt-phase, and shared-state corrections verified by S-1.
 The `compat` range is deliberately narrow (two minor months). Widening it is a conscious act performed by the update pipeline after the conformance suite passes (§6.4).
 
 ```typescript
-// packages/clawos-kernel/src/index.ts
+// packages/gkos-kernel/src/index.ts
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
 import { Type } from "typebox";
 import { Kernel } from "./kernel.js";
 
 export default definePluginEntry({
-  id: "clawos-kernel",
-  name: "OpenClaw OS Kernel",
-  description: "Capability model, gatekeeper registry, approval queue, and audit for OpenClaw OS.",
+  id: "gkos-kernel",
+  name: "GatekeeperOS Kernel",
+  description: "Capability model, gatekeeper registry, approval queue, and audit for GatekeeperOS.",
   configSchema: () => import("./config-schema.js").then(m => m.schema),
   register(api) {
     if (!["full", "discovery", "tool-discovery"].includes(api.registrationMode)) return;
     // Design requirement: constructor is inert; no DB/client/service startup here.
     // Hook/tool facades resolve the same process-local runtime via the object-form
-    // createPluginRuntimeStore({ pluginId: "clawos-kernel", errorMessage: ... }).
+    // createPluginRuntimeStore({ pluginId: "gkos-kernel", errorMessage: ... }).
     const kernel = new Kernel(api);
 
     // --- capability policy (runs before plugin policy)
@@ -638,14 +638,14 @@ export default definePluginEntry({
     api.registerHttpRoute({ path: "/os/gatekeeper/", match: "prefix", auth: "plugin",   // VERIFIED fields
       handler: (req, res) => kernel.oauthRouter(req, res) });                          // returns true when handled
     api.registerCli(({ program }) => kernel.mountCli(program), { commands: ["os"] });  // VERIFIED shape
-    api.registerService({ id: "clawos-drainer", start: (ctx) => kernel.startDrainer(ctx), stop: () => kernel.stopDrainer() });
+    api.registerService({ id: "gkos-drainer", start: (ctx) => kernel.startDrainer(ctx), stop: () => kernel.stopDrainer() });
   },
 });
 ```
 
 Notes on the verified SDK shapes used above: `registerHttpRoute` takes `path`, `auth: "gateway" | "plugin"`, `match: "exact" | "prefix"`, optional `handleUpgrade`/`replaceExisting`, and a `handler(req, res)` that returns `true` when it handled the request; OAuth callbacks arrive unauthenticated from the browser, so the route uses `auth: "plugin"` and the kernel validates the nonce itself. `registerCli`'s registrar receives `{ program }` (the command object to configure) and `opts` may carry `commands`, `descriptors`, and `parentPath`. `registerGatewayMethod` opts include `profileAccess: "required" | "independent"`. `registerService` receives a `ctx` with a process-local `gatewayEvents` facade when a broadcaster is present.
 
-**VERIFIED for the S-1 test path on 2026-09-07:** a `gateway_start` call to `registerTool()` returns successfully, but the late tool is absent from all 40 model requests across 20 fresh scripted sessions. Evidence: `vm-artifacts/20260907-184712-phase-0/{spike-S1.jsonl,model-tools.jsonl}` and `plans/spike-S1.md` item i. Use the already-planned catalog-cache design: the kernel reads `os/gatekeepers.json` (written by `clawos gatekeeper add`) at register time and registers the cached `GatekeeperToolDef[]`; the live vendor object is published by its lifecycle service and resolved through its checked runtime slot at use time (§4.2). This is the same trick cloudflare-os uses with `getTypeScriptTypes()` — tool *shapes* are static metadata, only *execution* needs the live driver.
+**VERIFIED for the S-1 test path on 2026-09-07:** a `gateway_start` call to `registerTool()` returns successfully, but the late tool is absent from all 40 model requests across 20 fresh scripted sessions. Evidence: `vm-artifacts/20260907-184712-phase-0/{spike-S1.jsonl,model-tools.jsonl}` and `plans/spike-S1.md` item i. Use the already-planned catalog-cache design: the kernel reads `os/gatekeepers.json` (written by `gkos gatekeeper add`) at register time and registers the cached `GatekeeperToolDef[]`; the live vendor object is published by its lifecycle service and resolved through its checked runtime slot at use time (§4.2). This is the same trick cloudflare-os uses with `getTypeScriptTypes()` — tool *shapes* are static metadata, only *execution* needs the live driver.
 
 ### 5.2 Hook handlers — exact behavior
 
@@ -696,9 +696,9 @@ Gatekeeper tool `execute(toolCallId, params)` (registered by the kernel): fetch 
 
 `onBeforeAgentReply` — **Claim.** If the inbound text is `/approvals`, `/approve <ids|all>`, `/reject <ids>`, `/grants`, or `/grant <url>`, and the sender is an operator, handle it and return a synthetic reply; the model never sees these commands. Non-operators get silence.
 
-`onMessageSending` — **Modify/Gate.** Apply cell egress rules from config (`clawos.egress.denyPatterns`, e.g. secrets-looking strings, grant handles, resource keys marked private). Redact or cancel with reason.
+`onMessageSending` — **Modify/Gate.** Apply cell egress rules from config (`gkos.egress.denyPatterns`, e.g. secrets-looking strings, grant handles, resource keys marked private). Redact or cancel with reason.
 
-`onBeforeInstall(e)` — **Gate, fail-closed (secondary).** Upstream's primary install boundary is the operator-owned `security.installPolicy` command (**VERIFIED**, §7.5); the OS projects a protected standalone build of `clawos install-policy`, which evaluates `plugins.entries.clawos-kernel.config.install.allowSources` / `allowHashes` and returns a versioned allow/block verdict. `before_install` re-checks the same policy for Gateway-backed install flows and blocks with a reason on mismatch.
+`onBeforeInstall(e)` — **Gate, fail-closed (secondary).** Upstream's primary install boundary is the operator-owned `security.installPolicy` command (**VERIFIED**, §7.5); the OS projects a protected standalone build of `gkos install-policy`, which evaluates `plugins.entries.gkos-kernel.config.install.allowSources` / `allowHashes` and returns a versioned allow/block verdict. `before_install` re-checks the same policy for Gateway-backed install flows and blocks with a reason on mismatch.
 
 ### 5.3 State store (`node:sqlite`)
 
@@ -709,7 +709,7 @@ static import prevented this probe from loading (`Cannot find module 'sqlite'`).
 Keep the public Node loader adaptation OS-owned; do not modify upstream. Evidence:
 `plans/spike-S1.md`, runs `20260907-183938` and `20260907-184712`.
 
-Tables: `grants`, `introductions`, `actions` (`id`, `gatekeeperInstance`, `actionId`, `descriptionJson`, `status`, `decidedBy`, `decidedAt`, `appliedAt`, `error`), `instances` (gatekeeper instance registry: vendor, resourceKey, operatorId, observer strategy, lockdown flag), `observers`, `audit_index`, `meta` (schema version). Migrations are forward-only and run at `gateway_start`; the schema version is written into `clawos.lock.json` so rollback tooling can refuse to downgrade past a schema bump (the same "schema-neutral rollback" rule upstream uses for its own updates).
+Tables: `grants`, `introductions`, `actions` (`id`, `gatekeeperInstance`, `actionId`, `descriptionJson`, `status`, `decidedBy`, `decidedAt`, `appliedAt`, `error`), `instances` (gatekeeper instance registry: vendor, resourceKey, operatorId, observer strategy, lockdown flag), `observers`, `audit_index`, `meta` (schema version). Migrations are forward-only and run at `gateway_start`; the schema version is written into `gkos.lock.json` so rollback tooling can refuse to downgrade past a schema bump (the same "schema-neutral rollback" rule upstream uses for its own updates).
 
 ### 5.4 Gateway RPC methods (`os.*`)
 
@@ -727,21 +727,21 @@ conformance. Evidence: `plans/spike-S1.md`, paired-client structural observation
 Methods use `profileAccess: "required"` (**VERIFIED** option), but this selects a
 profile and is not an operator authorization check. Payloads are TypeBox-validated.
 `os.status` returns cell id, upstream/kernel versions, gatekeeper health, pending
-approval count, and last update result for `clawos status`.
+approval count, and last update result for `gkos status`.
 
-### 5.5 CLI (`openclaw os …` and `clawos …`)
+### 5.5 CLI (`openclaw os …` and `gkos …`)
 
-The kernel's `registerCli` mounts the *gateway-side* commands (`grants`, `approvals`, `gatekeepers`, `audit`, `status`). The separate `clawos` binary adds the *host-side* commands (`install`, `cell`, `update`, `rollback`, `backup`, `config apply`, `doctor`, `blueprint`) and forwards the gateway-side ones over WebSocket so both entry points behave identically.
+The kernel's `registerCli` mounts the *gateway-side* commands (`grants`, `approvals`, `gatekeepers`, `audit`, `status`). The separate `gkos` binary adds the *host-side* commands (`install`, `cell`, `update`, `rollback`, `backup`, `config apply`, `doctor`, `blueprint`) and forwards the gateway-side ones over WebSocket so both entry points behave identically.
 
 ### 5.6 Internal hooks (optional, trusted)
 
-Two small internal hooks ship as `HOOK.md` bundles for things the plugin API does not expose: `clawos-bootstrap` on `agent:bootstrap` (adds `os/blueprints/<name>/README.md` to `context.bootstrapFiles` — the one documented mutable field) and `clawos-lifecycle` on `gateway:pre-restart` (flushes the audit log). They are shipped inside the kernel plugin as *plugin-declared hooks* (a **VERIFIED** discovery tier: bundled → plugin-declared → managed `<stateDir>/hooks/` → `hooks.internal.load.extraDirs`), so no separate install step exists; `openclaw hooks install` is a deprecated alias for `openclaw plugins install` (**VERIFIED**). They are enabled via `hooks.internal.entries.<key>.enabled` in `10-plugins.json5`. Internal hooks run unsandboxed in the Gateway process (**VERIFIED**), so they stay tiny and are reviewed at the kernel bar.
+Two small internal hooks ship as `HOOK.md` bundles for things the plugin API does not expose: `gkos-bootstrap` on `agent:bootstrap` (adds `os/blueprints/<name>/README.md` to `context.bootstrapFiles` — the one documented mutable field) and `gkos-lifecycle` on `gateway:pre-restart` (flushes the audit log). They are shipped inside the kernel plugin as *plugin-declared hooks* (a **VERIFIED** discovery tier: bundled → plugin-declared → managed `<stateDir>/hooks/` → `hooks.internal.load.extraDirs`), so no separate install step exists; `openclaw hooks install` is a deprecated alias for `openclaw plugins install` (**VERIFIED**). They are enabled via `hooks.internal.entries.<key>.enabled` in `10-plugins.json5`. Internal hooks run unsandboxed in the Gateway process (**VERIFIED**), so they stay tiny and are reviewed at the kernel bar.
 
 ---
 
 ## 6. Configuration, pinning, and update strategy
 
-### 6.1 The lockfile — `os/clawos.lock.json`
+### 6.1 The lockfile — `os/gkos.lock.json`
 
 ```json
 {
@@ -750,7 +750,7 @@ Two small internal hooks ship as `HOOK.md` bundles for things the plugin API doe
   "upstream": { "package": "openclaw", "version": "2026.9.2", "channel": "stable",
                 "installedAt": "2026-09-06T18:00:00Z", "nodeVersion": "v22.22.3" },
   "lastKnownGood": { "version": "2026.9.2", "verifiedAt": "2026-09-06T18:05:00Z" },
-  "plugins": { "clawos-kernel": "1.0.0", "gatekeeper-github": "1.0.0", "gatekeeper-fs": "1.0.0" },
+  "plugins": { "gkos-kernel": "1.0.0", "gkos-gatekeeper-github": "1.0.0", "gkos-gatekeeper-fs": "1.0.0" },
   "kernelSchema": 1,
   "configFingerprint": "sha256:…"
 }
@@ -760,7 +760,7 @@ This is the analogue of the starter's git submodule gitlink: the pin *is* the ve
 
 ### 6.2 Config ownership and reconciliation
 
-`openclaw.json` is upstream's file, but the OS needs to own specific subtrees. **DECISION:** the OS uses *reconciliation*, not file rewriting. `clawos config apply`:
+`openclaw.json` is upstream's file, but the OS needs to own specific subtrees. **DECISION:** the OS uses *reconciliation*, not file rewriting. `gkos config apply`:
 
 1. Deep-merges `os/config.d/*.json5` in filename order and computes a names-only diff.
 2. Captures the authored file's SHA-256 revision **before** reading the redacted ownership snapshot. Refuses an unstable read or an owned-path mismatch against the last successful checkpoint (`--force` permits only pre-existing drift).
@@ -777,7 +777,7 @@ Ownership digests remain useful for drift **between** applies. They use redacted
 
 Why not `$include`: the 2026.9.2 docs state that root includes, include arrays, and includes with sibling overrides **fail closed for OpenClaw-owned writes** (`config patch`, doctor migrations), and that `$include` configs are not auto-migrated at startup (**VERIFIED**). A root-level include array would therefore break the very `config patch` path the OS and upstream tooling rely on. Reconciliation is the design, not a fallback.
 
-**INVARIANT:** the OS owns exactly these subtrees and no others: `gateway.auth`, `gateway.bind`, `gateway.reload`, `tools.*` (whole arrays), `plugins.entries.clawos-kernel`, `plugins.entries.gatekeeper-*`, `plugins.deny`, `agents.defaults.sandbox`, `agents.entries.<blueprint-provisioned>`, `update.*`, `hooks.internal.entries.clawos-*`, and the plugin-config namespace `plugins.entries.clawos-kernel.config.*` (where all `clawos.*` settings live). Operator-owned keys (channels, models, auth profiles) are never touched. `90-local.json5` is the operator's override fragment and always wins.
+**INVARIANT:** the OS owns exactly these subtrees and no others: `gateway.auth`, `gateway.bind`, `gateway.reload`, `tools.*` (whole arrays), `plugins.entries.gkos-kernel`, `plugins.entries.gatekeeper-*`, `plugins.deny`, `agents.defaults.sandbox`, `agents.entries.<blueprint-provisioned>`, `update.*`, `hooks.internal.entries.gkos-*`, and the plugin-config namespace `plugins.entries.gkos-kernel.config.*` (where all `gkos.*` settings live). Operator-owned keys (channels, models, auth profiles) are never touched. `90-local.json5` is the operator's override fragment and always wins.
 
 ### 6.3 What survives an upstream update
 
@@ -789,21 +789,21 @@ Why not `$include`: the 2026.9.2 docs state that root includes, include arrays, 
 | Internal hooks | `<stateDir>/hooks/` | Yes |
 | Blueprint-provisioned agents | `agents/<id>/` + config | Yes |
 
-### 6.4 The update pipeline (`clawos update`)
+### 6.4 The update pipeline (`gkos update`)
 
 Implemented host transaction (Phase 7 branch, not yet accepted):
 
 ```text
-clawos update --check [--to <exact-version>|--channel stable|extended-stable|beta]
-clawos update --to <version> --conformance /absolute/reviewed-runner.mjs --yes
-clawos rollback --yes
+gkos update --check [--to <exact-version>|--channel stable|extended-stable|beta]
+gkos update --to <version> --conformance /absolute/reviewed-runner.mjs --yes
+gkos rollback --yes
 ```
 
 1. Resolve one exact registry release; do not persist moving tags or allow git/package-spec input.
 2. Compare every locked OS plugin's installed metadata and API range with the target. Require
    the kernel's schema/drain protocol and record baseline critical audit finding identifiers.
 3. Create a verified upstream backup outside the cell's state tree.
-4. Stage an immutable **per-cell** npm prefix under `~/.clawos/runtimes/<cell>/<transaction>/`.
+4. Stage an immutable **per-cell** npm prefix under `~/.gkos/runtimes/<cell>/<transaction>/`.
    Do not replace a global/shared binary or edit the upstream installation. Paths stay outside
    archived state so later backups do not recursively archive whole runtimes.
 5. Run a reviewed conformance adapter with explicit fresh state/config boundaries. Require the
@@ -826,7 +826,7 @@ clawos rollback --yes
    verify before reopening. The old binary handles restoration only with an empty scratch
    state; it never opens candidate-migrated live state before restoration. Failed state is kept.
 
-The fsynced journal lives outside restored state at `~/.clawos/updates/<cell>/current.json`.
+The fsynced journal lives outside restored state at `~/.gkos/updates/<cell>/current.json`.
 A killed process leaves an activation/recovery record. `rollback --yes` refuses a live updater,
 a kernel-schema mismatch, newer operator config, or grants changed since a committed update.
 Kernel startup never rewrites an existing schema and refuses a mismatched lock or future schema.
@@ -855,7 +855,7 @@ agent-turn, hook, approval and update/rollback matrix integration remains Phase 
 existing Phase 3 VM acceptance evidence is unchanged. No upstream pin/range is widened.
 
 
-Because "all OpenClaw plugin APIs are experimental" (**VERIFIED**), the monorepo's CI runs the conformance suite in a matrix against `openclaw@latest`, `@beta`, and `@extended-stable` nightly. A failure against `beta` opens an issue tagged `upstream-drift` so a compatible plugin release exists *before* that version reaches `latest`. Each OS plugin release bumps `openclaw.compat.pluginApi` only after passing on that version. The repo's `clawos.lock.json` (root, for development) pins the version the suite is green on; `clawos install` uses that pin by default.
+Because "all OpenClaw plugin APIs are experimental" (**VERIFIED**), the monorepo's CI runs the conformance suite in a matrix against `openclaw@latest`, `@beta`, and `@extended-stable` nightly. A failure against `beta` opens an issue tagged `upstream-drift` so a compatible plugin release exists *before* that version reaches `latest`. Each OS plugin release bumps `openclaw.compat.pluginApi` only after passing on that version. The repo's `gkos.lock.json` (root, for development) pins the version the suite is green on; `gkos install` uses that pin by default.
 
 ---
 
@@ -863,7 +863,7 @@ Because "all OpenClaw plugin APIs are experimental" (**VERIFIED**), the monorepo
 
 ### 7.1 Trust boundaries: Cells
 
-Upstream is explicit: one Gateway is one trust boundary, and mixed-trust operation requires "split gateways, separate credentials, ideally separate OS users or hosts" (**VERIFIED**). OpenClaw OS makes this a first-class object. A **cell** is a named OpenClaw profile with its own state dir, port, systemd unit, config fragments, operators, gatekeeper accounts, and lockfile. Cells share nothing but the upstream binary. `clawos cell create <name> [--port N] [--user <unix-user>]` provisions one; `--user` runs it under a dedicated Unix account (recommended for business-grade isolation, matches upstream's advice). Two firms = two cells (or two hosts); a gatekeeper account connected in one cell is invisible to the other.
+Upstream is explicit: one Gateway is one trust boundary, and mixed-trust operation requires "split gateways, separate credentials, ideally separate OS users or hosts" (**VERIFIED**). GatekeeperOS makes this a first-class object. A **cell** is a named OpenClaw profile with its own state dir, port, systemd unit, config fragments, operators, gatekeeper accounts, and lockfile. Cells share nothing but the upstream binary. `gkos cell create <name> [--port N] [--user <unix-user>]` provisions one; `--user` runs it under a dedicated Unix account (recommended for business-grade isolation, matches upstream's advice). Two firms = two cells (or two hosts); a gatekeeper account connected in one cell is invisible to the other.
 
 ### 7.2 Hardened baseline (`00-baseline.json5`)
 
@@ -873,7 +873,7 @@ Derived from the upstream security page's hardened baseline (**VERIFIED**) plus 
 {
   gateway: {
     mode: "local", bind: "loopback",
-    auth: { mode: "token", token: "${CLAWOS_GATEWAY_TOKEN}" },   // ${VAR} substitution (VERIFIED)
+    auth: { mode: "token", token: "${GKOS_GATEWAY_TOKEN}" },   // ${VAR} substitution (VERIFIED)
     reload: { mode: "hybrid" },
   },
   session: { dmScope: "per-channel-peer" },
@@ -885,13 +885,13 @@ Derived from the upstream security page's hardened baseline (**VERIFIED**) plus 
     elevated: { enabled: false },
   },
   update: { channel: "stable", auto: { enabled: false } },
-  plugins: { deny: [] },    // populated by clawos install with everything not in the allowlist
+  plugins: { deny: [] },    // populated by gkos install with everything not in the allowlist
   hooks: { internal: { enabled: true } },
 }
 ```
 
 Blueprints never widen a cell's global policy. The baseline above remains unchanged.
-`clawos cell create <name> --port <n> --policy messaging|runtime` selects a cell
+`gkos cell create <name> --port <n> --policy messaging|runtime` selects a cell
 policy at creation; messaging is the default and keeps today's fragment set.
 A runtime cell additionally copies `05-policy-runtime.json5` and omits
 `20-sandbox.json5`: the one runtime fragment replaces global runtime/fs denials
@@ -899,7 +899,7 @@ with an explicit `tools.allow` for fs, exec, the kernel and session status, keep
 browser/automation/process/code_execution denied, sets exec host `sandbox` and
 mode `allowlist`, and requires `agents.defaults.sandbox.mode: "all"`. The mode is
 the least non-deny mode supported by sandboxed exec on the pin; no host exec is
-authorized. `clawos config apply` rejects a runtime fragment missing the all-turn
+authorized. `gkos config apply` rejects a runtime fragment missing the all-turn
 sandbox, including when a later fragment weakens it.
 
 Blueprint schema `policy` is runtime for coder and messaging for assistant, ops,
@@ -913,11 +913,11 @@ HTTP is planned after this beta, not an expected provisioned driver. Upstream
 
 ### 7.3 Sandboxing
 
-`20-sandbox.json5` sets `agents.defaults.sandbox: { mode: "non-main", scope: "agent", backend: "docker", workspaceAccess: "ro" }` with `network: "none"` (upstream default). Gatekeepers run in the Gateway process (native plugins are not sandboxed — **VERIFIED**), which is correct: they are the trusted drivers, and the sandbox is for the untrusted `exec`/file tools. `gatekeeper-fs` is how a sandboxed agent gets *scoped* host filesystem access without `group:fs`.
+`20-sandbox.json5` sets `agents.defaults.sandbox: { mode: "non-main", scope: "agent", backend: "docker", workspaceAccess: "ro" }` with `network: "none"` (upstream default). Gatekeepers run in the Gateway process (native plugins are not sandboxed — **VERIFIED**), which is correct: they are the trusted drivers, and the sandbox is for the untrusted `exec`/file tools. `gkos-gatekeeper-fs` is how a sandboxed agent gets *scoped* host filesystem access without `group:fs`.
 
 ### 7.4 Secrets
 
-OAuth client secrets and API keys enter via OpenClaw SecretRefs (`{source: "env"|"file"|"exec"}`, **VERIFIED**) referenced from `plugins.entries.gatekeeper-*.config`, never as literals in fragments. Per-operator tokens obtained by OAuth are stored in `os/gatekeepers/<vendor>/accounts/<operatorId>.json`, encrypted with a cell key at `os/cell.key` (mode `600`, generated at install; AES-256-GCM via `node:crypto`). The kernel never reads token files — only the owning gatekeeper does, through the kit. OAuth redirect URIs are `${gateway.publicOrigin}/os/gatekeeper/<vendor>/oauth/callback`; state parameters embed a nonce bound to the operator and expire in 10 minutes (two-stage nonce from cloudflare-os `SKELETON.md`). Because the baseline binds to loopback, OAuth callbacks need either `openclaw gateway` exposed via Tailscale (`gateway.bind: "tailnet"`, upstream-supported) or the operator completing the flow on the host's browser; `clawos gatekeeper connect` explains which applies.
+OAuth client secrets and API keys enter via OpenClaw SecretRefs (`{source: "env"|"file"|"exec"}`, **VERIFIED**) referenced from `plugins.entries.gatekeeper-*.config`, never as literals in fragments. Per-operator tokens obtained by OAuth are stored in `os/gatekeepers/<vendor>/accounts/<operatorId>.json`, encrypted with a cell key at `os/cell.key` (mode `600`, generated at install; AES-256-GCM via `node:crypto`). The kernel never reads token files — only the owning gatekeeper does, through the kit. OAuth redirect URIs are `${gateway.publicOrigin}/os/gatekeeper/<vendor>/oauth/callback`; state parameters embed a nonce bound to the operator and expire in 10 minutes (two-stage nonce from cloudflare-os `SKELETON.md`). Because the baseline binds to loopback, OAuth callbacks need either `openclaw gateway` exposed via Tailscale (`gateway.bind: "tailnet"`, upstream-supported) or the operator completing the flow on the host's browser; `gkos gatekeeper connect` explains which applies.
 
 ### 7.5 Supply chain
 
@@ -930,7 +930,7 @@ Live fixture results: block denied installation, `{}` denied installation,
 allow permitted installation; allow was evaluated twice. Only input key names,
 version, target type and fixture mode were retained. See `plans/spike-S1.md`.
 
-`security.installPolicy` (**VERIFIED** primary boundary: a trusted local command after staging, covering plugins and skills and failing closed when unavailable) is generated in `15-runtime.json` with `enabled:true` and a protected standalone policy script invoked through an absolute Node executable. It evaluates `plugins.entries.clawos-kernel.config.install`; `before_install` re-checks the same rules. `plugins.allow` positively selects enabled first-party plugins; explicit `plugins.deny` entries remain authoritative. The source installer deploys bundled first-party artifacts to cell-local `plugins.load.paths`; it does not fetch registry releases; the five beta packages are now also available on npm. Third-party CLI installation still uses upstream's policy/provenance checks (`--force` never bypasses the policy). `openclaw security audit --deep` runs after source installation, and missing/invalid verdicts or critical findings fail installation.
+`security.installPolicy` (**VERIFIED** primary boundary: a trusted local command after staging, covering plugins and skills and failing closed when unavailable) is generated in `15-runtime.json` with `enabled:true` and a protected standalone policy script invoked through an absolute Node executable. It evaluates `plugins.entries.gkos-kernel.config.install`; `before_install` re-checks the same rules. `plugins.allow` positively selects enabled first-party plugins; explicit `plugins.deny` entries remain authoritative. The source installer deploys bundled first-party artifacts to cell-local `plugins.load.paths`; it does not fetch registry releases; the five beta packages are now also available on npm. Third-party CLI installation still uses upstream's policy/provenance checks (`--force` never bypasses the policy). `openclaw security audit --deep` runs after source installation, and missing/invalid verdicts or critical findings fail installation.
 
 ---
 
@@ -938,33 +938,33 @@ version, target type and fixture mode were retained. See `plans/spike-S1.md`.
 
 ### Two-repository ownership
 
-Two public repos under `clawkeeper`, plus `.github` for the org profile.
+Two public repos under `gatekeeper-os`, plus `.github` for the org profile.
 
-- **`clawkeeper/openclaw-os`** (core, kernel review bar): everything in §8 as written, including the four **reference drivers** `gatekeeper-fs`, `gatekeeper-github`, `gatekeeper-mcp`, `gatekeeper-http` in `packages/`. Reference drivers never move out; they need atomic kernel+driver changes, the VM harness and the conformance runner.
-- **`clawkeeper/gatekeepers`** (community, normal review bar): one folder per vendor at the repo root, built against the **published** `@clawkeepers/gatekeeper-kit` and `@clawkeepers/shared`. It exists so contributors don't need the core repo's bar or its VM harness. It has two tiers of readiness:
+- **`gatekeeper-os/gatekeeper-os`** (core, kernel review bar): everything in §8 as written, including the four **reference drivers** `gkos-gatekeeper-fs`, `gkos-gatekeeper-github`, `gkos-gatekeeper-mcp`, `gatekeeper-http` in `packages/`. Reference drivers never move out; they need atomic kernel+driver changes, the VM harness and the conformance runner.
+- **`gatekeeper-os/gatekeepers`** (community, normal review bar): one folder per vendor at the repo root, built against the **published** `@gatekeeper-os/gatekeeper-kit` and `@gatekeeper-os/shared`. It exists so contributors don't need the core repo's bar or its VM harness. It has two tiers of readiness:
   - **Tier 0 — hub (before any package is published; do now, docs only):** README states that the four reference drivers live in core and that community drivers land here once the kit is on npm; `template/` holds the skeleton as real files (`openclaw.plugin.json`, `package.json`, `deploy-inputs.json`, `README.md`, `src/{index,vendor,account,tools,resources,simulate,api}.ts` stubs that type-check against the kit); CONTRIBUTING and the five `gatekeeper-wanted` issues carry a one-line "tool-surface PRs welcome now; builds here start once the kit is published" note; `.agents/skills/write-gatekeeper` matches core's copy (core is the source of truth; a CI check diffs them).
-  - **Tier 1 — buildable (after Phase 9 publishes):** pnpm workspace with each vendor folder a package depending on published `@clawkeepers/*` versions (no `workspace:` links to core); `catalog.json` at the root listing each driver's npm spec, required secrets and status (`draft`/`alpha`/`stable`) — the same shape as core's `config/gatekeepers.json` so `clawos gatekeeper add <vendor>` can read either; CI on hosted runners: install pinned upstream + published kernel/kit, build every driver, run its kit-harness tests, run `defineGatekeeper()` rule checks and the secret grep, then the hosted compatibility smoke (real Gateway, no VM) from core's `scripts/ci/live-smoke.ts` pattern. VM acceptance stays in core; a community driver reaching `stable` needs one VM run recorded in core's evidence tree.
+  - **Tier 1 — buildable (after Phase 9 publishes):** pnpm workspace with each vendor folder a package depending on published `@gatekeeper-os/*` versions (no `workspace:` links to core); `catalog.json` at the root listing each driver's npm spec, required secrets and status (`draft`/`alpha`/`stable`) — the same shape as core's `config/gatekeepers.json` so `gkos gatekeeper add <vendor>` can read either; CI on hosted runners: install pinned upstream + published kernel/kit, build every driver, run its kit-harness tests, run `defineGatekeeper()` rule checks and the secret grep, then the hosted compatibility smoke (real Gateway, no VM) from core's `scripts/ci/live-smoke.ts` pattern. VM acceptance stays in core; a community driver reaching `stable` needs one VM run recorded in core's evidence tree.
 - **`.github`**: profile README, SECURITY, CONTRIBUTING, CoC, templates (seeded).
 
 
 **Current execution boundary:** “public” above describes the target layout. Both
 repositories remain private; no visibility change is authorized by this addendum
 execution. Reference-driver location is not a claim of completed acceptance.
-The npm organization `@clawkeepers` exists and Matt owns it.
+The npm organization `@gatekeeper-os` exists and Matt owns it.
 
 The core workspace remains:
 
 ```
-openclaw-os/
+gatekeeper-os/
 ├── AGENTS.md                      # agent operating rules: kernel bar, invariants, review order
 ├── REVIEW.md                      # review priority: kernel bar → capability invariants → secret leakage → rest
 ├── README.md
-├── clawos.lock.json               # dev pin (upstream version the suite is green on)
+├── gkos.lock.json               # dev pin (upstream version the suite is green on)
 ├── pnpm-workspace.yaml            # catalog: pinned shared deps (typebox, openclaw peer range)
 ├── package.json  tsconfig.json  vitest.config.ts  .github/workflows/{ci,conformance-matrix}.yml
 ├── .agents/skills/
 │   ├── write-gatekeeper/SKILL.md  # §4.6 procedure + SKELETON.md pointer
-│   ├── clawos-operator/SKILL.md   # install/update/rollback/troubleshooting runbook
+│   ├── gkos-operator/SKILL.md   # install/update/rollback/troubleshooting runbook
 │   └── write-blueprint/SKILL.md
 ├── docs/                          # architecture.md, gatekeepers.md, approvals.md, cells.md, updating.md, security.md
 ├── plans/                         # this document + future plan-as-artifact docs (cloudflare-os convention)
@@ -976,16 +976,16 @@ openclaw-os/
 │   ├── preflight.sh
 │   └── systemd/                   # unit templates (overrides only; base unit is upstream's)
 ├── packages/
-│   ├── clawos-shared/             # contracts (§4.3)
-│   ├── clawos-kernel/             # kernel plugin (§5)
+│   ├── gkos-shared/             # contracts (§4.3)
+│   ├── gkos-kernel/             # kernel plugin (§5)
 │   ├── gatekeeper-kit/            # defineGatekeeper(), OAuth nonce machine, overlay store, SKELETON.md
-│   ├── gatekeeper-github/         # reference driver
-│   ├── gatekeeper-fs/
-│   ├── gatekeeper-mcp/
+│   ├── gkos-gatekeeper-github/         # reference driver
+│   ├── gkos-gatekeeper-fs/
+│   ├── gkos-gatekeeper-mcp/
 │   ├── gatekeeper-http/
-│   ├── clawos-cli/                # `clawos` binary
-│   ├── clawos-blueprints/         # assistant, coder, ops, researcher
-│   └── clawos-conformance/        # suite run against a live Gateway
+│   ├── gkos-cli/                # `gkos` binary
+│   ├── gkos-blueprints/         # assistant, coder, ops, researcher
+│   └── gkos-conformance/        # suite run against a live Gateway
 └── scripts/                       # dev-gateway.ts (spins a throwaway cell), release.ts
 ```
 
@@ -993,13 +993,13 @@ openclaw-os/
 
 ### 8.1 `AGENTS.md` (contents, abbreviated)
 
-The kernel (`clawos-kernel`, `clawos-shared`) is held to a higher bar: reviewers read every line; prefer reusing an upstream mechanism over adding a parallel one; every exported member is doc-commented; never `as unknown as` across an RPC boundary. Capability invariants: every gatekeeper reach goes through `resolveGrant`; a gatekeeper never registers tools itself; no ambience without operator config. Secrets: never log secrets, prompts, headers, tokens, or bodies. Upstream: never import from `openclaw/*` other than the documented `openclaw/plugin-sdk/*` subpaths; never read upstream's SQLite; never write under the upstream install root.
+The kernel (`gkos-kernel`, `gkos-shared`) is held to a higher bar: reviewers read every line; prefer reusing an upstream mechanism over adding a parallel one; every exported member is doc-commented; never `as unknown as` across an RPC boundary. Capability invariants: every gatekeeper reach goes through `resolveGrant`; a gatekeeper never registers tools itself; no ambience without operator config. Secrets: never log secrets, prompts, headers, tokens, or bodies. Upstream: never import from `openclaw/*` other than the documented `openclaw/plugin-sdk/*` subpaths; never read upstream's SQLite; never write under the upstream install root.
 
 ### 8.2 `REVIEW.md`
 
 Review priority, highest first: the kernel bar; capability-security invariants (especially any new path that resolves a grant or registers a `gk_*` tool); secret leakage through logs, tool results, or error strings; upstream-coupling creep (new SDK subpaths, new config keys — each must be added to §2.2's table with a VERIFIED source); then everything else.
 
-### 8.3 Conformance suite (`packages/clawos-conformance`)
+### 8.3 Conformance suite (`packages/gkos-conformance`)
 
 Each test starts (or attaches to) a Gateway and exercises one dependency:
 
@@ -1013,7 +1013,7 @@ Each test starts (or attaches to) a Gateway and exercises one dependency:
 | `deferred-approval` | Action is queued, simulated read reflects it, `os.approvals.apply` performs it |
 | `rpc-methods` | Every `os.*` method answers over WebSocket with schema-valid payloads |
 | `cli-mounted` | `openclaw os status --json` works |
-| `config-reconcile` | `clawos config apply` is idempotent (second run = no diff) and doctor lint is clean |
+| `config-reconcile` | `gkos config apply` is idempotent (second run = no diff) and doctor lint is clean |
 | `health` | `/healthz`, `/startupz`, `/readyz` respond |
 | `install-gate` | Primary install policy blocks a real non-allowlisted CLI install; explicit operator allow succeeds and unavailable policy fails closed. Secondary Gateway hook evidence is separate. |
 | `fs-gatekeeper` | Scoped directory grant: read inside allowed, read outside blocked |
@@ -1035,11 +1035,11 @@ Each phase lists deliverables, steps, and acceptance criteria. Do not start a ph
 
 ### Phase 0 — Bootstrap, spikes, and conventions (1–2 days)
 
-**Deliverables:** repo skeleton (§8), `AGENTS.md`, `REVIEW.md`, `clawos.lock.json`, CI workflow that installs `openclaw@<pin>` and runs `openclaw --version`, spike report `plans/spike-S1.md`.
+**Deliverables:** repo skeleton (§8), `AGENTS.md`, `REVIEW.md`, `gkos.lock.json`, CI workflow that installs `openclaw@<pin>` and runs `openclaw --version`, spike report `plans/spike-S1.md`.
 
 **Steps.**
-1. Start from the repo skeleton in the agent kit (`repo-skeleton/openclaw-os/`): it already contains the monorepo layout of §8, `clawos.lock.json` pinned to `2026.9.2`, the pnpm catalog, contracts, the kernel/kit/gatekeeper stubs (which type-check against the real `openclaw@2026.9.2` SDK — `pnpm install` pulls it as a peer), VM scripts, per-phase test scripts, CI workflows, and skills. `git init`, commit it as `chore: import skeleton`, then run `pnpm install && pnpm build && pnpm test` (11 unit tests pass, 12 conformance tests are `todo`).
-2. `scripts/dev-gateway.ts`: spins a throwaway cell (`OPENCLAW_PROFILE=clawos-dev`, port 19100, `gateway.auth.mode: "token"`, token from env) with `openclaw gateway run` (**VERIFIED** foreground form), and tears it down.
+1. Start from the repo skeleton in the agent kit (`repo-skeleton/gatekeeper-os/`): it already contains the monorepo layout of §8, `gkos.lock.json` pinned to `2026.9.2`, the pnpm catalog, contracts, the kernel/kit/gatekeeper stubs (which type-check against the real `openclaw@2026.9.2` SDK — `pnpm install` pulls it as a peer), VM scripts, per-phase test scripts, CI workflows, and skills. `git init`, commit it as `chore: import skeleton`, then run `pnpm install && pnpm build && pnpm test` (11 unit tests pass, 12 conformance tests are `todo`).
+2. `scripts/dev-gateway.ts`: spins a throwaway cell (`OPENCLAW_PROFILE=gkos-dev`, port 19100, `gateway.auth.mode: "token"`, token from env) with `openclaw gateway run` (**VERIFIED** foreground form), and tears it down.
 3. **Spike S-1** — the repo skeleton ships `scripts/spike-probe` (a throwaway plugin) and `plans/spike-S1.md` (the open questions, letters c–m). Run the probe in the VM, answer every question with the command and output, and update this document accordingly. Items already settled from the published package are listed at the top of `plans/spike-S1.md` and must not be re-spiked. Record answers with the exact commands in `plans/spike-S1.md` and update §2.2/§5.1 in this document (`docs/implementation-plan.md` in the agent kit) — change each resolved marker from UNVERIFIED to VERIFIED with the evidence.
 4. Write the three `.agents/skills/*/SKILL.md` files (initial versions).
 
@@ -1047,22 +1047,22 @@ Each phase lists deliverables, steps, and acceptance criteria. Do not start a ph
 
 ### Phase 1 — Host layer and installer (2–3 days)
 
-**Deliverables:** `installer/install.sh`, `installer/preflight.sh`, `packages/clawos-cli` with `install`, `cell`, `status`, `doctor`, `config apply`, `backup`; `config/config.d/*` templates.
+**Deliverables:** `installer/install.sh`, `installer/preflight.sh`, `packages/gkos-cli` with `install`, `cell`, `status`, `doctor`, `config apply`, `backup`; `config/config.d/*` templates.
 
 **Steps.**
 1. `preflight.sh`: detect OS (Linux w/ systemd, macOS, WSL2), Node ≥ 22.22.3 / 24.15 / 25.9 (install via upstream's installer if missing — `curl -fsSL https://openclaw.ai/install.sh | bash -s -- --no-onboard` provisions Node when needed, **VERIFIED**), Docker or Podman (optional; warn), free port, `umask`.
-2. `clawos install` (§10 has the operator-facing procedure): install upstream at the pin with `npm install -g openclaw@<pin> --allow-scripts=openclaw`; create `<stateDir>/os/` tree with `700`; generate `cell.key` and gateway token; copy fragment templates; write `openclaw.json` if absent (minimal, `600`); run `clawos config apply`; `openclaw gateway install` and enable the user unit; add a systemd drop-in `~/.config/systemd/user/openclaw-gateway.service.d/clawos.conf` with `Environment=OPENCLAW_NO_AUTO_UPDATE=1` and `Environment=CLAWOS_CELL=default` (a drop-in never modifies upstream's unit file — INVARIANT 1 at the host level). On a SOPS-managed host, `--environment-file /run/secrets/<cell-env>` layers that host-owned file into the unit by reference and persists only its path in the cell registry; secret contents are never copied into cell state. Start; wait for `/readyz`; `openclaw doctor --lint --json`; `openclaw security audit`; write the lockfile.
-3. `clawos cell create <name> --port N [--user U]`: same as above under `OPENCLAW_PROFILE=<name>`; unit `openclaw-gateway-<name>.service`; register in `~/.clawos/cells.json` (host-level registry — the only OS file outside a state dir).
-4. `clawos config apply` per §6.2; `clawos backup create|restore`.
-5. `clawos doctor`: runs upstream doctor lint, checks perms (`600`/`700`), lockfile vs. installed version, unit status, health endpoints, disk space, and prints fix hints.
+2. `gkos install` (§10 has the operator-facing procedure): install upstream at the pin with `npm install -g openclaw@<pin> --allow-scripts=openclaw`; create `<stateDir>/os/` tree with `700`; generate `cell.key` and gateway token; copy fragment templates; write `openclaw.json` if absent (minimal, `600`); run `gkos config apply`; `openclaw gateway install` and enable the user unit; add a systemd drop-in `~/.config/systemd/user/openclaw-gateway.service.d/gkos.conf` with `Environment=OPENCLAW_NO_AUTO_UPDATE=1` and `Environment=GKOS_CELL=default` (a drop-in never modifies upstream's unit file — INVARIANT 1 at the host level). On a SOPS-managed host, `--environment-file /run/secrets/<cell-env>` layers that host-owned file into the unit by reference and persists only its path in the cell registry; secret contents are never copied into cell state. Start; wait for `/readyz`; `openclaw doctor --lint --json`; `openclaw security audit`; write the lockfile.
+3. `gkos cell create <name> --port N [--user U]`: same as above under `OPENCLAW_PROFILE=<name>`; unit `openclaw-gateway-<name>.service`; register in `~/.gkos/cells.json` (host-level registry — the only OS file outside a state dir).
+4. `gkos config apply` per §6.2; `gkos backup create|restore`.
+5. `gkos doctor`: runs upstream doctor lint, checks perms (`600`/`700`), lockfile vs. installed version, unit status, health endpoints, disk space, and prints fix hints.
 
 **macOS implementation note (2026-09-07):** launchd-aware install/status/doctor/cell paths are prepared; upstream owns its LaunchAgent, while OS environment is loaded from the cell `.env`. Backup stop/start uses upstream CLI on both platforms. Reserved macOS profile labels are rejected. These paths have unit/static coverage only until a real macOS acceptance run is recorded.
 
-**Acceptance.** On a clean Ubuntu 24.04 VM and a clean macOS machine: source install (the `curl … | bash` form is not available yet — see the §10.2 correction) → Gateway running, `clawos status` healthy, `openclaw doctor --lint` with no error-severity findings (corrected from "exit 0"; see `docs/phase-checklist.md` for the two deliberately accepted warnings), `openclaw security audit` no critical findings, `clawos config apply` idempotent, a second cell can be created and both run concurrently, `clawos backup create` + `restore` round-trips.
+**Acceptance.** On a clean Ubuntu 24.04 VM and a clean macOS machine: source install (the `curl … | bash` form is not available yet — see the §10.2 correction) → Gateway running, `gkos status` healthy, `openclaw doctor --lint` with no error-severity findings (corrected from "exit 0"; see `docs/phase-checklist.md` for the two deliberately accepted warnings), `openclaw security audit` no critical findings, `gkos config apply` idempotent, a second cell can be created and both run concurrently, `gkos backup create` + `restore` round-trips.
 
 ### Phase 2 — Contracts and kit (2–3 days)
 
-**Deliverables:** `packages/clawos-shared` (§4.3, fully doc-commented, TypeBox schemas for every wire type), `packages/gatekeeper-kit` (`defineGatekeeper()`, `OAuthNonceMachine`, `TokenStore` (encrypted), `OverlayStore` (overlay-at-read simulation), `CacheMutationStore` (mutate-the-cache alternative), `ActionSequencer`, `sanitizeError()`, test harness), `SKELETON.md`.
+**Deliverables:** `packages/gkos-shared` (§4.3, fully doc-commented, TypeBox schemas for every wire type), `packages/gatekeeper-kit` (`defineGatekeeper()`, `OAuthNonceMachine`, `TokenStore` (encrypted), `OverlayStore` (overlay-at-read simulation), `CacheMutationStore` (mutate-the-cache alternative), `ActionSequencer`, `sanitizeError()`, test harness), `SKELETON.md`.
 
 **Acceptance.** Unit tests: nonce replay is rejected; expired nonce rejected; token file round-trips encrypted; overlay reflects pending actions and forgets rejected ones; `defineGatekeeper` refuses a tool whose description contains "approv", "oauth", "cache", "queue" (case-insensitive) or whose `parameters` lack `grant`; refuses an action tool without `describe()`.
 
@@ -1103,7 +1103,7 @@ registration in `cli-metadata`/`discovery`/`full` modes (pinned
 the live Gateway, not an unstarted local kernel store. Machine-readable output
 must use stdout directly, not console logging that upstream redirects to stderr
 in JSON mode. Explicit mounted-command selectors must agree on the registered
-canonical cell. `clawos` now supplies paired
+canonical cell. `gkos` now supplies paired
 operator RPC commands for grants, bounded audit tail, status, gatekeeper listing,
 and approval decisions. Audit time filtering and approval driver outcomes remain
 separate acceptance work. The live checkpoint installs the actual packed CLI into
@@ -1145,11 +1145,11 @@ remain pending, can be read and rejected, and cannot be applied or auto-approved
 write-conformance criterion is waived, and no production root is granted. Kernel
 integration and the ordered live acceptance steps below remain outstanding.
 
-**Deliverables:** `packages/clawos-kernel` per §5, with store, registry, policy pipeline, approval queue, drainer, audit, `os.*` RPC, `openclaw os` CLI, OAuth router; `gatekeeper-fs` as the first driver (no OAuth, strategy D, trivially testable); conformance suite tests `plugin-loads`, `hooks-fire`, `tool-narrowing`, `gate-blocks`, `rpc-methods`, `cli-mounted`, `health`, `fs-gatekeeper`, `install-gate`.
+**Deliverables:** `packages/gkos-kernel` per §5, with store, registry, policy pipeline, approval queue, drainer, audit, `os.*` RPC, `openclaw os` CLI, OAuth router; `gkos-gatekeeper-fs` as the first driver (no OAuth, strategy D, trivially testable); conformance suite tests `plugin-loads`, `hooks-fire`, `tool-narrowing`, `gate-blocks`, `rpc-methods`, `cli-mounted`, `health`, `fs-gatekeeper`, `install-gate`.
 
-**Steps** (in this order, each with tests): store + migrations → registry (from catalog + `gateway_start`) → `resolveGrant` → tool registration on behalf of gatekeepers → `before_prompt_build` narrowing + trusted policy → `before_tool_call` gate with dry-run → `os_request_access` / `os_list_grants` → URL introduction in authenticated `reply_dispatch` → audit → RPC → CLI → authenticated `reply_dispatch` chat commands (`before_agent_reply` denial fallback) → `message_sending` egress → `before_install` gate → `gatekeeper-fs`.
+**Steps** (in this order, each with tests): store + migrations → registry (from catalog + `gateway_start`) → `resolveGrant` → tool registration on behalf of gatekeepers → `before_prompt_build` narrowing + trusted policy → `before_tool_call` gate with dry-run → `os_request_access` / `os_list_grants` → URL introduction in authenticated `reply_dispatch` → audit → RPC → CLI → authenticated `reply_dispatch` chat commands (`before_agent_reply` denial fallback) → `message_sending` egress → `before_install` gate → `gkos-gatekeeper-fs`.
 
-**Acceptance.** Conformance tests above pass against the pinned upstream. Manual: in a Telegram DM to a dev cell, the operator pastes a path URL `file:///home/matt/projects/foo` → agent lists files via `gk_fs_dir_list`; a second, non-operator sender cannot introduce; `clawos grant revoke` makes the tool disappear next turn; every step appears in `clawos audit tail`.
+**Acceptance.** Conformance tests above pass against the pinned upstream. Manual: in a Telegram DM to a dev cell, the operator pastes a path URL `file:///home/matt/projects/foo` → agent lists files via `gk_fs_dir_list`; a second, non-operator sender cannot introduce; `gkos grant revoke` makes the tool disappear next turn; every step appears in `gkos audit tail`.
 
 **2026-09-09 fidelity closure:** the original Telegram manual scenario remains
 the specification, but Matt explicitly deferred its execution; it is not passed
@@ -1172,13 +1172,13 @@ This implements §4.7's original private-only beta boundary, not v1.1 sharing.
 
 ### Phase 4 — Reference gatekeeper: GitHub (4–6 days)
 
-**Deliverables:** `packages/gatekeeper-github` following §4.6 (with the two STOP reviews), resources `repo`, `issue`, `pull` (URL patterns exactly as cloudflare-os: `https://github.com/:owner/:repo`, `…/issues/:number`, `…/pull/:number`), tools (observations: `gk_github_repo_get`, `gk_github_repo_list_issues`, `gk_github_repo_list_pulls`, `gk_github_repo_read_file`, `gk_github_issue_get`, `gk_github_pull_get`, `gk_github_pull_diff`; actions: `gk_github_issue_create`, `gk_github_issue_comment`, `gk_github_pull_comment`, `gk_github_pull_review`), OAuth device/web flow, observer strategy B (`hasRepoAccess` distinguishing 403/404 → false from transient errors → throw), simulation for all four actions (overlay-at-read), `revertAction` for comments (delete) and issue create (close), `deploy-inputs.json`.
+**Deliverables:** `packages/gkos-gatekeeper-github` following §4.6 (with the two STOP reviews), resources `repo`, `issue`, `pull` (URL patterns exactly as cloudflare-os: `https://github.com/:owner/:repo`, `…/issues/:number`, `…/pull/:number`), tools (observations: `gk_github_repo_get`, `gk_github_repo_list_issues`, `gk_github_repo_list_pulls`, `gk_github_repo_read_file`, `gk_github_issue_get`, `gk_github_pull_get`, `gk_github_pull_diff`; actions: `gk_github_issue_create`, `gk_github_issue_comment`, `gk_github_pull_comment`, `gk_github_pull_review`), OAuth device/web flow, observer strategy B (`hasRepoAccess` distinguishing 403/404 → false from transient errors → throw), simulation for all four actions (overlay-at-read), `revertAction` for comments (delete) and issue create (close), `deploy-inputs.json`.
 
-**Acceptance.** Conformance `deferred-approval` and `require-approval-roundtrip` pass using GitHub; manual: agent asked to "comment on issue 12 and then summarize the thread" comments (simulated), summarizes *including its own pending comment*, operator later runs `clawos approvals apply all` → comment appears on GitHub; `reject` removes it from the simulated thread; no token or API body ever appears in `os/audit` or logs (grep test in CI).
+**Acceptance.** Conformance `deferred-approval` and `require-approval-roundtrip` pass using GitHub; manual: agent asked to "comment on issue 12 and then summarize the thread" comments (simulated), summarizes *including its own pending comment*, operator later runs `gkos approvals apply all` → comment appears on GitHub; `reject` removes it from the simulated thread; no token or API body ever appears in `os/audit` or logs (grep test in CI).
 
 ### Phase 5 — Approvals UX and auto-approval (2–3 days)
 
-**Deliverables:** `clawos approvals` TUI table (list/apply/reject/revert with previews), chat commands `/approvals`, `/approve`, `/reject`, operator notifications (pending action digest after `agent_end`, batched, sent through `openclaw message send --channel <c> --target <t> --message "<digest>"` — **VERIFIED** flags — to the cell's operator channel, or in-process via the kernel's own channel access if S-1 finds a plugin-side send API), auto-approval rules in `plugins.entries.clawos-kernel.config.autoApprove[]` keyed by `actionKind.tag`, the drainer.
+**Deliverables:** `gkos approvals` TUI table (list/apply/reject/revert with previews), chat commands `/approvals`, `/approve`, `/reject`, operator notifications (pending action digest after `agent_end`, batched, sent through `openclaw message send --channel <c> --target <t> --message "<digest>"` — **VERIFIED** flags — to the cell's operator channel, or in-process via the kernel's own channel access if S-1 finds a plugin-side send API), auto-approval rules in `plugins.entries.gkos-kernel.config.autoApprove[]` keyed by `actionKind.tag`, the drainer.
 
 **Acceptance.** An action with tag `github.issue.comment` auto-applies within 30 s when the rule exists and the gatekeeper marked it `autoApprovable`; not when either is missing; drainer stops at the first non-eligible action and resumes after it is decided; digest arrives once per run, not once per action.
 
@@ -1197,15 +1197,15 @@ mode remains blocked until the Phase 4 secrecy gate and real-channel receipt pas
 
 ### Phase 6 — Blueprints and shell (3–4 days)
 
-**Deliverables:** `packages/clawos-blueprints` with `assistant` (messaging-only, no fs/exec), `coder` (sandboxed fs+exec, `gatekeeper-fs` + `gatekeeper-github` expected), `ops` (cron + notifications), `researcher` (web tools + `gatekeeper-http`); `blueprint.json` schema (`name`, `version`, `workspaceFiles`, `skills`, `toolPolicy`, `sandbox`, `expectedGatekeepers`, `bindingsHint`); `clawos blueprint list|apply|diff|lint`; `write-blueprint` skill.
+**Deliverables:** `packages/gkos-blueprints` with `assistant` (messaging-only, no fs/exec), `coder` (sandboxed fs+exec, `gkos-gatekeeper-fs` + `gkos-gatekeeper-github` expected), `ops` (cron + notifications), `researcher` (web tools + `gatekeeper-http`); `blueprint.json` schema (`name`, `version`, `workspaceFiles`, `skills`, `toolPolicy`, `sandbox`, `expectedGatekeepers`, `bindingsHint`); `gkos blueprint list|apply|diff|lint`; `write-blueprint` skill.
 
-`clawos blueprint apply coder --agent dev` does: `openclaw agents add dev --workspace ~/.openclaw/agents/dev/workspace [--bind <channel:account>] --non-interactive` (**VERIFIED** flags; non-interactive mode requires `--workspace`) → copies workspace files into the agent's workspace → writes `os/config.d/30-agents.json5` entry for `agents.entries.dev` (tools, sandbox, skills) → `clawos config apply` → records the applied snapshot in `os/blueprints/dev/`. `diff` shows drift between the snapshot and the live workspace/config.
+`gkos blueprint apply coder --agent dev` does: `openclaw agents add dev --workspace ~/.openclaw/agents/dev/workspace [--bind <channel:account>] --non-interactive` (**VERIFIED** flags; non-interactive mode requires `--workspace`) → copies workspace files into the agent's workspace → writes `os/config.d/30-agents.json5` entry for `agents.entries.dev` (tools, sandbox, skills) → `gkos config apply` → records the applied snapshot in `os/blueprints/dev/`. `diff` shows drift between the snapshot and the live workspace/config.
 
 **Acceptance.** Applying each blueprint to a fresh cell yields a working agent; `blueprint lint` rejects a blueprint that grants `exec` without `sandbox.mode: "all"`; re-applying is idempotent.
 
 ### Authorized implementation order (2026-09-11 overnight)
 
-Matt explicitly requested implementation in this order: **Phase 7 → Phase 5 → Phase 6 → gatekeeper-mcp**.
+Matt explicitly requested implementation in this order: **Phase 7 → Phase 5 → Phase 6 → gkos-gatekeeper-mcp**.
 This changes scheduling only, not the acceptance dependencies, gatekeeper STOP points, secrecy rules,
 or the prohibition on upstream patches. Incomplete or failing full conformance still blocks activation
 in the operator CLI and blocks phase acceptance. The earlier numerical-order convention remains the
@@ -1213,13 +1213,13 @@ normal default outside this explicitly authorized work.
 
 ### Phase 7 — Update, rollback, and compatibility pipeline (3–4 days)
 
-**Deliverables:** `clawos update`, `clawos rollback`, `clawos update --check` cron, staging-prefix mechanism, conformance verdict format, `.github/workflows/conformance-matrix.yml` (nightly against `latest`, `beta`, `extended-stable`), `docs/updating.md`, `clawos-operator` skill's `references/upgrade-and-rollback.md`.
+**Deliverables:** `gkos update`, `gkos rollback`, `gkos update --check` cron, staging-prefix mechanism, conformance verdict format, `.github/workflows/conformance-matrix.yml` (nightly against `latest`, `beta`, `extended-stable`), `docs/updating.md`, `gkos-operator` skill's `references/upgrade-and-rollback.md`.
 
-**Acceptance.** Simulated upgrade from `2026.9.2` to the current `latest` on a dev cell completes with the pipeline's nine steps logged; injecting a deliberately incompatible kernel build (compat range excluding the target) stops at step 2; injecting a failing conformance test stops at step 5 with nothing changed; killing the process during step 7 and running `clawos rollback` restores a healthy `2026.9.2` cell with all grants intact; the nightly matrix runs and reports per-version verdicts.
+**Acceptance.** Simulated upgrade from `2026.9.2` to the current `latest` on a dev cell completes with the pipeline's nine steps logged; injecting a deliberately incompatible kernel build (compat range excluding the target) stops at step 2; injecting a failing conformance test stops at step 5 with nothing changed; killing the process during step 7 and running `gkos rollback` restores a healthy `2026.9.2` cell with all grants intact; the nightly matrix runs and reports per-version verdicts.
 
 ### Phase 8 — More drivers and observers (v1.1, 2–3 weeks)
 
-`gatekeeper-mcp` (wrap any MCP server: each MCP tool becomes an observation or action per a per-server manifest; resources are "server" and optional per-tool grants; this alone gives the OS access to the whole MCP ecosystem with approvals and audit), `gatekeeper-http` (OpenAPI-driven generic driver, GET = observation, others = actions with `awaitDecision` by default), `gatekeeper-google` (Gmail A, Docs B, Drive B, Calendar B), `gatekeeper-slack`, `gatekeeper-notion`, `gatekeeper-homeassistant`; observer strategies B/C/D live (§4.7) with group-chat detection; Control UI approvals panel via `registerControlUiDescriptor()`; code-mode `.d.ts` generation per grant.
+`gkos-gatekeeper-mcp` (wrap any MCP server: each MCP tool becomes an observation or action per a per-server manifest; resources are "server" and optional per-tool grants; this alone gives the OS access to the whole MCP ecosystem with approvals and audit), `gatekeeper-http` (OpenAPI-driven generic driver, GET = observation, others = actions with `awaitDecision` by default), `gatekeeper-google` (Gmail A, Docs B, Drive B, Calendar B), `gatekeeper-slack`, `gatekeeper-notion`, `gatekeeper-homeassistant`; observer strategies B/C/D live (§4.7) with group-chat detection; Control UI approvals panel via `registerControlUiDescriptor()`; code-mode `.d.ts` generation per grant.
 
 ### Phase 9 — Hardening and release (ten ordered deliverables)
 
@@ -1227,12 +1227,12 @@ Order matters: publish nothing until `main` carries the prompt-narrowing fix fro
 
 1. **Integrate** PRs #11, #12, #13 onto `main` with one combined regression (kernel edits overlap); rerun the Phase 3 kernel-live and conformance suites on the integrated head.
 2. **Hardening** (as in the plan): threat-model re-review against `REVIEW.md` after integration; fuzz `before_tool_call` param rewriting; secret-leak grep as a required CI gate; `openclaw security audit --deep` with no critical findings in each cell type and only the exact conditional warning codes documented in `docs/blueprints.md`; fix the missing ESLint 9 flat config so `pnpm lint` runs.
-3. **Package metadata**, per publishable package — `@clawkeepers/shared`, `@clawkeepers/gatekeeper-kit`, `@clawkeepers/kernel`, `@clawkeepers/gatekeeper-fs`, `@clawkeepers/cli` in the first release; `@clawkeepers/gatekeeper-github` and `@clawkeepers/gatekeeper-mcp` only after their acceptance: `private:false`, `publishConfig.access:"public"`, `files` limited to `dist/`, manifests, `LICENSE`, `NOTICE`, `README`; `exports`/`main`/`types` pointing at `dist`; `openclaw.extensions` paths valid inside the packed tarball; `peerDependencies.openclaw` byte-identical to the catalog range (`pnpm check:catalog`); `repository.url` = clawkeeper. `pnpm pack` every package; retain the manifest inspector and all ten packed-license checks. The authoring-metadata `plugins validate --entry` gate is withdrawn: ordinary `definePluginEntry` plugins do not expose that metadata. Instead, install each publishable plugin tarball with `openclaw plugins install <tarball> --force --accept-capabilities` in explicitly isolated state/config, start a loopback Gateway on a free port, and require `plugins list --json` enabled/loaded with no diagnostics plus an authenticated live kernel probe. The three non-plugin packages get real npm-installed import/bin smoke checks; a read-only local registry fixture resolves unpublished same-release dependencies without workspace links or publication. Run this packed-load check in CI.
-4. **Scope rename `@clawos` → `@clawkeepers`** in one commit across the workspace: package names, `catalog:` entries, every import, `openclaw.plugin.json` ids/contracts where the scope appears, `config/gatekeepers.json`, `install.allowSources` (`npm:@clawkeepers/*`, `clawhub:@clawkeepers/*`), installer, docs, org README. Plugin *ids* (`clawos-kernel`, `gatekeeper-fs`) and the `clawos` CLI binary do not change. Full build/test/catalog/secrets after the rename.
+3. **Package metadata**, per publishable package — `@gatekeeper-os/shared`, `@gatekeeper-os/gatekeeper-kit`, `@gatekeeper-os/kernel`, `@gatekeeper-os/gatekeeper-fs`, `@gatekeeper-os/cli` in the first release; `@gatekeeper-os/gatekeeper-github` and `@gatekeeper-os/gatekeeper-mcp` only after their acceptance: `private:false`, `publishConfig.access:"public"`, `files` limited to `dist/`, manifests, `LICENSE`, `NOTICE`, `README`; `exports`/`main`/`types` pointing at `dist`; `openclaw.extensions` paths valid inside the packed tarball; `peerDependencies.openclaw` byte-identical to the catalog range (`pnpm check:catalog`); `repository.url` = gatekeeper-os. `pnpm pack` every package; retain the manifest inspector and all ten packed-license checks. The authoring-metadata `plugins validate --entry` gate is withdrawn: ordinary `definePluginEntry` plugins do not expose that metadata. Instead, install each publishable plugin tarball with `openclaw plugins install <tarball> --force --accept-capabilities` in explicitly isolated state/config, start a loopback Gateway on a free port, and require `plugins list --json` enabled/loaded with no diagnostics plus an authenticated live kernel probe. The three non-plugin packages get real npm-installed import/bin smoke checks; a read-only local registry fixture resolves unpublished same-release dependencies without workspace links or publication. Run this packed-load check in CI.
+4. **Rename to GatekeeperOS and scope `@gatekeeper-os`** in one commit across the workspace: package names, `catalog:` entries, every import, `openclaw.plugin.json` ids/contracts where the scope appears, `config/gatekeepers.json`, `install.allowSources` (`npm:@gatekeeper-os/*`, `clawhub:@gatekeeper-os/*`), installer, docs, org README. Plugin ids use `gkos-*`, the standalone CLI is `gkos`, and owned environment variables use `GKOS_*`; `openclaw os`, `os.*` RPCs, `gk_*` tools and grant handles stay unchanged. Full build/test/catalog/secrets after the rename.
 5. **First publish** (Matt, once, from a clean checkout of the tagged commit): `npm login` with 2FA, then `pnpm -r publish --access public --tag beta` (pnpm rewrites `workspace:` and `catalog:` specs to concrete versions on publish). Version `0.1.0-beta.1`, git tag `v0.1.0-beta.1`. Dry-run first with `pnpm -r publish --dry-run`. The agent prepares everything up to this step and verifies the dry run; it never holds the npm credential.
-6. **Subsequent releases via CI with trusted publishing.** After the packages exist, configure each on npmjs.com with a trusted publisher pointing at `clawkeeper/openclaw-os` and a `release.yml` workflow; the workflow publishes with `--provenance` on `v*` tags using OIDC, no long-lived token. `scripts/release.ts` bumps versions, updates `clawos.lock.json` plugin versions, writes the changelog entry, and tags.
-7. **Installer and docs switch** from source install to `openclaw plugins install npm:@clawkeepers/kernel@<ver> --pin --accept-capabilities` (with `--force` until ClawHub listing, per the plan's §7.5 note); org README "Try it" section updated; `clawos install` uses the lockfile pin.
-8. **ClawHub**: `clawhub package publish` for kernel and reference drivers so `clawhub:@clawkeepers/*` installs work; `allowSources` lists both prefixes.
+6. **Subsequent releases via CI with trusted publishing.** After the packages exist, configure each on npmjs.com with a trusted publisher pointing at `gatekeeper-os/gatekeeper-os` and a `release.yml` workflow; the workflow publishes with `--provenance` on `v*` tags using OIDC, no long-lived token. `scripts/release.ts` bumps versions, updates `gkos.lock.json` plugin versions, writes the changelog entry, and tags.
+7. **Installer and docs switch** from source install to `openclaw plugins install npm:@gatekeeper-os/kernel@<ver> --pin --accept-capabilities` (with `--force` until ClawHub listing, per the plan's §7.5 note); org README "Try it" section updated; `gkos install` uses the lockfile pin.
+8. **ClawHub**: `clawhub package publish` for kernel and reference drivers so `clawhub:@gatekeeper-os/*` installs work; `allowSources` lists both prefixes.
 9. **Community repo Tier 1** (section A) lands immediately after step 6.
 10. **Release verification**: fresh VM, install from npm only (no repo clone), run the Phase 3 acceptance path; record in `plans/PROGRESS.md`; tag `phase-9`.
 
@@ -1255,57 +1255,58 @@ Linux with systemd (Ubuntu 22.04+/Debian 12+/Arch/Fedora 39+), macOS 13+, or Win
 
 ### 10.2 Fresh install (recommended path)
 
-**Registry update 2026-09-12.** The five first-release packages are published at
-`0.1.0-beta.1`. Install the CLI with `npm install --global @clawkeepers/cli@beta`,
-then use `clawos cell create evaluation --port 19100 --policy messaging` on a disposable host.
-`latest` currently resolves to this beta because no stable release exists. A clean
-prefix CLI install/version smoke passed; npm-only cell acceptance remains a separate
-VM gate. The source-install path below remains the Phase 1 evaluation route.
-The unauthenticated `curl … | bash` route is still unavailable while the source
-repository is private; registry availability does not make that URL public.
+**Rename update 2026-09-12.** The old-scope beta.1 was published; its `latest`
+resolves to a beta because no stable release exists. Renamed beta.2 under
+`@gatekeeper-os` is private preparation, not a registry release. After Matt
+publishes, install with `npm install --global @gatekeeper-os/cli@beta`, then use
+`gkos cell create evaluation --port 19100 --policy messaging` on a disposable host.
+Old clean-prefix CLI smoke does not establish renamed-package or cell acceptance.
+Beta.2 npm-only VM acceptance and the community dependency switch follow publication.
+The source-install path below remains the evaluated route. `curl … | bash`
+remains unavailable while the source repository is private.
 
 ```bash
 # 1. Source-install evaluation inside a disposable VM (repository access required)
-git clone https://github.com/clawkeeper/openclaw-os.git && cd openclaw-os && ./installer/install.sh
+git clone https://github.com/gatekeeper-os/gatekeeper-os.git && cd gatekeeper-os && ./installer/install.sh
 
 #    NOT YET AVAILABLE (private source repository):
-#    curl -fsSL https://raw.githubusercontent.com/clawkeeper/openclaw-os/main/installer/install.sh | bash
+#    curl -fsSL https://raw.githubusercontent.com/gatekeeper-os/gatekeeper-os/main/installer/install.sh | bash
 
 # The installer runs, in order:
 #   preflight.sh                                   → OS/Node/Docker/port checks
 #   npm install -g openclaw@2026.9.2 --allow-scripts=openclaw
-#   pnpm install --frozen-lockfile && build && npm pack → npm install -g <clawos-cli tarball>
-#   clawos install --cell default --yes            → see 10.3 for what it does
+#   pnpm install --frozen-lockfile && build && npm pack → npm install -g <gkos-cli tarball>
+#   gkos install --cell default --yes            → see 10.3 for what it does
 
 # 2. Onboard models/channels with upstream's wizard (unchanged upstream flow)
-openclaw onboard                 # choose provider, sign in; the daemon is already installed by clawos
+openclaw onboard                 # choose provider, sign in; the daemon is already installed by gkos
 openclaw channels login --channel telegram        # or whatsapp/slack/discord/…
 
 # 3. Register yourself as the cell operator (pairing + OS operator list)
 openclaw pairing list telegram && openclaw pairing approve telegram <CODE>
-clawos operator add --channel telegram --sender <your-sender-id>
+gkos operator add --channel telegram --sender <your-sender-id>
 
 # 4. Provision an agent from a blueprint and bind it
-clawos blueprint apply assistant --agent home
+gkos blueprint apply assistant --agent home
 openclaw agents list --bindings
 
 # 5. Add a gatekeeper and connect your account
-clawos gatekeeper add github     # installs @clawkeepers/gatekeeper-github, prompts for OAuth app id/secret
-clawos gatekeeper connect github # prints the OAuth URL; complete it in a browser
+gkos gatekeeper add github     # installs @gatekeeper-os/gatekeeper-github, prompts for OAuth app id/secret
+gkos gatekeeper connect github # prints the OAuth URL; complete it in a browser
 
 # 6. Introduce a resource and use it
-clawos grant add --agent home https://github.com/you/repo
+gkos grant add --agent home https://github.com/you/repo
 #   …or just paste that URL to the agent in chat.
-clawos status
+gkos status
 ```
 
-### 10.3 What `clawos install` does (non-interactive, idempotent)
+### 10.3 What `gkos install` does (non-interactive, idempotent)
 
 ```
 [1/12] preflight            OS, Node, Docker/Podman, port 18789 free, umask 077
 [2/12] upstream             npm install -g openclaw@<pin> --allow-scripts=openclaw ; openclaw --version == pin
 [3/12] state dir            mkdir -p ~/.openclaw/os/{config.d,audit,gatekeepers,blueprints,backups,logs} (700)
-[4/12] keys                 os/cell.key (600) ; CLAWOS_GATEWAY_TOKEN → ~/.openclaw/.env (600)
+[4/12] keys                 os/cell.key (600) ; GKOS_GATEWAY_TOKEN → ~/.openclaw/.env (600)
 [5/12] config               write minimal openclaw.json if absent (600) ; copy selected messaging/runtime fragment set → os/config.d/
 [6/12] plugins              Install the CLI's bundled first-party kernel/fs artifacts under
                             <stateDir>/os/plugins/<content-hash>/; generate gatekeepers.json
@@ -1314,53 +1315,53 @@ clawos status
                             are published; source installation authorizes these artifacts.
                             Defaults grant no directories and allow no third-party installs.
 [7/12] hooks                (none to install — internal hooks are plugin-declared by the kernel; enabled by config)
-[8/12] reconcile            clawos config apply  (patch → doctor --lint → fingerprint)
-[9/12] service              openclaw gateway install ; systemd drop-in with OPENCLAW_NO_AUTO_UPDATE=1, CLAWOS_CELL=default
+[8/12] reconcile            gkos config apply  (patch → doctor --lint → fingerprint)
+[9/12] service              openclaw gateway install ; systemd drop-in with OPENCLAW_NO_AUTO_UPDATE=1, GKOS_CELL=default
                             systemctl --user enable --now openclaw-gateway.service ; loginctl enable-linger (prompted)
 [10/12] verify              /startupz → /readyz (60 s) ; openclaw plugins list --json ; openclaw os status --json
 [11/12] audit               openclaw security audit --deep --json → os/logs/security-audit.<ts>.json ; doctor --lint
-[12/12] lockfile            os/clawos.lock.json written ; ~/.clawos/cells.json updated
+[12/12] lockfile            os/gkos.lock.json written ; ~/.gkos/cells.json updated
 ```
 
 Re-running is safe: every step checks its postcondition first.
 
 ### 10.4 Adopting an existing OpenClaw host
 
-If OpenClaw is already installed (e.g. an existing ALINA-style host): `clawos adopt` runs steps 3–12 without touching the installed upstream version, records *that* version as the pin (refusing if it is outside the kernel's compat range and telling you to `openclaw update --tag <supported>` first), backs up `openclaw.json` before reconciling, and prints the diff of the baseline fragment against your current `tools`/`gateway` settings so you can decide which of your existing settings to move into `90-local.json5`. Existing agents keep working; they simply have no grants until you introduce resources. Existing `exec`/fs permissions are preserved only if you accept them into `90-local.json5` — by default the baseline denies them, which is the point.
+If OpenClaw is already installed (e.g. an existing ALINA-style host): `gkos adopt` runs steps 3–12 without touching the installed upstream version, records *that* version as the pin (refusing if it is outside the kernel's compat range and telling you to `openclaw update --tag <supported>` first), backs up `openclaw.json` before reconciling, and prints the diff of the baseline fragment against your current `tools`/`gateway` settings so you can decide which of your existing settings to move into `90-local.json5`. Existing agents keep working; they simply have no grants until you introduce resources. Existing `exec`/fs permissions are preserved only if you accept them into `90-local.json5` — by default the baseline denies them, which is the point.
 
 ### 10.5 Multi-cell (two firms on one host)
 
 ```bash
-clawos cell create firmA --port 18801 --user clawos-firma
-clawos cell create firmB --port 18802 --user clawos-firmb
-clawos --cell firmA blueprint apply assistant --agent reception
-clawos --cell firmA gatekeeper add github && clawos --cell firmA gatekeeper connect github
-clawos cell list          # name, user, port, version, health, pending approvals
+gkos cell create firmA --port 18801 --user gkos-firma
+gkos cell create firmB --port 18802 --user gkos-firmb
+gkos --cell firmA blueprint apply assistant --agent reception
+gkos --cell firmA gatekeeper add github && gkos --cell firmA gatekeeper connect github
+gkos cell list          # name, user, port, version, health, pending approvals
 ```
 
-Each cell has its own state dir, token, key, plugins config, gatekeeper accounts, audit log, and unit; `clawos update --cell firmA` updates one cell at a time (the upstream binary is shared, so the *first* cell to update stages and verifies the new version; subsequent cells run steps 5–9 against the already-staged prefix). If you need different upstream versions per cell, install with `--per-cell-prefix`, which puts each cell's `openclaw` under `<stateDir>/os/npm-prefix` and points the unit's `PATH` at it.
+Each cell has its own state dir, token, key, plugins config, gatekeeper accounts, audit log, and unit; `gkos update --cell firmA` updates one cell at a time (the upstream binary is shared, so the *first* cell to update stages and verifies the new version; subsequent cells run steps 5–9 against the already-staged prefix). If you need different upstream versions per cell, install with `--per-cell-prefix`, which puts each cell's `openclaw` under `<stateDir>/os/npm-prefix` and points the unit's `PATH` at it.
 
 ### 10.6 Docker
 
-For container hosts, `deploy/docker/` provides a `Dockerfile` that layers on `ghcr.io/openclaw/openclaw:<pin>` (**VERIFIED** image) — adding only the `@clawkeepers/*` packages and the `clawos` binary, never modifying upstream layers — and a `compose.yml` that mounts `/home/node/.openclaw` (state, including `os/`) and runs `clawos install --in-container` at first start. Sandboxing inside Docker requires the Docker socket or `OPENCLAW_SANDBOX=1` per upstream's `scripts/docker/setup.sh` conventions; the compose file documents both.
+For container hosts, `deploy/docker/` provides a `Dockerfile` that layers on `ghcr.io/openclaw/openclaw:<pin>` (**VERIFIED** image) — adding only the `@gatekeeper-os/*` packages and the `gkos` binary, never modifying upstream layers — and a `compose.yml` that mounts `/home/node/.openclaw` (state, including `os/`) and runs `gkos install --in-container` at first start. Sandboxing inside Docker requires the Docker socket or `OPENCLAW_SANDBOX=1` per upstream's `scripts/docker/setup.sh` conventions; the compose file documents both.
 
 ### 10.7 Uninstall
 
-`clawos uninstall [--cell <name>] [--keep-state]` stops the unit, disables OS plugins and hooks, reverts OS-owned config subtrees (from `config.generated.json`), removes the drop-in, and (without `--keep-state`) removes `<stateDir>/os/`. Upstream's service and data are removed with `openclaw uninstall --all --yes --non-interactive` (**VERIFIED** flags; the CLI package itself is removed separately via npm) only if you ask.
+`gkos uninstall [--cell <name>] [--keep-state]` stops the unit, disables OS plugins and hooks, reverts OS-owned config subtrees (from `config.generated.json`), removes the drop-in, and (without `--keep-state`) removes `<stateDir>/os/`. Upstream's service and data are removed with `openclaw uninstall --all --yes --non-interactive` (**VERIFIED** flags; the CLI package itself is removed separately via npm) only if you ask.
 
 ---
 
-## 11. Operations runbook (summary; full text in `.agents/skills/clawos-operator`)
+## 11. Operations runbook (summary; full text in `.agents/skills/gkos-operator`)
 
-**Daily.** `clawos status` (or `/approvals` in chat) → approve/reject pending actions. `clawos audit tail --since 24h`.
+**Daily.** `gkos status` (or `/approvals` in chat) → approve/reject pending actions. `gkos audit tail --since 24h`.
 
-**Introducing resources.** Paste a URL in chat as an operator, or `clawos grant add`. Agents may ask via `os_request_access`; pending requests show in `clawos approvals list --requests`.
+**Introducing resources.** Paste a URL in chat as an operator, or `gkos grant add`. Agents may ask via `os_request_access`; pending requests show in `gkos approvals list --requests`.
 
-**Updating.** `clawos update --check` (automated weekly) → `clawos update --to <version>` when convenient. Always after: `clawos status`, `openclaw security audit`. If anything is wrong: `clawos rollback`.
+**Updating.** `gkos update --check` (automated weekly) → `gkos update --to <version>` when convenient. Always after: `gkos status`, `openclaw security audit`. If anything is wrong: `gkos rollback`.
 
-**Backups.** `clawos backup create` nightly via `openclaw cron` in the default cell (wraps `openclaw backup create --verify` + `os/` tar). Restore with `clawos backup restore <archive>` into a stopped cell.
+**Backups.** `gkos backup create` nightly via `openclaw cron` in the default cell (wraps `openclaw backup create --verify` + `os/` tar). Restore with `gkos backup restore <archive>` into a stopped cell.
 
-**Troubleshooting.** `clawos doctor` first. Plugin not loading → `openclaw plugins inspect clawos-kernel --runtime --json`, then `openclaw gateway restart` (metadata snapshot is per-session). Config rejected → `config reload skipped (invalid config)` in logs → `openclaw doctor --fix`, then `clawos config apply`. Gate hook timing out → 15 s fail-closed budget; check gatekeeper network latency; `clawos gatekeeper health <vendor>`.
+**Troubleshooting.** `gkos doctor` first. Plugin not loading → `openclaw plugins inspect gkos-kernel --runtime --json`, then `openclaw gateway restart` (metadata snapshot is per-session). Config rejected → `config reload skipped (invalid config)` in logs → `openclaw doctor --fix`, then `gkos config apply`. Gate hook timing out → 15 s fail-closed budget; check gatekeeper network latency; `gkos gatekeeper health <vendor>`.
 
 ---
 
@@ -1382,14 +1383,14 @@ For container hosts, `deploy/docker/` provides a `Dockerfile` that layers on `gh
 {
   plugins: {
     entries: {
-      "clawos-kernel": { enabled: true, config: {
-        operators: [],                       // [{channel:"telegram", senderId:"…"}], filled by `clawos operator add`
+      "gkos-kernel": { enabled: true, config: {
+        operators: [],                       // [{channel:"telegram", senderId:"…"}], filled by `gkos operator add`
         autoApprove: [],                     // ["github.issue.comment"]
-        install: { allowSources: ["npm:@clawkeepers/*", "clawhub:@clawkeepers/*"] },
+        install: { allowSources: ["npm:@gatekeeper-os/*", "clawhub:@gatekeeper-os/*"] },
         egress: { denyPatterns: ["(?i)api[_-]?key\\s*[:=]", "grant:[a-z0-9]{8}"] },
         audit: { llm: false },
       } },
-      "gatekeeper-fs": { enabled: true, config: { roots: [] } },   // ["/home/matt/projects"] — grants are subpaths
+      "gkos-gatekeeper-fs": { enabled: true, config: { roots: [] } },   // ["/home/matt/projects"] — grants are subpaths
     },
   },
 }
@@ -1400,7 +1401,7 @@ For container hosts, `deploy/docker/` provides a `Dockerfile` that layers on `gh
 { agents: { defaults: { sandbox: { mode: "non-main", scope: "agent", backend: "docker", workspaceAccess: "ro" } } } }
 ```
 
-`30-agents.json5` (written by `clawos blueprint apply`):
+`30-agents.json5` (written by `gkos blueprint apply`):
 ```json5
 { agents: { entries: { dev: { workspace: "~/.openclaw/agents/dev/workspace",
   tools: { allow: ["group:fs", "exec"] }, sandbox: { mode: "all" }, skills: ["github"] } } } }
@@ -1409,14 +1410,14 @@ For container hosts, `deploy/docker/` provides a `Dockerfile` that layers on `gh
 ## Appendix B — Gatekeeper skeleton (kit-based)
 
 ```typescript
-// packages/gatekeeper-github/src/index.ts
-import { defineGatekeeper } from "@clawkeepers/gatekeeper-kit";
+// packages/gkos-gatekeeper-github/src/index.ts
+import { defineGatekeeper } from "@gatekeeper-os/gatekeeper-kit";
 import { Type } from "typebox";
 import { GitHubVendor } from "./vendor.js";
 
 export default defineGatekeeper({
   vendor: "github", apiVersion: 1,
-  id: "gatekeeper-github", name: "GitHub Gatekeeper",
+  id: "gkos-gatekeeper-github", name: "GitHub Gatekeeper",
   description: "Mediates agent access to GitHub repositories, issues, and pull requests.",
   createVendor: (ctx) => new GitHubVendor(ctx),          // ctx: pluginConfig, tokenStore, cache, logger, http
   resources: [
@@ -1440,7 +1441,7 @@ export default defineGatekeeper({
 ```
 
 ```typescript
-// packages/gatekeeper-github/src/issue.ts (excerpt: an action with simulation)
+// packages/gkos-gatekeeper-github/src/issue.ts (excerpt: an action with simulation)
 export class IssueGatekeeper extends KitGatekeeper<IssueState> {
   // describe() runs in the kernel's dry pass; apply() runs for real on applyAction()
   actions = {
@@ -1469,11 +1470,11 @@ export class IssueGatekeeper extends KitGatekeeper<IssueState> {
 
 ## Appendix C — Glossary
 
-**Cell** — one OpenClaw Gateway instance = one trust boundary, managed as a unit. **Gatekeeper** — a driver plugin mediating all access to one external service. **Grant** — a capability record giving one agent access to one resource through one gatekeeper. **Introduction** — the act of creating a grant (URL paste, CLI, or agent request approved by an operator). **Handle** — the opaque `grant:…` string the agent uses. **Observation** — a read; authorized synchronously and logged. **Action** — a write; queued, simulated, applied later. **Overlay** — the gatekeeper's record of pending actions merged into reads. **Operator** — a human allowed to introduce resources and decide actions in a cell. **Observer** — a non-operator participant in a session. **Blueprint** — a versioned agent template. **Pin** — the upstream version recorded in `clawos.lock.json`. **Reconciliation** — applying `os/config.d/*` to `openclaw.json` via `openclaw config patch`.
+**Cell** — one OpenClaw Gateway instance = one trust boundary, managed as a unit. **Gatekeeper** — a driver plugin mediating all access to one external service. **Grant** — a capability record giving one agent access to one resource through one gatekeeper. **Introduction** — the act of creating a grant (URL paste, CLI, or agent request approved by an operator). **Handle** — the opaque `grant:…` string the agent uses. **Observation** — a read; authorized synchronously and logged. **Action** — a write; queued, simulated, applied later. **Overlay** — the gatekeeper's record of pending actions merged into reads. **Operator** — a human allowed to introduce resources and decide actions in a cell. **Observer** — a non-operator participant in a session. **Blueprint** — a versioned agent template. **Pin** — the upstream version recorded in `gkos.lock.json`. **Reconciliation** — applying `os/config.d/*` to `openclaw.json` via `openclaw config patch`.
 
 ## Appendix D — Sources (verified 2026-09-06)
 
-Cloudflare OS: `README.md`, `AGENTS.md`, `REVIEW.md`, `.agents/skills/write-gatekeeper/SKILL.md` and `SKELETON.md`, `packages/workshop-shared/src/gatekeeper.ts`, `packages/workshop-backend/src/{auth/auth-vendors.ts,auto-approval.ts,overseer.ts,env.d.ts}`, `packages/gatekeeper-github/src/github.ts`, `docs/observers.md`, `docs/oauth-signin.md`, `plans/gatekeeper-kit.md`, `plans/multi-gadget.md` — https://github.com/cloudflare/cloudflare-os. Starter: `README.md`, `docs/customization.md`, `deployment.jsonc`, `scripts/deploy.ts`, `pnpm-workspace.yaml`, `packages/custom-gatekeeper/` — https://github.com/cloudflare/cloudflare-os-starter.
+Cloudflare OS: `README.md`, `AGENTS.md`, `REVIEW.md`, `.agents/skills/write-gatekeeper/SKILL.md` and `SKELETON.md`, `packages/workshop-shared/src/gatekeeper.ts`, `packages/workshop-backend/src/{auth/auth-vendors.ts,auto-approval.ts,overseer.ts,env.d.ts}`, `packages/gkos-gatekeeper-github/src/github.ts`, `docs/observers.md`, `docs/oauth-signin.md`, `plans/gatekeeper-kit.md`, `plans/multi-gadget.md` — https://github.com/cloudflare/cloudflare-os. Starter: `README.md`, `docs/customization.md`, `deployment.jsonc`, `scripts/deploy.ts`, `pnpm-workspace.yaml`, `packages/custom-gatekeeper/` — https://github.com/cloudflare/cloudflare-os-starter.
 
 OpenClaw docs (https://docs.openclaw.ai): `concepts/architecture`, `concepts/multi-agent`, `concepts/agent-workspace`, `gateway/configuration`, `gateway/configuration-reference`, `gateway/config-tools`, `gateway/security`, `gateway/sandboxing`, `gateway/doctor`, `tools`, `tools/plugin`, `tools/skills`, `tools/exec-approvals`, `plugins/building-plugins`, `plugins/sdk-overview`, `plugins/sdk-entrypoints`, `plugins/hooks`, `plugins/manage-plugins`, `plugins/architecture`, `automation/hooks`, `cli`, `cli/config`, `cli/plugins`, `cli/cron`, `install`, `install/updating`, `install/development-channels`, `install/docker`, `platforms/linux`, `help/environment`; npm registry metadata for `openclaw` (dist-tags `latest=2026.9.2`, `beta=2026.9.1`, `extended-stable=2026.6.34`).
 

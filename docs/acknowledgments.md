@@ -1,6 +1,6 @@
 # Acknowledgments and provenance
 
-OpenClaw OS is an independent integration project. It owes both its execution
+GatekeeperOS is an independent integration project. It owes both its execution
 foundation and significant architectural ideas to existing open-source work.
 This page identifies that work rather than presenting the design as wholly new.
 
@@ -8,12 +8,12 @@ This page identifies that work rather than presenting the design as wholly new.
 
 - Repository: <https://github.com/openclaw/openclaw>
 - Pinned release: [v2026.9.2](https://github.com/openclaw/openclaw/tree/v2026.9.2),
-  as recorded in `clawos.lock.json`.
+  as recorded in `gkos.lock.json`.
 - License: [MIT, copyright 2026 OpenClaw Foundation](https://github.com/openclaw/openclaw/blob/v2026.9.2/LICENSE).
   OpenClaw also maintains its own `THIRD_PARTY_NOTICES.md`.
 
 The upstream Gateway, agents, channels and plugin SDK provide the runtime.
-OpenClaw OS installs upstream separately and integrates through public interfaces;
+GatekeeperOS installs upstream separately and integrates through public interfaces;
 it does not fork, patch or vendor the runtime. Its MIT license does not replace
 the notices or licenses in OpenClaw's own distribution.
 
@@ -28,7 +28,7 @@ Cloudflare OS's contributions to this design include resource introduction,
 capability-oriented gatekeepers, deferred action approval, simulated effects,
 observer admission, and a small kernel held to a higher review standard.
 
-**Adaptation notice:** OpenClaw OS contributors changed the referenced contracts
+**Adaptation notice:** GatekeeperOS contributors changed the referenced contracts
 and guidance for a self-hosted, single-process OpenClaw plugin and tool-calling
 runtime rather than Cloudflare Workers, Durable Objects and gadget APIs. These
 are adaptations, not an unchanged distribution of Cloudflare OS.
@@ -36,7 +36,7 @@ are adaptations, not an unchanged distribution of Cloudflare OS.
 | Local material | Upstream origin or influence | Main adaptation |
 |---|---|---|
 | `docs/implementation-plan.md` | Cloudflare OS `README.md`, gatekeeper contracts and architecture documents | Maps introductions, drivers, approvals and observers to OpenClaw cells and tools; includes attributed quotations |
-| `packages/clawos-shared/src/gatekeeper.ts` | `packages/workshop-shared/src/gatekeeper.ts` | Process-local sessions, opaque grants, tool results and kernel-owned approval interfaces |
+| `packages/gkos-shared/src/gatekeeper.ts` | `packages/workshop-shared/src/gatekeeper.ts` | Process-local sessions, opaque grants, tool results and kernel-owned approval interfaces |
 | `docs/agent-operating-rules.md`, `AGENTS.md`, `REVIEW.md` | Cloudflare OS `AGENTS.md`, `REVIEW.md` | Local SDK, upstream-isolation, VM and phase conventions added; kernel and secrecy guidance retained |
 | `.agents/skills/write-gatekeeper/` | Cloudflare OS gatekeeper-authoring guidance and skeleton | Tool-calling driver workflow, local kit and two review checkpoints |
 | `packages/gatekeeper-kit/`, gatekeeper design | Cloudflare OS gatekeeper responsibilities and lifecycle model | Local encrypted stores, action journals, overlays and runtime lifecycle |
@@ -57,7 +57,7 @@ remains a beta publication check.
 
 The starter's wrapper-owned customization, shared dependency catalog, explicit
 upstream pin and deliberate upgrade/rollback discipline informed our deployment
-plan. We adapt those ideas to a self-hosted daemon. The complete OpenClaw OS update
+plan. We adapt those ideas to a self-hosted daemon. The complete GatekeeperOS update
 pipeline is still Phase 7 work; this credit is not a completion claim.
 
 ## License preservation

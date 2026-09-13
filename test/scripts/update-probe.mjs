@@ -5,15 +5,15 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 if(process.env.HOME!=='/home/tester'||process.cwd()!=='/home/tester/src')throw new Error('DISPOSABLE_VM_REQUIRED');
 const [binary,state,version]=process.argv.slice(2);
-if(!state?.startsWith('/home/tester/.clawos/updates/')||!binary?.startsWith('/home/tester/.clawos/runtimes/'))throw new Error('ISOLATED_RUNTIME_REQUIRED');
+if(!state?.startsWith('/home/tester/.gkos/updates/')||!binary?.startsWith('/home/tester/.gkos/runtimes/'))throw new Error('ISOLATED_RUNTIME_REQUIRED');
 for(const dir of [state,join(state,'os'),state+'-resource'])mkdirSync(dir,{recursive:true,mode:0o700});
 const live=JSON.parse(readFileSync('/home/tester/.openclaw/openclaw.json','utf8'));
-const paths=live.plugins.load.paths.filter(p=>['clawos-kernel','gatekeeper-fs'].some(id=>p.endsWith('/'+id)));
+const paths=live.plugins.load.paths.filter(p=>['gkos-kernel','gkos-gatekeeper-fs'].some(id=>p.endsWith('/'+id)));
 const catalog=JSON.parse(readFileSync('/home/tester/.openclaw/os/gatekeepers.json','utf8'));
 writeFileSync(join(state,'os/gatekeepers.json'),JSON.stringify(catalog),{mode:0o600});
-writeFileSync(join(state,'openclaw.json'),JSON.stringify({gateway:{mode:'local',bind:'loopback',port:19100,auth:{mode:'token',token:randomBytes(32).toString('hex')}},update:{auto:{enabled:false}},agents:{defaults:{workspace:join(state,'workspace')}},plugins:{allow:['clawos-kernel','gatekeeper-fs'],load:{paths},entries:{'clawos-kernel':{enabled:true,hooks:{allowConversationAccess:true},config:{operators:[],install:{allowSources:[]}}},'gatekeeper-fs':{enabled:true,config:{roots:[state+'-resource']}}}}}),{mode:0o600});
-const env={...process.env,OPENCLAW_STATE_DIR:state,OPENCLAW_CONFIG_PATH:join(state,'openclaw.json'),OPENCLAW_GATEWAY_PORT:'19100',OPENCLAW_PROFILE:'update-probe',CLAWOS_CELL:'update-probe',OPENCLAW_NO_AUTO_UPDATE:'1'};
-function rpc(method,params={}){stage=method;const r=spawnSync(process.execPath,[resolve('packages/clawos-cli/bin/gateway-rpc.mjs'),binary],{env,input:JSON.stringify({method,params}),encoding:'utf8',timeout:85000});if(r.status!==0)throw new Error('RPC_FAILED');const v=JSON.parse(r.stdout);if(!v.ok)throw new Error('RPC_INVALID');return v.result;}
+writeFileSync(join(state,'openclaw.json'),JSON.stringify({gateway:{mode:'local',bind:'loopback',port:19100,auth:{mode:'token',token:randomBytes(32).toString('hex')}},update:{auto:{enabled:false}},agents:{defaults:{workspace:join(state,'workspace')}},plugins:{allow:['gkos-kernel','gkos-gatekeeper-fs'],load:{paths},entries:{'gkos-kernel':{enabled:true,hooks:{allowConversationAccess:true},config:{operators:[],install:{allowSources:[]}}},'gkos-gatekeeper-fs':{enabled:true,config:{roots:[state+'-resource']}}}}}),{mode:0o600});
+const env={...process.env,OPENCLAW_STATE_DIR:state,OPENCLAW_CONFIG_PATH:join(state,'openclaw.json'),OPENCLAW_GATEWAY_PORT:'19100',OPENCLAW_PROFILE:'update-probe',GKOS_CELL:'update-probe',OPENCLAW_NO_AUTO_UPDATE:'1'};
+function rpc(method,params={}){stage=method;const r=spawnSync(process.execPath,[resolve('packages/gkos-cli/bin/gateway-rpc.mjs'),binary],{env,input:JSON.stringify({method,params}),encoding:'utf8',timeout:85000});if(r.status!==0)throw new Error('RPC_FAILED');const v=JSON.parse(r.stdout);if(!v.ok)throw new Error('RPC_INVALID');return v.result;}
 const checks=[];let stage='initialization';function check(name,value){stage=name;if(!value)throw new Error(name);checks.push(name);}
 let gateway;
 try{

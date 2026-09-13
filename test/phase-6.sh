@@ -4,8 +4,8 @@ set -euo pipefail
 [ "$HOME" = /home/tester ] && [ "$PWD" = /home/tester/src ] || exit 1
 export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
 export OPENCLAW_NO_AUTO_UPDATE=1
-unset OPENCLAW_PROFILE OPENCLAW_STATE_DIR OPENCLAW_CONFIG_PATH OPENCLAW_GATEWAY_PORT OPENCLAW_GATEWAY_TOKEN CLAWOS_CELL
-mode=${CLAWOS_TEST_MODE:-full}
+unset OPENCLAW_PROFILE OPENCLAW_STATE_DIR OPENCLAW_CONFIG_PATH OPENCLAW_GATEWAY_PORT OPENCLAW_GATEWAY_TOKEN GKOS_CELL
+mode=${GKOS_TEST_MODE:-full}
 evidence=/home/tester/phase-6-evidence
 mkdir -p "$evidence"
 if [ "$mode" = full ]; then
@@ -26,22 +26,22 @@ npm install -g --prefix /home/tester/phase-checkpoint-cli "$cli_archive" --ignor
 export PATH="/home/tester/phase-checkpoint-cli/bin:$PATH"
 node --version > "$evidence/node-version"
 openclaw --version > "$evidence/upstream-version"
-pnpm --filter @clawkeepers/cli exec vitest run src/commands/blueprint.test.ts --reporter=default --reporter=json --outputFile="$evidence/blueprint-tests.json"
+pnpm --filter @gatekeeper-os/cli exec vitest run src/commands/blueprint.test.ts --reporter=default --reporter=json --outputFile="$evidence/blueprint-tests.json"
 # Setup the sandbox image via Docker in the VM only; no engine socket or host mounts enter the agent container.
 if ! docker image inspect openclaw-sandbox:bookworm-slim >/dev/null 2>&1; then
   docker pull debian:bookworm-slim > /home/tester/blueprint-docker-pull.log 2>&1
   docker tag debian:bookworm-slim openclaw-sandbox:bookworm-slim
 fi
 for policy in runtime messaging; do
-  export CLAWOS_BLUEPRINT_POLICY="$policy" CLAWOS_CELL="blueprint-$policy"
-  export OPENCLAW_PROFILE="$CLAWOS_CELL" OPENCLAW_STATE_DIR="/home/tester/.openclaw-$CLAWOS_CELL"
+  export GKOS_BLUEPRINT_POLICY="$policy" GKOS_CELL="blueprint-$policy"
+  export OPENCLAW_PROFILE="$GKOS_CELL" OPENCLAW_STATE_DIR="/home/tester/.openclaw-$GKOS_CELL"
   export OPENCLAW_CONFIG_PATH="$OPENCLAW_STATE_DIR/openclaw.json"
   port=19100; [ "$policy" = runtime ] || port=19110
   export OPENCLAW_GATEWAY_PORT="$port"
-  clawos cell create "$CLAWOS_CELL" --port "$port" --policy "$policy" --yes --json > "/home/tester/blueprint-create-$policy.log" 2>&1
+  gkos cell create "$GKOS_CELL" --port "$port" --policy "$policy" --yes --json > "/home/tester/blueprint-create-$policy.log" 2>&1
   pnpm exec tsx test/scripts/blueprint-config.mjs
-  clawos config apply --cell "$CLAWOS_CELL" --json > "/home/tester/blueprint-config-$policy.log" 2>&1
-  systemctl --user stop "openclaw-gateway-$CLAWOS_CELL.service"
+  gkos config apply --cell "$GKOS_CELL" --json > "/home/tester/blueprint-config-$policy.log" 2>&1
+  systemctl --user stop "openclaw-gateway-$GKOS_CELL.service"
   openclaw config validate > "/home/tester/blueprint-validation-$policy.log" 2>&1
   openclaw gateway run > "/home/tester/blueprint-gateway-$policy.log" 2>&1 & gateway_pid=$!
   deadline=$((SECONDS+120))
@@ -50,7 +50,7 @@ for policy in runtime messaging; do
     sleep 1
   done
   node test/scripts/blueprint-scenarios.mjs
-  if [ "${CLAWOS_RELEASE_AUDIT:-0}" = 1 ]; then node test/scripts/release-blueprint-audit.mjs; fi
+  if [ "${GKOS_RELEASE_AUDIT:-0}" = 1 ]; then node test/scripts/release-blueprint-audit.mjs; fi
   kill "$gateway_pid"; wait "$gateway_pid" 2>/dev/null || true; gateway_pid=''
 done
 pnpm check:catalog

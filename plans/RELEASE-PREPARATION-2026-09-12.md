@@ -23,7 +23,7 @@
   beyond beta, not an expected provisioned dependency.
 - Audit accepts no critical findings. Exact conditional warning codes and one-line
   rationales are in `docs/blueprints.md`. Probe authentication uses the cell's
-  canonical `CLAWOS_GATEWAY_TOKEN` SecretRef provider, not a competing override.
+  canonical `GKOS_GATEWAY_TOKEN` SecretRef provider, not a competing override.
   Failed probes, other warnings and suppressed findings fail.
 - MCP stays a private read-only demo. Generic actions remain
   `awaitDecision:true` / `implementsRevert:false`; `append_note` is unregistered
@@ -32,9 +32,9 @@
 
 ## Release set and evidence
 
-Exactly five packages at `0.1.0-beta.1`: `@clawkeepers/shared`,
-`@clawkeepers/gatekeeper-kit`, `@clawkeepers/kernel`,
-`@clawkeepers/gatekeeper-fs`, and `@clawkeepers/cli`. All others remain private.
+Exactly five packages at `0.1.0-beta.1`: `@gatekeeper-os/shared`,
+`@gatekeeper-os/gatekeeper-kit`, `@gatekeeper-os/kernel`,
+`@gatekeeper-os/gatekeeper-fs`, and `@gatekeeper-os/cli`. All others remain private.
 The scope-only migration is `c2b9de4`; plugin IDs and CLI binary are unchanged.
 PRs #9 and #11–13 were integrated previously. The requested final merge order is
 #15 → #16 → #14 → gatekeepers #6 → .github #1; all five are now merged.
@@ -85,8 +85,8 @@ workflow stores a long-lived npm token.
 ## Post-publish checklist — Matt/later authorized work
 
 1. Push the local tag: `git push origin v0.1.0-beta.1`.
-2. Make `.github`, `openclaw-os` and `gatekeepers` public together.
-3. Configure each npm package's trusted publisher for `clawkeeper/openclaw-os`
+2. Make `.github`, `gatekeeper-os` and `gatekeepers` public together.
+3. Configure each npm package's trusted publisher for `gatekeeper-os/gatekeeper-os`
    and `release.yml` (OIDC, subsequent releases use `--provenance`).
 4. Configure `build-test` as an actual required branch-protection check. The
    current private Free-org entitlement rejected this; CI prerequisites alone

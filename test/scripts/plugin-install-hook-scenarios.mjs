@@ -6,12 +6,12 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 const state='/home/tester/.openclaw-kernel-test',root=state+'/os';
-if(process.env.CLAWOS_KERNEL_VM!=='1'||process.env.OPENCLAW_STATE_DIR!==state||process.cwd()!=='/home/tester/src')throw new Error('VM required');
-const require=createRequire(resolve('packages/clawos-conformance/package.json'));
+if(process.env.GKOS_KERNEL_VM!=='1'||process.env.OPENCLAW_STATE_DIR!==state||process.cwd()!=='/home/tester/src')throw new Error('VM required');
+const require=createRequire(resolve('packages/gkos-conformance/package.json'));
 const {GatewayClient}=await import(pathToFileURL(require.resolve('openclaw/plugin-sdk/gateway-runtime')).href);
 const config=JSON.parse(readFileSync(process.env.OPENCLAW_CONFIG_PATH,'utf8'));
-const report={runId:process.env.CLAWOS_SCENARIO_RUN,checks:{},surface:'plugins.install'};
-const save=()=>writeFileSync(process.env.CLAWOS_SCENARIO_REPORT,JSON.stringify(report,null,2)+'\n',{mode:0o600});
+const report={runId:process.env.GKOS_SCENARIO_RUN,checks:{},surface:'plugins.install'};
+const save=()=>writeFileSync(process.env.GKOS_SCENARIO_REPORT,JSON.stringify(report,null,2)+'\n',{mode:0o600});
 function check(id,ok){report.checks[id]=ok===true;save();if(!ok)throw new Error(id);console.log('PASS '+id);}
 const events=()=>existsSync(root+'/install-events.jsonl')?readFileSync(root+'/install-events.jsonl','utf8').trim().split('\n').filter(Boolean).map(JSON.parse):[];
 const clients=[];
@@ -51,7 +51,7 @@ try{
   const paired=await connect({deviceToken:shared.deviceToken});
   const client=paired.client;
   check('plugin-kernel-healthy',(await client.request('os.status',{})).healthy===true);
-  check('plugin-secondary-deny-all',config.plugins.entries['clawos-kernel'].config.install.allowSources.length===0);
+  check('plugin-secondary-deny-all',config.plugins.entries['gkos-kernel'].config.install.allowSources.length===0);
   const unchanged=()=>readFileSync(process.env.OPENCLAW_CONFIG_PATH,'utf8');
   const initial=unchanged();
   const fixture=JSON.parse(readFileSync('test/fixtures/plugin-install-hook-monitor/candidate.json','utf8'));

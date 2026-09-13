@@ -5,12 +5,12 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 const state='/home/tester/.openclaw-kernel-test',root=state+'/os',phase=process.argv[2];
-if(process.env.CLAWOS_KERNEL_VM!=='1'||process.env.OPENCLAW_STATE_DIR!==state||process.cwd()!=='/home/tester/src')throw new Error('VM required');
-const require=createRequire(resolve('packages/clawos-conformance/package.json'));
+if(process.env.GKOS_KERNEL_VM!=='1'||process.env.OPENCLAW_STATE_DIR!==state||process.cwd()!=='/home/tester/src')throw new Error('VM required');
+const require=createRequire(resolve('packages/gkos-conformance/package.json'));
 const {GatewayClient}=await import(pathToFileURL(require.resolve('openclaw/plugin-sdk/gateway-runtime')).href);
 const config=JSON.parse(readFileSync(process.env.OPENCLAW_CONFIG_PATH,'utf8'));
-const report=phase==='deny'?{runId:process.env.CLAWOS_SCENARIO_RUN,checks:{}}:JSON.parse(readFileSync(process.env.CLAWOS_SCENARIO_REPORT,'utf8'));
-const save=()=>writeFileSync(process.env.CLAWOS_SCENARIO_REPORT,JSON.stringify(report,null,2)+'\n',{mode:0o600});
+const report=phase==='deny'?{runId:process.env.GKOS_SCENARIO_RUN,checks:{}}:JSON.parse(readFileSync(process.env.GKOS_SCENARIO_REPORT,'utf8'));
+const save=()=>writeFileSync(process.env.GKOS_SCENARIO_REPORT,JSON.stringify(report,null,2)+'\n',{mode:0o600});
 function check(id,ok){report.checks[id]=ok===true;save();if(!ok)throw new Error(id);console.log('PASS '+id);}
 const events=()=>existsSync(root+'/install-events.jsonl')?readFileSync(root+'/install-events.jsonl','utf8').trim().split('\n').filter(Boolean).map(JSON.parse):[];
 const clients=[];
@@ -53,11 +53,11 @@ try{
   const status=await client.request('os.status',{});
   check(phase+'-kernel-healthy',status.healthy===true);
   // Skills install into the requesting agent's workspace, so the agent segment belongs in the path.
-  const agentId='main',target=state+'/workspace/'+agentId+'/skills/clawos-hook-fixture/SKILL.md';
+  const agentId='main',target=state+'/workspace/'+agentId+'/skills/gkos-hook-fixture/SKILL.md';
   if(phase==='deny'){
-    check('upload-opt-in-isolated',config.skills.install.allowUploadedArchives===true&&config.security.installPolicy.enabled===true&&config.plugins.entries['clawos-kernel'].config.install.allowSources.length===0);
+    check('upload-opt-in-isolated',config.skills.install.allowUploadedArchives===true&&config.security.installPolicy.enabled===true&&config.plugins.entries['gkos-kernel'].config.install.allowSources.length===0);
     const archive=readFileSync('/home/tester/install-hook-fixture.zip'),sha256=createHash('sha256').update(archive).digest('hex');
-    const begin={kind:'skill-archive',slug:'clawos-hook-fixture',sizeBytes:archive.length,sha256,force:false};
+    const begin={kind:'skill-archive',slug:'gkos-hook-fixture',sizeBytes:archive.length,sha256,force:false};
     const readOnly=await connect({deviceToken:shared.deviceToken},['operator.read']);
     const blocked=await attempt(readOnly.client,'skills.upload.begin',begin);
     check('read-scope-cannot-upload',!blocked.ok);
@@ -96,11 +96,11 @@ try{
     writeFileSync(root+'/primary-rules.json',JSON.stringify({allowSources:['upload:'+uploadId]}),{mode:0o600});
   }else if(phase==='allow'){
     const params=JSON.parse(readFileSync(root+'/upload-fixture.json','utf8'));
-    check('secondary-exact-operator-rule',config.plugins.entries['clawos-kernel'].config.install.allowSources.length===1&&config.plugins.entries['clawos-kernel'].config.install.allowSources[0]==='upload:'+params.uploadId&&!existsSync(target));
+    check('secondary-exact-operator-rule',config.plugins.entries['gkos-kernel'].config.install.allowSources.length===1&&config.plugins.entries['gkos-kernel'].config.install.allowSources[0]==='upload:'+params.uploadId&&!existsSync(target));
     const before=events().length;
     const allowed=await attempt(client,'skills.install',params),rows=events().slice(before);
     check('both-boundaries-allow',allowed.ok&&allowed.value.ok===true&&rows.some(e=>e.stage==='primary'&&e.allow===true)&&rows.some(e=>e.stage==='before')&&rows.some(e=>e.stage==='after')&&!rows.some(e=>e.stage==='primary'&&!e.allow));
-    check('installed-fixture-exact',existsSync(target)&&readFileSync(target,'utf8')==='---\nname: clawos-hook-fixture\ndescription: Inert VM install acceptance fixture.\n---\nNo actions.\n');
+    check('installed-fixture-exact',existsSync(target)&&readFileSync(target,'utf8')==='---\nname: gkos-hook-fixture\ndescription: Inert VM install acceptance fixture.\n---\nNo actions.\n');
     const grants=await client.request('os.grants.list',{});
     check('install-mints-no-grants',Array.isArray(grants)&&grants.length===0);
     const again=await attempt(client,'skills.install',params);

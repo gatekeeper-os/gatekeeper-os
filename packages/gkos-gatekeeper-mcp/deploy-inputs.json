@@ -1,0 +1,9 @@
+{
+  "inputs": [],
+  "setupSteps": [
+    "Disabled by default. Compile a reviewed manifest before configuring a server; only the synthetic demo surface is currently compiled.",
+    "Bind the exact operator ID and HTTPS endpoint; credentialEnv must name an explicitly staged GKOS_MCP_ environment reference, never a credential value.",
+    "Static credentials are validated with an unauthenticated negative control and authenticated MCP inventory, then encrypted with the existing cell key. No provider identity oracle or generic OAuth discovery is promised.",
+    "Revocation tombstones deny automatic reprovisioning. Reconnection and native append remain disabled. Only the reviewed read-note observation can be granted after STOP2 approval."
+  ]
+}

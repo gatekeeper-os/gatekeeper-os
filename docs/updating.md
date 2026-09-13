@@ -6,8 +6,8 @@ conformance adapter depends on outstanding acceptance work; compatibility smoke 
 ## Check availability
 
 ```sh
-clawos update --check --cell default
-clawos update --check --json --channel beta
+gkos update --check --cell default
+gkos update --check --json --channel beta
 ```
 
 This reads the selected cell's pin and installed plugin metadata, resolves one npm release,
@@ -19,12 +19,12 @@ no automatic outbound destination is configured by this implementation.
 ## Update
 
 ```sh
-clawos update --to <exact-version> --conformance /absolute/reviewed-live-runner.mjs --yes
+gkos update --to <exact-version> --conformance /absolute/reviewed-live-runner.mjs --yes
 ```
 
 Linux/systemd only. The adapter runs with explicit fresh `OPENCLAW_STATE_DIR` and
-`OPENCLAW_CONFIG_PATH`. It receives `CLAWOS_UPDATE_BINARY`, `CLAWOS_UPDATE_TARGET`,
-`CLAWOS_UPDATE_RUN_ID`, and `CLAWOS_UPDATE_VERDICT`. It must construct an isolated test
+`OPENCLAW_CONFIG_PATH`. It receives `GKOS_UPDATE_BINARY`, `GKOS_UPDATE_TARGET`,
+`GKOS_UPDATE_RUN_ID`, and `GKOS_UPDATE_VERDICT`. It must construct an isolated test
 configuration, run actual required suites against that exact binary, and write a run-bound
 `live-conformance` report with `fullConformance:true`. Missing, skipped, stale, synthetic or
 smoke-only evidence blocks activation. Treat this adapter as trusted operator code, not an
@@ -33,14 +33,14 @@ agent-provided executable. No stock passing adapter is supplied while full gates
 The nine steps and recovery semantics are in implementation-plan §6.4. Updates stage
 private per-cell runtimes; the original global installation is unchanged. CLI cell operations
 use the lock's verified `runtimeBinary`; shell `openclaw --version` may still show the original
-global runtime. Use `clawos kernel status` and the cell lock/journal, not the shell global version.
+global runtime. Use `gkos kernel status` and the cell lock/journal, not the shell global version.
 Do not run the original upstream command directly against a newer cell's state.
 
 ## Recovery
 
 ```sh
-clawos rollback --yes --cell default
-clawos kernel status --cell default
+gkos rollback --yes --cell default
+gkos kernel status --cell default
 ```
 
 The journal survives process termination and state restoration. The retained old runtime
@@ -68,5 +68,5 @@ matrix remains pending; current compatibility smoke keeps its original scope lab
 
 A source-installer rerun on a per-cell updated runtime is refused, avoiding accidental
 reversion to the source bundle's old pin. A successfully committed but paused cell may be
-resumed by an authenticated administrator with `clawos kernel maintenance off`, after
+resumed by an authenticated administrator with `gkos kernel maintenance off`, after
 reviewing the committed journal and healthy exact runtime. This does not bypass conformance.

@@ -1,4 +1,4 @@
-import type { ActionDescription, ApprovalQueue, ObservationDescription, SessionCallContext } from "@clawkeepers/shared";
+import type { ActionDescription, ApprovalQueue, ObservationDescription, SessionCallContext } from "@gatekeeper-os/shared";
 
 /** Offline unit-test queue; never use it as a production authority or conformance substitute. */
 export class TestApprovalQueue implements ApprovalQueue {

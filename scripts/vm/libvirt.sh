@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Disposable, per-worktree libvirt VM. No host installs or production Gateway access.
-LV_URI="${CLAWOS_LIBVIRT_URI:-qemu:///session}"
-LV_PORT="${CLAWOS_VM_SSH_PORT:-22240}"
+LV_URI="${GKOS_LIBVIRT_URI:-qemu:///session}"
+LV_PORT="${GKOS_VM_SSH_PORT:-22240}"
 LV_DISK="$STATE_DIR/tester.qcow2"
 LV_KEY="$STATE_DIR/ssh-key"
 lv() { virsh -c "$LV_URI" "$@"; }
@@ -43,7 +43,7 @@ PY
   virt-install --connect "$LV_URI" --name "$VM_NAME" --memory 4096 --vcpus 2 --cpu host-passthrough \
     --import --osinfo ubuntu24.04 --boot hd --disk "$LV_DISK,format=qcow2,bus=virtio" \
     --cloud-init "user-data=$STATE_DIR/user-data,meta-data=$STATE_DIR/meta-data,disable=on" --graphics none --network none \
-    --qemu-commandline="-netdev user,id=clawosnet,hostfwd=tcp:127.0.0.1:$LV_PORT-:22 -device virtio-net-pci,netdev=clawosnet,bus=pcie.0,addr=0x1e" \
+    --qemu-commandline="-netdev user,id=gkosnet,hostfwd=tcp:127.0.0.1:$LV_PORT-:22 -device virtio-net-pci,netdev=gkosnet,bus=pcie.0,addr=0x1e" \
     --serial "file,path=$STATE_DIR/console.log" --noautoconsole
   lv_wait
 }
@@ -70,7 +70,7 @@ lv_snapshot() {
   lv_owned
   if lv snapshot-info "$VM_NAME" "$1" >/dev/null 2>&1; then vm_die "immutable snapshot '$1' already exists"; fi
   lv_shutdown
-  lv snapshot-create-as "$VM_NAME" "$1" --description 'OpenClaw OS acceptance baseline' --atomic
+  lv snapshot-create-as "$VM_NAME" "$1" --description 'GatekeeperOS acceptance baseline' --atomic
   lv start "$VM_NAME"
   lv_wait
 }

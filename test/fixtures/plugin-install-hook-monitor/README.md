@@ -10,8 +10,8 @@ upstream's supported install path performs its own registry integrity checks.
 Run only through:
 
 ```sh
-CLAWOS_VM_DRIVER=libvirt \
-CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state \
+GKOS_VM_DRIVER=libvirt \
+GKOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state \
   bash scripts/vm/test.sh phase-3 installed plugin-install-hook
 ```
 

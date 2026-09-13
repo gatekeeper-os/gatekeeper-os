@@ -1,9 +1,10 @@
-# OpenClaw OS
+# GatekeeperOS
 
-**Give agents access to specific resources, keep consequential actions reviewable,
-and keep upstream OpenClaw unmodified.**
+GatekeeperOS is an independent project. It is not affiliated with or endorsed by the OpenClaw Foundation. OpenClaw is a trademark of its owner.
 
-OpenClaw OS is a self-hosted capability and operations layer for
+**capability-based access and deferred approvals for OpenClaw**
+
+GatekeeperOS is a self-hosted capability and operations layer for
 [OpenClaw](https://github.com/openclaw/openclaw), inspired by
 [Cloudflare OS](https://github.com/cloudflare/cloudflare-os) and its gatekeeper
 architecture. It connects an agent to resources through scoped grants rather
@@ -13,11 +14,12 @@ than handing the agent unrestricted service credentials.
 agent environments. This is **not a Linux distribution**, an OpenClaw fork, or a
 Cloudflare product. It is an independent project built on those projects' work.
 
-**Status: published beta.** `@clawkeepers/{shared,gatekeeper-kit,kernel,gatekeeper-fs,cli}@0.1.0-beta.1`
-are public on npm. Use `@beta` explicitly: `latest` currently resolves to the beta
-because no stable release exists. The clawkeeper repositories remain private
-pending the coordinated public release. Publication does not close the acceptance
-limitations below; npm-only fresh-VM acceptance is still pending.
+**Status: private beta.2 preparation; new npm scope not published yet.**
+The previous beta.1 was published under the former scope (see the
+[migration note](docs/migration-gatekeeperos.md)). Its `latest` tag resolves to
+that beta because no stable release exists. The renamed packages are not yet
+available on npm. Repositories remain private. Publication does not close any
+acceptance limitation below; npm-only fresh-VM acceptance remains incomplete.
 
 [Architecture](docs/implementation-plan.md) · [Acceptance status](docs/phase-checklist.md) ·
 [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) ·
@@ -30,7 +32,7 @@ repository its operator can see. It may need to draft a change and continue
 reasoning about the result while a human reviews whether that change should
 actually happen.
 
-OpenClaw OS separates those decisions:
+GatekeeperOS separates those decisions:
 
 - **Which resource?** An operator introduces a resource, usually by its URL.
 - **Which agent and audience?** The kernel binds access to an agent and checks the
@@ -105,21 +107,21 @@ These are milestone-specific results, not a substitute for remaining beta gates.
 See the [phase checklist](docs/phase-checklist.md) for evidence and the
 [Telegram deferral](plans/telegram-validation-deferred.md) for its exact scope.
 
-## Try it from npm
+## Try it from npm — after beta.2 publication
 
-On a disposable evaluation machine with Node 22.22.3+:
+After Matt publishes beta.2, on a disposable evaluation machine with Node 22.22.3+:
 
 ```sh
-npm install --global @clawkeepers/cli@beta
-clawos --version
-clawos cell create evaluation --port 19100 --policy messaging
+npm install --global @gatekeeper-os/cli@beta
+gkos --version
+gkos cell create evaluation --port 19100 --policy messaging
 ```
 
-The CLI install and version command were verified from a clean npm prefix on
-2026-09-12. Cell provisioning is evaluated separately in the fresh-VM acceptance
-run; this install smoke is not end-to-end acceptance. The first beta also publishes
-`@clawkeepers/shared`, `@clawkeepers/gatekeeper-kit`, `@clawkeepers/kernel`, and
-`@clawkeepers/gatekeeper-fs`. No stable version or ClawHub listing exists yet.
+The old-scope beta.1 CLI install and version command were verified from a clean
+npm prefix on 2026-09-12; this is not evidence for the renamed beta.2 artifacts.
+Cell provisioning is evaluated separately. Beta.2 npm-only VM acceptance will run
+only after publication. Use the source-install VM route below for evaluation.
+No stable version or ClawHub listing exists yet.
 
 ## Getting started as a developer
 
@@ -127,12 +129,12 @@ Repository access is currently required. Use the Node version in
 [`.node-version`](.node-version) and pnpm version in
 [`package.json`](package.json); the current pins are Node 22.22.3 and pnpm 10.15.0.
 The upstream runtime pin is `openclaw@2026.9.2` in
-[`clawos.lock.json`](clawos.lock.json). Compatibility ranges are not a claim that
+[`gkos.lock.json`](gkos.lock.json). Compatibility ranges are not a claim that
 every version in the range has passed acceptance.
 
 ```sh
-git clone https://github.com/clawkeeper/openclaw-os.git
-cd openclaw-os
+git clone https://github.com/gatekeeper-os/gatekeeper-os.git
+cd gatekeeper-os
 corepack enable
 pnpm install --frozen-lockfile
 pnpm typecheck
@@ -152,19 +154,19 @@ For a source-install evaluation **inside a disposable machine**:
 
 ```sh
 ./installer/install.sh
-clawos status --json
-clawos kernel status --json
-clawos gatekeeper list --json
-clawos grant list --json
-clawos approvals list --json
-clawos audit tail --limit 20 --json
+gkos status --json
+gkos kernel status --json
+gkos gatekeeper list --json
+gkos grant list --json
+gkos approvals list --json
+gkos audit tail --limit 20 --json
 ```
 
 The installer provisions the cell; model credentials and channel configuration
 are separate operator setup. Installation does not grant access to arbitrary
-directories or external accounts. The npm CLI is available above; `curl | bash` remains unavailable while the
+directories or external accounts. The post-publication npm command is shown above; `curl | bash` remains unavailable while the
 source repository is private. See the
-[CLI documentation](packages/clawos-cli/README.md) for command details.
+[CLI documentation](packages/gkos-cli/README.md) for command details.
 
 ## Security boundaries
 
@@ -192,33 +194,33 @@ test results do not imply an independent security audit.
 
 | Path | Responsibility |
 |---|---|
-| `packages/clawos-shared` | Gatekeeper, grant and approval contracts |
-| `packages/clawos-kernel` | Capability policy, approvals, audit and operator interfaces |
+| `packages/gkos-shared` | Gatekeeper, grant and approval contracts |
+| `packages/gkos-kernel` | Capability policy, approvals, audit and operator interfaces |
 | `packages/gatekeeper-kit` | Driver lifecycle, token storage, nonce and overlay helpers |
-| `packages/gatekeeper-fs` | Scoped filesystem driver |
-| `packages/gatekeeper-github` | GitHub reference driver under development |
-| `packages/clawos-cli` | Host operations and paired operator commands |
-| `packages/clawos-conformance` | Live Gateway compatibility and acceptance checks |
-| `packages/clawos-blueprints` | Agent-template scaffold |
-| `packages/gatekeeper-mcp`, `packages/gatekeeper-http` | Later-driver placeholders |
+| `packages/gkos-gatekeeper-fs` | Scoped filesystem driver |
+| `packages/gkos-gatekeeper-github` | GitHub reference driver under development |
+| `packages/gkos-cli` | Host operations and paired operator commands |
+| `packages/gkos-conformance` | Live Gateway compatibility and acceptance checks |
+| `packages/gkos-blueprints` | Agent-template scaffold |
+| `packages/gkos-gatekeeper-mcp`, `packages/gatekeeper-http` | Later-driver placeholders |
 | `installer/`, `config/` | Installation and configuration inputs |
 | `scripts/vm/`, `test/` | Disposable-machine harness and phase scenarios |
 | `docs/`, `plans/` | Design, evidence, limitations and implementation progress |
 
 ## Road to the open-source beta
 
-The five-package beta is published under `@clawkeepers`; the repositories remain
-private in the clawkeeper organization. Public visibility, trusted publishing,
-community registry builds, and npm-only fresh-VM acceptance are separate gates.
-No remaining acceptance gate is silently waived by publication. The existing
-Telegram deferral stays visible. The [publication checklist](docs/open-source-release.md)
-records the remaining release checks.
+The renamed five-package beta.2 is prepared under `@gatekeeper-os`; it is not
+published yet. Repositories remain private. Public visibility, trusted publishing,
+community registry-switch builds, and npm-only fresh-VM acceptance are separate
+gates. No remaining acceptance gate is waived. The existing Telegram deferral
+stays visible. The [publication checklist](docs/open-source-release.md) records
+release checks; the [migration note](docs/migration-gatekeeperos.md) records this rename.
 
 ## Acknowledgments
 
 **[OpenClaw](https://github.com/openclaw/openclaw)** provides the agent runtime,
 Gateway, channels, tools and public plugin interfaces this project builds upon.
-OpenClaw OS is an integration layer; it does not claim those foundations as its
+GatekeeperOS is an integration layer; it does not claim those foundations as its
 own work or imply endorsement by OpenClaw's maintainers.
 
 **[Cloudflare OS](https://github.com/cloudflare/cloudflare-os)** provides the
@@ -235,7 +237,7 @@ endorsement is implied; project names and marks belong to their respective owner
 
 ## License and contributions
 
-Original OpenClaw OS contributions are licensed under **MIT**; see [LICENSE](LICENSE).
+Original GatekeeperOS contributions are licensed under **MIT**; see [LICENSE](LICENSE).
 Third-party and adapted material retains its applicable notices and license
 terms, including Apache-2.0 material from Cloudflare OS. The MIT license does not
 relicense those upstream contributions. [NOTICE](NOTICE) includes the retained

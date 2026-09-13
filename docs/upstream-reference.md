@@ -116,7 +116,7 @@ Hardened baseline (upstream security page): `gateway.bind: loopback`, `auth.mode
 
 ## 5. Plugin system
 
-Manifest `openclaw.plugin.json`: `id`, `name`, `description`, `contracts.{tools[],agentToolResultMiddleware,trustedToolPolicies,gatewayMethodDispatch,workerProviders,…}`, `activation.onStartup`, `configSchema`, `toolMetadata.<tool>.optional`, `cliCommands`. Unknown top-level `clawos` metadata is **VERIFIED** to permit the S-1 probe load/RPC on 2026.9.2. This does not imply it is preserved in snapshot reports. `configSchema` remains mandatory, including disabled placeholder plugins (pinned `docs/plugins/manifest.md`). `openclaw.compat.pluginApi` is enforced at install time for non-bundled sources; `peerDependencies.openclaw` is npm metadata only.
+Manifest `openclaw.plugin.json`: `id`, `name`, `description`, `contracts.{tools[],agentToolResultMiddleware,trustedToolPolicies,gatewayMethodDispatch,workerProviders,…}`, `activation.onStartup`, `configSchema`, `toolMetadata.<tool>.optional`, `cliCommands`. Unknown top-level `gkos` metadata is **VERIFIED** to permit the S-1 probe load/RPC on 2026.9.2. This does not imply it is preserved in snapshot reports. `configSchema` remains mandatory, including disabled placeholder plugins (pinned `docs/plugins/manifest.md`). `openclaw.compat.pluginApi` is enforced at install time for non-bundled sources; `peerDependencies.openclaw` is npm metadata only.
 
 `package.json`: `type: module`, `peerDependencies.openclaw`, `openclaw.extensions[]`, `openclaw.compat.{pluginApi,minGatewayVersion}`, `openclaw.build.{openclawVersion,pluginSdkVersion}`.
 
@@ -184,7 +184,7 @@ directly from them:
 
 - `api.on(hookName, handler, opts)` is the typed hook API; hook event/context types are **not** exported from any
   `plugin-sdk/*` subpath — derive them from `OpenClawPluginApi["on"]` with instantiation expressions (see
-  `packages/clawos-kernel/src/upstream/sdk.ts`).
+  `packages/gkos-kernel/src/upstream/sdk.ts`).
 - `PluginToolMatcher = readonly [string, ...string[]]` — a non-empty list of canonical tool ids. **Wildcards, blanks, and
   aliases are invalid** (`docs/plugins/hooks.md`). The kernel passes the explicit `gk_*` list or omits the matcher.
 - `registerTrustedToolPolicy({ id, description, matcher?, evaluate(event, ctx) })` → `PluginHookBeforeToolCallResult | { allow?, reason? } | void`.
@@ -202,7 +202,7 @@ directly from them:
 - Also on the API: `registerToolMetadata`, `registerControlUiDescriptor`, `registerRuntimeLifecycle`, `registerSecurityAuditCollector`, `registerConfigMigration`, `registerReload({ restartPrefixes, hotPrefixes })`, `enqueueNextTurnInjection`, `api.source`, `api.rootDir`.
 - `security.installPolicy` (operator config) runs a trusted local command that returns `allow` / `warn` / `block` for skill and plugin installs after staging; it is the primary install boundary and fails closed when enabled but unavailable. `before_install` is a secondary plugin-runtime hook that trusted/bundled install paths may skip. `plugins.installs`, `plugins.load`, and `security.installPolicy` changes: installPolicy hot-applies; `plugins.load`/`plugins.installs` need a restart.
 - `openclaw backup create` sources: the state directory (usually `~/.openclaw`, so `os/` is included), the active config path, `credentials/` if outside the state dir, and every configured agent directory.
-- Trusted sources for install are ClawHub packages and the bundled/official catalog; arbitrary npm/git/local sources warn and need `--force` non-interactively. The OS source installer now projects its bundled first-party artifacts through `plugins.load.paths`; the five first-release `@clawkeepers/*` packages are now published at `0.1.0-beta.1` (registry verified 2026-09-12).
+- Trusted sources for install are ClawHub packages and the bundled/official catalog; arbitrary npm/git/local sources warn and need `--force` non-interactively. The OS source installer now projects its bundled first-party artifacts through `plugins.load.paths`; the old-scope five-package beta.1 was registry-verified on 2026-09-12. Renamed `@gatekeeper-os/*` beta.2 artifacts are not yet published (see `docs/migration-gatekeeperos.md`).
 
 ## 10. Historical S-1 observations and discrepancy (2026-09-07)
 
@@ -233,7 +233,7 @@ OpenClaw 2026.9.2, reset from `base`. Phase 0 has **not** passed.
   malformed results denied installation; allow succeeded. Pinned documentation:
   `docs/tools/skills-config.md`, `security.installPolicy`.
 - **Observed, incomplete:** dotted and 64/65-character tool names reached the
-  local model; no universal maximum was established. Unknown `clawos` manifest
+  local model; no universal maximum was established. Unknown `gkos` manifest
   metadata did not prevent runtime loading; CLI validation is still pending.
   CLI shared-auth clients had operator role/scopes but no paired device or
   authenticated user ID; this does not answer the paired-client question.
@@ -315,7 +315,7 @@ nor an npm login. The first manual publish remains Matt's addendum step 5.
 
 ## Completed continuation retest (2026-09-07)
 
-`CLAWOS_VM_DRIVER=libvirt scripts/vm/test.sh phase-0`, fresh snapshot `base`,
+`GKOS_VM_DRIVER=libvirt scripts/vm/test.sh phase-0`, fresh snapshot `base`,
 artifacts `vm-artifacts/20260907-192654-phase-0/`, **exit 0**. Hook correlation
 20/20; narrowed `llm_input` 20/20; actual narrowed model requests 40/40; SQLite,
 paired SDK device-token reconnect, all three install-policy outcomes, dev Gateway
@@ -382,7 +382,7 @@ empty string to clear inherited profiles: the pinned native-service guard passes
 state/config paths are supported when they match the canonical home/profile paths.
 
 **Backup lifecycle correction:** pinned `gateway stop` requires `--force` in a non-interactive shell (documented lifecycle flag and observed refusal in the VM).
-`clawos backup restore --yes` already authorizes that selected-cell interruption; its stop
+`gkos backup restore --yes` already authorizes that selected-cell interruption; its stop
 call now passes the upstream flag and still refuses all state moves on a failed stop.
 
 
@@ -414,7 +414,7 @@ The kit's queue check was retained, not bypassed.
   No caller identity fields or private SDK imports are used. Only the cell's fixed
   loopback endpoint is accepted. CLI auth support currently covers local token
   config and the installer's exact env SecretRef, not arbitrary SecretRef providers.
-- `openclaw os` commands forward to the installed `clawos` client instead of trying
+- `openclaw os` commands forward to the installed `gkos` client instead of trying
   to read a local kernel runtime that was never started by CLI discovery.
 
 - **Observed CLI output correction:** after metadata-mode registration, `openclaw
@@ -423,7 +423,7 @@ The kit's queue check was retained, not bypassed.
   `process.stdout` and declares the documented pure `machineOutput({argv})`
   resolver (`docs/plugins/sdk-overview.md`). Captured diagnostic output was
   reduced to exit/byte counts and field-presence flags; no raw output was collected.
-- Mounted commands honor `OPENCLAW_PROFILE` when `CLAWOS_CELL` is absent and reject
+- Mounted commands honor `OPENCLAW_PROFILE` when `GKOS_CELL` is absent and reject
   disagreement between explicit cell/profile/state/config selectors. Noncanonical
   custom state is not silently redirected to the default cell.
 
@@ -432,12 +432,12 @@ The kit's queue check was retained, not bypassed.
 **VERIFIED from pinned 2026.9.2** bundled `docs/tools/skills-config.md` (Operator
 Install Policy), `docs/plugins/hooks.md` (Install hooks), and published hook types:
 `security.installPolicy` uses `{ enabled:true, exec:{ source:"exec", command,
-args, timeoutMs, maxOutputBytes } }`, not `command:"clawos install-policy"`.
+args, timeoutMs, maxOutputBytes } }`, not `command:"gkos install-policy"`.
 `command` must be an absolute, direct regular executable; interpreter script
 arguments and parents must pass trusted ownership/permission checks. The cell
 projection uses the real Node executable and a standalone bundled policy script
 under the cell's content-addressed `os/plugins/` tree (file 600, directories 700),
-with static `--cell <name>` arguments. The ordinary `clawos install-policy` verb
+with static `--cell <name>` arguments. The ordinary `gkos install-policy` verb
 uses the same implementation. npm tree permissions are not assumed trustworthy. No inherited secrets are passed.
 
 Primary input/output both require `protocolVersion:1`. Common material fields are
@@ -579,7 +579,7 @@ it. The ordinary before_prompt_build cap now includes native tool groups
 `group:openclaw`, `group:fs`, `group:runtime`, plus OS request/list and only granted
 `gk_*` names. This is still a **narrowing intersection**, never an override of the
 profile/global/provider/agent/sandbox policies. It does not pass group:plugins.
-Per-agent `tools.alsoAllow: ["clawos-kernel", ...]` and sandbox-layer alsoAllow
+Per-agent `tools.alsoAllow: ["gkos-kernel", ...]` and sandbox-layer alsoAllow
 permit kernel-owned tools to reach that cap; they never mint grants. Sources:
 published `docs/gateway/config-tools.md` and public plugin hook result types.
 ### Phase5 local channel outbound target (2026-09-12)

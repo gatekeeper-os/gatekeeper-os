@@ -1,0 +1,59 @@
+{
+  "name": "@gatekeeper-os/gatekeeper-mcp",
+  "version": "0.0.0",
+  "description": "Wraps any MCP server behind the gatekeeper model (v1.1, plan \u00a79 Phase 8).",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "LICENSE",
+    "NOTICE",
+    "dist",
+    "openclaw.plugin.json",
+    "deploy-inputs.json",
+    "config.schema.json",
+    "hooks",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "validate": "node ../../scripts/check-plugin-metadata.mjs ."
+  },
+  "dependencies": {
+    "@gatekeeper-os/shared": "workspace:*",
+    "@gatekeeper-os/gatekeeper-kit": "workspace:*",
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "typebox": "catalog:"
+  },
+  "peerDependencies": {
+    "openclaw": "catalog:"
+  },
+  "devDependencies": {
+    "tsup": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "@types/node": "catalog:"
+  },
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ],
+    "compat": {
+      "pluginApi": ">=2026.9.2 <2026.11.0",
+      "minGatewayVersion": "2026.9.2"
+    },
+    "build": {
+      "openclawVersion": "2026.9.2",
+      "pluginSdkVersion": "2026.9.2"
+    }
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gatekeeper-os/gatekeeper-os.git",
+    "directory": "packages/gkos-gatekeeper-mcp"
+  },
+  "private": true
+}

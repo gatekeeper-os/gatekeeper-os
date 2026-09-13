@@ -57,7 +57,7 @@ grab systemd-status.txt          'systemctl --user status "openclaw-gateway*" --
 grab journal.txt                 "journalctl --user -u 'openclaw-gateway*' --since '$since' --no-pager"
 grab audit-log.jsonl             'cat ~/.openclaw/os/audit/*.jsonl 2>/dev/null'
 grab conformance-verdict.json    'cat ~/.openclaw/os/logs/conformance-verdict.json 2>/dev/null'
-grab lockfile.json               'cat ~/.openclaw/os/clawos.lock.json 2>/dev/null'
+grab lockfile.json               'cat ~/.openclaw/os/gkos.lock.json 2>/dev/null'
 fi
 if grep -rEq '(ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,}|xox[baprs]-|[0-9]{8,10}:[A-Za-z0-9_-]{35})' "$out"; then
   vm_log "SECRET-LIKE STRING FOUND IN ARTIFACTS — run marked failed"; echo 99 > "$out/exit-code"; exit 99

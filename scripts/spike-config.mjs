@@ -2,7 +2,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { join, resolve } from 'node:path';
-if(process.env.CLAWOS_SPIKE_VM !== '1') throw new Error('Test VM required');
+if(process.env.GKOS_SPIKE_VM !== '1') throw new Error('Test VM required');
 const state = process.env.OPENCLAW_STATE_DIR;
 if (!state || resolve(state) !== state || process.env.OPENCLAW_CONFIG_PATH !== join(state,'openclaw.json')) throw new Error('Explicit isolated paths required');
 mkdirSync(join(state,'os'),{recursive:true,mode:0o700});

@@ -9,7 +9,7 @@ import { checkPackedLoad } from './packed-load.mjs';
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const validate = process.argv.includes('--validate');
 const pack = process.argv.includes('--pack') || validate;
-const temporary = pack ? mkdtempSync(join(tmpdir(), 'clawos-license-check-')) : undefined;
+const temporary = pack ? mkdtempSync(join(tmpdir(), 'gkos-license-check-')) : undefined;
 const license = readFileSync(join(root, 'LICENSE'));
 const notice = readFileSync(join(root, 'NOTICE'));
 let count = 0;
@@ -53,7 +53,7 @@ try {
       }
       const verifyThirdParty = prefix => {
         const thirdParty = `${prefix}THIRD-PARTY-NOTICES`;
-        const typeboxLicense = readFileSync(join(root, 'packages/gatekeeper-fs/node_modules/typebox/license'), 'utf8');
+        const typeboxLicense = readFileSync(join(root, 'packages/gkos-gatekeeper-fs/node_modules/typebox/license'), 'utf8');
         if (!members.has(thirdParty) || !read(thirdParty).toString().includes(typeboxLicense)) {
           throw new Error(`${entry.name}: bundled TypeBox notice missing from ${prefix}`);
         }

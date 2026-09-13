@@ -1,4 +1,4 @@
 // First-party plugin paths, empty-root filesystem configuration and the primary install boundary
-// are generated per cell in 15-runtime.json by clawos install. No source package is published.
+// are generated per cell in 15-runtime.json by gkos install. No source package is published.
 // Operator changes belong in 90-local.json5, which merges last. No resource is granted by installation.
 {}

@@ -1,20 +1,20 @@
 /** Disposable-VM-only smoke test of the real public SDK transport. No payloads are retained. */
 import { readFileSync, writeFileSync } from "node:fs";
 import { parseEnv } from "node:util";
-import { connect } from "../../packages/clawos-conformance/src/harness.js";
+import { connect } from "../../packages/gkos-conformance/src/harness.js";
 
 const findings = { connected: false, parameterizedRpc: false, wrongEndpointDenied: false, rpcFailureDenied: false };
 try {
   if (process.env.HOME !== "/home/tester" || process.cwd() !== "/home/tester/src" ||
       process.env.OPENCLAW_STATE_DIR !== "/home/tester/.openclaw" ||
       process.env.OPENCLAW_CONFIG_PATH !== "/home/tester/.openclaw/openclaw.json" ||
-      process.env.CLAWOS_GATEWAY_URL !== "ws://127.0.0.1:18789") throw new Error();
+      process.env.GKOS_GATEWAY_URL !== "ws://127.0.0.1:18789") throw new Error();
   const config = JSON.parse(readFileSync(process.env.OPENCLAW_CONFIG_PATH, "utf8"));
   const ref = config.gateway?.auth?.token;
-  if (ref?.source !== "env" || ref?.id !== "CLAWOS_GATEWAY_TOKEN") throw new Error();
+  if (ref?.source !== "env" || ref?.id !== "GKOS_GATEWAY_TOKEN") throw new Error();
   const token = parseEnv(readFileSync("/home/tester/.openclaw/.env", "utf8"))[ref.id];
   if (!token) throw new Error();
-  const client = await connect(process.env.CLAWOS_GATEWAY_URL, token);
+  const client = await connect(process.env.GKOS_GATEWAY_URL, token);
   try {
     const health = await client.call("health");
     if (!health || typeof health !== "object" || !("ok" in health) || health.ok !== true) throw new Error();

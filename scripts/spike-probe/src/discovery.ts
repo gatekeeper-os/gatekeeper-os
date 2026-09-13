@@ -11,8 +11,8 @@ export function inspectAttachment(state: string, enabled: boolean) {
   const catalog = JSON.parse(readFileSync(join(state, 'os', 'probe-catalog.json'), 'utf8'));
   const root = realpathSync(catalog.root);
   const manifest = JSON.parse(readFileSync(join(root, 'openclaw.plugin.json'), 'utf8'));
-  const manifestMatched = manifest.id === catalog.id && manifest.clawos?.gatekeeper?.vendor === catalog.vendor &&
-    manifest.clawos?.gatekeeper?.apiVersion === catalog.apiVersion;
+  const manifestMatched = manifest.id === catalog.id && manifest.gkos?.gatekeeper?.vendor === catalog.vendor &&
+    manifest.gkos?.gatekeeper?.apiVersion === catalog.apiVersion;
   const slot = createPluginRuntimeStore<FixtureRuntime>({ pluginId: catalog.id, errorMessage: 'Fixture unavailable' });
   const runtime = slot.tryGetRuntime();
   const resolve = (expectedState: string) => {

@@ -7,7 +7,7 @@ export function archivePublished(archive, run = spawnSync) {
   const packed = run('tar', ['-xOf', archive, 'package/package.json'], { encoding: 'utf8', timeout: 30000, maxBuffer: 1024 * 1024 });
   if (packed.error || packed.status !== 0) throw new Error('Cannot inspect release archive');
   const { name, version } = JSON.parse(packed.stdout);
-  if (!/^@clawkeepers\/[a-z0-9-]+$/.test(name) || !/^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?$/.test(version)) throw new Error('Invalid archive identity');
+  if (!/^@gatekeeper-os\/[a-z0-9-]+$/.test(name) || !/^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?$/.test(version)) throw new Error('Invalid archive identity');
   const result = run('npm', ['view', `${name}@${version}`, 'version', '--json'], { encoding: 'utf8', timeout: 60000, maxBuffer: 1024 * 1024 });
   if (result.error) throw new Error('Registry lookup failed');
   let response;

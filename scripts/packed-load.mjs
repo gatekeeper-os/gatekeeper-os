@@ -70,9 +70,9 @@ export function assertPluginList(report, ids) {
 
 export async function checkPackedLoad(packages, temporary, repo) {
   const published = packages.filter(item => item.publishable);
-  const upstream = join(repo, 'packages/clawos-kernel/node_modules/openclaw/openclaw.mjs');
-  const expectedPin = JSON.parse(readFileSync(join(repo, 'clawos.lock.json'), 'utf8')).upstream.version;
-  const actualPin = JSON.parse(readFileSync(join(repo, 'packages/clawos-kernel/node_modules/openclaw/package.json'), 'utf8')).version;
+  const upstream = join(repo, 'packages/gkos-kernel/node_modules/openclaw/openclaw.mjs');
+  const expectedPin = JSON.parse(readFileSync(join(repo, 'gkos.lock.json'), 'utf8')).upstream.version;
+  const actualPin = JSON.parse(readFileSync(join(repo, 'packages/gkos-kernel/node_modules/openclaw/package.json'), 'utf8')).version;
   if (actualPin !== expectedPin) throw new Error('Packed-load upstream does not match committed pin');
   const registry = await packedRegistry(published);
   try {
@@ -80,7 +80,7 @@ export async function checkPackedLoad(packages, temporary, repo) {
     const config = join(state, 'openclaw.json'), npmrc = join(state, 'npmrc');
     // Only the unpublished scope uses the fixture. Public third-party dependencies use
     // npm and its existing cache; omitted peers are provided by the pinned Gateway.
-    writeFileSync(npmrc, `@clawkeepers:registry=${registry.url}\nomit[]=dev\nomit[]=peer\nignore-scripts=true\naudit=false\nfund=false\n`, { mode: 0o600 });
+    writeFileSync(npmrc, `@gatekeeper-os:registry=${registry.url}\nomit[]=dev\nomit[]=peer\nignore-scripts=true\naudit=false\nfund=false\n`, { mode: 0o600 });
     writeFileSync(join(state, 'empty-npmrc'), '', { mode: 0o600 });
     const env = isolatedEnvironment(state, config, npmrc);
     const workspace = join(state, 'workspace'); mkdirSync(workspace);
@@ -104,7 +104,7 @@ export async function checkPackedLoad(packages, temporary, repo) {
     const ordinary = published.filter(item => !item.pluginId);
     await run('npm', ['install', '--ignore-scripts', '--omit=dev', '--omit=peer', ...ordinary.map(item => item.archive)], { ...options, cwd: smoke }, 'Packed library/CLI installation');
     // gatekeeper-kit intentionally has an upstream SDK peer, supplied by its host.
-    symlinkSync(realpathSync(join(repo, 'packages/clawos-kernel/node_modules/openclaw')), join(smoke, 'node_modules/openclaw'));
+    symlinkSync(realpathSync(join(repo, 'packages/gkos-kernel/node_modules/openclaw')), join(smoke, 'node_modules/openclaw'));
     for (const item of ordinary) {
       await run(process.execPath, ['--input-type=module', '-e', 'await import(process.argv[1])', item.name], { ...options, cwd: smoke }, `${item.name} packed import`);
       const pkg = JSON.parse(readFileSync(join(item.root, 'package.json'), 'utf8'));
@@ -124,8 +124,8 @@ export async function checkPackedLoad(packages, temporary, repo) {
         if (Date.now() >= deadline) throw new Error('Packed Gateway readiness timeout');
         await delay(500);
       }
-      const status = JSON.parse(await run(process.execPath, [join(repo, 'scripts/packed-load-probe.mjs'), join(repo, 'packages/clawos-kernel/package.json'), `ws://127.0.0.1:${port}`], options, 'Packed live kernel RPC'));
-      if (status.healthy !== true || status.kernelVersion !== published.find(item => item.pluginId === 'clawos-kernel')?.version) throw new Error('Packed live kernel status mismatch');
+      const status = JSON.parse(await run(process.execPath, [join(repo, 'scripts/packed-load-probe.mjs'), join(repo, 'packages/gkos-kernel/package.json'), `ws://127.0.0.1:${port}`], options, 'Packed live kernel RPC'));
+      if (status.healthy !== true || status.kernelVersion !== published.find(item => item.pluginId === 'gkos-kernel')?.version) throw new Error('Packed live kernel status mismatch');
       assertPluginList(JSON.parse(await cli(['plugins', 'list', '--json'], 'Packed plugins list')), plugins.map(item => item.pluginId));
       console.log(`Packed load: ${plugins.length} enabled plugins, authenticated live kernel; ${ordinary.length} installed library/CLI smoke checks`);
     } finally {

@@ -2,7 +2,7 @@
 import { createServer } from 'node:http';
 import { appendFileSync } from 'node:fs';
 import { join } from 'node:path';
-if (process.env.CLAWOS_SPIKE_VM !== '1') throw new Error('Test VM required');
+if (process.env.GKOS_SPIKE_VM !== '1') throw new Error('Test VM required');
 let serial = 0;
 let toolCalls = 0;
 const server = createServer(async (req, res) => {

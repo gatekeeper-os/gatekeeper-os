@@ -6,15 +6,15 @@ import {readFileSync,writeFileSync,existsSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {randomUUID} from 'node:crypto';
-const policy=process.env.CLAWOS_BLUEPRINT_POLICY,cell='blueprint-'+policy,state='/home/tester/.openclaw-'+cell;
+const policy=process.env.GKOS_BLUEPRINT_POLICY,cell='blueprint-'+policy,state='/home/tester/.openclaw-'+cell;
 if(!['runtime','messaging'].includes(policy)||process.env.OPENCLAW_STATE_DIR!==state||process.cwd()!=='/home/tester/src')throw new Error('VM required');
 const roles=policy==='runtime'?['coder']:['assistant','ops','researcher'];
 const before=JSON.parse(readFileSync(process.env.OPENCLAW_CONFIG_PATH,'utf8'));
 const policySnapshot=JSON.stringify({tools:before.tools,sandbox:before.agents?.defaults?.sandbox});
-const report={checks:{},turns:[],fullPhaseAcceptance:false,runId:process.env.CLAWOS_TEST_START},reportPath='/home/tester/phase-6-evidence/scenarios-'+policy+'.json';
+const report={checks:{},turns:[],fullPhaseAcceptance:false,runId:process.env.GKOS_TEST_START},reportPath='/home/tester/phase-6-evidence/scenarios-'+policy+'.json';
 const save=()=>writeFileSync(reportPath,JSON.stringify(report,null,2)+'\n',{mode:0o600});
 function check(name,ok){report.checks[name]=ok===true;save();console.log((ok?'PASS ':'FAIL ')+name);if(!ok)throw new Error(name);}
-function cli(args,binary='clawos'){const r=spawnSync(binary,args,{env:process.env,encoding:'utf8',timeout:180000,maxBuffer:4*1024*1024});let value;try{value=JSON.parse(r.stdout);}catch{}return{ok:r.status===0,value,output:r.stdout+r.stderr};}
+function cli(args,binary='gkos'){const r=spawnSync(binary,args,{env:process.env,encoding:'utf8',timeout:180000,maxBuffer:4*1024*1024});let value;try{value=JSON.parse(r.stdout);}catch{}return{ok:r.status===0,value,output:r.stdout+r.stderr};}
 let current,paired,shared,serial=0;
 const server=createServer(async(req,res)=>{try{
   let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>2_000_000)throw new Error();}
@@ -28,7 +28,7 @@ const server=createServer(async(req,res)=>{try{
   if(input.stream){res.writeHead(200,{'Content-Type':'text/event-stream'});for(const part of [{delta:call?{role:'assistant',tool_calls:[{index:0,...tc}]}:{role:'assistant',content:'blueprint-turn-complete'},finish_reason:null},{delta:{},finish_reason:call?'tool_calls':'stop'}])res.write('data: '+JSON.stringify({id,object:'chat.completion.chunk',created:Math.floor(Date.now()/1000),model:'spike',choices:[{index:0,...part}]})+'\n\n');res.end('data: [DONE]\n\n');}
   else{res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({id,object:'chat.completion',model:'spike',choices:[{index:0,message:call?{role:'assistant',content:null,tool_calls:[tc]}:{role:'assistant',content:'blueprint-turn-complete'},finish_reason:call?'tool_calls':'stop'}]}));}
 }catch{res.writeHead(400);res.end('{}');}});
-const require=createRequire(resolve('packages/clawos-conformance/package.json'));
+const require=createRequire(resolve('packages/gkos-conformance/package.json'));
 const {GatewayClient}=await import(pathToFileURL(require.resolve('openclaw/plugin-sdk/gateway-runtime')).href);
 async function connect(auth){let client,timer;try{const hello=await new Promise((ok,no)=>{timer=setTimeout(()=>no(new Error('connect-timeout')),30000);client=new GatewayClient({url:'ws://127.0.0.1:'+process.env.OPENCLAW_GATEWAY_PORT,...auth,env:process.env,clientName:'cli',mode:'cli',role:'operator',scopes:['operator.admin'],requestTimeoutMs:120000,hostDeps:{logDebug(){},logError(){}},onHelloOk:ok,onConnectError:()=>no(new Error('connect-failed'))});client.start();});return{client,deviceToken:hello.auth?.deviceToken};}catch(e){await client?.stopAndWait({timeoutMs:5000});throw e;}finally{clearTimeout(timer);}}
 try{
@@ -46,14 +46,14 @@ try{
  }else{
    const refused=cli(['blueprint','apply','coder','--agent','bp-coder','--cell',cell,'--yes']);
    check('messaging-coder-refused',!refused.ok);
-   check('messaging-coder-create-command',refused.output.includes('clawos cell create blueprint-messaging-runtime --port 19111 --policy runtime'));
+   check('messaging-coder-create-command',refused.output.includes('gkos cell create blueprint-messaging-runtime --port 19111 --policy runtime'));
    check('messaging-coder-no-agent-created',!existsSync(state+'/agents/bp-coder'));
  }
  await new Promise((ok,no)=>{server.once('error',no);server.listen(19101,'127.0.0.1',ok);});
  const cfg=JSON.parse(readFileSync(process.env.OPENCLAW_CONFIG_PATH,'utf8'));
  check('apply-keeps-cell-global-policy',JSON.stringify({tools:cfg.tools,sandbox:cfg.agents?.defaults?.sandbox})===policySnapshot);
  check('apply-keeps-baseline',readFileSync(state+'/os/config.d/00-baseline.json5','utf8')===readFileSync('config/config.d/00-baseline.json5','utf8'));
- const token=readFileSync(state+'/.env','utf8').split('\n').find(line=>line.startsWith('CLAWOS_GATEWAY_TOKEN='))?.slice('CLAWOS_GATEWAY_TOKEN='.length);
+ const token=readFileSync(state+'/.env','utf8').split('\n').find(line=>line.startsWith('GKOS_GATEWAY_TOKEN='))?.slice('GKOS_GATEWAY_TOKEN='.length);
  if(!token||!/^[a-f0-9]{64}$/.test(token))throw new Error('Cell token unavailable');
  shared=await connect({token});check('paired-device',typeof shared.deviceToken==='string');paired=await connect({deviceToken:shared.deviceToken});
  check('kernel-healthy',(await paired.client.request('os.status',{})).healthy===true);

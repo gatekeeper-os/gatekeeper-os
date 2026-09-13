@@ -1,1 +1,1 @@
-export default { id: 'clawos-install-policy-probe', register() {} };
+export default { id: 'gkos-install-policy-probe', register() {} };

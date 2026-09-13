@@ -5,7 +5,7 @@ on:
     paths:
       - ".github/workflows/macos-phase-1.yml"
       - "installer/**"
-      - "packages/clawos-cli/**"
+      - "packages/gkos-cli/**"
       - "scripts/vm/**"
       - "test/phase-1.sh"
   workflow_dispatch:
@@ -22,7 +22,7 @@ jobs:
           node-version-file: .node-version
       - name: Fresh hosted VM acceptance through the VM harness
         env:
-          CLAWOS_VM_DRIVER: github-hosted
+          GKOS_VM_DRIVER: github-hosted
         run: bash scripts/vm/test.sh phase-1
       - uses: actions/upload-artifact@v4
         if: always()

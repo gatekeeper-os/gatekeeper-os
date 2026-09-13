@@ -29,7 +29,7 @@ esac
             tool.chmod(0o755)
             log = path / 'calls'
             env = dict(os.environ, PATH=f'{tmp}:{os.environ["PATH"]}',
-                       CLAWOS_VM_DRIVER='multipass', VM_TEST_LOG=str(log),
+                       GKOS_VM_DRIVER='multipass', VM_TEST_LOG=str(log),
                        VM_TEST_FAILURE=failure)
             result = subprocess.run(['bash', 'scripts/vm/up.sh'], cwd=ROOT,
                                     env=env, capture_output=True)

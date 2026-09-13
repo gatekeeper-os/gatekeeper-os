@@ -3,8 +3,8 @@ import { execFileSync } from 'node:child_process';
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 const tag = process.env.UPSTREAM_TAG;
 if (!['pinned', 'latest', 'beta', 'extended-stable'].includes(tag)) throw new Error('INVALID_UPSTREAM_TAG');
-const pin = JSON.parse(readFileSync('clawos.lock.json', 'utf8')).upstream.version;
-const range = JSON.parse(readFileSync('packages/clawos-kernel/package.json', 'utf8')).openclaw.compat.pluginApi;
+const pin = JSON.parse(readFileSync('gkos.lock.json', 'utf8')).upstream.version;
+const range = JSON.parse(readFileSync('packages/gkos-kernel/package.json', 'utf8')).openclaw.compat.pluginApi;
 function versions(spec) {
   const value = JSON.parse(execFileSync('npm', ['view', `openclaw@${spec}`, 'version', '--json'], {
     encoding: 'utf8', timeout: 60000, stdio: ['ignore', 'pipe', 'pipe'],

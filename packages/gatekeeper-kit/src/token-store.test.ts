@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TokenStore } from "./token-store.js";
 const dirs: string[] = [];
-const dir = () => { const d = mkdtempSync(join(tmpdir(), "clawos-token-test-")); dirs.push(d); return d; };
+const dir = () => { const d = mkdtempSync(join(tmpdir(), "gkos-token-test-")); dirs.push(d); return d; };
 afterEach(() => { for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true }); });
 describe("TokenStore", () => {
   it("round-trips encrypted with fresh nonces and private file permissions", () => {

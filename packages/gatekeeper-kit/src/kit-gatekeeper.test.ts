@@ -2,12 +2,12 @@ import { mkdtempSync, rmSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { SupportedResource } from "@clawkeepers/shared";
+import type { SupportedResource } from "@gatekeeper-os/shared";
 import { KitGatekeeper } from "./kit-gatekeeper.js";
 import { OverlayStore } from "./overlay-store.js";
 import { TestApprovalQueue } from "./testing.js";
 const dirs: string[] = [];
-const file = () => { const dir = mkdtempSync(join(tmpdir(), "clawos-action-test-")); dirs.push(dir); return join(dir, "actions.json"); };
+const file = () => { const dir = mkdtempSync(join(tmpdir(), "gkos-action-test-")); dirs.push(dir); return join(dir, "actions.json"); };
 afterEach(() => { for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true }); });
 class Resource extends KitGatekeeper {
   resource: SupportedResource = { type: "item", urlPattern: "https://example.test/:id", title: "Item", description: "", grantable: true, observerStrategy: "private-only", tools: ["gk_test_item_get", "gk_test_item_put"] };

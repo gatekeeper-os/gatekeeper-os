@@ -1,12 +1,12 @@
 # Operator approvals
 
-`clawos approvals list` shows at most 100 pending actions as an escaped terminal
-table. `clawos approvals preview 12,13` (or `all`) explicitly displays descriptions,
+`gkos approvals list` shows at most 100 pending actions as an escaped terminal
+table. `gkos approvals preview 12,13` (or `all`) explicitly displays descriptions,
 revert support and previews. `--json` preserves the machine-readable operator
 response. Preview bodies are operator output, never notification or audit content.
 A truncated response is explicitly labeled; an absent requested ID is an error.
 
-Use `clawos approvals apply|reject|revert IDs|all` to decide. Previewing does not
+Use `gkos approvals apply|reject|revert IDs|all` to decide. Previewing does not
 claim, authorize or execute an action. Reversion is supported only by drivers that
 implement it. Existing uncertain effects stay nonretryable.
 

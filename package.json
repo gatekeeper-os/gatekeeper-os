@@ -1,8 +1,8 @@
 {
-  "name": "openclaw-os",
+  "name": "gatekeeper-os",
   "version": "0.1.0-beta.1",
   "private": true,
-  "description": "An operating-system layer over upstream OpenClaw, modeled on Cloudflare OS gatekeepers.",
+  "description": "GatekeeperOS: capability-based access and deferred approvals for OpenClaw",
   "type": "module",
   "packageManager": "pnpm@10.15.0",
   "engines": {
@@ -15,7 +15,7 @@
     "lint": "eslint . && pnpm run check:catalog && pnpm run check:secrets",
     "check:catalog": "tsx scripts/check-catalog.ts",
     "check:secrets": "bash scripts/check-secrets.sh",
-    "conformance": "tsx packages/clawos-conformance/src/run.ts",
+    "conformance": "tsx packages/gkos-conformance/src/run.ts",
     "dev:gateway": "tsx scripts/dev-gateway.ts",
     "vm:up": "bash scripts/vm/up.sh",
     "vm:test": "bash scripts/vm/test.sh",
@@ -33,6 +33,6 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/clawkeeper/openclaw-os.git"
+    "url": "git+https://github.com/gatekeeper-os/gatekeeper-os.git"
   }
 }

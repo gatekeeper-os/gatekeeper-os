@@ -7,7 +7,7 @@ import { CacheMutationStore } from "./cache-mutation-store.js";
 import { ActionSequencer } from "./action-sequencer.js";
 import { sanitizeError } from "./sanitize.js";
 const dirs: string[] = [];
-const file = () => { const d = mkdtempSync(join(tmpdir(), "clawos-store-test-")); dirs.push(d); return join(d, "state.json"); };
+const file = () => { const d = mkdtempSync(join(tmpdir(), "gkos-store-test-")); dirs.push(d); return join(d, "state.json"); };
 afterEach(() => { for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true }); });
 const reducers = { append: (v: number[], e: { payload: unknown }) => { v.push(e.payload as number); return v; } };
 describe("persistent simulation", () => {

@@ -1,9 +1,9 @@
 {
   "packages": [
-    "clawos-shared",
+    "gkos-shared",
     "gatekeeper-kit",
-    "clawos-kernel",
-    "gatekeeper-fs",
-    "clawos-cli"
+    "gkos-kernel",
+    "gkos-gatekeeper-fs",
+    "gkos-cli"
   ]
 }

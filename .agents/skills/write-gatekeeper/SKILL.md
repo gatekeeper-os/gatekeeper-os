@@ -1,12 +1,12 @@
 ---
 name: write-gatekeeper
-description: Guides implementation of OpenClaw OS gatekeeper plugins that bridge agents to external services. Covers auth, capability-oriented tool design, approval-queue integration, caching, action simulation, and observer verification. Load when creating, modifying, or reviewing a gatekeeper.
+description: Guides implementation of GatekeeperOS gatekeeper plugins that bridge agents to external services. Covers auth, capability-oriented tool design, approval-queue integration, caching, action simulation, and observer verification. Load when creating, modifying, or reviewing a gatekeeper.
 ---
 
 # Writing a gatekeeper
 
-A gatekeeper is an OpenClaw plugin, built with `@clawkeepers/gatekeeper-kit`, that is the *only* way an agent reaches one external
-service. Read `docs/implementation-plan.md` §4 first; `packages/gatekeeper-github` is the reference; `packages/gatekeeper-kit/SKELETON.md`
+A gatekeeper is an OpenClaw plugin, built with `@gatekeeper-os/gatekeeper-kit`, that is the *only* way an agent reaches one external
+service. Read `docs/implementation-plan.md` §4 first; `packages/gkos-gatekeeper-github` is the reference; `packages/gatekeeper-kit/SKELETON.md`
 is the template. There are two mandatory STOP points below — do not proceed past either without operator approval. If no
 operator is present, write what needs review into `plans/REVIEW-REQUESTED.md` and end the run.
 
@@ -24,7 +24,7 @@ operator is present, write what needs review into `plans/REVIEW-REQUESTED.md` an
 4. **Implement** `vendor.ts` (describe, connectAccount with `OAuthNonceMachine`, getAccount via `TokenStore`, resources, tools),
    `account.ts` (`getGatekeeperFor(url)` validates access with the operator's own credentials), one `KitGatekeeper` subclass per
    resource type. Pass credentials and resource ids through constructors from the account, never through tool params.
-5. **Register**: `openclaw.plugin.json` with `"clawos": { "gatekeeper": { "vendor": "<v>", "apiVersion": 1 } }`; `package.json`
+5. **Register**: id `gkos-gatekeeper-<vendor>` in `openclaw.plugin.json` with `"gkos": { "gatekeeper": { "vendor": "<v>", "apiVersion": 1 } }`; `package.json`
    with `openclaw.compat` from the catalog; `deploy-inputs.json`; add to `config/gatekeepers.json`.
 6. **STOP 2 — ask the operator whether to proceed to Phase 2.**
 

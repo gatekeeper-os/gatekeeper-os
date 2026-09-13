@@ -2,8 +2,8 @@
 import { appendFileSync, readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { definePluginEntry } from 'openclaw/plugin-sdk/plugin-entry';
-export default definePluginEntry({id:'clawos-install-hook-monitor',register(api){
-  if(process.env.CLAWOS_KERNEL_VM!=='1'||process.env.OPENCLAW_STATE_DIR!=='/home/tester/.openclaw-kernel-test')throw new Error('VM required');
+export default definePluginEntry({id:'gkos-install-hook-monitor',register(api){
+  if(process.env.GKOS_KERNEL_VM!=='1'||process.env.OPENCLAW_STATE_DIR!=='/home/tester/.openclaw-kernel-test')throw new Error('VM required');
   if(api.registrationMode!=='full')return;
   const fixture=JSON.parse(readFileSync(new URL('./candidate.json',import.meta.url),'utf8'));
   for(const [stage,priority] of [['before',1000],['after',-1000]])api.on('before_install',(e)=>{

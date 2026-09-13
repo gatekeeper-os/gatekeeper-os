@@ -23,7 +23,7 @@ identity or approval values, are rejected. All three belong to resource type `di
 | `gk_fs_file_read` | relative `path` | `{path, content}` (UTF-8 text) |
 | `gk_fs_file_write` | relative `path`, UTF-8 `content` | `{path, bytes}` |
 
-Definitions: `packages/gatekeeper-fs/src/tools.ts` and `src/resources.ts`.
+Definitions: `packages/gkos-gatekeeper-fs/src/tools.ts` and `src/resources.ts`.
 The existing tool names and input names are retained. New constraints are closed input
 objects, valid handle shape, bounded paths/content, and explicit output schemas.
 No delete, rename, mkdir, recursive listing, shell, binary-file, or arbitrary-host tools.
