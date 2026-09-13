@@ -1,6 +1,25 @@
 #!/usr/bin/env bash
 # Sourced by test.sh. No host config edits, daemon restarts, or snapshot creation.
 vm_preflight_pid=''
+# Restore original metadata parent-first. Internal disk snapshots are never created.
+vm_register_snapshot() {
+  local name="$1" ancestors="${2:-:}" xml parent
+  [[ "$name" =~ ^[A-Za-z0-9_-]+$ ]] || return 1
+  [[ "$ancestors" != *":$name:"* ]] || return 1
+  if lv snapshot-info "$VM_NAME" "$name" >/dev/null 2>&1; then return 0; fi
+  xml="${GKOS_VM_SNAPSHOT_XML_DIR:?original snapshot XML directory required}/$name.original.xml"
+  parent=$(python3 - "$xml" "$name" "$LV_DISK" <<'PY'
+import sys,xml.etree.ElementTree as E
+root=E.parse(sys.argv[1]).getroot()
+assert root.findtext('name') == sys.argv[2]
+assert sys.argv[3] in [x.get('file') for x in root.findall('./domain/devices/disk/source')]
+print(root.findtext('parent/name') or '')
+PY
+  ) || return 1
+  if [ -n "$parent" ]; then vm_register_snapshot "$parent" "$ancestors$name:" || return 1; fi
+  sha256sum "$xml" >> "$out/snapshot-registration-sha256"
+  lv snapshot-create "$VM_NAME" "$xml" --redefine
+}
 vm_test_cleanup() {
   local rc=$? cleanup_rc=0
   trap - EXIT INT TERM
@@ -40,17 +59,7 @@ vm_test_preflight() {
     ((SECONDS<deadline)) || vm_die 'libvirt preflight timed out'
     sleep 1
   done
-  # Re-register only operator-supplied original metadata if registration is absent.
-  if ! lv snapshot-info "$VM_NAME" "$snap" >/dev/null 2>&1; then
-    local xml="${GKOS_VM_SNAPSHOT_XML_DIR:?original snapshot XML directory required}/$snap.original.xml"
-    python3 - "$xml" "$snap" "$LV_DISK" <<'PY'
-import sys,xml.etree.ElementTree as E
-root=E.parse(sys.argv[1]).getroot()
-assert root.findtext('name') == sys.argv[2]
-assert sys.argv[3] in [x.get('file') for x in root.findall('./domain/devices/disk/source')]
-PY
-    sha256sum "$xml" > "$out/snapshot-registration-sha256"
-    lv snapshot-create "$VM_NAME" "$xml" --redefine
-  fi
+  # Re-register only supplied original metadata, including missing ancestors.
+  vm_register_snapshot "$snap"
   vm_log 'session daemon held; transient MEMLOCK active; EXIT trap restores it'
 }

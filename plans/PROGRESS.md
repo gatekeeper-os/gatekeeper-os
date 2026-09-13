@@ -2565,3 +2565,60 @@ All five old beta.1 identities retain version/dist-tags beta=latest=0.1.0-beta.1
 | @clawkeepers/cli | 2026-09-12T16:42:49.646Z | 2026-09-13T13:48:25.799Z | Renamed to @gatekeeper-os/cli. Install @gatekeeper-os/cli@beta. |
 
 Preserved the prior corrected harness, rebased onto beta.2 core main, and mechanically updated test-only package/version, CLI, environment and plugin identifiers to the published rename. Explicit cell, registry/unit port, upstream install-policy readbacks, and agents.ownership fixes remain. No product edit. Acceptance has not run yet.
+
+### Single beta.2 acceptance invocation — STOP in host harness preflight
+
+Run **20260913-135341-phase-3**, harness revision `650a614`, exit **1**,
+verdict **BLOCKED_HARNESS_PREFLIGHT**. Command used `scripts/vm/test.sh phase-3
+installed npm-only`, with explicit GKOS_VM_DRIVER=libvirt, GKOS_VM_NAME=clawos-test,
+shared phase-0-bootstrap VM state and the original snapshot XML directory.
+All604 host tests, lint/catalog/secrets and typechecks passed before invocation.
+
+Exact libvirt error:
+
+```text
+error: invalid argument: parent base for moment installed not found
+```
+
+The current session daemon had no registered snapshots. Both immutable internal
+snapshots remain present (IDs1/2, original dates and VM clocks). Preflight tried to
+redefine original installed metadata, whose parent is base, without first
+redefining missing base metadata. Libvirt rejected the registration before reset,
+boot, guest fixture transfer, registry install or any product invocation.
+This is a **harness assumption**, not a product denial. No effective product cell
+was created or tested in this run; no guest boot was needed to diagnose it.
+
+| Stage | This invocation |
+|---|---|
+| Host registry beta.2 identities / beta.1 deprecations | 5/5 / 5/5 PASS (separate registry evidence above) |
+| Host preflight | FAIL: missing parent registration |
+| Guest registry identities | 0/5 executed |
+| Messaging cell creation / selector | 0/1 / 0/1 executed |
+| Install policy | 0/14 executed |
+| Kernel-live checks | 0 executed |
+| Selected live conformance | 0/38 executed |
+| Owner-only audience | 0 checks executed |
+| Approval apply/reject | 0 checks executed |
+| Model turns / provider requests | 0 / 0 |
+
+Original live runner hashes all matched after exit. Cleanup receipt confirms
+VM shut off, daemon3634848/start21682656 soft/hardMEMLOCK restored to
+8388608/8388608, keeper closed, internal snapshot table byte-identical. No guest
+or product failure is inferred from this infrastructure-side stop.
+
+After the run finished, fixed **only** preflight original-registration ordering:
+walk missing original parent metadata first, validating each name and owned disk;
+refuse missing XML, invalid names or cycles; leave existing registrations alone.
+Only `snapshot-create --redefine` is used, never internal snapshot creation.
+Six isolated fake-libvirt regression tests passed: parent-first, existing-parent
+skip, existing-target no-op, missing-parent fail-closed, wrong-disk fail-closed,
+cycle fail-closed. Shell syntax and diff checks passed. This is host-only evidence,
+**not** a second acceptance invocation or proof of live recovery. No live metadata
+repair, VM retry, product patch, remote push, PR or merge followed the stop.
+
+Evidence: `vm-artifacts/20260913-135341-phase-3/`; consolidated registry and run
+receipts at `beta2-acceptance-20260913/{registry-verification,acceptance-summary}.json`
+under the project kit root. Branch test/npm-only-acceptance remains unmerged.
+Community PR9 and its lockfile remain untouched because end-to-end success was
+not reached. No visibility change, publish/deprecate, tag push, trusted publisher,
+release workflow rerun, phase tag or upstream post. Report before any further run.

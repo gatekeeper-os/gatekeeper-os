@@ -470,8 +470,12 @@ A lost daemon identity is a recorded failure, never a reason to modify a new PID
 If original registrations have disappeared, supply the directory holding the
 retained original `<snapshot>.original.xml` files via
 `GKOS_VM_SNAPSHOT_XML_DIR`. Preflight verifies snapshot name and owned disk,
-records the XML SHA256, and uses `snapshot-create --redefine` only for the missing
-requested registration; it never creates/replaces an internal snapshot.
+records each XML SHA256, and uses `snapshot-create --redefine` only for missing
+registrations, restoring original ancestors before the requested child. Every
+ancestor must have its own matching original XML and owned disk; missing XML,
+invalid names and parent cycles fail closed. Existing registrations are untouched;
+it never creates/replaces an internal snapshot. Host-only regression:
+`python3 test/vm-snapshot-registration.test.py` (fake libvirt; no VM start/reset).
 
 The artifact `libvirt-preflight.json` records before/applied/restored limits,
 identity and snapshot equality. Keep scripts immutable during the single run.
