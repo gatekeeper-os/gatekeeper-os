@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# Registry-only product acceptance. Test fixtures are transferred by scripts/vm/test.sh.
+set -euo pipefail
+[ "$HOME" = /home/tester ] && [ "$PWD" = /home/tester/npm-acceptance ] || exit 1
+[ ! -e /home/tester/src ] || exit 1
+export PATH="/home/tester/npm-acceptance-prefix/bin:$HOME/.npm-global/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
+unset CLAWOS_FROM_SOURCE OPENCLAW_PROFILE OPENCLAW_STATE_DIR OPENCLAW_CONFIG_PATH OPENCLAW_GATEWAY_TOKEN OPENCLAW_GATEWAY_PORT CLAWOS_CELL CLAWOS_GATEKEEPER_CATALOG NODE_PATH
+export OPENCLAW_NO_AUTO_UPDATE=1
+evidence=/home/tester/npm-acceptance-evidence
+mkdir -m 700 -p "$evidence"
+stage=registry-install gateway_pid=''
+cleanup(){
+  rc=$?; trap - EXIT
+  if [ -n "$gateway_pid" ]; then kill "$gateway_pid" 2>/dev/null || true; wait "$gateway_pid" 2>/dev/null || true; fi
+  systemctl --user stop openclaw-gateway-kernel-test.service >/dev/null 2>&1 || true
+  printf '%s\n' "$rc" > "$evidence/live-exit-code"
+  printf '%s\n' "$stage" > "$evidence/final-stage"
+  if [ "$rc" -ne 0 ]; then printf 'FAIL npm-only stage=%s exit=%s; no product patch or retry\n' "$stage" "$rc"; fi
+  exit "$rc"
+}
+trap cleanup EXIT
+printf '%s\n' '{"mode":"npm-only","snapshot":"installed","repoClone":false,"productSourceBuild":false,"policy":"messaging","fullPhaseAcceptance":false,"realFilesystemWritesEnabled":false}' > "$evidence/scope.json"
+[ ! -e /home/tester/npm-acceptance-prefix ] || { echo "FAIL registry-prefix-not-empty"; exit 1; }
+npm install --global --prefix /home/tester/npm-acceptance-prefix --ignore-scripts --registry=https://registry.npmjs.org \
+  @clawkeepers/shared@0.1.0-beta.1 @clawkeepers/gatekeeper-kit@0.1.0-beta.1 \
+  @clawkeepers/kernel@0.1.0-beta.1 @clawkeepers/gatekeeper-fs@0.1.0-beta.1 \
+  @clawkeepers/cli@0.1.0-beta.1 > /home/tester/npm-only-install.log 2>&1
+node registry.mjs
+clawos --version > "$evidence/cli-version"
+openclaw --version > "$evidence/upstream-version"
+CLAWOS_UPSTREAM_PACKAGE_JSON=$(node -e 'const fs=require("fs"),p=require("path");process.stdout.write(p.join(p.dirname(fs.realpathSync(process.argv[1])),"package.json"));' "$(command -v openclaw)")
+export CLAWOS_UPSTREAM_PACKAGE_JSON
+stage=messaging-cell-create
+clawos cell create kernel-test --port 19100 --policy messaging --yes --json > /home/tester/npm-only-create.log 2>&1
+printf 'PASS registry-cli-messaging-cell-created\n'
+export CLAWOS_KERNEL_VM=1 CLAWOS_CELL=kernel-test
+export OPENCLAW_STATE_DIR=/home/tester/.openclaw-kernel-test OPENCLAW_CONFIG_PATH=/home/tester/.openclaw-kernel-test/openclaw.json
+# Discover the chosen port from the product registry, not raw gateway.port.
+OPENCLAW_GATEWAY_PORT=$(clawos cell list --json | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>{const rows=JSON.parse(s).filter(r=>r.name===process.env.CLAWOS_CELL);if(rows.length!==1)process.exit(1);process.stdout.write(String(rows[0].port));});')
+export OPENCLAW_GATEWAY_PORT
+node selector.mjs receipt
+# Canonical cell-token SecretRef, not a competing OPENCLAW_GATEWAY_TOKEN override.
+CLAWOS_GATEWAY_TOKEN=$(node -e 'const fs=require("fs");const s=fs.readFileSync(process.env.OPENCLAW_STATE_DIR+"/.env","utf8");const m=s.match(/^CLAWOS_GATEWAY_TOKEN=(.+)$/m);if(!m)process.exit(1);process.stdout.write(m[1]);')
+export CLAWOS_GATEWAY_TOKEN
+systemctl --user stop openclaw-gateway-kernel-test.service
+stage=install-policy
+node install-scenarios.mjs > "$evidence/install-scenarios.json"
+# Explicit-cell reconciliation can restart its managed Gateway. The remaining
+# scenarios own a foreground Gateway and must not inherit that service instance.
+systemctl --user stop openclaw-gateway-kernel-test.service
+printf 'PASS registry-cell-install-policy\n'
+export CLAWOS_SCENARIO_REPORT="$evidence/scenarios.json" CLAWOS_SCENARIO_RUN="$CLAWOS_TEST_START"
+start_gateway(){
+  openclaw config validate > /home/tester/npm-only-validation.log 2>&1
+  openclaw gateway run --port "$OPENCLAW_GATEWAY_PORT" > /home/tester/npm-only-gateway.log 2>&1 & gateway_pid=$!
+  deadline=$((SECONDS+120))
+  until curl -fsS --max-time 2 "http://127.0.0.1:$OPENCLAW_GATEWAY_PORT/readyz" >/dev/null 2>&1; do
+    if ! kill -0 "$gateway_pid" 2>/dev/null || ((SECONDS>=deadline)); then echo 'FAIL npm-only-gateway-start'; exit 1; fi
+    sleep 1
+  done
+}
+stop_gateway(){ kill "$gateway_pid"; wait "$gateway_pid" 2>/dev/null || true; gateway_pid=''; }
+# Remaining fixture invocations are defined with the reviewed test-only adapter.
+stage=kernel-config
+node config.mjs normal
+start_gateway
+stage=kernel-normal
+node kernel-scenarios.mjs normal
+stop_gateway
+node config.mjs no-hooks
+start_gateway
+stage=kernel-no-hooks
+node kernel-scenarios.mjs no-hooks
+stop_gateway
+stage=conformance
+node conformance.mjs "$evidence/live-verdict.json"
+stage=audience
+node config.mjs owner
+export CLAWOS_SCENARIO_REPORT="$evidence/audience-scenarios.json"
+start_gateway
+node channel-scenarios.mjs
+stop_gateway
+stage=approvals
+export CLAWOS_SCENARIO_REPORT="$evidence/approval-scenarios.json"
+node config.mjs approvals
+start_gateway
+node approval-scenarios.mjs
+stop_gateway
+stage=complete
+printf 'npm-only: PASS (registry products, test-only fixtures; not full connected-provider acceptance)\n'
