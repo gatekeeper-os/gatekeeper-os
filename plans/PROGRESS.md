@@ -2349,3 +2349,29 @@ checks verified all 10 package licenses, 2 enabled/loaded plugins, authenticated
 live kernel RPC and 3 installed library/CLI checks. These are isolated packed
 fixtures, not new-scope registry or VM acceptance. The manifest inspector refuses
 a host invocation by design; its required GitHub Actions execution is pending.
+
+## GatekeeperOS beta.2 preparation — blocked on org rename / ordered merges
+
+Five release packages and their manifest/lock versions prepared at 0.1.0-beta.2.
+All consumers of release packages use workspace:0.1.0-beta.2 (packed dependency
+versions are exact); private packages remain private and keep their own versions.
+Changelog says “rename to GatekeeperOS; no functional change”. Third-party lockfile
+package/snapshot maps are identical; only importer ordering/pins change.
+
+Local beta.2 checks: 599/599 tests, typecheck, lint/catalog/secrets, release-plan
+and 11 helper tests passed; all 10 packed-license checks passed; isolated packed
+load passed 2 enabled plugins, authenticated kernel RPC and 3 installed package
+smokes. Release pack selects exactly @gatekeeper-os/{shared,gatekeeper-kit,kernel,
+gatekeeper-fs,cli} at beta.2. No VM run or publication is implied.
+
+All 423 original tracked files map to existing renamed files, including all 129
+test/fixture files; no existing test was deleted. Shared upstream interfaces stay
+unchanged. No new release run, tag or visibility mutation.
+
+Core rename PR19, community rename PR8 (draft) and org profile PR4 exist under the
+still-current clawkeeper org. Org profile build-test is green. Community fetch
+fails because gatekeeper-os/gatekeeper-os does not yet exist; never substitute an
+empty/snapshot skill for that live gate. Core extended-stable conformance job
+failed only in setup-node cache post-cleanup for its unsupported target; retain
+as failed supplemental CI, not passed acceptance. Required build-test tracked
+separately. Clean-main beta.2 tag and ordered merges await prerequisite resolution.

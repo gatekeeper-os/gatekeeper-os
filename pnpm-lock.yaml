@@ -57,18 +57,68 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@22.18.0)(jiti@2.7.0)(tsx@4.20.5)(yaml@2.9.0)
 
+  packages/gatekeeper-http:
+    dependencies:
+      '@gatekeeper-os/gatekeeper-kit':
+        specifier: workspace:0.1.0-beta.2
+        version: link:../gatekeeper-kit
+      '@gatekeeper-os/shared':
+        specifier: workspace:0.1.0-beta.2
+        version: link:../gkos-shared
+      openclaw:
+        specifier: 'catalog:'
+        version: 2026.9.2
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.18.0
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.0(jiti@2.7.0)(postcss@8.5.28)(tsx@4.20.5)(typescript@5.9.2)(yaml@2.9.0)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.2
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/node@22.18.0)(jiti@2.7.0)(tsx@4.20.5)(yaml@2.9.0)
+
+  packages/gatekeeper-kit:
+    dependencies:
+      '@gatekeeper-os/shared':
+        specifier: workspace:0.1.0-beta.2
+        version: link:../gkos-shared
+      openclaw:
+        specifier: 'catalog:'
+        version: 2026.9.2
+      typebox:
+        specifier: 'catalog:'
+        version: 1.1.39
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.18.0
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.0(jiti@2.7.0)(postcss@8.5.28)(tsx@4.20.5)(typescript@5.9.2)(yaml@2.9.0)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.2
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/node@22.18.0)(jiti@2.7.0)(tsx@4.20.5)(yaml@2.9.0)
+
   packages/gkos-blueprints: {}
 
   packages/gkos-cli:
     devDependencies:
       '@gatekeeper-os/gatekeeper-fs':
-        specifier: workspace:*
+        specifier: workspace:0.1.0-beta.2
         version: link:../gkos-gatekeeper-fs
       '@gatekeeper-os/kernel':
-        specifier: workspace:*
+        specifier: workspace:0.1.0-beta.2
         version: link:../gkos-kernel
       '@gatekeeper-os/shared':
-        specifier: workspace:*
+        specifier: workspace:0.1.0-beta.2
         version: link:../gkos-shared
       '@types/node':
         specifier: 'catalog:'
@@ -86,7 +136,7 @@ importers:
   packages/gkos-conformance:
     dependencies:
       '@gatekeeper-os/shared':
-        specifier: workspace:*
+        specifier: workspace:0.1.0-beta.2
         version: link:../gkos-shared
       openclaw:
         specifier: 'catalog:'
@@ -108,60 +158,13 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@22.18.0)(jiti@2.7.0)(tsx@4.20.5)(yaml@2.9.0)
 
-  packages/gkos-kernel:
-    dependencies:
-      '@gatekeeper-os/gatekeeper-kit':
-        specifier: workspace:*
-        version: link:../gatekeeper-kit
-      '@gatekeeper-os/shared':
-        specifier: workspace:*
-        version: link:../gkos-shared
-      openclaw:
-        specifier: 'catalog:'
-        version: 2026.9.2
-      typebox:
-        specifier: 'catalog:'
-        version: 1.1.39
-    devDependencies:
-      '@types/node':
-        specifier: 'catalog:'
-        version: 22.18.0
-      tsup:
-        specifier: 'catalog:'
-        version: 8.5.0(jiti@2.7.0)(postcss@8.5.28)(tsx@4.20.5)(typescript@5.9.2)(yaml@2.9.0)
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.2
-      vitest:
-        specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.18.0)(jiti@2.7.0)(tsx@4.20.5)(yaml@2.9.0)
-
-  packages/gkos-shared:
-    dependencies:
-      typebox:
-        specifier: 'catalog:'
-        version: 1.1.39
-    devDependencies:
-      '@types/node':
-        specifier: 'catalog:'
-        version: 22.18.0
-      tsup:
-        specifier: 'catalog:'
-        version: 8.5.0(jiti@2.7.0)(postcss@8.5.28)(tsx@4.20.5)(typescript@5.9.2)(yaml@2.9.0)
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.2
-      vitest:
-        specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.18.0)(jiti@2.7.0)(tsx@4.20.5)(yaml@2.9.0)
-
   packages/gkos-gatekeeper-fs:
     dependencies:
       '@gatekeeper-os/gatekeeper-kit':
-        specifier: workspace:*
+        specifier: workspace:0.1.0-beta.2
         version: link:../gatekeeper-kit
       '@gatekeeper-os/shared':
-        specifier: workspace:*
+        specifier: workspace:0.1.0-beta.2
         version: link:../gkos-shared
       openclaw:
         specifier: 'catalog:'
@@ -186,60 +189,10 @@ importers:
   packages/gkos-gatekeeper-github:
     dependencies:
       '@gatekeeper-os/gatekeeper-kit':
-        specifier: workspace:*
+        specifier: workspace:0.1.0-beta.2
         version: link:../gatekeeper-kit
       '@gatekeeper-os/shared':
-        specifier: workspace:*
-        version: link:../gkos-shared
-      openclaw:
-        specifier: 'catalog:'
-        version: 2026.9.2
-      typebox:
-        specifier: 'catalog:'
-        version: 1.1.39
-    devDependencies:
-      '@types/node':
-        specifier: 'catalog:'
-        version: 22.18.0
-      tsup:
-        specifier: 'catalog:'
-        version: 8.5.0(jiti@2.7.0)(postcss@8.5.28)(tsx@4.20.5)(typescript@5.9.2)(yaml@2.9.0)
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.2
-      vitest:
-        specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.18.0)(jiti@2.7.0)(tsx@4.20.5)(yaml@2.9.0)
-
-  packages/gatekeeper-http:
-    dependencies:
-      '@gatekeeper-os/gatekeeper-kit':
-        specifier: workspace:*
-        version: link:../gatekeeper-kit
-      '@gatekeeper-os/shared':
-        specifier: workspace:*
-        version: link:../gkos-shared
-      openclaw:
-        specifier: 'catalog:'
-        version: 2026.9.2
-    devDependencies:
-      '@types/node':
-        specifier: 'catalog:'
-        version: 22.18.0
-      tsup:
-        specifier: 'catalog:'
-        version: 8.5.0(jiti@2.7.0)(postcss@8.5.28)(tsx@4.20.5)(typescript@5.9.2)(yaml@2.9.0)
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.2
-      vitest:
-        specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.18.0)(jiti@2.7.0)(tsx@4.20.5)(yaml@2.9.0)
-
-  packages/gatekeeper-kit:
-    dependencies:
-      '@gatekeeper-os/shared':
-        specifier: workspace:*
+        specifier: workspace:0.1.0-beta.2
         version: link:../gkos-shared
       openclaw:
         specifier: 'catalog:'
@@ -264,10 +217,10 @@ importers:
   packages/gkos-gatekeeper-mcp:
     dependencies:
       '@gatekeeper-os/gatekeeper-kit':
-        specifier: workspace:*
+        specifier: workspace:0.1.0-beta.2
         version: link:../gatekeeper-kit
       '@gatekeeper-os/shared':
-        specifier: workspace:*
+        specifier: workspace:0.1.0-beta.2
         version: link:../gkos-shared
       '@modelcontextprotocol/sdk':
         specifier: 1.30.0
@@ -275,6 +228,53 @@ importers:
       openclaw:
         specifier: 'catalog:'
         version: 2026.9.2
+      typebox:
+        specifier: 'catalog:'
+        version: 1.1.39
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.18.0
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.0(jiti@2.7.0)(postcss@8.5.28)(tsx@4.20.5)(typescript@5.9.2)(yaml@2.9.0)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.2
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/node@22.18.0)(jiti@2.7.0)(tsx@4.20.5)(yaml@2.9.0)
+
+  packages/gkos-kernel:
+    dependencies:
+      '@gatekeeper-os/gatekeeper-kit':
+        specifier: workspace:0.1.0-beta.2
+        version: link:../gatekeeper-kit
+      '@gatekeeper-os/shared':
+        specifier: workspace:0.1.0-beta.2
+        version: link:../gkos-shared
+      openclaw:
+        specifier: 'catalog:'
+        version: 2026.9.2
+      typebox:
+        specifier: 'catalog:'
+        version: 1.1.39
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.18.0
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.0(jiti@2.7.0)(postcss@8.5.28)(tsx@4.20.5)(typescript@5.9.2)(yaml@2.9.0)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.2
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/node@22.18.0)(jiti@2.7.0)(tsx@4.20.5)(yaml@2.9.0)
+
+  packages/gkos-shared:
+    dependencies:
       typebox:
         specifier: 'catalog:'
         version: 1.1.39

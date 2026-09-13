@@ -10,8 +10,8 @@
   },
   "lastKnownGood": null,
   "plugins": {
-    "gkos-kernel": "0.1.0-beta.1",
-    "gkos-gatekeeper-fs": "0.1.0-beta.1",
+    "gkos-kernel": "0.1.0-beta.2",
+    "gkos-gatekeeper-fs": "0.1.0-beta.2",
     "gkos-gatekeeper-github": "0.1.0"
   },
   "kernelSchema": 1,
