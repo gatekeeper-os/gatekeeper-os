@@ -2349,3 +2349,64 @@ checks verified all 10 package licenses, 2 enabled/loaded plugins, authenticated
 live kernel RPC and 3 installed library/CLI checks. These are isolated packed
 fixtures, not new-scope registry or VM acceptance. The manifest inspector refuses
 a host invocation by design; its required GitHub Actions execution is pending.
+
+## GatekeeperOS beta.2 preparation — blocked on org rename / ordered merges
+
+Five release packages and their manifest/lock versions prepared at 0.1.0-beta.2.
+All consumers of release packages use workspace:0.1.0-beta.2 (packed dependency
+versions are exact); private packages remain private and keep their own versions.
+Changelog says “rename to GatekeeperOS; no functional change”. Third-party lockfile
+package/snapshot maps are identical; only importer ordering/pins change.
+
+Local beta.2 checks: 599/599 tests, typecheck, lint/catalog/secrets, release-plan
+and 11 helper tests passed; all 10 packed-license checks passed; isolated packed
+load passed 2 enabled plugins, authenticated kernel RPC and 3 installed package
+smokes. Release pack selects exactly @gatekeeper-os/{shared,gatekeeper-kit,kernel,
+gatekeeper-fs,cli} at beta.2. No VM run or publication is implied.
+
+All 423 original tracked files map to existing renamed files, including all 129
+test/fixture files; no existing test was deleted. Shared upstream interfaces stay
+unchanged. No new release run, tag or visibility mutation.
+
+Core rename PR19, community rename PR8 (draft) and org profile PR4 exist under the
+still-current clawkeeper org. Org profile build-test is green. Community fetch
+fails because gatekeeper-os/gatekeeper-os does not yet exist; never substitute an
+empty/snapshot skill for that live gate. Core extended-stable conformance job
+failed only in setup-node cache post-cleanup for its unsupported target; retain
+as failed supplemental CI, not passed acceptance. Required build-test tracked
+separately. Clean-main beta.2 tag and ordered merges await prerequisite resolution.
+
+### Rename / beta.2 checkpoint — 2026-09-12
+
+Core rename PR19 merged after green build-test at
+`a64ef47ecd4287e469fb11ee12bec2844b8b2714`; org README PR4 merged after green
+build-test at `5e52c3d5e0845b61a64eded0072e53ce0fc171e4`. Core main is updated.
+GitHub core repository was renamed using gh repo rename; every core worktree
+resolves the shared actual origin `https://github.com/clawkeeper/gatekeeper-os.git`.
+The org login itself is still clawkeeper (API name=null); gatekeeper-os is not
+accessible. Matt was asked to complete the organization rename. Final origin
+repoint and community PR8 live-skill fetch remain blocked on it.
+
+Beta.2 draft PR20 is prepared on renamed main; Tier1 switch draft community PR9
+is stacked on rename PR8 and remains unmerged until real publication. Its
+lockfile is deliberately not fabricated from nonexistent beta.2 registry data.
+No beta.2 tag exists: clean-main tag creation waits for the requested merge order.
+The exact `pnpm -r publish --dry-run --access public --tag beta` completed exit0
+on the release branch after confirming pnpm's branch prompt, with only five
+@gatekeeper-os packages (shared, kit, fs, kernel, cli) at beta.2; each npm notice
+explicitly said dry-run. The first non-PTY invocation returned without packing at
+the branch prompt, and was not counted. Release pack independently selected the
+same five names in dependency order. No npm publication occurred.
+
+Literal full tracked-tree scan (`clawos|clawkeeper|CLAWOS_|openclaw-os`) returns
+only docs/migration-gatekeeperos.md, plans/PROGRESS.md and
+plans/BETA2-PRIVATE-HANDOFF.md. Case-sensitive display scan additionally returns
+root + ten package NOTICE files (retained verbatim). All 423 prior tracked files
+have mapped successors, including 129 tests/fixtures. No unsubmitted discussion
+or advisory draft was found in current tracked core; existing submitted private
+disclosure receipts outside the repo remain immutable, not rewritten or posted.
+
+All three repositories remain private. Release34706409757 is still failed attempt1;
+no new release run. No visibility change, publish/deprecate, trusted publisher,
+tag push, phase tag or upstream post. Full acceptance remains incomplete; the
+next npm-only run is reserved for actual beta.2 registry artifacts after publication.

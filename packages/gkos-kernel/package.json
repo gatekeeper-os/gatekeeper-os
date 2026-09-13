@@ -1,6 +1,6 @@
 {
   "name": "@gatekeeper-os/kernel",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.2",
   "description": "GatekeeperOS kernel plugin: capability model, gatekeeper registry, approval queue, audit.",
   "type": "module",
   "main": "./dist/index.js",
@@ -20,8 +20,8 @@
     "validate": "node ../../scripts/check-plugin-metadata.mjs ."
   },
   "dependencies": {
-    "@gatekeeper-os/shared": "workspace:*",
-    "@gatekeeper-os/gatekeeper-kit": "workspace:*",
+    "@gatekeeper-os/shared": "workspace:0.1.0-beta.2",
+    "@gatekeeper-os/gatekeeper-kit": "workspace:0.1.0-beta.2",
     "typebox": "catalog:"
   },
   "peerDependencies": {
