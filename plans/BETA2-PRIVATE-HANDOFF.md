@@ -39,7 +39,8 @@ npm deprecate @clawkeepers/cli@0.1.0-beta.1 "Renamed to @gatekeeper-os/cli. Inst
 
 Verify all five exact registry identities, run npm-only fresh-VM acceptance
 against @gatekeeper-os/*@0.1.0-beta.2, and regenerate the real Tier 1 registry
-lockfile. Only merge that switch after green build-test/live skill sync. Neither
+lockfile. Only merge that switch after npm-only VM acceptance and green `build-test`;
+an explicit private-core skip remains distinct from live-sync success. Neither
 step runs before publication. Retain all earlier incomplete acceptance evidence.
 
 ## Public-flip launch gate (separate authorization)
