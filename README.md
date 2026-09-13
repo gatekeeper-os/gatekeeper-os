@@ -14,12 +14,11 @@ than handing the agent unrestricted service credentials.
 agent environments. This is **not a Linux distribution**, an OpenClaw fork, or a
 Cloudflare product. It is an independent project built on those projects' work.
 
-**Status: private beta.2 preparation; new npm scope not published yet.**
-The previous beta.1 was published under the former scope (see the
-[migration note](docs/migration-gatekeeperos.md)). Its `latest` tag resolves to
-that beta because no stable release exists. The renamed packages are not yet
-available on npm. Repositories remain private. Publication does not close any
-acceptance limitation below; npm-only fresh-VM acceptance remains incomplete.
+**Status: private beta.3 preparation; beta.2 is published but affected by a messaging-policy defect.**
+Messaging cells in beta.1 and beta.2 did not expose the kernel's `os_*` and `gk_*`
+tools to the agent. Beta.3 admits only `gkos-kernel`; native denials are unchanged.
+Repositories remain private. Beta.3 publication and npm-only fresh-VM end-to-end
+acceptance are pending. See the [release notes](plans/release-notes-beta.3.md).
 
 [Architecture](docs/implementation-plan.md) · [Acceptance status](docs/phase-checklist.md) ·
 [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) ·
@@ -92,7 +91,9 @@ be reversed.
 |---|---|
 | Host installation, cells, configuration and backup | Phase 1 source-install acceptance passed on Ubuntu and macOS. This is not a claim that every later driver supports both platforms. |
 | Contracts and gatekeeper kit | Phase 2 accepted: encrypted token storage, nonce replay/expiry controls, pending-action overlays and lifecycle helpers. |
-| Kernel and filesystem driver | Phase 3 accepted with an explicit Telegram validation deferral. Grant enforcement, owner-only audience checks, operator commands, connection routing, approvals and install-policy paths have live VM evidence. |
+| Kernel and filesystem driver | Phase 3 source-install evidence, with an explicit Telegram deferral. Kernel-live ran under the **full profile**, not the shipped messaging baseline; grant enforcement, owner-only audience, operator commands, routing and approvals have source-install VM evidence only. |
+| Packed model-turn gate | Tests the CLI tarball’s shipped **messaging baseline** with a deterministic local provider: no-grant `os_list_grants` / `os_request_access`, granted `gk_fs_*`, and unchanged native denials. Real beta.2 tarballs fail; fixed tarballs pass. This is not npm-only VM end-to-end acceptance. |
+| npm-only cell provisioning | Beta.2 registry identities 5/5, cell creation, selector and install policy 14/14 passed. Kernel-live stopped on missing `os_list_grants`; 38 selected conformance checks, owner-only audience and approvals were not reached. Beta.3 end-to-end acceptance pending. |
 | Filesystem writes | Bounded Linux reads and simulated writes are implemented. **Real writes remain disabled** because the approved atomic confinement requirement is not satisfied. |
 | Real messaging transports | Synthetic public-SDK ingress is tested. Real Telegram validation is deferred, not passed. No real Slack acceptance is claimed. |
 | GitHub | Phase 4 reference driver and real-provider acceptance remain in progress. |
@@ -103,13 +104,14 @@ be reversed.
 
 The [Phase 3 acceptance record](plans/phase-3-acceptance.md) reports 410 workspace
 tests, six VM checkpoints and 23 actual model turns for the accepted candidate.
-These are milestone-specific results, not a substitute for remaining beta gates.
+These are milestone-specific **source-install/full-profile** results, not proof of
+the shipped messaging baseline or a substitute for remaining beta gates.
 See the [phase checklist](docs/phase-checklist.md) for evidence and the
 [Telegram deferral](plans/telegram-validation-deferred.md) for its exact scope.
 
-## Try it from npm — after beta.2 publication
+## Try it from npm — after beta.3 publication
 
-After Matt publishes beta.2, on a disposable evaluation machine with Node 22.22.3+:
+After Matt publishes beta.3, on a disposable evaluation machine with Node 22.22.3+:
 
 ```sh
 npm install --global @gatekeeper-os/cli@beta
@@ -117,10 +119,10 @@ gkos --version
 gkos cell create evaluation --port 19100 --policy messaging
 ```
 
-The old-scope beta.1 CLI install and version command were verified from a clean
-npm prefix on 2026-09-12; this is not evidence for the renamed beta.2 artifacts.
-Cell provisioning is evaluated separately. Beta.2 npm-only VM acceptance will run
-only after publication. Use the source-install VM route below for evaluation.
+Beta.2 npm-only registry install, cell creation and install policy were verified,
+but messaging kernel tools were missing. Do not use beta.2 as end-to-end evidence.
+Beta.3 npm-only VM acceptance runs only after publication. The packed model-turn
+gate covers the fixed shipped baseline, not all VM acceptance stages.
 No stable version or ClawHub listing exists yet.
 
 ## Getting started as a developer
@@ -209,12 +211,12 @@ test results do not imply an independent security audit.
 
 ## Road to the open-source beta
 
-The renamed five-package beta.2 is prepared under `@gatekeeper-os`; it is not
-published yet. Repositories remain private. Public visibility, trusted publishing,
-community registry-switch builds, and npm-only fresh-VM acceptance are separate
-gates. No remaining acceptance gate is waived. The existing Telegram deferral
-stays visible. The [publication checklist](docs/open-source-release.md) records
-release checks; the [migration note](docs/migration-gatekeeperos.md) records this rename.
+The five-package beta.2 is published under `@gatekeeper-os`; beta.3 is private
+preparation for the messaging-policy correction. Repositories remain private.
+Public visibility, trusted publishing, community registry-switch builds and
+npm-only fresh-VM acceptance are separate gates. No acceptance gate is waived.
+The Telegram deferral stays visible. The [publication checklist](docs/open-source-release.md)
+records release checks; the [migration note](docs/migration-gatekeeperos.md) records the rename.
 
 ## Acknowledgments
 

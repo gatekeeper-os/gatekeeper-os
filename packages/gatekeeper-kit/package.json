@@ -1,6 +1,6 @@
 {
   "name": "@gatekeeper-os/gatekeeper-kit",
-  "version": "0.1.0-beta.2",
+  "version": "0.1.0-beta.3",
   "description": "Builder and security-critical helpers for GatekeeperOS gatekeepers.",
   "type": "module",
   "main": "./dist/index.js",
@@ -17,7 +17,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@gatekeeper-os/shared": "workspace:0.1.0-beta.2",
+    "@gatekeeper-os/shared": "workspace:0.1.0-beta.3",
     "typebox": "catalog:"
   },
   "devDependencies": {
