@@ -3,6 +3,8 @@
 {
   tools: {
     profile: "full",
+    // Runtime has an explicit ceiling instead of messaging's additive admission.
+    alsoAllow: null,
     allow: ["group:fs", "exec", "gkos-kernel", "session_status"],
     deny: ["group:automation", "browser", "process", "code_execution"],
     exec: { host: "sandbox", mode: "allowlist" },

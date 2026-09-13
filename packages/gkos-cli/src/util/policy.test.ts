@@ -21,6 +21,15 @@ describe('cell policy profiles',()=>{
     const cfg=mergeFragments(stage('runtime'));expect(runtimeCell(cfg)).toBe(true);
     expect(cfg).toMatchObject({tools:{exec:{host:'sandbox',mode:'allowlist'},elevated:{enabled:false}},agents:{defaults:{sandbox:{mode:'all',docker:{network:'none',readOnlyRoot:true}}}}});
   });
+  it('admits only kernel-owned tools above messaging without widening native or runtime authority',()=>{
+    const messaging=mergeFragments(stage('messaging')) as {tools:Record<string,unknown>};
+    expect(messaging.tools).toEqual({profile:'messaging',alsoAllow:['gkos-kernel'],
+      deny:['group:runtime','group:fs','group:automation','browser'],exec:{mode:'deny'},
+      sessions:{visibility:'self'},elevated:{enabled:false}});
+    const runtime=mergeFragments(stage('runtime')) as {tools:Record<string,unknown>};
+    expect(runtime.tools.alsoAllow).toBeUndefined();
+    expect(runtime.tools.allow).toEqual(['group:fs','exec','gkos-kernel','session_status']);
+  });
   it.each(['off','non-main'])('rejects runtime widening with %s sandbox in its own fragment, even repaired later',mode=>{
     const dir=stage('runtime');writeFileSync(join(dir,'05-policy-runtime.json5'),JSON.stringify({tools:{allow:['exec']},agents:{defaults:{sandbox:{mode}}}}));
     writeFileSync(join(dir,'90-local.json5'),JSON.stringify({agents:{defaults:{sandbox:{mode:'all'}}}}));

@@ -1530,3 +1530,13 @@ encoded the native-tool stripping bug. It now asserts the exact gatekeeper set
 (0 without a grant, precisely 3 filesystem tools after a grant), both OS tools,
 and preservation of configured native exec. No grant authorization assertion is
 removed or made optional.
+
+### beta.2 messaging admission correction (2026-09-13)
+
+Source kernel-live used full profile and did not cover the shipped messaging
+ceiling. Controlled source/npm turns show the baseline must additively admit
+gkos-kernel before its narrowing hook can expose OS/granted tools. Add only that
+plugin, preserving native denials; runtime keeps its explicit allowlist.
+Packed-load CI must read policy from the CLI artifact and exercise no-grant and
+granted model turns, not infer tool availability from healthy RPCs. Evidence:
+plans/BETA2-TOOL-DIAGNOSIS.md. No beta.3 release is authorized.
