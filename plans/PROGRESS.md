@@ -2410,3 +2410,48 @@ All three repositories remain private. Release34706409757 is still failed attemp
 no new release run. No visibility change, publish/deprecate, trusted publisher,
 tag push, phase tag or upstream post. Full acceptance remains incomplete; the
 next npm-only run is reserved for actual beta.2 registry artifacts after publication.
+
+## 2026-09-13 — beta.2 tool visibility diagnosis and unreleased correction
+
+User authorized diagnosis before edits, then a fix PR against main070bc13; no
+version bump, release/tag/publish, community merge or upstream post. The separate
+npm-only harness branch and failed171621 record remain untouched by this PR.
+
+Controlled model turns on the retained guest: real beta.2 npm + messaging and
+unchanged source070bc13 + messaging both omit os tools and return exactly
+`Tool os_list_grants not found`; source with full-profile control exposes both
+OS tools and returns successful list. Each probe:1turn/2localproviderrequests.
+The full-profile source fixture had masked a pre-existing messaging baseline
+omission; this is neither renamed contracts nor npm layout. Packed kernel
+manifest equals main source, contracts.tools matches pre-rename, catalog contains
+all3fs tools, plugins load healthy without contract/trusted-policy warnings.
+Cause and exact upstream registration/filter paths were reported before edits;
+see plans/BETA2-TOOL-DIAGNOSIS.md and project-kit beta2-tool-diagnosis-20260913/.
+
+Correction: messaging tools.alsoAllow admits only gkos-kernel; original native
+denials remain. Runtime deletes this additive field and retains its explicit
+allowlist/all-turn sandbox. No kernel/driver implementation or manifest change.
+One merged-policy regression plus a packed-artifact deterministic-model gate:
+no-grant OS tools present/gk absent; operator owner-only grant then all3fs tools;
+successful list results and native denials throughout. Baseline/catalog are read
+from the installed CLI tarball, never checkout config. Read-only registry runner
+uses the same gate and verifies all5 identities and actual archive SHA512 values.
+
+Initial real beta.2 gate failed as required at no-grant-os-tools (1turn/2requests).
+First fixed gate attempt had an opaque probe error; after adding structural stage
+diagnostics, a second attempt passed no-grant but failed introduce-grant with
+UNAUTHORIZED. Test-only root was incorrectly inside Gateway state; the real fs
+protection correctly rejected it. Moved only that fixture to a sibling directory,
+preserving product protection and both failed logs. No script changed in flight.
+
+Host checks:600tests/38files, all package typechecks, lint/catalog/secrets, release
+helper and script tests passed. Final packed red/green proof is recorded below.
+Retained VM gracefully off; keeper closed, original8MiBlimits restored, original
+base/installed snapshot tables unchanged. No npm-only acceptance rerun or product
+patch to the retained beta.2 cell.
+
+Final identical-gate proof: real beta.2 exit1/no-grant-os-tools (1turn/2requests);
+fixed tarballs exit0 (2turns/4requests), both os tools present without a grant,
+all3fs tools after owner-only grant, list tool results and native denials PASS.
+10packedlicense checks,2enabledplugins/liveRPC,3libraryCLI smokes also PASS.
+Receipts: beta2-red-final/ and fixed-packed-final.log in the diagnosis directory.

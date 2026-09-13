@@ -1,5 +1,20 @@
 # VM Testing Guide
 
+## Packed CI tool-visibility regression
+
+`node scripts/check-package-licenses.mjs --pack --validate` now also runs two
+deterministic loopback model turns under the messaging policy read from the
+installed CLI tarball. It requires both os tools without grants, no gk tools
+without grants, all three gk_fs tools after an operator-created owner-only grant,
+successful list-tool results and native denials throughout. This CI artifact
+regression complements, but does not replace, fresh-VM end-to-end acceptance.
+
+For a read-only test of an exact published version through the same gate:
+`node scripts/check-registry-packed-load.mjs 0.1.0-beta.2 /tmp/gkos-beta2-red-evidence`.
+The receipt contains registry identities/integrities and structural model results,
+not prompts, credentials or raw RPC bodies. Never treat expected beta.2 failure
+as a passing acceptance result. Diagnosis: plans/BETA2-TOOL-DIAGNOSIS.md.
+
 All acceptance testing for GatekeeperOS happens on a disposable virtual machine, never on the development host. This document defines the VM, the snapshot discipline, the sync-and-run loop, and what evidence each phase must produce. The kickoff prompt makes this binding.
 
 ## 1. Why a VM

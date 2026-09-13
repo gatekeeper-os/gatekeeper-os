@@ -23,7 +23,7 @@ function isolatedEnvironment(state, config, npmrc) {
 async function run(command, args, options, label) {
   try { return (await exec(command, args, { timeout: 300000, maxBuffer: 16 * 1024 * 1024, ...options })).stdout; }
   catch (error) {
-    const reason = /pairing required|device identity required|unknown method|UNAUTHORIZED|MODULE_NOT_FOUND|gateway token mismatch/i.exec(String(error.stderr ?? '') + String(error.stdout ?? ''))?.[0] ?? 'raw output withheld';
+    const reason = /Packed model gate: [a-z-]+|pairing required|device identity required|unknown method|UNAUTHORIZED|MODULE_NOT_FOUND|gateway token mismatch/i.exec(String(error.stderr ?? '') + String(error.stdout ?? ''))?.[0] ?? 'raw output withheld';
     throw new Error(`${label} failed (exit=${error.code ?? 'unknown'}; ${reason})`);
   }
 }
@@ -85,7 +85,8 @@ export async function checkPackedLoad(packages, temporary, repo) {
     const env = isolatedEnvironment(state, config, npmrc);
     const workspace = join(state, 'workspace'); mkdirSync(workspace);
     const port = await freePort();
-    writeFileSync(join(state, 'ports.json'), JSON.stringify({ registry: registry.url, gateway: port }));
+    const modelPort = await freePort();
+    writeFileSync(join(state, 'ports.json'), JSON.stringify({ registry: registry.url, gateway: port, model: modelPort }));
     writeFileSync(config, JSON.stringify({ gateway: { mode: 'local', bind: 'loopback', port, auth: { mode: 'token', token: env.OPENCLAW_GATEWAY_TOKEN }, controlUi: { enabled: false } },
       update: { auto: { enabled: false } }, discovery: { mdns: { mode: 'off' } },
       agents: { defaults: { workspace } }, plugins: { slots: { memory: 'none' }, allow: [] },
@@ -113,6 +114,28 @@ export async function checkPackedLoad(packages, temporary, repo) {
         if (output.trim() !== pkg.version) throw new Error(`${item.name}: packed executable version mismatch`);
       }
     }
+    const cliRoot = join(smoke, 'node_modules/@gatekeeper-os/cli');
+    const tools = JSON.parse(await run('pnpm', ['exec', 'tsx', join(repo, 'scripts/packed-tool-policy.ts'), cliRoot], { ...options, cwd: repo }, 'Packed messaging policy read'));
+    if (tools.profile !== 'messaging') throw new Error('Packed model gate requires shipped messaging policy');
+    const live = JSON.parse(readFileSync(config, 'utf8'));
+    live.tools = tools;
+    live.models = { providers: { spike: { baseUrl: `http://127.0.0.1:${modelPort}/v1`, api: 'openai-completions', apiKey: randomBytes(32).toString('hex'),
+      models: [{ id: 'spike', name: 'Packed deterministic model', reasoning: false, input: ['text'], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 128000, maxTokens: 1024 }] } } };
+    live.agents = { defaults: { workspace, model: { primary: 'spike/spike' } }, entries: { main: { workspace, sandbox: { mode: 'off' } } }, ownership: 'explicit' };
+    // Filesystem grants must never overlap the protected Gateway state directory.
+    const fixtureRoot = join(temporary, 'fixture-root'); mkdirSync(fixtureRoot);
+    const fsRoot = join(state, 'extensions/gkos-gatekeeper-fs');
+    if (JSON.parse(readFileSync(join(fsRoot, 'openclaw.plugin.json'), 'utf8')).id !== 'gkos-gatekeeper-fs') throw new Error('Packed filesystem plugin missing');
+    const catalog = JSON.parse(readFileSync(join(cliRoot, 'dist/templates/plugins/catalog.json'), 'utf8'));
+    for (const entry of catalog.gatekeepers) {
+      if (entry.pluginId !== 'gkos-gatekeeper-fs') throw new Error('Unexpected first-party packed catalog entry');
+      entry.root = fsRoot;
+    }
+    mkdirSync(join(state, 'os'), { recursive: true });
+    writeFileSync(join(state, 'os/gatekeepers.json'), JSON.stringify(catalog), { mode: 0o600 });
+    live.plugins.entries['gkos-kernel'].hooks = { allowConversationAccess: true };
+    live.plugins.entries['gkos-gatekeeper-fs'].config = { roots: [fixtureRoot] };
+    writeFileSync(config, JSON.stringify(live), { mode: 0o600 });
     await cli(['config', 'validate'], 'Packed Gateway config validation');
     const gateway = spawn(process.execPath, [upstream, 'gateway', 'run'], { ...options, stdio: 'ignore' });
     const stopped = new Promise(done => gateway.once('exit', done));
@@ -124,11 +147,17 @@ export async function checkPackedLoad(packages, temporary, repo) {
         if (Date.now() >= deadline) throw new Error('Packed Gateway readiness timeout');
         await delay(500);
       }
-      const status = JSON.parse(await run(process.execPath, [join(repo, 'scripts/packed-load-probe.mjs'), join(repo, 'packages/gkos-kernel/package.json'), `ws://127.0.0.1:${port}`], options, 'Packed live kernel RPC'));
+      const status = JSON.parse(await run(process.execPath, [join(repo, 'scripts/packed-load-probe.mjs'), join(repo, 'packages/gkos-kernel/package.json'), `ws://127.0.0.1:${port}`, String(modelPort), fixtureRoot], options, 'Packed live kernel/model gate'));
       if (status.healthy !== true || status.kernelVersion !== published.find(item => item.pluginId === 'gkos-kernel')?.version) throw new Error('Packed live kernel status mismatch');
       assertPluginList(JSON.parse(await cli(['plugins', 'list', '--json'], 'Packed plugins list')), plugins.map(item => item.pluginId));
-      console.log(`Packed load: ${plugins.length} enabled plugins, authenticated live kernel; ${ordinary.length} installed library/CLI smoke checks`);
+      if (status.modelTurns !== 2 || status.noGrantTools !== true || status.grantedTools !== true || status.nativeDenied !== true) throw new Error('Packed model gate incomplete');
+      console.log(`Packed load: ${plugins.length} enabled plugins, authenticated live kernel; ${ordinary.length} installed library/CLI smoke checks; ${status.modelTurns} model turns, no-grant os_* / granted gk_fs_* / native denials PASS`);
     } finally {
+      // Preserve only structural probe evidence in CI output before temporary state cleanup.
+      try {
+        const verdict = JSON.parse(readFileSync(join(state, 'packed-model-verdict.json'), 'utf8'));
+        console.log('Packed model verdict: ' + JSON.stringify(verdict));
+      } catch { /* No verdict if the Gateway/probe did not start. */ }
       if (gateway.exitCode === null && gateway.signalCode === null) {
         gateway.kill('SIGTERM');
         await Promise.race([stopped, delay(10000)]);

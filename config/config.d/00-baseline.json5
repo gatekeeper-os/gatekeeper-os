@@ -14,6 +14,8 @@
   session: { dmScope: "per-channel-peer" },
   tools: {
     profile: "messaging",
+    // Admit kernel-owned tools to the profile; the kernel still narrows gk_* by grant.
+    alsoAllow: ["gkos-kernel"],
     deny: ["group:runtime", "group:fs", "group:automation", "browser"],
     exec: { mode: "deny" },
     sessions: { visibility: "self" },
