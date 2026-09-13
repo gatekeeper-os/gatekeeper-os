@@ -6,7 +6,7 @@ import { randomBytes } from "node:crypto";
 export function writeJsonAtomic(path: string, value: unknown): void {
   const dir = dirname(path);
   mkdirSync(dir, { recursive: true, mode: 0o700 });
-  const temp = join(dir, `.clawos-${randomBytes(16).toString("hex")}.tmp`);
+  const temp = join(dir, `.gkos-${randomBytes(16).toString("hex")}.tmp`);
   let fd: number | undefined;
   try {
     fd = openSync(temp, "wx", 0o600);

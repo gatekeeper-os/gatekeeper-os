@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
 if(process.cwd()!=='/home/tester/src'||process.env.OPENCLAW_STATE_DIR!=='/home/tester/.openclaw-kernel-test')throw new Error('VM required');
-const require=createRequire(resolve('packages/clawos-conformance/package.json'));
+const require=createRequire(resolve('packages/gkos-conformance/package.json'));
 const {GatewayClient}=await import(pathToFileURL(require.resolve('openclaw/plugin-sdk/gateway-runtime')).href);
 const config=JSON.parse(readFileSync(process.env.OPENCLAW_CONFIG_PATH,'utf8'));
 const report={checks:{},turns:[],syntheticProvider:true,nativeExecution:false,fullPhaseAcceptance:false};
@@ -41,7 +41,7 @@ try{
  await new Promise((resolve,reject)=>{model.once('error',reject);model.listen(19101,'127.0.0.1',resolve);});
  shared=await connect({token:config.gateway.auth.token});paired=await connect({deviceToken:shared.deviceToken});
  check('fixture-lifecycle',(await paired.client.request('os.status',{})).gatekeepers.some(g=>g.vendor==='mcp'&&g.healthy));
- const url='https://mcp.clawkeeper.invalid/servers/demo';
+ const url='https://mcp.gatekeeper-os.invalid/servers/demo';
  check('unpaired-introduction-denied',await denied(shared.client,'os.grants.introduce',{agentId:'main',url}));
  await paired.client.request('os.grants.introduce',{agentId:'main',url});
  const grants=await paired.client.request('os.grants.list',{agentId:'main'}),grant=grants.find(g=>g.vendor==='mcp');check('bound-grant-created',!!grant);

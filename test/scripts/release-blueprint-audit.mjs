@@ -2,7 +2,7 @@
 import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { evaluateAudit } from './blueprint-audit-gate.mjs';
-const policy = process.env.CLAWOS_BLUEPRINT_POLICY;
+const policy = process.env.GKOS_BLUEPRINT_POLICY;
 const state = `/home/tester/.openclaw-blueprint-${policy}`;
 if (!['runtime', 'messaging'].includes(policy) || process.env.OPENCLAW_STATE_DIR !== state || process.cwd() !== '/home/tester/src') throw new Error('Disposable blueprint VM required');
 function configGet(path) {
@@ -12,11 +12,11 @@ function configGet(path) {
 }
 // Public, redacted config surface read in this same run establishes exception predicates.
 const agents = configGet('agents'), tools = configGet('tools'), gateway = configGet('gateway');
-const token = readFileSync(`${state}/.env`, 'utf8').split('\n').find(line => line.startsWith('CLAWOS_GATEWAY_TOKEN='))?.slice('CLAWOS_GATEWAY_TOKEN='.length);
+const token = readFileSync(`${state}/.env`, 'utf8').split('\n').find(line => line.startsWith('GKOS_GATEWAY_TOKEN='))?.slice('GKOS_GATEWAY_TOKEN='.length);
 if (!token || !/^[a-f0-9]{64}$/.test(token)) throw new Error('Cell token unavailable');
 // Resolve the existing gateway.auth.token SecretRef through its canonical env
 // provider. OPENCLAW_GATEWAY_TOKEN would introduce a competing credential source.
-const auditEnv = { ...process.env, CLAWOS_GATEWAY_TOKEN: token };
+const auditEnv = { ...process.env, GKOS_GATEWAY_TOKEN: token };
 delete auditEnv.OPENCLAW_GATEWAY_TOKEN;
 const run = spawnSync('openclaw', ['security', 'audit', '--deep', '--json'], {
   env: auditEnv,

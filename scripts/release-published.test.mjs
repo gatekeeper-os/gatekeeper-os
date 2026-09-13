@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { archivePublished } from './release-published.mjs';
 
 const version = '0.1.0-beta.1';
-function fixture(registry, name = '@clawkeepers/kernel') {
+function fixture(registry, name = '@gatekeeper-os/kernel') {
   const calls = [];
   return { calls, run(command, args) {
     calls.push([command, args]);
@@ -18,8 +18,8 @@ function fixture(registry, name = '@clawkeepers/kernel') {
 }
 test('all five published archives skip without any publication call', () => {
   let skipped = 0;
-  for (const name of ['shared', 'gatekeeper-kit', 'kernel', 'gatekeeper-fs', 'cli']) {
-    const f = fixture({ status: 0, stdout: JSON.stringify(version) }, `@clawkeepers/${name}`);
+  for (const name of ['shared', 'gatekeeper-kit', 'kernel', 'gkos-gatekeeper-fs', 'cli']) {
+    const f = fixture({ status: 0, stdout: JSON.stringify(version) }, `@gatekeeper-os/${name}`);
     assert.equal(archivePublished(`/tmp/${name}.tgz`, f.run).published, true);
     assert.equal(f.calls.length, 2);
     assert.ok(f.calls.every(([cmd, args]) => cmd !== 'npm' || args[0] === 'view'));
@@ -58,11 +58,11 @@ test('actual workflow shell exits zero when all archives exist and never invokes
   try {
     const packageDir = join(root, 'package');
     const bin = join(root, 'bin');
-    const release = join(root, 'clawkeeper-release');
+    const release = join(root, 'gatekeeper-os-release');
     for (const path of [packageDir, bin, release]) mkdirSync(path);
     const archives = [];
-    for (const name of ['shared', 'gatekeeper-kit', 'kernel', 'gatekeeper-fs', 'cli']) {
-      writeFileSync(join(packageDir, 'package.json'), JSON.stringify({ name: `@clawkeepers/${name}`, version }));
+    for (const name of ['shared', 'gatekeeper-kit', 'kernel', 'gkos-gatekeeper-fs', 'cli']) {
+      writeFileSync(join(packageDir, 'package.json'), JSON.stringify({ name: `@gatekeeper-os/${name}`, version }));
       const archive = join(root, `${name}.tgz`);
       assert.equal(spawnSync('tar', ['-czf', archive, '-C', root, 'package/package.json']).status, 0);
       archives.push(archive);

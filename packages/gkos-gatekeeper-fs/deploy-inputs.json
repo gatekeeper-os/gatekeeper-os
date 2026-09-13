@@ -1,0 +1,8 @@
+{
+  "inputs": [],
+  "setupSteps": [
+    "Configure explicit absolute directory roots in plugins.entries.gkos-gatekeeper-fs.config.roots; the empty default denies access.",
+    "Only a trusted kernel operator introduction may activate a directory grant.",
+    "File operations remain disabled at the STOP 2 authoring checkpoint. No external credentials are needed."
+  ]
+}

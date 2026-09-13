@@ -7,8 +7,8 @@ export const resources=[{type:'dir',urlPattern:'file:///:path+',title:'Synthetic
 export const tools=[{name:'gk_fs_file_write',resourceType:'dir',kind:'action',description:'Record a fixture operation.',parameters:{type:'object',additionalProperties:false,properties:{grant:{type:'string'},eligible:{type:'boolean'},tag:{type:'string'},count:{type:'integer',minimum:1,maximum:2},delay:{type:'boolean'}},required:['grant','eligible','tag','count','delay']}}];
 const description=p=>({title:'Synthetic action',description:'VM-only recorded effect',implementsRevert:true,autoApprovable:p.eligible,actionKind:{tag:p.tag,label:'Fixture'},preview:{fixture:true,operation:'record'}});
 let serial=0;const instances=new Map();
-export default defineGatekeeper({id:'gatekeeper-fs',vendor:'fs',apiVersion:1,name:'Phase5 synthetic driver',description:'VM-only acceptance fixture',tools,resources,actions:{gk_fs_file_write:{describe:description}},createVendor(){
- if(process.env.CLAWOS_KERNEL_VM!=='1'||process.env.OPENCLAW_STATE_DIR!=='/home/tester/.openclaw-kernel-test')throw new Error('VM required');
+export default defineGatekeeper({id:'gkos-gatekeeper-fs',vendor:'fs',apiVersion:1,name:'Phase5 synthetic driver',description:'VM-only acceptance fixture',tools,resources,actions:{gk_fs_file_write:{describe:description}},createVendor(){
+ if(process.env.GKOS_KERNEL_VM!=='1'||process.env.OPENCLAW_STATE_DIR!=='/home/tester/.openclaw-kernel-test')throw new Error('VM required');
  const account={getGatekeeperFor:async key=>{
   if(key!=='file:///phase5-fixture/')throw new Error('Unknown fixture');
   if(!instances.has(key))instances.set(key,{applyAction:async id=>record('apply',id),rejectAction:async id=>{record('reject',id);},revertAction:async id=>record('revert',id),startSession:async()=>({call:async(_tool,p,ctx)=>{

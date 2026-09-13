@@ -2,13 +2,13 @@
 # VM-only S-1 acceptance. The host wrapper resets base and syncs before invoking this.
 set -euo pipefail
 [ "$(id -un)" = tester ] && . /etc/os-release && [ "$ID:$VERSION_ID" = ubuntu:24.04 ] || { echo 'FAIL test-vm-required'; exit 1; }
-export CLAWOS_SPIKE_VM=1 OPENCLAW_STATE_DIR=/home/tester/clawos-spike-state
-export OPENCLAW_CONFIG_PATH=/home/tester/clawos-spike-state/openclaw.json OPENCLAW_NO_AUTO_UPDATE=1
+export GKOS_SPIKE_VM=1 OPENCLAW_STATE_DIR=/home/tester/gkos-spike-state
+export OPENCLAW_CONFIG_PATH=/home/tester/gkos-spike-state/openclaw.json OPENCLAW_NO_AUTO_UPDATE=1
 unset OPENCLAW_PROFILE
 export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
 mkdir -p /home/tester/phase-0-evidence
 chmod 700 /home/tester/phase-0-evidence
-pin=$(python3 -c 'import json; print(json.load(open("clawos.lock.json"))["upstream"]["version"])')
+pin=$(python3 -c 'import json; print(json.load(open("gkos.lock.json"))["upstream"]["version"])')
 # This installer provisions Node and installs exactly the dev pin; it never runs on the host.
 curl -fsSL https://openclaw.ai/install.sh -o /home/tester/upstream-install.sh
 if ! bash /home/tester/upstream-install.sh --no-onboard --no-prompt --version "$pin" > /home/tester/upstream-install.log 2>&1; then echo 'FAIL upstream-install (guest log: /home/tester/upstream-install.log)'; exit 1; fi

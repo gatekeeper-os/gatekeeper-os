@@ -19,7 +19,7 @@
   "activation": {
     "onStartup": true
   },
-  "clawos": {
+  "gkos": {
     "probeUnknownKeyTolerance": true
   },
   "configSchema": {

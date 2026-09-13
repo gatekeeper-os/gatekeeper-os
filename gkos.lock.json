@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "cell": "dev",
+  "upstream": {
+    "package": "openclaw",
+    "version": "2026.9.2",
+    "channel": "stable",
+    "installedAt": null,
+    "nodeVersion": null
+  },
+  "lastKnownGood": null,
+  "plugins": {
+    "gkos-kernel": "0.1.0-beta.1",
+    "gkos-gatekeeper-fs": "0.1.0-beta.1",
+    "gkos-gatekeeper-github": "0.1.0"
+  },
+  "kernelSchema": 1,
+  "configFingerprint": null
+}

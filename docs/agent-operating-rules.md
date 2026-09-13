@@ -1,12 +1,12 @@
 # Agent Operating Rules
 
-These rules bind any agent working on OpenClaw OS. They become the repository's `AGENTS.md` and `REVIEW.md` in Phase 0 (copy them there; keep this file as the source). They are adapted from Cloudflare OS's `AGENTS.md`/`REVIEW.md` and from the two invariants in the project brief.
+These rules bind any agent working on GatekeeperOS. They become the repository's `AGENTS.md` and `REVIEW.md` in Phase 0 (copy them there; keep this file as the source). They are adapted from Cloudflare OS's `AGENTS.md`/`REVIEW.md` and from the two invariants in the project brief.
 
 ## 1. Invariants
 
 **INVARIANT 1 — No upstream modification.** The `openclaw` package is never patched, forked, vendored, or monkey-patched. Do not import from `openclaw/*` except the documented `openclaw/plugin-sdk/*` subpaths. Do not read or write upstream's SQLite database (`<stateDir>/state/openclaw.sqlite`). Do not write under the upstream install root or edit upstream's systemd unit file (use a drop-in). If something cannot be done through plugins, hooks, config, skills, CLI, or the Gateway API, it is out of scope — report it, do not hack it.
 
-**INVARIANT 2 — Upstream must remain updatable.** The upstream version is chosen only by `clawos.lock.json`. Every OS plugin declares an `openclaw.compat.pluginApi` range. The update pipeline stages, runs conformance, activates, verifies, and rolls back on failure. All OS state lives under `<stateDir>/os/`. Kernel schema migrations run only after a pin is committed, never during a failed update, so rollback is always schema-neutral.
+**INVARIANT 2 — Upstream must remain updatable.** The upstream version is chosen only by `gkos.lock.json`. Every OS plugin declares an `openclaw.compat.pluginApi` range. The update pipeline stages, runs conformance, activates, verifies, and rolls back on failure. All OS state lives under `<stateDir>/os/`. Kernel schema migrations run only after a pin is committed, never during a failed update, so rollback is always schema-neutral.
 
 **Capability invariants.** Every agent reach into a gatekeeper goes through `Kernel.resolveGrant()`. A gatekeeper never calls `api.registerTool` itself — the kernel registers tools on its behalf. A resource becomes ambient only through operator configuration; a gatekeeper never asserts its own ambience. A non-operator can never create a grant. Gate hooks fail closed.
 
@@ -14,7 +14,7 @@ These rules bind any agent working on OpenClaw OS. They become the repository's 
 
 ## 2. The kernel bar
 
-`packages/clawos-kernel` and `packages/clawos-shared` are the kernel. They define the architecture and are held to a higher bar than gatekeepers, CLI, or blueprints: reviewers read every line; fewer kernel lines is better; every exported member carries a doc comment; reuse an existing upstream mechanism before adding a parallel one; no `as unknown as` casts across an RPC or plugin boundary; SDK calls happen only in `src/upstream/*.ts` so an upstream API rename is a one-file change. A change that adds a new way to mint or use a gatekeeper session without `resolveGrant()` is rejected.
+`packages/gkos-kernel` and `packages/gkos-shared` are the kernel. They define the architecture and are held to a higher bar than gatekeepers, CLI, or blueprints: reviewers read every line; fewer kernel lines is better; every exported member carries a doc comment; reuse an existing upstream mechanism before adding a parallel one; no `as unknown as` casts across an RPC or plugin boundary; SDK calls happen only in `src/upstream/*.ts` so an upstream API rename is a one-file change. A change that adds a new way to mint or use a gatekeeper session without `resolveGrant()` is rejected.
 
 ## 3. Review priority (REVIEW.md)
 

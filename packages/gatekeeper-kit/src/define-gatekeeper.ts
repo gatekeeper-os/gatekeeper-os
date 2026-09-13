@@ -1,6 +1,6 @@
 import { realpathSync } from "node:fs";
 import { Value } from "typebox/value";
-import { GatekeeperToolDefSchema, SupportedResourceSchema, type ActionDescription, type GatekeeperToolDef, type GatekeeperVendor, type SupportedResource } from "@clawkeepers/shared";
+import { GatekeeperToolDefSchema, SupportedResourceSchema, type ActionDescription, type GatekeeperToolDef, type GatekeeperVendor, type SupportedResource } from "@gatekeeper-os/shared";
 import { definePluginEntry, type OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
 import { createPluginRuntimeStore } from "openclaw/plugin-sdk/runtime-store";
 
@@ -8,7 +8,7 @@ import { createPluginRuntimeStore } from "openclaw/plugin-sdk/runtime-store";
 export interface GatekeeperDefinition {
   vendor: string;
   apiVersion: 1;
-  id: `gatekeeper-${string}`;
+  id: `gkos-gatekeeper-${string}`;
   name: string;
   description: string;
   resources: SupportedResource[];
@@ -34,13 +34,13 @@ const forbidden = /approv|oauth|cache|queue|simulat/i;
 
 /** Access transport only: the kernel still validates enablement/catalog identity and uses resolveGrant(). */
 export function gatekeeperRuntimeSlot(pluginId: string) {
-  if (!/^gatekeeper-[a-z][a-z0-9_]*$/.test(pluginId)) throw new Error("Invalid gatekeeper id.");
+  if (!/^gkos-gatekeeper-[a-z][a-z0-9_]*$/.test(pluginId)) throw new Error("Invalid gatekeeper id.");
   return createPluginRuntimeStore<GatekeeperRuntime>({ pluginId, errorMessage: "Gatekeeper unavailable." });
 }
 
 /** Validate before loading a vendor; never registers tools or starts services in discovery modes. */
 export function defineGatekeeper(def: GatekeeperDefinition) {
-  if (!/^[a-z][a-z0-9_]*$/.test(def.vendor) || def.id !== `gatekeeper-${def.vendor}` || def.apiVersion !== 1) throw new Error("Invalid gatekeeper identity.");
+  if (!/^[a-z][a-z0-9_]*$/.test(def.vendor) || def.id !== `gkos-gatekeeper-${def.vendor}` || def.apiVersion !== 1) throw new Error("Invalid gatekeeper identity.");
   const resources = new Map<string, SupportedResource>();
   for (const resource of def.resources) {
     if (!Value.Check(SupportedResourceSchema, resource) || resources.has(resource.type)) throw new Error("Invalid or duplicate resource.");

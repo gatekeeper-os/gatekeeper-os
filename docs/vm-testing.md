@@ -1,6 +1,6 @@
 # VM Testing Guide
 
-All acceptance testing for OpenClaw OS happens on a disposable virtual machine, never on the development host. This document defines the VM, the snapshot discipline, the sync-and-run loop, and what evidence each phase must produce. The kickoff prompt makes this binding.
+All acceptance testing for GatekeeperOS happens on a disposable virtual machine, never on the development host. This document defines the VM, the snapshot discipline, the sync-and-run loop, and what evidence each phase must produce. The kickoff prompt makes this binding.
 
 ## 1. Why a VM
 
@@ -23,11 +23,11 @@ Secondary targets, run only after the primary passes: Debian 12, Arch Linux (rol
 
 Use whichever of these is available on the host; the scripts in §5 abstract the difference.
 
-**Multipass** (simplest; Linux, macOS, Windows): `multipass launch 24.04 --name clawos-test --cpus 2 --memory 4G --disk 20G`. Snapshots: `multipass snapshot clawos-test --name base` / `multipass restore clawos-test.base`. Exec: `multipass exec clawos-test -- bash -lc '…'`. File sync: `multipass transfer` or `multipass mount ./ clawos-test:/home/ubuntu/src`.
+**Multipass** (simplest; Linux, macOS, Windows): `multipass launch 24.04 --name gkos-test --cpus 2 --memory 4G --disk 20G`. Snapshots: `multipass snapshot gkos-test --name base` / `multipass restore gkos-test.base`. Exec: `multipass exec gkos-test -- bash -lc '…'`. File sync: `multipass transfer` or `multipass mount ./ gkos-test:/home/ubuntu/src`.
 
-**libvirt / virt-install** (Linux hosts, including Arch): create from the Ubuntu cloud image with cloud-init providing the `tester` user; snapshots with `virsh snapshot-create-as clawos-test base` / `virsh snapshot-revert clawos-test base`; exec over SSH.
+**libvirt / virt-install** (Linux hosts, including Arch): create from the Ubuntu cloud image with cloud-init providing the `tester` user; snapshots with `virsh snapshot-create-as gkos-test base` / `virsh snapshot-revert gkos-test base`; exec over SSH.
 
-**Lima** (macOS/Linux): `limactl start --name=clawos-test template://ubuntu-24.04`; no native snapshots — use `limactl stop` + copy of the disk, or recreate from scratch per run.
+**Lima** (macOS/Linux): `limactl start --name=gkos-test template://ubuntu-24.04`; no native snapshots — use `limactl stop` + copy of the disk, or recreate from scratch per run.
 
 **Vagrant + libvirt/VirtualBox**: `vagrant up`, `vagrant snapshot save base`, `vagrant snapshot restore base`, `vagrant ssh -c '…'`.
 
@@ -40,14 +40,14 @@ If none of these can be made to work, the agent stops and reports what was tried
 Three named snapshots, taken in this order and never modified afterwards:
 
 1. **`base`** — fresh OS with §2 base packages, `tester` user, linger enabled, Docker installed but no images pulled, `.ssh` authorized for the host. No Node, no OpenClaw. This is the starting point for every Phase 1 install test.
-2. **`installed`** — taken after a successful `clawos install` from the current working tree (Phase 1 acceptance). Starting point for Phases 3–6 tests, so you are not paying the install cost every run.
-3. **`connected`** — taken after `clawos gatekeeper add github` + `connect` with a test GitHub account and a test repository introduced to an agent (Phase 4). Starting point for approval, drainer, and update tests.
+2. **`installed`** — taken after a successful `gkos install` from the current working tree (Phase 1 acceptance). Starting point for Phases 3–6 tests, so you are not paying the install cost every run.
+3. **`connected`** — taken after `gkos gatekeeper add github` + `connect` with a test GitHub account and a test repository introduced to an agent (Phase 4). Starting point for approval, drainer, and update tests.
 
 Rules: never test on a VM that was not just restored from a snapshot; re-take `installed` and `connected` whenever the installer or kernel changes in a way that affects them; delete and recreate `base` if the base image is updated. Record which snapshot each test run started from in `plans/PROGRESS.md`.
 
 ## 5. The sync-and-run loop
 
-The repo ships `scripts/vm/` with thin wrappers so the commands below work regardless of hypervisor. Environment variable `CLAWOS_VM_DRIVER` selects `multipass` (default), `libvirt`, `lima`, `vagrant`, or `ssh` (for a cloud VM, with `CLAWOS_VM_HOST=user@ip`).
+The repo ships `scripts/vm/` with thin wrappers so the commands below work regardless of hypervisor. Environment variable `GKOS_VM_DRIVER` selects `multipass` (default), `libvirt`, `lima`, `vagrant`, or `ssh` (for a cloud VM, with `GKOS_VM_HOST=user@ip`).
 
 ```bash
 scripts/vm/up.sh                  # create the VM, provision base packages, take snapshot "base"
@@ -65,13 +65,13 @@ Inside the VM, the per-phase test scripts live at `test/phase-N.sh` in the repo 
 | Script | Starts from | Runs |
 |---|---|---|
 | `test/phase-0.sh` | `base` | Node install, `openclaw@<pin>` install, `openclaw gateway run` foreground smoke, spike-probe plugin load, records S-1 answers |
-| `test/phase-1.sh` | `base` | `curl … \| bash` (from the synced tree's `installer/install.sh`), `clawos status`, doctor lint, security audit, idempotent re-run, second cell create, backup/restore |
+| `test/phase-1.sh` | `base` | `curl … \| bash` (from the synced tree's `installer/install.sh`), `gkos status`, doctor lint, security audit, idempotent re-run, second cell create, backup/restore |
 | `test/phase-2.sh` | host only | unit tests for shared + kit (no VM needed; still recorded) |
-| `test/phase-3.sh` | `installed` | install kernel + gatekeeper-fs from the tree, conformance subset, fs-grant scenario via `openclaw agent` scripted turns |
-| `test/phase-4.sh` | `installed` | install gatekeeper-github, connect with `GITHUB_TEST_TOKEN` (device flow or PAT for CI), deferred-approval and require-approval scenarios, secret-leak grep, take snapshot `connected` |
+| `test/phase-3.sh` | `installed` | install kernel + gkos-gatekeeper-fs from the tree, conformance subset, fs-grant scenario via `openclaw agent` scripted turns |
+| `test/phase-4.sh` | `installed` | install gkos-gatekeeper-github, connect with `GITHUB_TEST_TOKEN` (device flow or PAT for CI), deferred-approval and require-approval scenarios, secret-leak grep, take snapshot `connected` |
 | `test/phase-5.sh` | `connected` | auto-approval rule + drainer timing, digest delivery to a test channel, chat commands |
 | `test/phase-6.sh` | `installed` | apply each blueprint, `blueprint lint` negative test, Docker sandbox exec |
-| `test/phase-7.sh` | `connected` | `clawos update --to <latest>` full pipeline; compat-block test; conformance-fail test; kill-during-activate + `clawos rollback` |
+| `test/phase-7.sh` | `connected` | `gkos update --to <latest>` full pipeline; compat-block test; conformance-fail test; kill-during-activate + `gkos rollback` |
 
 ## 6. Test credentials
 
@@ -87,9 +87,9 @@ Fresh `base` → `installed` should take under ten minutes on a 2-vCPU VM (Phase
 
 ## Phase 0 libvirt implementation (2026-09-07)
 
-On this development host, use `CLAWOS_VM_DRIVER=libvirt scripts/vm/up.sh` and
-`CLAWOS_VM_DRIVER=libvirt scripts/vm/test.sh phase-0`. The driver uses
-`qemu:///session`, a dedicated `clawos-test` domain, loopback SSH port 22240,
+On this development host, use `GKOS_VM_DRIVER=libvirt scripts/vm/up.sh` and
+`GKOS_VM_DRIVER=libvirt scripts/vm/test.sh phase-0`. The driver uses
+`qemu:///session`, a dedicated `gkos-test` domain, loopback SSH port 22240,
 4 GiB RAM, two vCPUs and a 24 GiB qcow2 overlay. It checks disk ownership before
 operating on a domain and refuses to overwrite named snapshots. Images, private
 SSH identity, generated seed and diagnostics stay in ignored `scripts/vm/.state/`.
@@ -113,11 +113,11 @@ propagates to the acceptance exit status.
 
 The libvirt driver derives its state directory from the worktree it runs in, and refuses to operate on a domain
 whose disk is not the one in that directory. A phase branch lives in its own worktree, so by default it cannot
-reach the `clawos-test` domain and the immutable `base` snapshot that `phase-0-bootstrap` built — and recreating
+reach the `gkos-test` domain and the immutable `base` snapshot that `phase-0-bootstrap` built — and recreating
 `base` would mean re-downloading the cloud image and discarding the reference point every earlier acceptance run
 was measured against.
 
-`CLAWOS_VM_STATE_DIR` selects a shared state directory deliberately. It **does not weaken the ownership check**:
+`GKOS_VM_STATE_DIR` selects a shared state directory deliberately. It **does not weaken the ownership check**:
 the driver still requires the running domain's disk to be exactly the disk in the selected directory. Before use
 the path is resolved, required to end in `scripts/vm/.state`, required to belong to a worktree of *this*
 repository (compared by `git rev-parse --git-common-dir`), and required to contain `tester.qcow2` and `ssh-key`.
@@ -126,12 +126,12 @@ immutable: `lv_snapshot` still refuses to overwrite a named snapshot, so a share
 phase run.
 
 ```bash
-CLAWOS_VM_DRIVER=libvirt \
-CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state \
+GKOS_VM_DRIVER=libvirt \
+GKOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state \
   scripts/vm/test.sh phase-1
 ```
 
-Only one task may use the `clawos-test` domain at a time. The unrelated `alinaos-arch-validation` domain is never
+Only one task may use the `gkos-test` domain at a time. The unrelated `alinaos-arch-validation` domain is never
 touched.
 
 ### Phase 1 collection
@@ -142,7 +142,7 @@ files that hold credentials — are never collected. The token-like-string grep 
 
 ### Node provisioning
 
-`installer/install.sh` provisions Node only when `CLAWOS_ALLOW_NODE_PROVISION=1`, which `test/phase-1.sh` sets
+`installer/install.sh` provisions Node only when `GKOS_ALLOW_NODE_PROVISION=1`, which `test/phase-1.sh` sets
 because it runs on a disposable VM. On any other host a missing Node is a hard failure with instructions, so the
 installer cannot silently mutate a development machine's toolchain.
 
@@ -229,7 +229,7 @@ evidence. This does not test automatic installer plugin projection or install po
 
 ## Phase 3 installer checkpoint
 
-`CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state
+`GKOS_VM_DRIVER=libvirt GKOS_VM_STATE_DIR=../phase-0-bootstrap/scripts/vm/.state
 scripts/vm/test.sh phase-3 installed install-integration` restores the dedicated
 VM, runs the source installer with packed self-contained plugins, verifies a no-op
 reinstall and healthy empty-grant kernel/fs, then exercises actual pinned CLI
@@ -275,7 +275,7 @@ no live cell state, model bodies, credentials or raw Gateway log is collected.
 The older `install-hook` fixture remains a **skill** upload test. The separate
 `phase-3 installed plugin-install-hook` mode exercises public Gateway
 `plugins.install` for an uninstalled official plugin selected from the Gateway's own
-`plugins.list` package metadata, then requests its exact `clawos.lock.json` version
+`plugins.list` package metadata, then requests its exact `gkos.lock.json` version
 through the supported ClawHub source. No account credentials or transport setup.
 Hardcoded Slack and ACPX selectors did not reach policy; ACPX returned an
 unknown-catalog error despite existing in the bundled fallback. The hosted runtime
@@ -320,7 +320,7 @@ Artifacts explicitly distinguish local TLS fixtures from live-provider acceptanc
 ## Phase 6 blueprint sandbox checkpoint (2026-09-12)
 
 `phase-6 installed blueprint-sandbox` builds and installs the packed CLI in the
-VM's isolated checkpoint prefix. It creates two actual cells via `clawos cell
+VM's isolated checkpoint prefix. It creates two actual cells via `gkos cell
 create`: `blueprint-runtime` on 19100 and `blueprint-messaging` on 19110. A synthetic
 model listens on loopback 19101. These ports are guest-only and checked by cell
 creation; no host service binds them.
@@ -329,7 +329,7 @@ The runtime cell provisions coder, verifies idempotence/drift and runs native ex
 inside real Docker. Container inspection checks network:none, read-only root and no
 Docker socket, plus an inaccessible host-only file and a positive workspace write.
 The messaging cell refuses coder before creating any agent and must print
-`clawos cell create blueprint-messaging-runtime --port 19111 --policy runtime`.
+`gkos cell create blueprint-messaging-runtime --port 19111 --policy runtime`.
 Assistant, ops and researcher then provision idempotently and execute synthetic
 Gateway turns: denied runtime/fs tools remain absent, positive allowed tools are
 present, and researcher has only web tools. Each role uses a fresh session.
@@ -344,7 +344,7 @@ model bodies or raw Gateway logs.
 
 ## Phase 5 approvals-live checkpoint
 
-`CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=<original-phase0>/scripts/vm/.state
+`GKOS_VM_DRIVER=libvirt GKOS_VM_STATE_DIR=<original-phase0>/scripts/vm/.state
 scripts/vm/test.sh phase-5 installed approvals-live` resets the original unconnected
 snapshot. It uses a synthetic driver with the existing filesystem contract name,
 not an actual filesystem/GitHub provider, and a local synthetic channel. Real
@@ -355,7 +355,7 @@ Default/full mode returns blocked; this checkpoint cannot claim full acceptance.
 
 ## Phase 7 runtime checkpoint (implementation branch)
 
-`CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=<shared original state>
+`GKOS_VM_DRIVER=libvirt GKOS_VM_STATE_DIR=<shared original state>
 scripts/vm/test.sh phase-7 installed runtime-checkpoint` restores the original installed
 snapshot, installs the current kernel, and introduces a disposable filesystem grant. No
 personal credentials or connected snapshot. Collection is restricted to structural
@@ -371,7 +371,7 @@ this checkpoint from full Phase 7 acceptance; the `full` mode currently returns 
 ## Phase 9 prepublish checkpoint
 
 ```sh
-CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=<original-phase0>/scripts/vm/.state \
+GKOS_VM_DRIVER=libvirt GKOS_VM_STATE_DIR=<original-phase0>/scripts/vm/.state \
   scripts/vm/test.sh phase-9 installed prepublish
 ```
 
@@ -379,7 +379,7 @@ This resets the original installed snapshot, rebuilds and packs the current CLI,
 and runs the two-cell Phase 6 checkpoint. After each cell's role scenarios,
 `openclaw security audit --deep --json` audits that actual cell with its own
 Gateway still running. The cell token is supplied through child environment
-the canonical `CLAWOS_GATEWAY_TOKEN` SecretRef environment provider, not argv; the original state identity is preserved.
+the canonical `GKOS_GATEWAY_TOKEN` SecretRef environment provider, not argv; the original state identity is preserved.
 
 The gate requires zero critical findings and a successful authenticated deep probe.
 Only the exact warning codes and per-cell predicates in `docs/blueprints.md` are

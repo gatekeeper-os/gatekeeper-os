@@ -8,14 +8,14 @@ mkdir -p "$evidence"
 trap 'rc=$?; printf "%s\n" "$rc" > "$evidence/runner-exit-code"' EXIT
 printf '%s\n' '{"mode":"conformance-runner","fullPhaseAcceptance":false,"liveKernelAcceptance":false,"hostWritesEnabled":false}' > "$evidence/scope.json"
 node --version > "$evidence/node-version"
-node -e 'console.log(JSON.parse(require("fs").readFileSync("clawos.lock.json", "utf8")).upstream.version)' > "$evidence/upstream-pin"
+node -e 'console.log(JSON.parse(require("fs").readFileSync("gkos.lock.json", "utf8")).upstream.version)' > "$evidence/upstream-pin"
 pnpm install --frozen-lockfile --ignore-scripts
-pnpm --filter @clawkeepers/conformance... build
-pnpm --filter @clawkeepers/conformance typecheck
-pnpm --filter @clawkeepers/conformance exec vitest run --reporter=default --reporter=json --outputFile="$evidence/runner-tests.json"
+pnpm --filter @gatekeeper-os/conformance... build
+pnpm --filter @gatekeeper-os/conformance typecheck
+pnpm --filter @gatekeeper-os/conformance exec vitest run --reporter=default --reporter=json --outputFile="$evidence/runner-tests.json"
 # Real live suites must fail without evidence from a current isolated run.
 # Skipped-suite refusal remains covered by the runner unit fixtures.
-unset CLAWOS_KERNEL_VM CLAWOS_SCENARIO_RUN CLAWOS_SCENARIO_REPORT
+unset GKOS_KERNEL_VM GKOS_SCENARIO_RUN GKOS_SCENARIO_REPORT
 set +e
 pnpm conformance --only hooks-fire --verdict "$evidence/missing-evidence-verdict.json"
 runner_rc=$?
@@ -30,7 +30,7 @@ NODE
 export OPENCLAW_STATE_DIR=/home/tester/.openclaw
 export OPENCLAW_CONFIG_PATH=/home/tester/.openclaw/openclaw.json
 export OPENCLAW_PROFILE=default
-export CLAWOS_GATEWAY_URL=ws://127.0.0.1:18789
+export GKOS_GATEWAY_URL=ws://127.0.0.1:18789
 pnpm exec tsx test/scripts/conformance-transport.ts "$evidence/transport.json"
 pnpm conformance --only health --verdict "$evidence/health-verdict.json"
 pnpm check:catalog

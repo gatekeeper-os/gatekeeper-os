@@ -91,7 +91,7 @@ kernel resolves each grant for the current agent, cell, session and audience.
 | Pull request | `gk_github_pull_comment` | body | Add one conversation comment |
 | Pull request | `gk_github_pull_review` | event: COMMENT, APPROVE or REQUEST_CHANGES; body | Submit one review |
 
-Source definitions: `packages/gatekeeper-github/src/tools.ts` and `resources.ts`.
+Source definitions: `packages/gkos-gatekeeper-github/src/tools.ts` and `resources.ts`.
 The implementation will reject unknown fields and enforce finite text/response
 limits with explicit truncation indicators. No arbitrary API method, URL, token,
 repository override, shell execution, merge, push, branch deletion or repository
@@ -165,9 +165,9 @@ on 2026-09-12; STOP2 was also approved later that day; see the end of this file.
 
 Review [mcp-surface-contract.md](mcp-surface-contract.md): HTTPS Streamable HTTP
 only; fixed named tools from operator-reviewed manifests; owner-only server grant
-`https://mcp.clawkeeper.invalid/servers/:server`; no generic invocation, stdio,
+`https://mcp.gatekeeper-os.invalid/servers/:server`; no generic invocation, stdio,
 automatic discovery or cross-server widening. Exact synthetic read/append schemas
-are in `packages/gatekeeper-mcp/src/tools.ts`; canonical resource metadata is in
+are in `packages/gkos-gatekeeper-mcp/src/tools.ts`; canonical resource metadata is in
 `resources.ts`. These files are not exported by the inert plugin entrypoint.
 
 **Decision:** approve this surface/URL/transport scope to proceed to account and

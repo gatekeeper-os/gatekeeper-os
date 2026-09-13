@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 test('secret gate distinguishes clean, detected, and incomplete scans without printing values', () => {
-  const root = mkdtempSync(join(tmpdir(), 'clawkeeper-secret-gate-'));
+  const root = mkdtempSync(join(tmpdir(), 'gatekeeper-os-secret-gate-'));
   const scan = () => spawnSync('bash', [fileURLToPath(new URL('./check-secrets.sh', import.meta.url))], { cwd: root, encoding: 'utf8' });
   const blocked = join(root, 'unreadable');
   try {

@@ -1,0 +1,51 @@
+{
+  "name": "@gatekeeper-os/cli",
+  "version": "0.1.0-beta.1",
+  "description": "The gkos binary: install, cells, status, doctor, config apply, backups.",
+  "type": "module",
+  "bin": {
+    "gkos": "./dist/bin/gkos.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean && node scripts/stage-templates.mjs && node scripts/stage-plugins.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "tsup": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "@types/node": "catalog:",
+    "@gatekeeper-os/kernel": "workspace:*",
+    "@gatekeeper-os/gatekeeper-fs": "workspace:*",
+    "@gatekeeper-os/shared": "workspace:*"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gatekeeper-os/gatekeeper-os.git",
+    "directory": "packages/gkos-cli"
+  },
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "engines": {
+    "node": ">=22.22.3"
+  }
+}

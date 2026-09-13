@@ -3,19 +3,19 @@
 set -euo pipefail
 [ "$HOME" = /home/tester ] && [ "$PWD" = /home/tester/src ] || exit 1
 export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
-export CLAWOS_KERNEL_VM=1 CLAWOS_CELL=kernel-test OPENCLAW_NO_AUTO_UPDATE=1
+export GKOS_KERNEL_VM=1 GKOS_CELL=kernel-test OPENCLAW_NO_AUTO_UPDATE=1
 export OPENCLAW_STATE_DIR=/home/tester/.openclaw-kernel-test OPENCLAW_CONFIG_PATH=/home/tester/.openclaw-kernel-test/openclaw.json
 unset OPENCLAW_PROFILE OPENCLAW_GATEWAY_TOKEN
 EV=/home/tester/phase-3-plugin-install-hook-evidence
 mkdir -p "$EV"
-export CLAWOS_SCENARIO_REPORT="$EV/scenarios.json" CLAWOS_SCENARIO_RUN="$CLAWOS_TEST_START"
+export GKOS_SCENARIO_REPORT="$EV/scenarios.json" GKOS_SCENARIO_RUN="$GKOS_TEST_START"
 gateway_pid=''
 cleanup(){ rc=$?; trap - EXIT; if [ -n "$gateway_pid" ]; then kill "$gateway_pid" 2>/dev/null || true; wait "$gateway_pid" 2>/dev/null || true; fi; printf '%s\n' "$rc" > "$EV/hook-exit-code"; exit "$rc"; }
 trap cleanup EXIT
 printf '%s\n' '{"mode":"plugin-install-hook","fullPhaseAcceptance":false,"primaryRulesIndependentlyControlled":true,"realFilesystemWritesEnabled":false}' > "$EV/scope.json"
 node --version > "$EV/node-version"
 pnpm install --frozen-lockfile --ignore-scripts > /home/tester/install-hook-deps.log 2>&1
-pnpm --filter @clawkeepers/kernel... --filter @clawkeepers/gatekeeper-fs... --filter @clawkeepers/conformance... build > /home/tester/install-hook-build.log 2>&1
+pnpm --filter @gatekeeper-os/kernel... --filter @gatekeeper-os/gatekeeper-fs... --filter @gatekeeper-os/conformance... build > /home/tester/install-hook-build.log 2>&1
 pnpm exec tsup test/scripts/install-hook-primary.ts --format esm --target node22 --out-dir /home/tester/install-hook-build > /home/tester/install-hook-primary-build.log 2>&1
 pnpm exec tsx test/scripts/kernel-config.mjs
 node test/scripts/install-hook-config.mjs

@@ -18,7 +18,7 @@ export class TokenStore {
     if (!id) throw new Error("Operator required.");
     return join(this.dir, `${createHash("sha256").update(id).digest("hex")}.json`);
   }
-  private aad(id: string): Buffer { return Buffer.from(JSON.stringify(["clawos-token-v1", this.dir, id])); }
+  private aad(id: string): Buffer { return Buffer.from(JSON.stringify(["gkos-token-v1", this.dir, id])); }
   /** Encrypt and atomically replace one account record; plaintext is never written. */
   put(operatorId: string, value: unknown): void {
     const path = this.path(operatorId);

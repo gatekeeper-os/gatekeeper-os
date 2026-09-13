@@ -12,7 +12,7 @@ fail closed for OpenClaw-owned writes), `matcher` = explicit tool ids only (no w
 | # | Question | Command / method | Answer | Plan sections updated |
 |---|---|---|---|---|
 | c | Allowed characters / max length for plugin tool names | provider documentation + naming-agent turn through real pinned Gateway; actual model schema log | VERIFIED bounded answer: generic registration is permissive; OpenAI/Anthropic document `[A-Za-z0-9_-]{1,64}`. OS retains lowercase underscore names, total ≤64. Boundary name reaches the local model unchanged; no universal/paid-provider runtime claim. | §3.4 |
-| d | Does the manifest tolerate unknown top-level keys (`clawos`)? | actual probe load + `os-spike.report`; retain negative authoring-validator output | VERIFIED for pinned release: `clawos` did not prevent load/RPC. `plugins validate` instead rejects ordinary entries lacking generated authoring metadata; use metadata inspection and separate runtime checks. | §4.2, §8 |
+| d | Does the manifest tolerate unknown top-level keys (`gkos`)? | actual probe load + `os-spike.report`; retain negative authoring-validator output | VERIFIED for pinned release: `gkos` did not prevent load/RPC. `plugins validate` instead rejects ordinary entries lacking generated authoring metadata; use metadata inspection and separate runtime checks. | §4.2, §8 |
 | e | Does `before_prompt_build` `toolsAllow` remove model schemas? | inspect `llm_input` and the local model's structural tool-name log | VERIFIED in recovered run: 20 hook observations and 40 requests contained only `probe_echo`, after discovery registration and ordinary prompt phase correction. Complete retest verdict below. | §5.2 |
 | f | Is `toolCallId` present and correlated for plugin tools? | 20 scripted calls; record hook identity flags and stash consumption | VERIFIED on tested path: 20/20 hooks have call/agent/session identity; 20/20 executions consume matching entries from the SDK shared runtime store. Optional SDK fields still require fail-closed checks. | §5.1–2 |
 | g | Which paired operator identity fields are populated? | two connections via public SDK `GatewayClient`, second using SDK-issued device token | VERIFIED: role/scopes and `connect.device.id`; device-token reconnect sets `isDeviceTokenAuth`. `pairedClientId` and `authenticatedUserId` absent on both; shared-auth operator role alone does not imply pairing. | §5.4 |
@@ -23,7 +23,7 @@ fail closed for OpenClaw-owned writes), `matcher` = explicit tool ids only (no w
 
 ## 2026-09-07 preliminary run — not a completed spike
 
-Command: `CLAWOS_VM_DRIVER=libvirt scripts/vm/test.sh phase-0`.
+Command: `GKOS_VM_DRIVER=libvirt scripts/vm/test.sh phase-0`.
 Snapshot: `base`; artifacts: `vm-artifacts/20260907-183938-phase-0/`.
 Node `v24.20.0`; upstream `OpenClaw 2026.9.2`; foreground `/readyz` passed.
 `openclaw gateway call os-spike.report --json` failed with `INVALID_REQUEST`,
@@ -40,7 +40,7 @@ not a VERIFIED result. All S-1 questions remain open.
 Every run used the exact host command:
 
 ```bash
-CLAWOS_VM_DRIVER=libvirt scripts/vm/test.sh phase-0
+GKOS_VM_DRIVER=libvirt scripts/vm/test.sh phase-0
 ```
 
 The wrapper restored `base`, synced the tree to `/home/tester/src`, invoked
@@ -77,7 +77,7 @@ node scripts/spike-assert.mjs
 ```
 
 All Gateway invocations received explicit `OPENCLAW_STATE_DIR` and
-`OPENCLAW_CONFIG_PATH` pointing to `/home/tester/clawos-spike-state`, never host
+`OPENCLAW_CONFIG_PATH` pointing to `/home/tester/gkos-spike-state`, never host
 production paths. Authentication values were generated within the VM config
 writer and were not arguments, shell variables, logs or artifacts.
 
@@ -139,7 +139,7 @@ Run `20260907-190538-phase-0` verified `pnpm dev:gateway --smoke` readiness and
 shutdown, then stopped at the newly exercised authoring validator:
 `plugins validate --root scripts/spike-probe --entry dist/index.js --json`
 rejects ordinary `definePluginEntry` with “plugin entry does not expose tool or
-feature authoring metadata”. This is not a `clawos` unknown-key rejection.
+feature authoring metadata”. This is not a `gkos` unknown-key rejection.
 The next acceptance retains that exact negative result and checks actual runtime
 load through the probe RPC. No failure was relabeled as successful validation.
 
@@ -153,7 +153,7 @@ Fresh-base corrected runtime retest pending; no phase advancement or tag.
 process remained. The guest structural evidence was recovered using:
 
 ```bash
-CLAWOS_VM_DRIVER=libvirt scripts/vm/collect.sh vm-artifacts/20260907-191546-phase-0 '2026-09-07T19:15:46Z' phase-0
+GKOS_VM_DRIVER=libvirt scripts/vm/collect.sh vm-artifacts/20260907-191546-phase-0 '2026-09-07T19:15:46Z' phase-0
 ```
 
 Recovered files establish 20 hooks, 20 correlated tool bodies, 20 narrowed
@@ -163,7 +163,7 @@ No assertions were rerun in the dirty guest or used to invent a missing exit cod
 
 Fresh-base run `20260907-192247-phase-0` exited **1** before the runtime spike.
 The prepared metadata validator found a real scaffold defect: `gatekeeper-http`
-and `gatekeeper-mcp` manifests lacked required `configSchema`, even when disabled.
+and `gkos-gatekeeper-mcp` manifests lacked required `configSchema`, even when disabled.
 Pinned `docs/plugins/manifest.md` lists that field as mandatory. Both Phase-8
 placeholders now declare an empty closed object schema; no tools, resources,
 URLs, credentials, or runtime implementation were added. The repository's
@@ -174,7 +174,7 @@ runtime conformance for these placeholder plugins.
 
 ## 2026-09-07 — completed fresh-base retest: live spike PASS
 
-Exact acceptance command: `CLAWOS_VM_DRIVER=libvirt scripts/vm/test.sh phase-0`.
+Exact acceptance command: `GKOS_VM_DRIVER=libvirt scripts/vm/test.sh phase-0`.
 Artifacts: `vm-artifacts/20260907-192654-phase-0/`; snapshot `base`;
 Ubuntu 24.04 / Node 24.20.0 / OpenClaw 2026.9.2. Wrapper and collection exited **0**.
 
@@ -214,7 +214,7 @@ not complete or tagged; no later phase or gatekeeper review STOP was entered.
 ## 2026-09-07 — remaining c/j probes passed
 
 **Exact acceptance command:**
-`CLAWOS_VM_DRIVER=libvirt scripts/vm/test.sh phase-0`.
+`GKOS_VM_DRIVER=libvirt scripts/vm/test.sh phase-0`.
 Fresh immutable `base`; Ubuntu 24.04, Node 24.20.0, OpenClaw 2026.9.2.
 **Artifacts:** `vm-artifacts/20260907-201658-phase-0/`; **exit 0** including
 collection and secret scan. Previous failures/UNKNOWN evidence remain preserved.
@@ -271,7 +271,7 @@ STOP was entered. Plan §4.2/§5.1 now describe the supported fallback explicitl
 
 **S-1 question inventory is answered. Phase 0 still cannot be tagged:** its live
 CI criterion requires a GitHub destination/run URL. There is no remote; read-only
-`gh repo view ControlStackAI/openclaw-os` could not resolve an accessible repo.
+`gh repo view ControlStackAI/gatekeeper-os` could not resolve an accessible repo.
 No repository was created or content pushed. Host build/typechecks, 11 unit
 tests, catalog/secret checks, and two bootstrap regressions passed; 12 later
 conformance TODOs are still not passes.

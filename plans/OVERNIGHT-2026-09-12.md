@@ -1,7 +1,7 @@
 # Overnight report — 2026-09-12
 
 **Implementation checkpoints are saved remotely in the requested order:
-Phase7 → Phase5 → Phase6 → gatekeeper-mcp. Beta is not accepted.**
+Phase7 → Phase5 → Phase6 → gkos-gatekeeper-mcp. Beta is not accepted.**
 
 All work remains reviewable on independent branches from `main` (`f4f66c7`), with
 no phase merge, release tag, publication, visibility change or production deployment.
@@ -9,10 +9,10 @@ The counts below are separate branch/checkpoint results, **not an integrated sui
 
 | Item | Remote checkpoint | Verified result | Acceptance status |
 | --- | --- | --- | --- |
-| Phase7 | [PR11](https://github.com/clawkeeper/openclaw-os/pull/11), `7cc4101` |438 host tests;9 update assertions +42 Gateway/SDK/fs probes; final-head CI green | Reduced runtime checkpoint only; full mode blocked |
-| Phase5 | [PR12](https://github.com/clawkeeper/openclaw-os/pull/12), `91ea034` (code `864df55`) |431 host tests;41 affected tests after final correction;49 real-Gateway synthetic checks; final-head CI green | Real channel/provider secrecy gates remain open |
-| Phase6 | [PR13](https://github.com/clawkeeper/openclaw-os/pull/13), `da458da` |432 host tests;48 blueprint/Docker checks;98 kernel regression +38 conformance; final-head CI green | Missing drivers/global policy and real-provider acceptance |
-| MCP | [PR14](https://github.com/clawkeeper/openclaw-os/pull/14), branch `phase/8-mcp-surface` |15 offline metadata/URL/inert-entry tests; package typecheck/build/catalog/secrets/diff pass | Mandatory STOP1 review pending; no runtime enabled |
+| Phase7 | [PR11](https://github.com/gatekeeper-os/gatekeeper-os/pull/11), `7cc4101` |438 host tests;9 update assertions +42 Gateway/SDK/fs probes; final-head CI green | Reduced runtime checkpoint only; full mode blocked |
+| Phase5 | [PR12](https://github.com/gatekeeper-os/gatekeeper-os/pull/12), `91ea034` (code `864df55`) |431 host tests;41 affected tests after final correction;49 real-Gateway synthetic checks; final-head CI green | Real channel/provider secrecy gates remain open |
+| Phase6 | [PR13](https://github.com/gatekeeper-os/gatekeeper-os/pull/13), `da458da` |432 host tests;48 blueprint/Docker checks;98 kernel regression +38 conformance; final-head CI green | Missing drivers/global policy and real-provider acceptance |
+| MCP | [PR14](https://github.com/gatekeeper-os/gatekeeper-os/pull/14), branch `phase/8-mcp-surface` |15 offline metadata/URL/inert-entry tests; package typecheck/build/catalog/secrets/diff pass | Mandatory STOP1 review pending; no runtime enabled |
 
 ## What changed
 
@@ -81,7 +81,7 @@ No transport/auth/action implementation crosses that boundary. STOP2 remains lat
 
 ## Cleanup and remaining work
 
-- VM `clawos-test` verified shut off after the last runtime stage; original base and
+- VM `gkos-test` verified shut off after the last runtime stage; original base and
   installed snapshots retain Sep7 creation dates. No credential snapshots.
 - No personal credentials used in these later-phase fixtures. Production gateways,
   installed baseline, repository visibility and package publication untouched.

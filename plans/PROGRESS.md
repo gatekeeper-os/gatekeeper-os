@@ -2018,3 +2018,334 @@ Clean, initially empty prefix: `npm install --global --prefix <clean-prefix> @cl
 Step 1 core docs merged f8232a85c0eece4f28b33e88cb0b810a723ebbff after CI34707380067 build-test green. Org docs a2fea2d32e0c1bfe4c2e98ea7af5c5ca1780dfae, with the required --port example corrected by f25e5075f6ec55a714e27f5c2c125822f3f5cacc after green build-test.
 
 Release archive preflight reads the packed manifest, then runs npm view name@version version --json. Exact existing versions log “already published, skipping”; only registry E404 proceeds to the unchanged npm publish --access public --tag dist_tag --provenance command. Malformed/auth/network/timeout/version mismatch responses fail closed. Tests cover all-five skip, absent version, lookup errors, archive identity and workflow wiring. No real publication or release workflow invocation used for verification. The original beta tag still points to 41ba040 and is not moved.
+
+## 2026-09-12 — post-publish Tier 1 prepared; private core access blocks ordered continuation
+
+- Docs: core PR17 merged f8232a85c0eece4f28b33e88cb0b810a723ebbff (build-test run34707380067). Org PR2 merged a2fea2d32e0c1bfe4c2e98ea7af5c5ca1780dfae, then its required-port example correction PR3 merged f25e5075f6ec55a714e27f5c2c125822f3f5cacc (run34707380987). npm versions/tags/timestamps are recorded above.
+- Release idempotency: core PR18 merged 723b23cde397bd8a4921c4bf444ba2bd2b16b813 (green build-test run34707821984). Six local tests passed, including the actual workflow shell with an npm fixture that rejects any publish call. Read-only preflight additionally ran on all five actual npm tarballs: each printed already published, skipping and returned zero. No release workflow was invoked.
+- Tier 1: gatekeepers PR7, candidate b2dcc09, prepared against main. Exact registry kit/shared 0.1.0-beta.1; no workspace/core aliases. Local typecheck/build, published defineGatekeeper import validation, registry identity/integrity checks, and secret scan passed. Initial harness checks used require.resolve against import-only exports and an overbroad lockfile regex; these test-harness bugs were corrected before the passing result, without changing the published kit or template tool surface.
+- Live core-main skill comparison replaces the Tier0 snapshot. Local complete-tree parity passed. Hosted private fetch needs CORE_SKILL_READ_TOKEN (dedicated read-only core Contents token); repository and organization have no configured Actions secrets. The default GITHUB_TOKEN is repository-scoped.
+- Attempted a dedicated read-only deploy key instead of exporting the broad personal token. GitHub rejected POST /repos/clawkeeper/openclaw-os/keys with HTTP422: Deploy keys are disabled for this repository. No deploy key or Actions secret was created; temporary private key files were removed. Did not change the policy. Matt was asked to stage a narrowly scoped token through a masked gh secret set prompt, never in chat.
+- Ordered hold: do not merge PR7 without green build-test/live core fetch; do not start step4 before that merge. npm-only VM has NOT RUN: no run id, counts or acceptance result exist. No source-build result is substituted.
+- All repos remain private; npm trusted publishers untouched; no publish, phase-9 tag or upstream post. Original release run34706409757 remains the sole failed private-source run, never rerun; beta tag remains41ba040.
+
+Hosted confirmation: gatekeepers run34708289709 build-test failed after42s at the live private-core checkout (Repository not found, git128), before registry build steps. This is an access failure, not a kit/template failure and not a passing sync. No retry of release.yml occurred. This early-stop record is local/uncommitted on test/npm-only-acceptance until the ordered prerequisite is resolved.
+
+### Operator continuation and public flip (not executed)
+
+1. For the current private preparation only, create a fine-grained token owned by clawkeeper, selected repository openclaw-os, Contents read-only (metadata read is implicit), then set CORE_SKILL_READ_TOKEN in gatekeepers Actions with `gh secret set CORE_SKILL_READ_TOKEN -R clawkeeper/gatekeepers` using its masked prompt. Approve the token for the org if required. Do not paste it in chat. Resume the Tier1 check, merge only green, then run the npm-only VM and stop on any failure.
+2. After successful step4 and explicit public-flip authorization, in one coordinated maintenance window run `gh repo edit clawkeeper/.github --visibility public --accept-visibility-change-consequences`, then the equivalent command for clawkeeper/openclaw-os and clawkeeper/gatekeepers. Verify all three isPrivate=false. This is coordinated, not an atomic three-repo operation. The beta tag is already pushed; do not push another or rerun its failed release run.
+3. On npmjs.com, for each of @clawkeepers/shared, gatekeeper-kit, kernel, gatekeeper-fs, cli: package Settings → Trusted publishing → GitHub Actions; organization clawkeeper, repository openclaw-os, workflow filename release.yml, environment blank (the workflow has no environment). Save for each package. This prepares future approved releases; it does not authorize rerunning release34706409757.
+4. For each repo's main branch protection/ruleset, enable required status checks, require the exact build-test check, and require the branch be up to date. Preserve existing review/admin rules. Verify the saved rule through GitHub/API rather than assuming the former private Free entitlement failure left a latent rule. Core build-test already depends on secret-scan.
+5. After public live-sync passes without private credentials, remove the temporary cross-repo token secret and revoke that token. ClawHub and the phase-9 tag remain separate later gates; do not infer permission from the visibility change.
+
+## 2026-09-12 — Tier 1 merged; npm-only acceptance stopped at VM reset
+
+Matt staged CORE_SKILL_READ_TOKEN in gatekeepers Actions (metadata updated 18:40:54Z; value never read or logged). Only gatekeepers CI run34708289709 was rerun, attempt2. At18:42:49Z its build-test completed SUCCESS: live private core checkout and whole-skill parity, registry-only dependency installation, typecheck, build, defineGatekeeper validation and secret scan all passed. PR7 squash-merged3076cc1ff7ac034840edea395d6e97bceaca7511. No release workflow rerun.
+
+Four final change-set merge heads (org docs also had preceding PR2 a2fea2d):
+
+| Change | PR | Merge SHA |
+| --- | --- | --- |
+| Core npm docs | clawkeeper/openclaw-os#17 | f8232a85c0eece4f28b33e88cb0b810a723ebbff |
+| Org npm docs, corrected --port | clawkeeper/.github#3 | f25e5075f6ec55a714e27f5c2c125822f3f5cacc |
+| Release idempotency | clawkeeper/openclaw-os#18 | 723b23cde397bd8a4921c4bf444ba2bd2b16b813 |
+| Registry-backed Tier1/live skill sync | clawkeeper/gatekeepers#7 | 3076cc1ff7ac034840edea395d6e97bceaca7511 |
+
+Prepared a new libvirt-only `scripts/vm/test.sh phase-3 installed npm-only` mode: no checkout sync, delete the snapshot's old src before product execution, transfer test-only fixtures, install all five exact registry betas into an empty prefix, create an actual messaging cell, exercise install policy/kernel/owner audience/approval decisions. No local product runtime is transferred. Synthetic successful apply/reject is explicitly separate from the published filesystem driver's write-application refusal. Parent reviewed child-written fixtures; node syntax, shell syntax, targeted ESLint, secret scan and git diff checks passed. This is prepared harness code, not live acceptance evidence.
+
+Before starting, original saved snapshot XMLs (base1788806293, installed1788821379) were re-registered after daemon expiry. The existing documented process-local memlock workaround was applied only to verified same-user virtqemud2630936 (soft0, original hard8388608 preserved); no host config or snapshot was replaced. A subsequent read-only check found replacement daemon2639566. That is a possible diagnostic lead, not an established cause. No further limit change or retry after the failed acceptance.
+
+**Attempt 20260912-184927-phase-3: BLOCKED/exit1 at snapshot restore.** Exact output: `Failed to revert snapshot installed` / `An error occurred, but the cause is unknown`. The guest did not start, fixtures were not transferred, and registry installation/cell creation/scenarios were not reached. Counts: **0 guest package installs, 0 acceptance checks executed, 0 model turns**. This is neither a product failure verdict nor a pass. Stop-on-failure honored: no retry, product patch or workaround after the attempt.
+
+Structural host receipt: `vm-artifacts/20260912-184927-phase-3/host-preflight-verdict.json`, with captured error, exit code and frozen harness hashes. The host receipt is explicitly reconstructed from the completed tool result because reset failed before normal run/collection; it is not a guest verdict. VM confirmed shut off; original base/installed snapshot registrations retain Sep7 timestamps. All three repos independently confirmed private. Core release34706409757 remains the sole failed private-source run. No publish, trusted-publisher change, tag, visibility change or upstream post.
+
+Step4 and its harness/receipt PR remain **unaccepted and unmerged** in postpublish-acceptance. Existing operator continuation/public-flip instructions above remain deferred until acceptance passes and visibility is explicitly authorized.
+
+
+## 2026-09-12 — authorized npm-only retry: infrastructure repaired, install-policy behavior failed
+
+Matt accepted steps 1–3 and authorized one retry only, with transient libvirt
+repair permitted but no host config, snapshot replacement/recreation, or product edits.
+
+### Diagnosis and exact host changes
+
+The original 18:49:27Z user journal identifies replacement virtqemud2639566:
+`qemu-img snapshot -a installed` exited1 with
+`Failed to initialize io_uring: Cannot allocate memory`.
+Neither old daemon2630936 nor2639566 remained alive at retry preparation. A new
+session daemon2859055 auto-started with `--timeout=120`, same uid1000, and
+MEMLOCK soft/hard8388608 bytes. Its snapshot registration list was empty although
+both saved XMLs and internal disk snapshots still existed. This establishes the
+previous failure's io_uring allocation cause; the expired daemon also explains
+why a process-only workaround does not survive replacement.
+
+Changes made: held one ordinary interactive virsh session open to prevent idle
+expiry; changed only daemon2859055 RLIMIT_MEMLOCK soft8388608 →0, preserving
+hard8388608; re-registered base and installed using byte-preserved copies of the
+original saved XMLs with `virsh snapshot-create --redefine` (metadata only).
+A read-only qemu-img snapshot listing used soft memlock0 on its own child process.
+No host config edit, service-unit edit, daemon restart, snapshot create/delete,
+image replacement, or product-code change. Original snapshot IDs1/2 and creation
+times1788806293/1788821379 were verified before the retry. Evidence is retained
+outside git in `../../npm-only-retry-20260912/`, including the original XML copies,
+hashes, prior journal diagnostic and daemon-limit receipt.
+
+### Single retry result — FAIL, not infrastructure
+
+Command: `CLAWOS_VM_DRIVER=libvirt CLAWOS_VM_STATE_DIR=<original-phase0>/scripts/vm/.state bash scripts/vm/test.sh phase-3 installed npm-only`.
+Run **20260912-230314-phase-3**, exit **1**, final stage **install-policy**.
+The original installed snapshot restored and guest started successfully. No clone
+or checkout sync occurred; the snapshot's old src was removed. All five exact
+registry beta1 identities passed from the isolated prefix, CLI0.1.0-beta.1 and
+upstream OpenClaw2026.9.2(3928bad) were recorded, and the actual CLI messaging-cell
+creation succeeded.
+
+Install-policy assertions: **5 passed / 6 executed**, then immediate stop.
+Passed: no-filesystem-roots, primary-policy-enabled, cell-local-artifacts,
+real-cli-blocks-unlisted-source, operator-policy-reconciles.
+Failed: **real-cli-allows-reviewed-source**. The upstream install invocation
+reported **not authorized by cell policy** and the reviewed fixture manifest was
+absent, despite the preceding operator config reconciliation returning success.
+This is an observed product-path acceptance failure; exact internal cause is not
+yet established. No product patch, harness patch, or second retry was attempted.
+Kernel-live conformance, owner-only audience and approval decisions were not
+reached: **0 checks in those stages and 0 model turns**. Do not substitute prior
+source-install evidence or count provisioning alone as step4 acceptance.
+
+Artifacts: `vm-artifacts/20260912-230314-phase-3/` contains structural registry,
+install-scenario, stage, exit, scope and retry-summary receipts. Raw configs,
+tokens and install logs were not copied out. Harness hashes verified unchanged
+after completion; shell syntax, targeted ESLint, secret and diff checks passed.
+The success-only harness/receipt PR merge is not authorized by this verdict;
+`test/npm-only-acceptance` remains unmerged. The infrastructure-only docs-PR
+fallback does not apply because this retry reached product behavior.
+No visibility, publish, trusted-publisher setup, release34706409757 rerun,
+phase-9 tag or upstream post.
+
+Final cleanup: guest-requested graceful poweroff confirmed **shut off**; the full
+original internal snapshot table is byte-identical to its pre-run listing. Restored
+daemon2859055 MEMLOCK to original soft/hard8388608 and closed the held virsh
+connection. No persistent host-limit change remains. All three repos remain
+private; release34706409757 remains the sole failed release run, attempt1.
+
+## 2026-09-12 — npm-only failure diagnosed before edits: harness cell selector
+
+Read-only guest inspection of retained run20260912-230314-phase-3 establishes
+**harness-only cause**, not a missing fixture and not an npm kernel path defect.
+Expected and delivered source are both `/home/tester/reviewed-install-fixture`;
+package.json, openclaw.plugin.json and index.js all exist. The npm-only scenario
+creates them in the guest, independently of the deleted `/home/tester/src`.
+The absent manifest was the installation destination:
+`/home/tester/.openclaw-kernel-test/extensions/clawos-install-fixture/openclaw.plugin.json`.
+
+The named cell's `os/config.d/90-local.json5` contains
+`plugins.entries.clawos-kernel.config.install.allowSources =
+["/home/tester/reviewed-install-fixture"]`; allowHashes is omitted there.
+But the harness called `clawos config apply --json` without `--cell kernel-test`.
+Published CLI parseGlobals defaults to `default`, independent of CLAWOS_CELL.
+Its retained config log reports changed:false, changes:[], restarted:false:
+it reconciled `/home/tester/.openclaw/openclaw.json`, not the authored named fragment.
+The source-install fixture used the default cell, so omission was harmless there.
+
+Exact relevant effective named-cell config (auth intentionally not copied):
+`plugins.entries.clawos-kernel.config.install = {"allowSources":[],"allowHashes":[]}`.
+`security.installPolicy.enabled = true`; command `/usr/bin/node`; args
+`[/home/tester/.openclaw-kernel-test/os/plugins/f3b68631dd117592e0ed4a22d3abb167c2c38192483a7fbc192860c77e532b01/install-policy.mjs,
+--cell, kernel-test]`. Policy reads that named cell's openclaw.json with selector
+consistency checks. Gateway unit explicitly selects OPENCLAW_STATE_DIR=
+/home/tester/.openclaw-kernel-test, OPENCLAW_CONFIG_PATH=<state>/openclaw.json;
+its OS drop-in selects CLAWOS_CELL=kernel-test. The journal confirms kernel/fs load
+at23:05:09Z and clean shutdown23:05:14Z. Gateway load therefore preceded the failed
+allow attempt; that attempt was primary CLI policy, not a secondary Gateway hook.
+The effective config's SHA256 at inspection was
+`a5cd7b4de370f2783f031e6c826a54a45da8fac67e42bc2322af18877cf9ef84`.
+
+Both source and registry installs project the same plugin ID (`clawos-kernel`,
+not the npm name @clawkeepers/kernel) into content-addressed cell-local paths.
+Registry originals are in /home/tester/npm-acceptance-prefix/lib/node_modules/
+@clawkeepers/{cli,kernel}; CLI dist/templates supplies the projected artifacts.
+CLAWOS_GATEKEEPER_CATALOG is not set by the harness or unit: kernel defaults to
+<state>/os/gatekeepers.json. Catalog resolution does not decide primary installs.
+No evidence of conflicting npm/source config resolution or product bug.
+
+Diagnosis was reported to Matt before edits. Harness fix on test/npm-only-acceptance:
+explicit --cell kernel-test on both allow and restore config applies; source-file
+presence and exact effective install-rule assertions; stop any managed Gateway
+restarted by reconciliation before the foreground scenarios. No product edits.
+Documented transient libvirt preflight in docs/vm-testing.md.
+
+Diagnostic boot (no snapshot revert): first start failed with the same io_uring
+allocation error. Held virsh session; current same-user daemon2897867 soft/hard
+8388608/8388608 changed to0/8388608 only, then current disk boot succeeded.
+Only read-only guest queries were made; normal boot restarted its managed Gateway.
+Guest then gracefully powered off. The authorized single corrected-harness run
+will be recorded below; original failed run remains a failure.
+
+### Single corrected-harness rerun: original failure resolved; later harness guard stops
+
+Run **20260912-235307-phase-3**, scenario runId2026-09-12T23:53:18Z,
+exit **1**, final stage **kernel-config**. All five exact registry beta1 packages,
+no-checkout verification and messaging-cell creation passed. Install-policy
+**14/14 assertions PASS**, including the original real-cli-allows-reviewed-source:
+actual destination manifest exists. Corrected config apply reports changed:true,
+change path plugins.entries.clawos-kernel.config.install.allowSources,
+restarted:true; effective named config readback is
+`{"allowSources":["/home/tester/reviewed-install-fixture"],"allowHashes":[]}`.
+The unmodified npm product allowed the reviewed material and still denied
+unlisted, forged/invalid and unavailable-policy cases. **B does not reproduce.**
+
+The next test-only config.mjs precondition throws `installed messaging cell required`.
+Read-only breakdown: kernel enabled=true, fs enabled=true, profile=messaging,
+exec.mode=deny, all four expected global denials present; only the raw JSON
+`gateway.port === 19100` predicate fails because the field is absent. The actual
+cell registry port is19100, service ExecStart includes `--port 19100`, and both
+service/drop-in environments specify OPENCLAW_GATEWAY_PORT=19100. The restored
+90-local.json5 is its original empty operator object. This is a later harness
+assumption about raw config versus effective port selectors, not evidence that
+npm install-policy reads the wrong cell. No subsequent harness/product patch or
+retry made. Kernel-live/owner-audience/approval stages not reached: **0 model turns,
+0 conformance/owner/approval checks**. Full npm-only acceptance remains unaccepted.
+
+Artifacts retained in vm-artifacts/20260912-235307-phase-3; all recorded runner and
+fixture hashes verified unchanged. Targeted ESLint, bash/node syntax, secret scan
+and diff checks passed. Only test harness/docs changed; no product fix PR or
+version change is justified by this result. No success-only merge performed.
+
+Cleanup: guest-requested poweroff confirmed shut off. Original snapshot IDs1/2,
+base/installed dates and VM clock table unchanged. Both original XMLs were
+re-registered as metadata before the rerun. Held daemon2897867 remains the same
+identity; restored MEMLOCK soft/hard8388608/8388608 and closed its virsh connection.
+No host config/service edit, replacement snapshot, publish, visibility change,
+trusted-publisher change, tag or upstream post. Release34706409757 remains failed
+attempt1, not rerun. All three repositories independently confirmed private.
+
+## 2026-09-12 — third npm-only run: full precondition audit before execution
+
+User authorized one run after a harness-only selector audit; no product files changed.
+Every remaining npm-only kernel/config, conformance, audience and approval assertion
+was read, including the transferred plugin fixtures. Predicate changes:
+
+- `kernel-config` no longer requires raw gateway.port=19100. `selectCell()` reads
+  `clawos cell list --json`, matches exactly kernel-test, verifies selected state/
+  config paths, exported port and the unit's ExecStart --port and selector environment.
+  Raw omission is recorded rather than failed. Gateway launch, readiness, all RPC,
+  Control UI origin and callback fetches use that same registry-selected port.
+- Messaging tools/enabled plugins/install-policy assertions now use upstream
+  `openclaw config get <root> --json`; install tests no longer mistake 15-runtime
+  fragment contents for the merged policy. Reviewed allowSources/allowHashes are
+  read back through upstream after explicit `--cell kernel-test` reconciliation.
+- All scenario stages verify the named selector and canonical cell-local catalog;
+  inherited CLAWOS_GATEKEEPER_CATALOG is cleared before provisioning. Hook receipts
+  follow the selected state rather than an independent constant.
+- Fixture agent creation no longer puts legacy default:true inside agents.entries.
+  Existing explicit agent ownership remains intact; legacy list form alone retains
+  its default marker. No global tools, auth or default sandbox relaxation.
+- Registry installation asserts its prefix absent before npm; five exact npm
+  identities/no symlinks and absent /home/tester/src remain positive checks.
+- Retained raw config reads are only the file being deliberately edited by the
+  test fixture, auth SecretRef presence and before/after non-mutation guard.
+  No raw gateway.port assertion remains. Runtime authorization is still exercised
+  via live RPC/model tool lists, never inferred from files.
+- Intentional fixture paths remain: delivered npm-acceptance, locally generated
+  kernel-resource/outside, reviewed install source, synthetic effects file and
+  published-kit import in the proven registry prefix. No workspace runtime import
+  or deleted source reference is used (src only occurs in absence/cleanup checks).
+  Main/stranger and default channel account are explicit test identities, not
+  fallback cell selectors. Every clawos stateful CLI call names kernel-test.
+- The 38 conformance predicate IDs, same-run checks, owner/private/group authority,
+  shared-token denials, apply/reject semantics and positive retained tools are
+  unchanged. Exact fixture product behavior expectations are not weakened.
+
+Automatic npm-only host preflight now holds the owned session daemon, records
+PID/start/limits, applies only the evidenced soft8MiB→0 fallback (hard unchanged),
+and restores via EXIT/signal trap plus keeper finally. Graceful guest shutdown and
+internal snapshot equality are checked; missing requested registrations may be
+redefined only from supplied original XML. docs/vm-testing.md matches this behavior.
+
+Pre-run verification: five selector regressions passed (raw-port absence, alternate
+consistent registry port, mismatched unit port rejection, default-cell rejection,
+upstream policy readback). Shell syntax, JS lint and secret/diff checks passed.
+A host-only preflight lifecycle probe (no VM start/reset) held daemon2955680,
+changed soft/hard8388608/8388608 to0/8388608, then SIGTERM restored both original
+limits; internal snapshot table remained identical. This is not an acceptance run.
+
+### Single authorized third run — STOP on harness ownership validation
+
+Run **20260913-002140-phase-3** (UTC ID; Sep12 PDT), exit **1**.
+Original installed snapshot restored, no checkout synced, no local product runtime
+transferred. Empty-prefix registry identity checks **5/5**; real CLI messaging-cell
+creation **1/1**; registry/unit/environment selector **1/1**; install policy **14/14**;
+normal fixture protected-baseline/port check **1/1**. `rawGatewayPortPresent:false`
+is accepted with registry, environment and ExecStart all selecting19100.
+
+Next `openclaw config validate` failed **0/1**, before starting the foreground
+Gateway. Exact diagnostic:
+
+```text
+agents.ownership: multi-agent rosters require agents.ownership="explicit" or one legacy default=true marker; add agents.ownership="explicit" or run openclaw doctor
+```
+
+This is a **harness config failure**, not a product denial. The audit removed the
+legacy default marker for entries-form agents but omitted explicit ownership when
+expanding the installer's single-agent roster. Responsibility is the audit edit,
+not the unmodified npm beta. No doctor or product patch was used.
+Kernel-live checks **0**, selected conformance **0/38 executed**, owner-audience
+checks **0**, approval apply/reject checks **0**, model turns **0**. Full step4
+acceptance remains incomplete; earlier source-install results do not fill these gaps.
+
+Automatic EXIT cleanup passed: guest off; daemon2955680 restored0/8388608→
+8388608/8388608; original base/installed internal table byte-identical. A diagnostic
+boot of the retained current disk (no reset, no scenario run) read only the saved
+validation log, then the same cleanup restored limits and shut down again.
+
+Per the authorized harness-stop branch, fixed **only** this new failure after the
+run: `config.mjs normal` sets `agents.ownership="explicit"` before adding entries-form
+fixture agents. A host-only schema probe using installed pinned OpenClaw2026.9.2,
+with explicit isolated temporary state/config (never production), reproduces exit1
+without ownership and exit0 with explicit ownership. This is schema-only evidence,
+not another VM acceptance run. Five selector tests, all604 host tests after build,
+ESLint/typecheck and secret checks passed before the run; post-fix syntax/lint and
+schema checks passed. First full host test invocation lacked built package entries;
+building the workspace and rerunning resolved that local test setup failure. No host
+build output was ever sent into the guest.
+
+All artifacts retained under `vm-artifacts/20260913-002140-phase-3/`, including the
+run-time harness hashes, registry/install/config receipts, host schema probe and
+separate diagnostic cleanup receipt. The post-run ownership edit is deliberately
+not represented as tested end-to-end by that immutable run.
+No PR/merge or SHA: test/npm-only-acceptance remains local/unmerged because the
+success gate did not pass. All three repos verified private; release34706409757
+still failed attempt1. No publish, visibility flip, trusted publishers, release
+rerun, tag or upstream post. STOP before any further VM acceptance run.
+
+## GatekeeperOS rename — private preparation, 2026-09-12
+
+The prior npm-only run is stopped and its complete receipt is retained above.
+No beta.1 or beta.2 VM retry is being started. Unmerged harness corrections stay
+on test/npm-only-acceptance, separate from this identifier-only PR.
+
+Identifiers: GitHub gatekeeper-os/gatekeeper-os, npm @gatekeeper-os, CLI gkos,
+GKOS_* env, gkos-kernel and gkos-gatekeeper-* plugin ids/contracts; package paths,
+lock filename, drop-ins, helpers, catalog, blueprint, fixtures and CI updated.
+gk_* tools, os.* RPCs, openclaw os, grant handle format, content-addressed paths
+and stateDir/os remain unchanged. No tests deleted; NOTICE/LICENSE preserved.
+Full survivor rationale is in docs/migration-gatekeeperos.md.
+
+Live GitHub prerequisite differs from the request: authenticated mmango7474 still
+sees clawkeeper and gatekeeper-os returns 404. Asked Matt to complete the org rename.
+Core repository itself renamed with gh repo rename to gatekeeper-os; all 25 local
+core worktrees currently resolve the shared origin to clawkeeper/gatekeeper-os.
+Final gatekeeper-os org repoint is pending that prerequisite. Repo remains private.
+
+Host typecheck, lint/catalog/secrets and release helper tests passed. Initial host
+suite found one stale gatekeeper-example test key after the id contract rename;
+updated all four references (test retained) and reran. Packed/license checks are
+running against isolated state/config and local read-only registry, not publication.
+
+Rename candidate host verification: 599/599 tests; typecheck; lint/catalog/secrets;
+1 release-plan test; 11 release/packed/secrecy/audit helper tests passed. Packed
+checks verified all 10 package licenses, 2 enabled/loaded plugins, authenticated
+live kernel RPC and 3 installed library/CLI checks. These are isolated packed
+fixtures, not new-scope registry or VM acceptance. The manifest inspector refuses
+a host invocation by design; its required GitHub Actions execution is pending.

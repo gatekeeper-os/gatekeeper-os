@@ -1,14 +1,14 @@
 # Blueprints
 
-`clawos blueprint list` lists the four versioned templates packaged with the CLI.
-`clawos blueprint lint coder` validates the schema, declared files, capability
+`gkos blueprint list` lists the four versioned templates packaged with the CLI.
+`gkos blueprint lint coder` validates the schema, declared files, capability
 instructions, tool/sandbox policy and known gatekeeper names. A directory path
 may be used for lint; apply accepts only a packaged blueprint name.
 
 ```sh
-clawos cell create work --port 19100 --policy runtime --yes
-clawos --cell work blueprint apply coder --agent dev --yes
-clawos --cell work blueprint diff --agent dev
+gkos cell create work --port 19100 --policy runtime --yes
+gkos --cell work blueprint apply coder --agent dev --yes
+gkos --cell work blueprint diff --agent dev
 ```
 
 Apply registers an **unbound** agent through `openclaw agents add`, copies only
@@ -40,7 +40,7 @@ edit is also refused. A stale lock after process death requires operator review.
 - `alsoAllow` extends the chosen profile; it cannot restore tools denied by a
   global/provider policy. It does not grant capability handles.
 - A cell's global policy is a ceiling: agent settings cannot restore denied tools.
-  `clawos cell create <name> --port <port> --policy messaging|runtime` selects the
+  `gkos cell create <name> --port <port> --policy messaging|runtime` selects the
   cell profile; messaging is the default and preserves the deny-by-default baseline.
   Runtime permission and default sandbox `mode: all` live in one inseparable
   `05-policy-runtime.json5` fragment. Config apply refuses an unsafe runtime fragment.
@@ -52,7 +52,7 @@ edit is also refused. A stale lock after process death requires operator review.
   beyond this beta, not an expected dependency. Assistant and ops deny exec and fs.
 - `dependencyPending` means an expected vendor is absent from the cell's registered
   catalog. Presence is **not runtime health, OAuth, grants, or full acceptance**.
-  All receipts say `fullAcceptance: false`; use `clawos gatekeeper list` before routing
+  All receipts say `fullAcceptance: false`; use `gkos gatekeeper list` before routing
   work. GitHub remains a separate Phase 4 integration checkpoint.
 
 Upstream does not bootstrap arbitrary README files (its extra-files hook accepts
@@ -86,7 +86,7 @@ exact warning codes are accepted, with no prefix or category wildcard:
 - `tools.exec.security_full_configured`: accepted only in a runtime cell with default and every agent's effective sandbox `mode: all` verified in the same run.
 
 `gateway.probe_failed` is never an exception: the audit uses the cell token through
-the canonical `CLAWOS_GATEWAY_TOKEN` SecretRef environment provider and the cell's real state/identity. Findings are recorded
+the canonical `GKOS_GATEWAY_TOKEN` SecretRef environment provider and the cell's real state/identity. Findings are recorded
 only as IDs and severities, never raw diagnostics or credential values.
 
 Inherited global Docker binds are rejected for sandboxed blueprints: upstream

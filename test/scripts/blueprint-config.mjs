@@ -2,7 +2,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-const policy = process.env.CLAWOS_BLUEPRINT_POLICY;
+const policy = process.env.GKOS_BLUEPRINT_POLICY;
 const state = `/home/tester/.openclaw-blueprint-${policy}`;
 if (!['runtime', 'messaging'].includes(policy) || process.env.OPENCLAW_STATE_DIR !== state || process.cwd() !== '/home/tester/src') throw new Error('Disposable blueprint VM required');
 const config = JSON.parse(readFileSync(process.env.OPENCLAW_CONFIG_PATH, 'utf8'));

@@ -15,7 +15,7 @@ for (const [name, supported, job, smoke, expected] of [
   ['cancellation is not unsupported success', false, 'cancelled', undefined, 'failed'],
 ]) {
   test(name, () => {
-    const dir = mkdtempSync(join(tmpdir(), 'clawos-ci-report-'));
+    const dir = mkdtempSync(join(tmpdir(), 'gkos-ci-report-'));
     try {
       writeFileSync(join(dir, 'verdict-compatibility.json'), JSON.stringify({ supported, status: supported ? 'pending' : 'unsupported' }));
       if (smoke) writeFileSync(join(dir, 'verdict-smoke.json'), JSON.stringify(smoke));

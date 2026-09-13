@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-export CLAWOS_SPIKE_VM=1
+export GKOS_SPIKE_VM=1
 state_dir="${OPENCLAW_STATE_DIR:-$HOME/.openclaw}"
 config_path="${OPENCLAW_CONFIG_PATH:-$state_dir/openclaw.json}"
 evidence_dir="${1:-$HOME/phase-3-evidence}"

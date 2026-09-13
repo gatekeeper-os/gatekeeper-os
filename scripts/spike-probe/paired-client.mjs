@@ -1,7 +1,7 @@
 // VM-only public SDK client. Auth stays in memory; output contains presence flags only.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { GatewayClient } from 'openclaw/plugin-sdk/gateway-runtime';
-if (process.env.CLAWOS_SPIKE_VM !== '1' || process.env.OPENCLAW_STATE_DIR !== '/home/tester/clawos-spike-state' || process.env.OPENCLAW_CONFIG_PATH !== '/home/tester/clawos-spike-state/openclaw.json') throw new Error('Isolated VM required');
+if (process.env.GKOS_SPIKE_VM !== '1' || process.env.OPENCLAW_STATE_DIR !== '/home/tester/gkos-spike-state' || process.env.OPENCLAW_CONFIG_PATH !== '/home/tester/gkos-spike-state/openclaw.json') throw new Error('Isolated VM required');
 const config = JSON.parse(readFileSync(process.env.OPENCLAW_CONFIG_PATH, 'utf8'));
 const observations = [];
 async function connect(auth) {

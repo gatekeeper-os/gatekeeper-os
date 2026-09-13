@@ -13,7 +13,7 @@ export default definePluginEntry({
   register(api: OpenClawPluginApi) {
     if (!['full', 'discovery', 'tool-discovery'].includes(api.registrationMode)) return;
     const state = process.env.OPENCLAW_STATE_DIR;
-    if (process.env.CLAWOS_SPIKE_VM !== '1' || !state || !isAbsolute(state))
+    if (process.env.GKOS_SPIKE_VM !== '1' || !state || !isAbsolute(state))
       throw new Error('Probe requires an explicitly isolated test VM state directory');
     const out = join(state, 'os');
     const records: Array<{ q: string; data: unknown }> = [];

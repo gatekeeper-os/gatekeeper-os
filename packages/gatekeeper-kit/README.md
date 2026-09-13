@@ -1,4 +1,6 @@
-# @clawkeepers/gatekeeper-kit
+# @gatekeeper-os/gatekeeper-kit
+
+GatekeeperOS is an independent project. It is not affiliated with or endorsed by the OpenClaw Foundation. OpenClaw is a trademark of its owner.
 
 Security-critical helpers for gatekeeper authors. Start with [SKELETON.md](SKELETON.md).
 

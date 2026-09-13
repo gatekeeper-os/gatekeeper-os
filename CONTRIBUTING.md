@@ -1,6 +1,6 @@
 # Contributing
 
-Original OpenClaw OS contributions are licensed under the [MIT License](LICENSE).
+Original GatekeeperOS contributions are licensed under the [MIT License](LICENSE).
 Contributions are welcome under the same license. Third-party and adapted
 material retains its own terms; preserve attribution and license notices as
 described in [provenance](docs/acknowledgments.md) and [NOTICE](NOTICE).

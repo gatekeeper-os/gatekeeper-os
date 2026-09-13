@@ -4,8 +4,8 @@ import { randomBytes } from 'node:crypto';
 import { mkdirSync, realpathSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { fsResources } from '../../packages/gatekeeper-fs/src/resources.js';
-import { fsTools } from '../../packages/gatekeeper-fs/src/tools.js';
+import { fsResources } from '../../packages/gkos-gatekeeper-fs/src/resources.js';
+import { fsTools } from '../../packages/gkos-gatekeeper-fs/src/tools.js';
 
 if (process.env.GITHUB_ACTIONS !== 'true' || process.env.RUNNER_ENVIRONMENT !== 'github-hosted' ||
     process.env.RUNNER_OS !== 'Linux' || !process.env.RUNNER_TEMP) throw new Error('DISPOSABLE_HOSTED_VM_REQUIRED');
@@ -22,18 +22,18 @@ function check(name: string, ok: boolean) { if (!ok) throw new Error(name); chec
 const resource = join(state, 'resource');
 for (const path of [resource, join(state, 'workspace'), join(state, 'os')]) mkdirSync(path, { recursive: true, mode: 0o700 });
 writeFileSync(join(state, 'os/gatekeepers.json'), JSON.stringify({ version: 1, gatekeepers: [{
-  pluginId: 'gatekeeper-fs', vendor: 'fs', apiVersion: 1, root: resolve('packages/gatekeeper-fs'),
+  pluginId: 'gkos-gatekeeper-fs', vendor: 'fs', apiVersion: 1, root: resolve('packages/gkos-gatekeeper-fs'),
   tools: fsTools, resources: fsResources,
 }] }), { mode: 0o600 });
 const token = randomBytes(32).toString('hex');
 writeFileSync(configPath, JSON.stringify({
   gateway: { mode: 'local', bind: 'loopback', port: 19100, auth: { mode: 'token', token } },
   update: { auto: { enabled: false } }, agents: { defaults: { workspace: join(state, 'workspace') } },
-  plugins: { allow: ['clawos-kernel', 'gatekeeper-fs'],
-    load: { paths: ['packages/clawos-kernel', 'packages/gatekeeper-fs'].map(path => resolve(path)) },
+  plugins: { allow: ['gkos-kernel', 'gkos-gatekeeper-fs'],
+    load: { paths: ['packages/gkos-kernel', 'packages/gkos-gatekeeper-fs'].map(path => resolve(path)) },
     entries: {
-      'clawos-kernel': { enabled: true, hooks: { allowConversationAccess: true }, config: { operators: [], install: { allowSources: [] } } },
-      'gatekeeper-fs': { enabled: true, config: { roots: [resource] } },
+      'gkos-kernel': { enabled: true, hooks: { allowConversationAccess: true }, config: { operators: [], install: { allowSources: [] } } },
+      'gkos-gatekeeper-fs': { enabled: true, config: { roots: [resource] } },
     },
   },
 }), { mode: 0o600 });
@@ -43,7 +43,7 @@ let gateway: ReturnType<typeof spawn> | undefined;
 const binary = spawnSync('sh', ['-c', 'command -v openclaw'], { encoding: 'utf8' });
 if (binary.status !== 0) throw new Error('UPSTREAM_BINARY_REQUIRED');
 function rpc(method: string): unknown {
-  const result = spawnSync(process.execPath, ['packages/clawos-cli/bin/gateway-rpc.mjs', binary.stdout.trim()], {
+  const result = spawnSync(process.execPath, ['packages/gkos-cli/bin/gateway-rpc.mjs', binary.stdout.trim()], {
     env: { ...process.env, OPENCLAW_GATEWAY_PORT: '19100' },
     input: JSON.stringify({ method, params: {} }), encoding: 'utf8', timeout: 85000,
     maxBuffer: 1024 * 1024,

@@ -3,7 +3,7 @@ import {createRequire} from 'node:module';
 import {resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
 if(process.cwd()!=='/home/tester/src'||process.env.OPENCLAW_STATE_DIR!=='/home/tester/.openclaw-kernel-test')throw new Error('VM required');
-const require=createRequire(resolve('packages/clawos-conformance/package.json'));
+const require=createRequire(resolve('packages/gkos-conformance/package.json'));
 const {GatewayClient}=await import(pathToFileURL(require.resolve('openclaw/plugin-sdk/gateway-runtime')).href);
 const cfg=JSON.parse(readFileSync(process.env.OPENCLAW_CONFIG_PATH,'utf8')),report={checks:{},fullPhaseAcceptance:false,realMcpProvider:false,observationsEnabled:true,nativeExecutionEnabled:false};
 function check(name,value){report.checks[name]=value===true;writeFileSync('/home/tester/phase-8-boundary-evidence/gateway.json',JSON.stringify(report,null,2)+'\n',{mode:0o600});if(!value)throw new Error(name);console.log('PASS '+name);}
@@ -21,10 +21,10 @@ try{
  check('unconfigured-account-denied',start.status===400 && (await start.text()).includes('Account connection unavailable.'));
  const replay=await fetch(new URL(entry.url,'http://127.0.0.1:19100'),{redirect:'error'});
  check('connection-replay-denied',replay.status===400);
- check('unconfigured-server-denied',await denied(paired.client,'os.grants.introduce',{agentId:'main',url:'https://mcp.clawkeeper.invalid/servers/demo'}));
- check('shared-token-introduction-denied',await denied(shared.client,'os.grants.introduce',{agentId:'main',url:'https://mcp.clawkeeper.invalid/servers/demo'}));
+ check('unconfigured-server-denied',await denied(paired.client,'os.grants.introduce',{agentId:'main',url:'https://mcp.gatekeeper-os.invalid/servers/demo'}));
+ check('shared-token-introduction-denied',await denied(shared.client,'os.grants.introduce',{agentId:'main',url:'https://mcp.gatekeeper-os.invalid/servers/demo'}));
  const list=await paired.client.request('os.grants.list',{});
  check('no-mcp-grants-created',!JSON.stringify(list).includes('"vendor":"mcp"'));
- const manifest=JSON.parse(readFileSync('packages/gatekeeper-mcp/openclaw.plugin.json','utf8'));
+ const manifest=JSON.parse(readFileSync('packages/gkos-gatekeeper-mcp/openclaw.plugin.json','utf8'));
  check('only-reviewed-observation-registered',JSON.stringify(manifest.contracts.tools)===JSON.stringify(['gk_mcp_demo_read_note']));
 }catch{process.exitCode=1;}finally{await paired?.client.stopAndWait({timeoutMs:5000});await shared?.client.stopAndWait({timeoutMs:5000});}

@@ -1,7 +1,7 @@
 // VM-only primary boundary uses the production evaluator with independently controlled rules.
 // That separation establishes which boundary denied; this is not installer projection evidence.
 import { appendFileSync, readFileSync } from 'node:fs';
-import { evaluateInstall } from '../../packages/clawos-shared/src/install-policy.js';
+import { evaluateInstall } from '../../packages/gkos-shared/src/install-policy.js';
 const root='/home/tester/.openclaw-kernel-test/os';
 let result={protocolVersion:1,decision:'block',reason:'VM fixture refused.'};
 try {

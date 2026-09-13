@@ -57,19 +57,19 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@22.18.0)(jiti@2.7.0)(tsx@4.20.5)(yaml@2.9.0)
 
-  packages/clawos-blueprints: {}
+  packages/gkos-blueprints: {}
 
-  packages/clawos-cli:
+  packages/gkos-cli:
     devDependencies:
-      '@clawkeepers/gatekeeper-fs':
+      '@gatekeeper-os/gatekeeper-fs':
         specifier: workspace:*
-        version: link:../gatekeeper-fs
-      '@clawkeepers/kernel':
+        version: link:../gkos-gatekeeper-fs
+      '@gatekeeper-os/kernel':
         specifier: workspace:*
-        version: link:../clawos-kernel
-      '@clawkeepers/shared':
+        version: link:../gkos-kernel
+      '@gatekeeper-os/shared':
         specifier: workspace:*
-        version: link:../clawos-shared
+        version: link:../gkos-shared
       '@types/node':
         specifier: 'catalog:'
         version: 22.18.0
@@ -83,11 +83,11 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@22.18.0)(jiti@2.7.0)(tsx@4.20.5)(yaml@2.9.0)
 
-  packages/clawos-conformance:
+  packages/gkos-conformance:
     dependencies:
-      '@clawkeepers/shared':
+      '@gatekeeper-os/shared':
         specifier: workspace:*
-        version: link:../clawos-shared
+        version: link:../gkos-shared
       openclaw:
         specifier: 'catalog:'
         version: 2026.9.2
@@ -108,14 +108,14 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@22.18.0)(jiti@2.7.0)(tsx@4.20.5)(yaml@2.9.0)
 
-  packages/clawos-kernel:
+  packages/gkos-kernel:
     dependencies:
-      '@clawkeepers/gatekeeper-kit':
+      '@gatekeeper-os/gatekeeper-kit':
         specifier: workspace:*
         version: link:../gatekeeper-kit
-      '@clawkeepers/shared':
+      '@gatekeeper-os/shared':
         specifier: workspace:*
-        version: link:../clawos-shared
+        version: link:../gkos-shared
       openclaw:
         specifier: 'catalog:'
         version: 2026.9.2
@@ -136,7 +136,7 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@22.18.0)(jiti@2.7.0)(tsx@4.20.5)(yaml@2.9.0)
 
-  packages/clawos-shared:
+  packages/gkos-shared:
     dependencies:
       typebox:
         specifier: 'catalog:'
@@ -155,14 +155,14 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@22.18.0)(jiti@2.7.0)(tsx@4.20.5)(yaml@2.9.0)
 
-  packages/gatekeeper-fs:
+  packages/gkos-gatekeeper-fs:
     dependencies:
-      '@clawkeepers/gatekeeper-kit':
+      '@gatekeeper-os/gatekeeper-kit':
         specifier: workspace:*
         version: link:../gatekeeper-kit
-      '@clawkeepers/shared':
+      '@gatekeeper-os/shared':
         specifier: workspace:*
-        version: link:../clawos-shared
+        version: link:../gkos-shared
       openclaw:
         specifier: 'catalog:'
         version: 2026.9.2
@@ -183,14 +183,14 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@22.18.0)(jiti@2.7.0)(tsx@4.20.5)(yaml@2.9.0)
 
-  packages/gatekeeper-github:
+  packages/gkos-gatekeeper-github:
     dependencies:
-      '@clawkeepers/gatekeeper-kit':
+      '@gatekeeper-os/gatekeeper-kit':
         specifier: workspace:*
         version: link:../gatekeeper-kit
-      '@clawkeepers/shared':
+      '@gatekeeper-os/shared':
         specifier: workspace:*
-        version: link:../clawos-shared
+        version: link:../gkos-shared
       openclaw:
         specifier: 'catalog:'
         version: 2026.9.2
@@ -213,12 +213,12 @@ importers:
 
   packages/gatekeeper-http:
     dependencies:
-      '@clawkeepers/gatekeeper-kit':
+      '@gatekeeper-os/gatekeeper-kit':
         specifier: workspace:*
         version: link:../gatekeeper-kit
-      '@clawkeepers/shared':
+      '@gatekeeper-os/shared':
         specifier: workspace:*
-        version: link:../clawos-shared
+        version: link:../gkos-shared
       openclaw:
         specifier: 'catalog:'
         version: 2026.9.2
@@ -238,9 +238,9 @@ importers:
 
   packages/gatekeeper-kit:
     dependencies:
-      '@clawkeepers/shared':
+      '@gatekeeper-os/shared':
         specifier: workspace:*
-        version: link:../clawos-shared
+        version: link:../gkos-shared
       openclaw:
         specifier: 'catalog:'
         version: 2026.9.2
@@ -261,14 +261,14 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@22.18.0)(jiti@2.7.0)(tsx@4.20.5)(yaml@2.9.0)
 
-  packages/gatekeeper-mcp:
+  packages/gkos-gatekeeper-mcp:
     dependencies:
-      '@clawkeepers/gatekeeper-kit':
+      '@gatekeeper-os/gatekeeper-kit':
         specifier: workspace:*
         version: link:../gatekeeper-kit
-      '@clawkeepers/shared':
+      '@gatekeeper-os/shared':
         specifier: workspace:*
-        version: link:../clawos-shared
+        version: link:../gkos-shared
       '@modelcontextprotocol/sdk':
         specifier: 1.30.0
         version: 1.30.0(zod@4.4.3)

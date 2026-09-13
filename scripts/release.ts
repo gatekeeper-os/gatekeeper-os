@@ -14,11 +14,11 @@ export function versionPlan(directory: string, version: string, notes: string): 
   if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[a-zA-Z0-9.-]+)?$/.test(version) || !notes.trim()) throw new Error('Valid version and release notes required.');
   const config = read(join(directory, 'config/release-packages.json'));
   if (!Array.isArray(config.packages) || !config.packages.length || new Set(config.packages).size !== config.packages.length) throw new Error('Invalid release package set.');
-  const files = new Map<string, string>(), lock = read(join(directory, 'clawos.lock.json'));
+  const files = new Map<string, string>(), lock = read(join(directory, 'gkos.lock.json'));
   for (const name of config.packages) {
     if (typeof name !== 'string' || !/^[a-z][a-z0-9-]*$/.test(name)) throw new Error('Invalid package directory.');
     const path = join(directory, 'packages', name, 'package.json'), pkg = read(path);
-    if (pkg.private !== false || !pkg.name.startsWith('@clawkeepers/') || pkg.publishConfig?.access !== 'public') throw new Error('Release package is not explicitly publishable.');
+    if (pkg.private !== false || !pkg.name.startsWith('@gatekeeper-os/') || pkg.publishConfig?.access !== 'public') throw new Error('Release package is not explicitly publishable.');
     pkg.version = version; files.set(path, encode(pkg));
     const manifestPath = join(directory, 'packages', name, 'openclaw.plugin.json');
     if (existsSync(manifestPath)) {
@@ -28,7 +28,7 @@ export function versionPlan(directory: string, version: string, notes: string): 
   }
   const packagePath = join(directory, 'package.json'), pkg = read(packagePath);
   pkg.version = version; files.set(packagePath, encode(pkg));
-  files.set(join(directory, 'clawos.lock.json'), encode(lock));
+  files.set(join(directory, 'gkos.lock.json'), encode(lock));
   const changelog = join(directory, 'CHANGELOG.md'), prior = existsSync(changelog) ? readFileSync(changelog, 'utf8') : '# Changelog\n';
   if (!prior.includes(`## ${version}\n`)) files.set(changelog, prior.replace(/^# Changelog\n/, `# Changelog\n\n## ${version}\n\n${notes.trim()}\n`));
   return files;

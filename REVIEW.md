@@ -1,6 +1,6 @@
 # REVIEW.md — review priority, highest first
 
-1. **The kernel bar** (`packages/clawos-kernel`, `packages/clawos-shared`): read every line; reject undocumented exports,
+1. **The kernel bar** (`packages/gkos-kernel`, `packages/gkos-shared`): read every line; reject undocumented exports,
    parallel mechanisms where an upstream one exists, and `as unknown as` across boundaries.
 2. **Capability-security invariants**: any new path that resolves a grant, opens a gatekeeper session, registers a `gk_*`
    tool, or introduces a resource must go through `Kernel.resolveGrant()` / the registry. Flag any gatekeeper that registers

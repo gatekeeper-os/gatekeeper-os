@@ -21,7 +21,7 @@ const packages = roots.map(root => {
   return { root: realpathSync(root), id: manifest.id };
 });
 if (!packages.length || new Set(packages.map(item => item.id)).size !== packages.length) throw new Error('Empty or duplicate plugin ids');
-const state = realpathSync(mkdtempSync(join(tmpdir(), 'clawos-metadata-')));
+const state = realpathSync(mkdtempSync(join(tmpdir(), 'gkos-metadata-')));
 const configPath = join(state, 'openclaw.json');
 for (const protectedRoot of ['.openclaw', '.openclaw-prod'].map(name => resolve(homedir(), name))) {
   if ([state, configPath].some(path => path === protectedRoot || path.startsWith(protectedRoot + '/'))) throw new Error('Production state prohibited');

@@ -1,8 +1,9 @@
 # Installer evaluation
 
-The beta CLI is on npm: `npm install --global @clawkeepers/cli@beta`.
-`latest` currently resolves to `0.1.0-beta.1` because no stable release exists.
-Use `clawos cell create evaluation --port 19100 --policy messaging` on a disposable machine;
+After beta.2 is published, install the renamed CLI with: `npm install --global @gatekeeper-os/cli@beta`.
+The new scope is not published yet. The old scope’s `latest` resolves to beta.1
+because no stable release exists.
+Use `gkos cell create evaluation --port 19100 --policy messaging` on a disposable machine;
 a clean-prefix install/version smoke does not establish cell acceptance.
 
 For source-install VM evaluation, obtain access to the private core repository,

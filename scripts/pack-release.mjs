@@ -13,7 +13,7 @@ const selected = packages.map(directory => {
   if (!/^[a-z][a-z0-9-]*$/.test(directory)) throw new Error('Invalid package path');
   const cwd = join(root, 'packages', directory), pkg = read(join(cwd, 'package.json'));
   if (pkg.private !== false || pkg.version !== version || pkg.publishConfig?.access !== 'public'
-    || pkg.repository?.url !== 'git+https://github.com/clawkeeper/openclaw-os.git') throw new Error('Release metadata mismatch');
+    || pkg.repository?.url !== 'git+https://github.com/gatekeeper-os/gatekeeper-os.git') throw new Error('Release metadata mismatch');
   return { directory, cwd, pkg };
 });
 for (const name of readdirSync(join(root, 'packages'))) {
@@ -22,11 +22,11 @@ for (const name of readdirSync(join(root, 'packages'))) {
 const seen = new Set();
 for (const { pkg } of selected) {
   for (const dependency of Object.keys({ ...pkg.dependencies, ...pkg.optionalDependencies })) {
-    if (dependency.startsWith('@clawkeepers/') && !seen.has(dependency)) throw new Error('Release dependency order mismatch');
+    if (dependency.startsWith('@gatekeeper-os/') && !seen.has(dependency)) throw new Error('Release dependency order mismatch');
   }
   seen.add(pkg.name);
 }
-const output = process.env.RUNNER_TEMP ? join(process.env.RUNNER_TEMP, 'clawkeeper-release') : mkdtempSync(join(tmpdir(), 'clawkeeper-release-'));
+const output = process.env.RUNNER_TEMP ? join(process.env.RUNNER_TEMP, 'gatekeeper-os-release') : mkdtempSync(join(tmpdir(), 'gatekeeper-os-release-'));
 const archives = selected.map(({ cwd, pkg }) => {
   const packed = JSON.parse(execFileSync('pnpm', ['pack', '--json', '--pack-destination', output], { cwd, encoding: 'utf8' }));
   if (packed.name !== pkg.name || packed.version !== version) throw new Error('Packed identity mismatch');

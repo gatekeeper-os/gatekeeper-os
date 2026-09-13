@@ -5,14 +5,14 @@ import { readFileSync,writeFileSync } from 'node:fs';
 import { dirname,resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
-if(process.env.CLAWOS_KERNEL_VM!=='1'||process.env.OPENCLAW_STATE_DIR!=='/home/tester/.openclaw-kernel-test'||process.cwd()!=='/home/tester/src')throw new Error('VM required');
-const require=createRequire(resolve('packages/clawos-conformance/package.json'));
+if(process.env.GKOS_KERNEL_VM!=='1'||process.env.OPENCLAW_STATE_DIR!=='/home/tester/.openclaw-kernel-test'||process.cwd()!=='/home/tester/src')throw new Error('VM required');
+const require=createRequire(resolve('packages/gkos-conformance/package.json'));
 const gatewayRuntimePath=require.resolve('openclaw/plugin-sdk/gateway-runtime');
 const {GatewayClient}=await import(pathToFileURL(gatewayRuntimePath).href);
 const controlUiBuildId=readFileSync(resolve(dirname(gatewayRuntimePath),'../control-ui/sw.js'),'utf8').match(/EMBEDDED_CACHE_VERSION\s*=\s*"([^"]+)"/)?.[1];
 if(!controlUiBuildId)throw new Error('control-ui-build-id-missing');
 const config=JSON.parse(readFileSync(process.env.OPENCLAW_CONFIG_PATH,'utf8'));
-const reportPath=process.env.CLAWOS_SCENARIO_REPORT,report={runId:process.env.CLAWOS_SCENARIO_RUN,checks:{},turns:[]};
+const reportPath=process.env.GKOS_SCENARIO_REPORT,report={runId:process.env.GKOS_SCENARIO_RUN,checks:{},turns:[]};
 let current,paired,shared,controlUi;
 const save=()=>writeFileSync(reportPath,JSON.stringify(report,null,2)+'\n',{mode:0o600});
 function check(id,ok){report.checks[id]=ok===true;save();if(!ok)throw new Error(id);console.log('PASS '+id);}

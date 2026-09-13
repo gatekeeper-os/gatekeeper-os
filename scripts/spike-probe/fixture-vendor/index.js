@@ -9,7 +9,7 @@ export default definePluginEntry({
   register(api) {
     if (api.registrationMode !== 'full') return;
     const stateDir = process.env.OPENCLAW_STATE_DIR;
-    if (process.env.CLAWOS_SPIKE_VM !== '1' || stateDir !== '/home/tester/clawos-spike-state') throw new Error('Isolated VM required');
+    if (process.env.GKOS_SPIKE_VM !== '1' || stateDir !== '/home/tester/gkos-spike-state') throw new Error('Isolated VM required');
     const store = createPluginRuntimeStore({ pluginId: api.id, errorMessage: 'Fixture unavailable' });
     let active = false;
     const runtime = { pluginId: api.id, apiVersion: 1, stateDir,

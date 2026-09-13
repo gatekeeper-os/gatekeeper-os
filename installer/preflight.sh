@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Preflight checks for OpenClaw OS (plan §9 Phase 1 step 1). Exit non-zero on a hard failure; warn otherwise.
+# Preflight checks for GatekeeperOS (plan §9 Phase 1 step 1). Exit non-zero on a hard failure; warn otherwise.
 #
-# Preflight has to stay compatible with the idempotence criterion: `clawos install` must be re-runnable against a
+# Preflight has to stay compatible with the idempotence criterion: `gkos install` must be re-runnable against a
 # healthy cell. A naive "the port must be free" check makes that impossible, because on the second run the port is
 # occupied by the very Gateway the first run started. So an occupied port is a failure only when the listener is
 # not this cell's own Gateway.
@@ -11,7 +11,7 @@ warn() { printf 'preflight: WARN %s\n' "$*" >&2; }
 fail() { printf 'preflight: FAIL %s\n' "$*" >&2; exit 1; }
 ok()   { printf 'preflight: ok   %s\n' "$*"; }
 
-CELL="${CLAWOS_CELL:-default}"
+CELL="${GKOS_CELL:-default}"
 if [ "$CELL" = "default" ]; then
   UNIT="openclaw-gateway.service"
   STATE_DIR="$HOME/.openclaw"
@@ -85,7 +85,7 @@ if [ "$(uname -s)" = "Linux" ] && command -v loginctl >/dev/null; then
   if loginctl show-user "$(id -un)" -p Linger --value 2>/dev/null | grep -qi '^yes$'; then
     ok "linger enabled for $(id -un)"
   else
-    warn "linger is not enabled; clawos install will run 'loginctl enable-linger $(id -un)'"
+    warn "linger is not enabled; gkos install will run 'loginctl enable-linger $(id -un)'"
   fi
 fi
 

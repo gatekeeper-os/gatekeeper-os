@@ -29,13 +29,13 @@ jobs:
       - run: node --test scripts/release-published.test.mjs scripts/check-secrets.test.mjs scripts/packed-load.test.mjs test/scripts/blueprint-audit-gate.test.mjs
       - name: Inspect manifests and load packed plugins with pinned upstream
         env:
-          OPENCLAW_STATE_DIR: ${{ runner.temp }}/clawos-pin-check
-          OPENCLAW_CONFIG_PATH: ${{ runner.temp }}/clawos-pin-check/openclaw.json
+          OPENCLAW_STATE_DIR: ${{ runner.temp }}/gkos-pin-check
+          OPENCLAW_CONFIG_PATH: ${{ runner.temp }}/gkos-pin-check/openclaw.json
           OPENCLAW_NO_AUTO_UPDATE: "1"
         run: |
           mkdir -p "$OPENCLAW_STATE_DIR"
           printf '{}\n' > "$OPENCLAW_CONFIG_PATH"
-          pin=$(node -p "require('./clawos.lock.json').upstream.version")
+          pin=$(node -p "require('./gkos.lock.json').upstream.version")
           npm install -g "openclaw@$pin" --allow-scripts=openclaw
           actual=$(openclaw --version)
           printf '%s\n' "$actual"

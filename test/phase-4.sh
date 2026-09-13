@@ -10,10 +10,10 @@ t0=$(date +%s)
 export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
 
 : "${GITHUB_TEST_TOKEN:?}" "${GITHUB_TEST_REPO:?}"
-clawos dev install-plugins --from "$PWD" --yes >/tmp/plugins.log 2>&1 || fail install-plugins
-clawos gatekeeper add github --client-id "${GITHUB_OAUTH_CLIENT_ID:-x}" --client-secret-env GITHUB_OAUTH_CLIENT_SECRET --yes || fail gk-add
-clawos gatekeeper connect github --pat-env GITHUB_TEST_TOKEN --yes || fail gk-connect        # CI path; device flow tested manually
-clawos grant add --agent home "https://github.com/$GITHUB_TEST_REPO" --json | jq -e .handle >/dev/null && pass grant-add || fail grant-add
+gkos dev install-plugins --from "$PWD" --yes >/tmp/plugins.log 2>&1 || fail install-plugins
+gkos gatekeeper add github --client-id "${GITHUB_OAUTH_CLIENT_ID:-x}" --client-secret-env GITHUB_OAUTH_CLIENT_SECRET --yes || fail gk-add
+gkos gatekeeper connect github --pat-env GITHUB_TEST_TOKEN --yes || fail gk-connect        # CI path; device flow tested manually
+gkos grant add --agent home "https://github.com/$GITHUB_TEST_REPO" --json | jq -e .handle >/dev/null && pass grant-add || fail grant-add
 pnpm conformance --only deferred-approval,require-approval-roundtrip --verdict ~/.openclaw/os/logs/conformance-verdict.json || fail conformance
 # TODO(phase-4): comment→summarize scenario; approvals apply/reject/revert; secret-leak grep over ~/.openclaw/os and journal
 check secret-leak-grep bash -c '! grep -rE "ghp_|github_pat_" ~/.openclaw/os/ 2>/dev/null'

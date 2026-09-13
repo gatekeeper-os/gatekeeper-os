@@ -1,0 +1,22 @@
+{
+  "name": "@gatekeeper-os/blueprints",
+  "version": "0.1.0",
+  "description": "Versioned agent templates for GatekeeperOS.",
+  "type": "module",
+  "files": [
+    "LICENSE",
+    "NOTICE",
+    "blueprint.schema.json",
+    "assistant",
+    "coder",
+    "ops",
+    "researcher"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gatekeeper-os/gatekeeper-os.git",
+    "directory": "packages/gkos-blueprints"
+  },
+  "private": true
+}

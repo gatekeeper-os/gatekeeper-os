@@ -1,4 +1,4 @@
-# OpenClaw OS documentation
+# GatekeeperOS documentation
 
 Start with the [project introduction](../README.md) for current capabilities,
 limitations, development setup and acknowledgments. The repository originated
@@ -12,7 +12,7 @@ as an agent implementation kit; these documents now travel with the implementati
 | [Upstream reference](upstream-reference.md) | Verified interfaces and explicit unresolved assumptions |
 | [VM testing](vm-testing.md) | Disposable-machine setup, snapshots, runtime checks and evidence collection |
 | [Agent operating rules](agent-operating-rules.md) | Review standards and repository invariants |
-| [CLI reference](../packages/clawos-cli/README.md) | Implemented host and operator command behavior |
+| [CLI reference](../packages/gkos-cli/README.md) | Implemented host and operator command behavior |
 | [Acknowledgments and provenance](acknowledgments.md) | OpenClaw, Cloudflare OS, adaptation scope and upstream licenses |
 | [Open-source release](open-source-release.md) | License rationale, beta publication checks and possible organization transfer |
 | [Progress](../plans/PROGRESS.md) | Historical implementation checkpoints; later evidence supersedes earlier state |

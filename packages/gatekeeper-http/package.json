@@ -1,5 +1,5 @@
 {
-  "name": "@clawkeepers/gatekeeper-http",
+  "name": "@gatekeeper-os/gatekeeper-http",
   "version": "0.0.0",
   "description": "OpenAPI-driven generic REST gatekeeper (v1.1, plan \u00a79 Phase 8).",
   "type": "module",
@@ -21,8 +21,8 @@
     "validate": "node ../../scripts/check-plugin-metadata.mjs ."
   },
   "dependencies": {
-    "@clawkeepers/shared": "workspace:*",
-    "@clawkeepers/gatekeeper-kit": "workspace:*"
+    "@gatekeeper-os/shared": "workspace:*",
+    "@gatekeeper-os/gatekeeper-kit": "workspace:*"
   },
   "peerDependencies": {
     "openclaw": "catalog:"
@@ -49,7 +49,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/clawkeeper/openclaw-os.git",
+    "url": "git+https://github.com/gatekeeper-os/gatekeeper-os.git",
     "directory": "packages/gatekeeper-http"
   },
   "private": true

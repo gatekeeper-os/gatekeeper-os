@@ -6,8 +6,8 @@ The existing filesystem/GitHub packages remain placeholders, not working referen
 ## Package shape
 
 ```
-packages/gatekeeper-<vendor>/
-  openclaw.plugin.json   # id, empty contracts.tools, strict configSchema, clawos.gatekeeper marker
+packages/gkos-gatekeeper-<vendor>/
+  openclaw.plugin.json   # id, empty contracts.tools, strict configSchema, gkos.gatekeeper marker
   package.json          # extension entry, pinned compat/catalog peer range
   deploy-inputs.json    # required secret references, never values
   src/index.ts          # defineGatekeeper declaration
@@ -21,7 +21,8 @@ packages/gatekeeper-<vendor>/
 ## Declaration and action implementation
 
 `defineGatekeeper({ id, vendor, apiVersion: 1, name, description, resources, tools, actions, createVendor })` validates
-metadata synchronously. `actions` maps every action tool name to a **pure `describe(params)`** descriptor. Reuse the
+metadata synchronously. The plugin id is `gkos-gatekeeper-<vendor>`; npm names
+remain `@gatekeeper-os/gatekeeper-<vendor>`. `actions` maps every action tool name to a **pure `describe(params)`** descriptor. Reuse the
 same descriptor when building the resource's `actions` table; this does not replace instance-level validation.
 The builder requires names ≤64 ASCII characters, matching vendor namespaces, exact resource/tool mappings, explicit
 observer strategies, a required string `grant`, and descriptions without `approv/oauth/cache/queue/simulat`.

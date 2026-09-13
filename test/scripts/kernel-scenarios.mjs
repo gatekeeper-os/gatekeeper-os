@@ -6,12 +6,12 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
-if (process.env.CLAWOS_KERNEL_VM !== '1' || process.env.OPENCLAW_STATE_DIR !== '/home/tester/.openclaw-kernel-test' || process.cwd() !== '/home/tester/src') throw new Error('VM required');
-const require=createRequire(resolve('packages/clawos-conformance/package.json'));
+if (process.env.GKOS_KERNEL_VM !== '1' || process.env.OPENCLAW_STATE_DIR !== '/home/tester/.openclaw-kernel-test' || process.cwd() !== '/home/tester/src') throw new Error('VM required');
+const require=createRequire(resolve('packages/gkos-conformance/package.json'));
 const {GatewayClient}=await import(pathToFileURL(require.resolve('openclaw/plugin-sdk/gateway-runtime')).href);
 const config=JSON.parse(readFileSync(process.env.OPENCLAW_CONFIG_PATH,'utf8'));
-const phase=process.argv[2]??'normal', reportPath=process.env.CLAWOS_SCENARIO_REPORT;
-const report=phase==='normal'?{runId:process.env.CLAWOS_SCENARIO_RUN,checks:{},turns:[]}:JSON.parse(readFileSync(reportPath,'utf8'));
+const phase=process.argv[2]??'normal', reportPath=process.env.GKOS_SCENARIO_REPORT;
+const report=phase==='normal'?{runId:process.env.GKOS_SCENARIO_RUN,checks:{},turns:[]}:JSON.parse(readFileSync(reportPath,'utf8'));
 let current, serial=0, paired, shared, restricted;
 const save=()=>writeFileSync(reportPath,JSON.stringify(report,null,2)+'\n',{mode:0o600});
 function check(id,ok){report.checks[id]=ok===true;save();if(!ok)throw new Error(id);console.log('PASS '+id);}
@@ -42,7 +42,7 @@ const server=createServer(async(req,res)=>{
   }catch{res.writeHead(400);res.end('{}');}
 });
 async function connect(auth,scopes=["operator.admin"]){let client,timer;try{const hello=await new Promise((resolve,reject)=>{timer=setTimeout(()=>reject(new Error('connect-timeout')),30_000);client=new GatewayClient({url:'ws://127.0.0.1:19100',...auth,env:process.env,clientName:'cli',mode:'cli',role:'operator',scopes,requestTimeoutMs:120_000,hostDeps:{logDebug(){},logError(){}},onHelloOk:resolve,onConnectError:()=>reject(new Error('connect-failed'))});client.start();});return{client,deviceToken:hello.auth?.deviceToken};}catch(error){await client?.stopAndWait({timeoutMs:5000});throw error;}finally{clearTimeout(timer);}}
-function cli(args, binary='clawos') {
+function cli(args, binary='gkos') {
   const result=spawnSync(binary,args,{env:process.env,encoding:'utf8',timeout:90000,maxBuffer:4*1024*1024});
   if(result.status!==0||result.error)return {ok:false,exit:result.status,error:result.error?.code};
   try{return {ok:true,value:JSON.parse(result.stdout)};}catch{return {ok:false,exit:result.status,emptyStdout:!result.stdout.trim()};}
@@ -69,7 +69,7 @@ try {
   if(phase==='normal'){
     const plugins=cli(['plugins','list','--json'],'openclaw');
     const loaded=plugins.value?.plugins;
-    for(const id of ['clawos-kernel','gatekeeper-fs']) check('plugin-loaded-'+id,plugins.ok&&Array.isArray(loaded)&&loaded.some(p=>p.id===id&&p.enabled===true&&p.status==='loaded'));
+    for(const id of ['gkos-kernel','gkos-gatekeeper-fs']) check('plugin-loaded-'+id,plugins.ok&&Array.isArray(loaded)&&loaded.some(p=>p.id===id&&p.enabled===true&&p.status==='loaded'));
     const statusRpc=await paired.client.request('os.status',{});
     check('rpc-status',statusRpc.cell==='kernel-test'&&statusRpc.healthy===true&&Number.isInteger(statusRpc.pendingApprovals));
     const gatekeepersRpc=await paired.client.request('os.gatekeepers.list',{});

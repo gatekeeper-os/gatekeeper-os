@@ -7,9 +7,9 @@ ghvm_guard() {
 ghvm_reset() {
   ghvm_guard
   [ "$1" = base ] || vm_die 'hosted runner supports only the fresh base image'
-  [ ! -e "$RUNNER_TEMP/clawos-acceptance-used" ] && [ ! -e "$HOME/.openclaw" ] \
+  [ ! -e "$RUNNER_TEMP/gkos-acceptance-used" ] && [ ! -e "$HOME/.openclaw" ] \
     && [ ! -e "$HOME/.openclaw-firma" ] || vm_die 'runner is not a fresh cell-free base'
-  touch "$RUNNER_TEMP/clawos-acceptance-used"
+  touch "$RUNNER_TEMP/gkos-acceptance-used"
   vm_log "fresh hosted image: ${ImageOS:-macOS} ${ImageVersion:-unknown}"
 }
 ghvm_sync() { ghvm_guard; [ "$VM_SRC" = "$REPO_ROOT" ] || vm_die 'hosted source must be the checkout'; }

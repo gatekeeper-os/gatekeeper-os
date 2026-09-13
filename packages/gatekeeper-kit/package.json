@@ -1,7 +1,7 @@
 {
-  "name": "@clawkeepers/gatekeeper-kit",
+  "name": "@gatekeeper-os/gatekeeper-kit",
   "version": "0.1.0-beta.1",
-  "description": "Builder and security-critical helpers for OpenClaw OS gatekeepers.",
+  "description": "Builder and security-critical helpers for GatekeeperOS gatekeepers.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -17,7 +17,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@clawkeepers/shared": "workspace:*",
+    "@gatekeeper-os/shared": "workspace:*",
     "typebox": "catalog:"
   },
   "devDependencies": {
@@ -32,7 +32,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/clawkeeper/openclaw-os.git",
+    "url": "git+https://github.com/gatekeeper-os/gatekeeper-os.git",
     "directory": "packages/gatekeeper-kit"
   },
   "private": false,
