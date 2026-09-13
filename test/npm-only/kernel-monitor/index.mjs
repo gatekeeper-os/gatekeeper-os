@@ -1,8 +1,8 @@
 // Passive evidence only: no tools, policy decisions, identity injection or kernel calls.
 import { appendFileSync } from 'node:fs';
 import { definePluginEntry } from 'openclaw/plugin-sdk/plugin-entry';
-export default definePluginEntry({ id: 'clawos-kernel-monitor', name: 'Kernel monitor', register(api) {
-  if (process.env.CLAWOS_KERNEL_VM !== '1' || process.env.OPENCLAW_STATE_DIR !== '/home/tester/.openclaw-kernel-test') throw new Error('VM required');
+export default definePluginEntry({ id: 'gkos-kernel-monitor', name: 'Kernel monitor', register(api) {
+  if (process.env.GKOS_KERNEL_VM !== '1' || process.env.OPENCLAW_STATE_DIR !== '/home/tester/.openclaw-kernel-test') throw new Error('VM required');
   if (!['full', 'discovery', 'tool-discovery'].includes(api.registrationMode)) return;
   const record = (hook, e, ctx) => appendFileSync('/home/tester/.openclaw-kernel-test/os/hooks.jsonl', JSON.stringify({hook,
     agentId:ctx.agentId, sessionKey:ctx.sessionKey, runId:ctx.runId,

@@ -7,8 +7,8 @@ registry packages only. They never bundle a product implementation.
 Run through the host VM harness and its `phase-3-npm-only` runner, not directly on a
 workstation. The runner creates a real `kernel-test` messaging cell first, installs
 exact beta registry versions, exports its canonical cell token in process memory,
-and supplies `CLAWOS_UPSTREAM_PACKAGE_JSON`, `CLAWOS_SCENARIO_RUN`, and
-`CLAWOS_SCENARIO_REPORT`. Gateway port is 19100; synthetic model port is 19101.
+and supplies `GKOS_UPSTREAM_PACKAGE_JSON`, `GKOS_SCENARIO_RUN`, and
+`GKOS_SCENARIO_REPORT`. Gateway port is 19100; synthetic model port is 19101.
 Restart the Gateway after every fixture config mode.
 
 - `config.mjs normal`, `kernel-scenarios.mjs normal`: retained registry kernel/fs,
@@ -21,7 +21,7 @@ Restart the Gateway after every fixture config mode.
   agents, synthetic public-SDK channel dispatch, actual owner/private/group
   authority and denied egress. This is not real Slack transport acceptance.
 - `config.mjs approvals`, `approval-scenarios.mjs`: separate report, additional
-  synthetic `gatekeeper-fixture` vendor built on published gatekeeper-kit, actual
+  synthetic `gkos-gatekeeper-fixture` vendor built on published gatekeeper-kit, actual
   published kernel apply/reject RPC decisions, and fixed local effect receipts.
   The real registry filesystem plugin remains loaded and unchanged.
 

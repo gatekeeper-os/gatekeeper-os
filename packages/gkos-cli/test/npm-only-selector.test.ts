@@ -5,12 +5,12 @@ vi.mock('node:child_process',()=>({spawnSync:vi.fn()}));
 const state='/home/tester/.openclaw-kernel-test';
 function setup({port=19100,unitPort=19100,name='kernel-test'}={}) {
  vi.spyOn(process,'cwd').mockReturnValue('/home/tester/npm-acceptance');
- for(const [k,v]of Object.entries({CLAWOS_KERNEL_VM:'1',CLAWOS_CELL:'kernel-test',OPENCLAW_STATE_DIR:state,OPENCLAW_CONFIG_PATH:state+'/openclaw.json',OPENCLAW_GATEWAY_PORT:String(port)}))vi.stubEnv(k,v);
- vi.stubEnv('CLAWOS_GATEKEEPER_CATALOG','');
+ for(const [k,v]of Object.entries({GKOS_KERNEL_VM:'1',GKOS_CELL:'kernel-test',OPENCLAW_STATE_DIR:state,OPENCLAW_CONFIG_PATH:state+'/openclaw.json',OPENCLAW_GATEWAY_PORT:String(port)}))vi.stubEnv(k,v);
+ vi.stubEnv('GKOS_GATEKEEPER_CATALOG','');
  vi.mocked(spawnSync).mockImplementation((binary,args)=>{
   let stdout='';
-  if(binary==='clawos')stdout=JSON.stringify([{name,port,stateDir:state,unit:'openclaw-gateway-kernel-test.service'}]);
-  else if(binary==='systemctl'&&args.includes('--property=Environment'))stdout=`OPENCLAW_STATE_DIR=${state} OPENCLAW_CONFIG_PATH=${state}/openclaw.json CLAWOS_CELL=kernel-test`;
+  if(binary==='gkos')stdout=JSON.stringify([{name,port,stateDir:state,unit:'openclaw-gateway-kernel-test.service'}]);
+  else if(binary==='systemctl'&&args.includes('--property=Environment'))stdout=`OPENCLAW_STATE_DIR=${state} OPENCLAW_CONFIG_PATH=${state}/openclaw.json GKOS_CELL=kernel-test`;
   else if(binary==='systemctl')stdout=`{ argv[]=node openclaw gateway run --port ${unitPort} ; }`;
   else if(binary==='openclaw')stdout='{"profile":"messaging","exec":{"mode":"deny"}}';
   else throw Error('unexpected-selector-command');

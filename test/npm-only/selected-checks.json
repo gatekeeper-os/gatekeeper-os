@@ -1,7 +1,7 @@
 {
   "plugin-loads": [
-    "plugin-loaded-clawos-kernel",
-    "plugin-loaded-gatekeeper-fs"
+    "plugin-loaded-gkos-kernel",
+    "plugin-loaded-gkos-gatekeeper-fs"
   ],
   "rpc-methods": [
     "rpc-status",

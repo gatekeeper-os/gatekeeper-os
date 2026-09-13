@@ -422,7 +422,7 @@ original installed snapshot. Unlike source checkpoints, it stops the snapshot's
 Gateway and removes `/home/tester/src`, then transfers only `test/npm-only` fixtures
 and their runner to `/home/tester/npm-acceptance`. No repository is cloned or synced;
 no product is built or copied from the host. All five `@clawkeepers` packages are
-installed at `0.1.0-beta.1` from `https://registry.npmjs.org` into an empty prefix.
+installed at `0.1.0-beta.2` from `https://registry.npmjs.org` into an empty prefix.
 Registry identity, dist-tags, publish times and integrity metadata are retained.
 
 The installed CLI provisions `kernel-test --port 19100 --policy messaging`.
@@ -469,7 +469,7 @@ A lost daemon identity is a recorded failure, never a reason to modify a new PID
 
 If original registrations have disappeared, supply the directory holding the
 retained original `<snapshot>.original.xml` files via
-`CLAWOS_VM_SNAPSHOT_XML_DIR`. Preflight verifies snapshot name and owned disk,
+`GKOS_VM_SNAPSHOT_XML_DIR`. Preflight verifies snapshot name and owned disk,
 records the XML SHA256, and uses `snapshot-create --redefine` only for the missing
 requested registration; it never creates/replaces an internal snapshot.
 

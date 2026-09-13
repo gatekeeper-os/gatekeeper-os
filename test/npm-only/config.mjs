@@ -4,12 +4,12 @@ import { resolve, join, dirname } from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
 import {selectCell,configGet} from './selector.mjs';
 const cell=selectCell(),state=cell.stateDir,file=cell.file;
-if(process.env.CLAWOS_KERNEL_VM!=='1'||process.cwd()!=='/home/tester/npm-acceptance'||process.env.OPENCLAW_STATE_DIR!==state||process.env.OPENCLAW_CONFIG_PATH!==file)throw new Error('VM required');
+if(process.env.GKOS_KERNEL_VM!=='1'||process.cwd()!=='/home/tester/npm-acceptance'||process.env.OPENCLAW_STATE_DIR!==state||process.env.OPENCLAW_CONFIG_PATH!==file)throw new Error('VM required');
 const cfg=JSON.parse(readFileSync(file,'utf8')),mode=process.argv[2]??'normal';
-const entry=cfg.plugins?.entries?.['clawos-kernel'];
+const entry=cfg.plugins?.entries?.['gkos-kernel'];
 const liveTools=configGet('tools'), livePlugins=configGet('plugins'), liveSecurity=configGet('security');
-if(!livePlugins.entries?.['clawos-kernel']?.enabled||!livePlugins.entries?.['gatekeeper-fs']?.enabled||liveTools.profile!=='messaging'||liveTools.exec?.mode!=='deny'||!['group:runtime','group:fs','group:automation','browser'].every(x=>liveTools.deny?.includes(x)))throw new Error('installed messaging cell required');
-if(cfg.gateway.auth.token?.source!=='env'||cfg.gateway.auth.token.id!=='CLAWOS_GATEWAY_TOKEN'||!process.env.CLAWOS_GATEWAY_TOKEN)throw new Error('canonical cell token required');
+if(!livePlugins.entries?.['gkos-kernel']?.enabled||!livePlugins.entries?.['gkos-gatekeeper-fs']?.enabled||liveTools.profile!=='messaging'||liveTools.exec?.mode!=='deny'||!['group:runtime','group:fs','group:automation','browser'].every(x=>liveTools.deny?.includes(x)))throw new Error('installed messaging cell required');
+if(cfg.gateway.auth.token?.source!=='env'||cfg.gateway.auth.token.id!=='GKOS_GATEWAY_TOKEN'||!process.env.GKOS_GATEWAY_TOKEN)throw new Error('canonical cell token required');
 if(!liveSecurity.installPolicy?.enabled||!liveSecurity.installPolicy.exec.command||!existsSync(cell.catalog))throw new Error('installed policy and catalog required');
 const protect=()=>JSON.stringify({tools:cfg.tools,token:cfg.gateway.auth,installPolicy:cfg.security.installPolicy,install:entry.config.install,defaultsSandbox:cfg.agents.defaults.sandbox});
 const protectedBefore=protect();
@@ -36,32 +36,32 @@ if(mode==='normal'){
  // installer's original single-agent config legitimately omitted this field.
  if(cfg.agents.entries)cfg.agents.ownership='explicit';
  agent('main',true);agent('stranger');
- addPlugin('clawos-kernel-monitor','kernel-monitor');
- cfg.plugins.entries['gatekeeper-fs'].config={...cfg.plugins.entries['gatekeeper-fs'].config,roots:['/home/tester/kernel-resource']};
+ addPlugin('gkos-kernel-monitor','kernel-monitor');
+ cfg.plugins.entries['gkos-gatekeeper-fs'].config={...cfg.plugins.entries['gkos-gatekeeper-fs'].config,roots:['/home/tester/kernel-resource']};
 }else if(mode==='no-hooks'){
  entry.hooks.allowConversationAccess=false;
 }else if(mode==='restore'){
  entry.hooks.allowConversationAccess=true;
 }else if(mode==='owner'){
  entry.hooks.allowConversationAccess=true;
- addPlugin('clawos-channel-ingress','channel-ingress');
+ addPlugin('gkos-channel-ingress','channel-ingress');
  entry.config.operators=[...entry.config.operators,{channel:'vmchan',senderId:'operator'}];
  entry.config.egress={...entry.config.egress,denyPatterns:[...new Set([...(entry.config.egress?.denyPatterns??[]),'phase-three-denied-marker'])]};
  cfg.commands={...cfg.commands,ownerAllowFrom:[...(cfg.commands?.ownerAllowFrom??[]),'vmchan:operator']};
  for(const id of ['main','stranger','forged','console','group-new','command','command-group','command-forged','egress'])agent('audience-'+id);
 }else if(mode==='approvals'){
  entry.hooks.allowConversationAccess=true;
- addPlugin('gatekeeper-fixture','approval-driver');
+ addPlugin('gkos-gatekeeper-fixture','approval-driver');
  agent('approval-fixture');
  const {tools,resources}=await import('./approval-driver/metadata.mjs');
  const catalogFile=join(state,'os/gatekeepers.json'),catalog=JSON.parse(readFileSync(catalogFile,'utf8'));
  if(catalog.gatekeepers.some(e=>e.vendor==='fixture'))throw new Error('approval fixture collision');
- catalog.gatekeepers.push({pluginId:'gatekeeper-fixture',vendor:'fixture',apiVersion:1,root:resolve('approval-driver'),tools,resources});
+ catalog.gatekeepers.push({pluginId:'gkos-gatekeeper-fixture',vendor:'fixture',apiVersion:1,root:resolve('approval-driver'),tools,resources});
  writeFileSync(catalogFile,JSON.stringify(catalog,null,2)+'\n',{mode:0o600});
  writeFileSync(resolve('approval-effects.jsonl'),'',{mode:0o600});
 }else throw new Error('unknown fixture mode');
 if(protect()!==protectedBefore)throw new Error('protected messaging policy changed');
 writeFileSync(file,JSON.stringify(cfg,null,2)+'\n',{mode:0o600});
 const receipt={mode,cell,rawGatewayPortPresent:cfg.gateway.port!==undefined,baselineToolsUnchanged:true,installPolicyUnchanged:true,authUnchanged:true,defaultsSandboxUnchanged:true,toolsHash:createHash('sha256').update(JSON.stringify(cfg.tools)).digest('hex'),productPluginPaths:cfg.plugins.load.paths.filter(p=>!p.startsWith('/home/tester/npm-acceptance/')),catalogSha256:createHash('sha256').update(readFileSync(join(state,'os/gatekeepers.json'))).digest('hex')};
-writeFileSync(join(dirname(process.env.CLAWOS_SCENARIO_REPORT),'config-'+mode+'-receipt.json'),JSON.stringify(receipt,null,2)+'\n',{mode:0o600});
+writeFileSync(join(dirname(process.env.GKOS_SCENARIO_REPORT),'config-'+mode+'-receipt.json'),JSON.stringify(receipt,null,2)+'\n',{mode:0o600});
 console.log('PASS fixture-config-'+mode+'-protected-baseline');

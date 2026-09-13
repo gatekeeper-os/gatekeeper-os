@@ -6,15 +6,15 @@ import { readFileSync,writeFileSync } from 'node:fs';
 import { dirname,resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
-if(process.env.CLAWOS_KERNEL_VM!=='1'||process.env.OPENCLAW_STATE_DIR!=='/home/tester/.openclaw-kernel-test'||process.cwd()!=='/home/tester/npm-acceptance')throw new Error('VM required');
-const require=createRequire(process.env.CLAWOS_UPSTREAM_PACKAGE_JSON);
+if(process.env.GKOS_KERNEL_VM!=='1'||process.env.OPENCLAW_STATE_DIR!=='/home/tester/.openclaw-kernel-test'||process.cwd()!=='/home/tester/npm-acceptance')throw new Error('VM required');
+const require=createRequire(process.env.GKOS_UPSTREAM_PACKAGE_JSON);
 const gatewayRuntimePath=require.resolve('openclaw/plugin-sdk/gateway-runtime');
 const {GatewayClient}=await import(pathToFileURL(gatewayRuntimePath).href);
 const controlUiBuildId=readFileSync(resolve(dirname(gatewayRuntimePath),'../control-ui/sw.js'),'utf8').match(/EMBEDDED_CACHE_VERSION\s*=\s*"([^"]+)"/)?.[1];
 if(!controlUiBuildId)throw new Error('control-ui-build-id-missing');
 const cell=selectCell();
 const config={tools:configGet('tools')};
-const reportPath=process.env.CLAWOS_SCENARIO_REPORT,report={runId:process.env.CLAWOS_SCENARIO_RUN,checks:{},turns:[]};
+const reportPath=process.env.GKOS_SCENARIO_REPORT,report={runId:process.env.GKOS_SCENARIO_RUN,checks:{},turns:[]};
 let current,paired,shared,controlUi;
 const save=()=>writeFileSync(reportPath,JSON.stringify(report,null,2)+'\n',{mode:0o600});
 function check(id,ok){report.checks[id]=ok===true;save();if(!ok)throw new Error(id);console.log('PASS '+id);}
@@ -33,10 +33,10 @@ async function connect(auth,scopes=["operator.admin"],identity={clientName:'cli'
 async function waitForModel(){const deadline=Date.now()+120_000;while(current?.names.length===0&&Date.now()<deadline)await new Promise(resolve=>setTimeout(resolve,100));if(current?.names.length===0)throw new Error('model-timeout');}
 try {
  await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(19101,'127.0.0.1',resolve);});
- shared=await connect({token:process.env.CLAWOS_GATEWAY_TOKEN});paired=await connect({deviceToken:shared.deviceToken});
+ shared=await connect({token:process.env.GKOS_GATEWAY_TOKEN});paired=await connect({deviceToken:shared.deviceToken});
  check('messaging-config-intact',config.tools.profile==='messaging'&&config.tools.exec.mode==='deny'&&['group:runtime','group:fs','group:automation','browser'].every(x=>config.tools.deny.includes(x)));
  check('kernel-ready',(await paired.client.request('os.status',{})).healthy===true);
- controlUi=await connect({token:process.env.CLAWOS_GATEWAY_TOKEN},['operator.admin'],{clientName:'openclaw-control-ui',clientVersion:'control-ui',clientBuildId:controlUiBuildId,mode:'webchat',origin:cell.http,minProtocol:4,maxProtocol:4});
+ controlUi=await connect({token:process.env.GKOS_GATEWAY_TOKEN},['operator.admin'],{clientName:'openclaw-control-ui',clientVersion:'control-ui',clientBuildId:controlUiBuildId,mode:'webchat',origin:cell.http,minProtocol:4,maxProtocol:4});
  current={id:'control-ui-owner',names:[],notice:false};
  await controlUi.client.request('chat.send',{sessionKey:'agent:audience-console:main',message:'Inspect file:///home/tester/kernel-resource/',idempotencyKey:randomUUID()});
  await waitForModel();

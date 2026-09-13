@@ -2,10 +2,10 @@
 // No product implementation is bundled/imported. Evidence must come from this exact VM run.
 import {readFileSync,writeFileSync} from 'node:fs';
 const suites=JSON.parse(readFileSync(new URL('./selected-checks.json',import.meta.url),'utf8'));
-const ids=Object.values(suites).flat(),reportPath=process.env.CLAWOS_SCENARIO_REPORT,runId=process.env.CLAWOS_SCENARIO_RUN;
+const ids=Object.values(suites).flat(),reportPath=process.env.GKOS_SCENARIO_REPORT,runId=process.env.GKOS_SCENARIO_RUN;
 let verdict={mode:'npm-only-selected-live-conformance',runId,ok:false,total:38,passed:0,tests:[],fullPhaseAcceptance:false};
 try{
- if(process.env.CLAWOS_KERNEL_VM!=='1'||!runId||!reportPath||process.cwd()!=='/home/tester/npm-acceptance'||ids.length!==38||new Set(ids).size!==38)throw new Error('live-scenario-required');
+ if(process.env.GKOS_KERNEL_VM!=='1'||!runId||!reportPath||process.cwd()!=='/home/tester/npm-acceptance'||ids.length!==38||new Set(ids).size!==38)throw new Error('live-scenario-required');
  const report=JSON.parse(readFileSync(reportPath,'utf8'));
  if(report.runId!==runId||'failure'in report||!report.checks||Object.values(report.checks).some(v=>v!==true))throw new Error('live-scenario-invalid');
  for(const [suite,checks]of Object.entries(suites))for(const id of checks){const ok=report.checks[id]===true;verdict.tests.push({suite,id,ok});if(ok)verdict.passed++;}

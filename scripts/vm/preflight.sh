@@ -42,7 +42,7 @@ vm_test_preflight() {
   done
   # Re-register only operator-supplied original metadata if registration is absent.
   if ! lv snapshot-info "$VM_NAME" "$snap" >/dev/null 2>&1; then
-    local xml="${CLAWOS_VM_SNAPSHOT_XML_DIR:?original snapshot XML directory required}/$snap.original.xml"
+    local xml="${GKOS_VM_SNAPSHOT_XML_DIR:?original snapshot XML directory required}/$snap.original.xml"
     python3 - "$xml" "$snap" "$LV_DISK" <<'PY'
 import sys,xml.etree.ElementTree as E
 root=E.parse(sys.argv[1]).getroot()
