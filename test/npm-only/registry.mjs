@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 const prefix='/home/tester/npm-acceptance-prefix';
 if(process.env.HOME!=='/home/tester'||process.cwd()!=='/home/tester/npm-acceptance')throw Error('Disposable VM required');
-const result={registry:'https://registry.npmjs.org',version:'0.1.0-beta.2',noRepoCheckout:!existsSync('/home/tester/src'),packages:[]};
+const result={registry:'https://registry.npmjs.org',version:'0.1.0-beta.3',noRepoCheckout:!existsSync('/home/tester/src'),packages:[]};
 if(!result.noRepoCheckout)throw Error('Source checkout remains');
 for(const short of ['shared','gatekeeper-kit','kernel','gatekeeper-fs','cli']){
   const name='@gatekeeper-os/'+short,root=join(prefix,'lib/node_modules',name);

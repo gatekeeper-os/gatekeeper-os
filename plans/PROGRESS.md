@@ -2708,3 +2708,39 @@ No PR/merge or Tier1 lock regeneration: end-to-end gate did not pass. Community
 PR9 remains draft/unmerged. The three-pre-product-failures docs-PR fallback was
 not triggered because this run reached product stages. No visibility change,
 tag push, publisher configuration, release-workflow rerun, phase tag or upstream post.
+
+## 2026-09-13 — beta.3 release gates complete; npm-only harness rebased, not run
+
+- PR21 merge: 65afe70d07ae1d34a1e1d6293092b26c7ed00b08 (green build-test).
+- Beta.3 preparation PR22 merge: 8480be7cee12e5c34f47025a7e2c9fff8577d73e.
+- Org README PR5 merge: 42204125f60fb8872d686fbfd3a0fe01cbc1283b (green build-test).
+- Core PR22 CI34786466676 green: host600/600 in38files, manifest inspection of
+  five plugins, all10 packed license checks,2enabledplugins/liveRPC,3libraryCLI
+  smokes,2deterministicmodelturns/4providerrequests. No-grant OS tools, granted
+  filesystem tools and unchanged native denials pass on shipped beta.3 baseline.
+- Clean-main release helper command completed exit0:
+  `pnpm exec tsx scripts/release.ts --version 0.1.0-beta.3 --notes-file plans/release-notes-beta.3.md --tag`.
+  Local annotated v0.1.0-beta.3 commit: 8480be7cee12e5c34f47025a7e2c9fff8577d73e.
+  Tag absent from remote. No tag moved or pushed.
+- Detached-tag `npm_config_git_checks=false pnpm -r publish --dry-run --access public --tag beta`
+  exit0 selects exactly the five @gatekeeper-os packages at0.1.0-beta.3.
+  Package URLs and all11 NOTICE copies verified unchanged; third-party dependency
+  resolution maps unchanged. Full evidence outside checkout: beta3-preparation-20260913/.
+
+Rebased test/npm-only-acceptance onto8480be7; resolved append-only PROGRESS conflict
+by keeping both histories. All prior PROGRESS lines and37 harness/preflight files
+preserved, except authorized beta.3 version targets and README additions. Installer,
+product packages/config/blueprints match new main (only existing selector test differs).
+Host-only verification:6fake-libvirt snapshot tests,5selector tests, shell/JS syntax,
+38selected conformance checks retained. **Zero VM invocations or model turns for
+acceptance in this session**; packed release-gate model turns are separate evidence.
+Harness stays local and unmerged. Pre-rebase bundle retains6cfe663.
+
+Community PR9 remains draft at30844e8feff14496a0a843efd6759565bf330a01, lock untouched.
+All3repositories private; release34706409757 remains failed attempt1. No publish,
+deprecate, visibility change, tag push, trusted publishers, release workflow rerun,
+phase tags or upstream post. Matt's commands: plans/BETA3-PRIVATE-HANDOFF.md.
+After publication: npm-only up to3 invocations with harness-only repairs; hard stop
+on product behavior; require all stages including38conformance, owner-only audience
+and approval apply/reject. Only on success merge harness after green build-test,
+then real beta.3 Tier1 lockfile and community PR9 after green build-test.
