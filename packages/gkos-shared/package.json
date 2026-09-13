@@ -1,6 +1,6 @@
 {
   "name": "@gatekeeper-os/shared",
-  "version": "0.1.0-beta.2",
+  "version": "0.1.0-beta.3",
   "description": "Contracts for GatekeeperOS: gatekeeper interfaces, approval queue, grants.",
   "type": "module",
   "main": "./dist/index.js",

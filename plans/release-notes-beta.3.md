@@ -1,7 +1,3 @@
-# Changelog
-
-## 0.1.0-beta.3
-
 Messaging cells did not expose the kernel's tools to the agent (os_* and gk_*); affects 0.1.0-beta.1 and 0.1.0-beta.2. Fixed by admitting only gkos-kernel in the messaging policy; native denials unchanged.
 
 The Phase 3 kernel-live evidence ran under the full profile, not the shipped
@@ -22,29 +18,3 @@ Beta.3 npm-only end-to-end acceptance is pending publication; source-profile and
 packed gate evidence are not substitutes for that VM run. Real Telegram and Slack
 acceptance remain unproven. No publication, deprecation, visibility change, tag push,
 trusted publisher setup, release-workflow rerun, phase tag or upstream post.
-
-## 0.1.0-beta.2
-
-rename to GatekeeperOS; no functional change
-
-- GitHub: gatekeeper-os/gatekeeper-os, gatekeeper-os/gatekeepers, gatekeeper-os/.github.
-- npm: @gatekeeper-os/{shared,gatekeeper-kit,kernel,gatekeeper-fs,cli}@0.1.0-beta.2.
-- Standalone CLI gkos; owned environment prefix GKOS_; plugin ids gkos-kernel and gkos-gatekeeper-*.
-- gk_* tools, os.* RPC methods, openclaw os, grant handles and stateDir/os layout unchanged.
-- Independent-project disclaimer added; Cloudflare OS attribution and NOTICE retained.
-
-No new functional acceptance is claimed. Real filesystem writes stay disabled;
-real messaging and all previously documented unproven paths remain unproven.
-The beta.1 npm-only run stopped on harness config validation after 14/14 install
-policy checks, before kernel/audience/approval stages (0 model turns). Beta.2
-npm-only VM acceptance and the community registry switch follow Matt's publication.
-
-Private preparation only: no publication, visibility flip, tag push, trusted
-publisher setup, release-workflow rerun, phase tag, or upstream post.
-
-## 0.1.0-beta.1
-
-Initial beta candidate for the capability kernel, shared contracts, gatekeeper kit,
-filesystem reference driver, and CLI. First-release package set only; GitHub/MCP
-remain unpublished pending acceptance. Release gates and known upstream logging
-limitations are recorded in plans/PROGRESS.md. This entry does not claim a publish.

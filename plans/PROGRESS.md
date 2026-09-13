@@ -2455,3 +2455,19 @@ fixed tarballs exit0 (2turns/4requests), both os tools present without a grant,
 all3fs tools after owner-only grant, list tool results and native denials PASS.
 10packedlicense checks,2enabledplugins/liveRPC,3libraryCLI smokes also PASS.
 Receipts: beta2-red-final/ and fixed-packed-final.log in the diagnosis directory.
+
+## 2026-09-13 — beta.3 private preparation
+
+PR21 merged after green build-test at 65afe70d07ae1d34a1e1d6293092b26c7ed00b08.
+Five release packages bumped to beta.3, all workspace consumers pinned exactly;
+non-release versions and third-party pins unchanged. Release notes/changelog
+state beta.1/beta.2 messaging tool omission and full-profile Phase 3 evidence limit.
+Core/org READMEs distinguish shipped-baseline packed model turns from source VM
+evidence and pending npm-only beta.3 end-to-end acceptance.
+
+Release gates and local tag are pending verification on this candidate. No VM
+acceptance now. No publish/deprecate, visibility change, tag push, release workflow
+rerun, trusted publishers, phase tags or upstream post. Publication handoff:
+plans/BETA3-PRIVATE-HANDOFF.md. After publication: up to three npm-only invocations,
+harness-only fixes, product failure hard stop; only full success authorizes harness
+merge and community PR9 with a real beta.3 Tier 1 lockfile.
