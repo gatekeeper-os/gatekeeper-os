@@ -1,8 +1,8 @@
-# GatekeeperOS beta.2 — private handoff (draft, not release-ready)
+# GatekeeperOS beta.2 — private publication handoff
 
-The ordered rename merges and clean-main annotated tag are still pending.
-Do not run the commands until the final tagged SHA has been reported. These are
-drafts only; no npm write or release workflow was run during preparation.
+Run these commands only after the ordered rename/release merges and clean-main
+annotated tag have been verified and the final tagged SHA has been reported.
+No npm write or release workflow is part of preparation.
 
 ## Matt's manual first publication under the new scope
 
@@ -41,6 +41,18 @@ Verify all five exact registry identities, run npm-only fresh-VM acceptance
 against @gatekeeper-os/*@0.1.0-beta.2, and regenerate the real Tier 1 registry
 lockfile. Only merge that switch after green build-test/live skill sync. Neither
 step runs before publication. Retain all earlier incomplete acceptance evidence.
+
+## Public-flip launch gate (separate authorization)
+
+No replacement core-read token will be issued. The stale community Actions secret
+is removed; Matt must revoke the old token itself. While core is private, community
+CI reports `live sync skipped: core repository not readable` and still verifies
+the reviewed pinned snapshot. That is not a live-sync pass.
+
+After the separately authorized public flip, re-run gatekeepers `build-test` and
+confirm **Live core-main fetch and parity (required when readable)** ran and passed,
+not skipped, using anonymous access without credentials. Only then remove the
+temporary skip path. Once the repository is readable, fetch or parity failure is fatal.
 
 ## Intentional survivors
 

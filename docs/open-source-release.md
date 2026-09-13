@@ -44,6 +44,10 @@ waive any acceptance gate, or turn pre-beta code into a completed beta.
   and acceptance references that public readers can actually access. Do not link
   private VM paths as though evidence were public.
 - [ ] Verify a usable private vulnerability-reporting route and contribution guidance.
+- [ ] After the separately authorized public flip, re-run gatekeepers `build-test`
+  and confirm **Live core-main fetch and parity (required when readable)** ran and
+  passed, not skipped. Verify anonymous access without credentials before removing
+  the temporary private-core skip path. Pinned-snapshot parity is not live-sync evidence.
 - [ ] Select the destination organization/repository and finalize public branding.
 - [ ] Publish only the reviewed beta candidate after readiness is verified; do not
   infer authorization to publish incomplete work from the future release intent.
