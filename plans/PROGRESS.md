@@ -2622,3 +2622,89 @@ under the project kit root. Branch test/npm-only-acceptance remains unmerged.
 Community PR9 and its lockfile remain untouched because end-to-end success was
 not reached. No visibility change, publish/deprecate, tag push, trusted publisher,
 release workflow rerun, phase tag or upstream post. Report before any further run.
+
+## 2026-09-13 — beta.2 npm-only authorized iteration: product hard stop (1/3)
+
+Matt authorized up to three invocations, with only harness/fixture/VM-preflight
+repairs between them and an immediate stop on product behavior. No source or
+harness changes were needed before invocation 1. Six snapshot-registration
+regressions passed again. Live parent-first preflight registered both original
+`base` and `installed` metadata on daemon3796912/start22903609; both reported
+internal snapshots with metadata=yes and installed parent=base. Keeper3796964
+held the live connection and MEMLOCK0/8388608 before the acceptance invocation.
+Original Sep7 internal snapshots were not recreated or changed.
+
+Command: `scripts/vm/test.sh phase-3 installed npm-only`, with
+`GKOS_VM_DRIVER=libvirt`, `GKOS_VM_NAME=clawos-test`, the shared phase-0-bootstrap
+state directory, and original XMLs in `npm-only-retry-20260912`.
+Run **20260913-171621-phase-3**, revision612497cda7ec9ee067df9e7c1ef75ddb7e44107b,
+exit1, final stage `kernel-normal`, verdict **BLOCKED_PRODUCT_BEHAVIOR**.
+
+| Stage | Passed / executed (required where applicable) |
+| --- | --- |
+| Registry identities | 5/5; all @gatekeeper-os packages exactly0.1.0-beta.2 |
+| Real messaging cell creation | 1/1 |
+| Registry/unit/environment selector | 1/1 |
+| Install policy | 14/14 |
+| Kernel-live | 13/14; stopped at no-grant-tool-result |
+| Selected conformance | 0 executed / 38 required |
+| Owner-only audience | 0 executed |
+| Approval apply/reject | 0 executed |
+| Model turns / provider requests | 1 / 2 |
+
+The prefix was empty, the old checkout removed, and only test fixtures transferred.
+All five registry receipts retain beta=latest=0.1.0-beta.2, publication timestamps
+and registry tarball integrities. Both product plugins loaded and fs health passed;
+status/grants/approvals/audit RPCs passed. The first no-grant model request exposed
+only messaging tools: `os_list_grants`, `os_request_access` and all `gk_*` were
+absent. The deterministic fixture attempted os_list_grants; after_tool_call recorded
+error=true and the assertion failed. This is not a harness selector or preflight
+failure and is not reclassified to spend the remaining invocations.
+
+Exact retained error, retrieved through the supported read-only `chat.history`
+Gateway RPC (tool result only; no prompt/body dump or SQLite access):
+`Tool os_list_grants not found` (toolName=os_list_grants, isError=true).
+
+Effective config read back from the retained guest:
+
+```json
+{
+  "tools": {
+    "profile": "messaging",
+    "deny": ["group:runtime", "group:fs", "group:automation", "browser"],
+    "exec": {"mode": "deny"},
+    "sessions": {"visibility": "self"},
+    "elevated": {"enabled": false}
+  },
+  "agents": {"ownership": "explicit", "mainSandbox": "off", "mainModel": "spike/spike"},
+  "plugins": {"allow": ["gkos-kernel", "gkos-gatekeeper-fs", "gkos-kernel-monitor"], "deny": []},
+  "kernel": {"enabled": true, "allowConversationAccess": true},
+  "installPolicy": {"enabled": true, "allowSources": [], "allowHashes": []},
+  "cell": "kernel-test",
+  "port": 19100
+}
+```
+
+No global/per-main-agent tools.allow or tools.alsoAllow is configured. Baseline
+tools, install policy, canonical token SecretRef and defaults sandbox are unchanged
+by the fixture (recorded protected-baseline receipt). No policy widening was tried.
+The exact internal cause beyond unavailable agent-facing tools is not patched or
+claimed resolved. Model traffic used only the deterministic local provider.
+
+Read-only diagnosis booted the retained current disk without snapshot reset or
+model invocation. Initial file-log searches found no exact tool error; first
+history connection failed because the managed Gateway was stopped. Starting that
+existing service enabled the history read above. All diagnostic attempts are
+preserved, and each cleanup gracefully powered off the VM, closed its keeper,
+restored original8MiB/8MiB limits, and proved unchanged internal snapshot tables.
+Acceptance harness checksums matched after exit; product packages, config
+fragments, blueprints and installer were untouched throughout this session.
+
+Evidence: `vm-artifacts/20260913-171621-phase-3/` (stage-summary.json, scenarios.json,
+registry.json, protected config receipt, install-scenarios.json, run.log, cleanup);
+project-kit `beta2-iteration-20260913/` (live preflight, effective-config-redacted.json,
+history-ready.log and all diagnostic receipts). **No second/third invocation.**
+No PR/merge or Tier1 lock regeneration: end-to-end gate did not pass. Community
+PR9 remains draft/unmerged. The three-pre-product-failures docs-PR fallback was
+not triggered because this run reached product stages. No visibility change,
+tag push, publisher configuration, release-workflow rerun, phase tag or upstream post.
