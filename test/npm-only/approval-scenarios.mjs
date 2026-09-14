@@ -75,9 +75,9 @@ try{
  const grant=await paired.client.request('os.grants.introduce',{agentId:'approval-fixture',url:'https://npm-acceptance.invalid/record'});
  check('fixture-owner-only-grant',grant.audience==='owner-only');
  for(const decision of ['apply','reject']){
-  const row=await turn('fixture-'+decision,{agentId:'approval-fixture',tool:'gk_fixture_record',params:{grant:grant.handle}});
+  const row=await turn('fixture-'+decision,{agentId:'approval-fixture',tool:'gk_fixture_record_write',params:{grant:grant.handle}});
   check(decision+'-fixture-result',row.sawResult&&!row.sawDenial);
-  check(decision+'-retained-tools-positive',row.names.every(names=>names.includes('gk_fixture_record')&&names.includes('os_list_grants')));
+  check(decision+'-retained-tools-positive',row.names.every(names=>names.includes('gk_fixture_record_write')&&names.includes('os_list_grants')));
   const pending=(await paired.client.request('os.approvals.list',{})).actions;
   check(decision+'-exact-pending-action',pending.length===1&&pending[0].status==='pending');
   check(decision+'-shared-token-denied',await denied(shared.client,'os.approvals.'+decision,{ids:[pending[0].id]}));

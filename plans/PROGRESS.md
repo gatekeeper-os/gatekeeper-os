@@ -2784,3 +2784,44 @@ stop with effective config/exact denial. Require registry, cell, selector, insta
 policy, kernel-live/no-grant OS tools, 38 conformance checks, audience and approvals.
 Only end-to-end PASS permits green build-test acceptance merge, then real beta.4
 Tier1 lock and green community PR9 merge. No visibility/tag/publisher/release/upstream actions.
+
+## 2026-09-14 — beta.4 npm-only invocation 1: FAIL_FIXTURE, retained
+
+Run **20260914-125418-phase-3**, revision a7eb0db2202713014fbd23579532e2d312e77cfe,
+scenario runId 2026-09-14T12:54:38Z, exit1 at approvals. This is a failed invocation,
+not an end-to-end pass. All previous beta.1/beta.2 failures remain above and on disk.
+
+| Stage | Passed / executed |
+|---|---|
+| Registry identities + downloaded archive SHA512 | 5/5 |
+| Messaging cell creation | 1/1 |
+| Registry/unit/environment selector | 1/1 |
+| Install policy | 14/14 |
+| Kernel-live, including no-grant OS tools | 114/114 |
+| Selected conformance | 38/38 |
+| Owner-only audience | 72/72 |
+| Approval apply/reject | 0/0 — setup failed, required stage unexecuted |
+| Model turns / provider requests | 23 / 35 |
+
+Exact retained guest log errors: `Invalid gatekeeper catalog tool.`,
+`Invalid or duplicate resource.`, followed by `unknown method: os.status`.
+Read-only diagnosis booted the failed current disk without snapshot reset or model
+invocation. The synthetic fixture tool `gk_fixture_record` violates the published
+`^gk_[a-z0-9]+(?:_[a-z0-9]+){2,}$` schema. Host schema validation independently
+rejects both tool.name and resource.tools[0] for precisely that pattern.
+This is invalid test input, not a failure of shipped product behavior; product
+correctly refuses the malformed catalog. Only fixture tool references renamed to
+`gk_fixture_record_write` before invocation2. No product code or policy patch.
+
+Effective config retained in beta4-acceptance-20260914/effective-config-invocation1.json:
+profile messaging, shipped alsoAllow [gkos-kernel], deny runtime/fs/automation/browser,
+exec deny, sessions self, elevated false, ownership explicit, no per-agent tools
+allowlists, real kernel/fs plus three test plugins, empty install sources/hashes.
+Global/default policy remained protected. Real filesystem apply was denied and
+unchanged; successful approvals remain explicitly synthetic and untested in this run.
+
+Harness hashes verified unchanged after run. Both acceptance and diagnostic cleanup
+restored original8MiB/8MiB memlock and unchanged original Sep7 snapshot tables;
+VM shut off. Local lint/build/types,605hosttests/39files,6snapshot+5selector checks pass.
+Evidence vm-artifacts/20260914-125418-phase-3 and beta4-acceptance-20260914/diagnostic*.
+No merge or Tier1 lockfile regeneration before a complete npm-only pass.

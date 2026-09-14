@@ -4,7 +4,7 @@ import {defineGatekeeper} from '/home/tester/npm-acceptance-prefix/lib/node_modu
 import {resources,tools} from './metadata.mjs';
 const effects='/home/tester/npm-acceptance/approval-effects.jsonl';
 const description=()=>({title:'Synthetic approval record',description:'Test-only recorded decision',implementsRevert:false,autoApprovable:false,preview:{fixture:true}});
-export default defineGatekeeper({id:'gkos-gatekeeper-fixture',vendor:'fixture',apiVersion:1,name:'Npm acceptance approval fixture',description:'Test-only approval decision fixture',tools,resources,actions:{gk_fixture_record:{describe:description}},createVendor(){
+export default defineGatekeeper({id:'gkos-gatekeeper-fixture',vendor:'fixture',apiVersion:1,name:'Npm acceptance approval fixture',description:'Test-only approval decision fixture',tools,resources,actions:{gk_fixture_record_write:{describe:description}},createVendor(){
  if(process.env.GKOS_KERNEL_VM!=='1'||process.env.OPENCLAW_STATE_DIR!=='/home/tester/.openclaw-kernel-test')throw new Error('VM required');
  let serial=0;
  const record=(kind,id)=>appendFileSync(effects,JSON.stringify({kind,id})+'\n',{mode:0o600});
