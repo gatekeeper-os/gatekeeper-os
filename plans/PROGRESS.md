@@ -2471,3 +2471,71 @@ rerun, trusted publishers, phase tags or upstream post. Publication handoff:
 plans/BETA3-PRIVATE-HANDOFF.md. After publication: up to three npm-only invocations,
 harness-only fixes, product failure hard stop; only full success authorizes harness
 merge and community PR9 with a real beta.3 Tier 1 lockfile.
+
+
+## 2026-09-13 — beta.4 contingency: npm kernel beta.3 indexing failure
+
+Read-only checks at 2026-09-14T00:31:47–00:32:44Z (Sep 13 PDT). Raw response
+bodies, HTTP status/headers, hashes and request timestamps retained at
+`/home/matthew/projects/Personal/openclaw-os-agent-kit/beta4-preparation-20260913/registry-initial/`.
+No npm mutation performed; Matt's report that dist-tag add returned success without
+effect is retained as operator evidence, not independently rerun.
+
+| Package | beta.3 listed | beta tag | latest tag | beta.3 publication time (UTC) |
+|---|---|---|---|---|
+| @gatekeeper-os/shared | True | 0.1.0-beta.3 | 0.1.0-beta.2 | 2026-09-13T23:48:02.644Z |
+| @gatekeeper-os/gatekeeper-kit | True | 0.1.0-beta.3 | 0.1.0-beta.2 | 2026-09-13T23:48:17.557Z |
+| @gatekeeper-os/kernel | False | 0.1.0-beta.2 | 0.1.0-beta.2 | absent |
+| @gatekeeper-os/gatekeeper-fs | True | 0.1.0-beta.3 | 0.1.0-beta.2 | 2026-09-13T23:49:13.328Z |
+| @gatekeeper-os/cli | True | 0.1.0-beta.3 | 0.1.0-beta.2 | 2026-09-13T23:49:37.719Z |
+
+All five exact beta.3 version documents return HTTP 200 with expected name/version.
+Kernel beta.3 tarball returns HTTP 200 and matches the version document's SHA512:
+`sha512-5CmLugYNYGX3xZGcAOy7WGPDoxcitPz4ZGKelTAn3LGjrxL93OWlVcRz9uk+gdLMkyol207ZpyaXQWJltQn2+A==`.
+Kernel packument omits beta.3 entirely (including time); packument and dist-tags
+endpoint retain beta/latest at beta.2. The other four beta tags are beta.3, but
+**all five latest tags remain beta.2**. CLI beta.3 directly pins kernel and fs beta.3;
+fs itself depends on shared/kit beta.3, not directly on kernel.
+
+Raw endpoints checked (all HTTP 200 except noted replication probes):
+
+- `https://registry.npmjs.org/@gatekeeper-os%2fshared` — HTTP 200, checked `2026-09-14T00:31:47.085689+00:00`.
+- `https://registry.npmjs.org/@gatekeeper-os%2fshared/0.1.0-beta.3` — HTTP 200, checked `2026-09-14T00:31:47.087216+00:00`.
+- `https://registry.npmjs.org/-/package/@gatekeeper-os%2fshared/dist-tags` — HTTP 200, checked `2026-09-14T00:31:47.088119+00:00`.
+- `https://registry.npmjs.org/@gatekeeper-os%2fgatekeeper-kit` — HTTP 200, checked `2026-09-14T00:31:47.089408+00:00`.
+- `https://registry.npmjs.org/@gatekeeper-os%2fgatekeeper-kit/0.1.0-beta.3` — HTTP 200, checked `2026-09-14T00:31:47.089956+00:00`.
+- `https://registry.npmjs.org/-/package/@gatekeeper-os%2fgatekeeper-kit/dist-tags` — HTTP 200, checked `2026-09-14T00:31:47.090542+00:00`.
+- `https://registry.npmjs.org/@gatekeeper-os%2fkernel` — HTTP 200, checked `2026-09-14T00:31:47.090940+00:00`.
+- `https://registry.npmjs.org/@gatekeeper-os%2fkernel/0.1.0-beta.3` — HTTP 200, checked `2026-09-14T00:31:47.091318+00:00`.
+- `https://registry.npmjs.org/-/package/@gatekeeper-os%2fkernel/dist-tags` — HTTP 200, checked `2026-09-14T00:31:47.442523+00:00`.
+- `https://registry.npmjs.org/@gatekeeper-os%2fgatekeeper-fs` — HTTP 200, checked `2026-09-14T00:31:47.442766+00:00`.
+- `https://registry.npmjs.org/@gatekeeper-os%2fgatekeeper-fs/0.1.0-beta.3` — HTTP 200, checked `2026-09-14T00:31:47.442916+00:00`.
+- `https://registry.npmjs.org/-/package/@gatekeeper-os%2fgatekeeper-fs/dist-tags` — HTTP 200, checked `2026-09-14T00:31:47.443237+00:00`.
+- `https://registry.npmjs.org/@gatekeeper-os%2fcli` — HTTP 200, checked `2026-09-14T00:31:47.444179+00:00`.
+- `https://registry.npmjs.org/@gatekeeper-os%2fcli/0.1.0-beta.3` — HTTP 200, checked `2026-09-14T00:31:47.587686+00:00`.
+- `https://registry.npmjs.org/-/package/@gatekeeper-os%2fcli/dist-tags` — HTTP 200, checked `2026-09-14T00:31:47.588836+00:00`.
+- `https://replicate.npmjs.com/@gatekeeper-os%2fkernel` — HTTP 404, checked `2026-09-14T00:31:47.597272+00:00`.
+- `https://registry.npmjs.org/@gatekeeper-os/kernel/-/kernel-0.1.0-beta.3.tgz` — HTTP 200, checked `2026-09-14T00:31:48.286371+00:00`.
+- `https://replicate.npmjs.com/registry/@gatekeeper-os%2fkernel` — HTTP 404 at `2026-09-14T00:32:44.097371Z`.
+- `https://replicate.npmjs.com/registry/@gatekeeper-os%2fshared` — control also HTTP 404 at `2026-09-14T00:32:44.294881Z`.
+
+Replication probes are inconclusive: these endpoints return 404 even for the
+healthy shared package, so do not claim a successful replication-feed comparison.
+The packument/version-document inconsistency is independently established.
+
+Preparing beta.4 with metadata-only version/pin changes and identical product source,
+config/policy, installer, blueprints, tests and CI. No VM acceptance: listing guard
+remains in force. If beta.3 recovers before beta.4 publication, discard the never-pushed
+contingency tag and proceed with beta.3 acceptance, not a redundant republish.
+
+Additional replication API probes (also inconclusive; not a feed read success):
+
+- `https://replicate.npmjs.com/registry/_all_docs?key=%22%40gatekeeper-os%2Fkernel%22&include_docs=true` — HTTP 400 at `2026-09-14T00:34:33.310899+00:00`.
+- `https://replicate.npmjs.com/registry/_changes?since=now&limit=1` — HTTP 400 at `2026-09-14T00:34:33.604056+00:00`.
+
+Beta.4 candidate host gates: `pnpm lint`, `pnpm typecheck`, `pnpm test` pass
+(600 tests / 38 files), plus release-helper and script regression suites.
+Structural comparison against beta.3 proves only version/pin metadata and release
+documentation changed; the third-party lock graph is byte-identical after normalizing
+workspace specifier beta.4 back to beta.3. Packed/model gate and hosted manifest
+inspection must still pass before local tagging. VM acceptance remains unrun.
