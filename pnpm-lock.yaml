@@ -60,10 +60,10 @@ importers:
   packages/gatekeeper-http:
     dependencies:
       '@gatekeeper-os/gatekeeper-kit':
-        specifier: workspace:0.1.0-beta.3
+        specifier: workspace:0.1.0-beta.4
         version: link:../gatekeeper-kit
       '@gatekeeper-os/shared':
-        specifier: workspace:0.1.0-beta.3
+        specifier: workspace:0.1.0-beta.4
         version: link:../gkos-shared
       openclaw:
         specifier: 'catalog:'
@@ -85,7 +85,7 @@ importers:
   packages/gatekeeper-kit:
     dependencies:
       '@gatekeeper-os/shared':
-        specifier: workspace:0.1.0-beta.3
+        specifier: workspace:0.1.0-beta.4
         version: link:../gkos-shared
       openclaw:
         specifier: 'catalog:'
@@ -112,13 +112,13 @@ importers:
   packages/gkos-cli:
     devDependencies:
       '@gatekeeper-os/gatekeeper-fs':
-        specifier: workspace:0.1.0-beta.3
+        specifier: workspace:0.1.0-beta.4
         version: link:../gkos-gatekeeper-fs
       '@gatekeeper-os/kernel':
-        specifier: workspace:0.1.0-beta.3
+        specifier: workspace:0.1.0-beta.4
         version: link:../gkos-kernel
       '@gatekeeper-os/shared':
-        specifier: workspace:0.1.0-beta.3
+        specifier: workspace:0.1.0-beta.4
         version: link:../gkos-shared
       '@types/node':
         specifier: 'catalog:'
@@ -136,7 +136,7 @@ importers:
   packages/gkos-conformance:
     dependencies:
       '@gatekeeper-os/shared':
-        specifier: workspace:0.1.0-beta.3
+        specifier: workspace:0.1.0-beta.4
         version: link:../gkos-shared
       openclaw:
         specifier: 'catalog:'
@@ -161,10 +161,10 @@ importers:
   packages/gkos-gatekeeper-fs:
     dependencies:
       '@gatekeeper-os/gatekeeper-kit':
-        specifier: workspace:0.1.0-beta.3
+        specifier: workspace:0.1.0-beta.4
         version: link:../gatekeeper-kit
       '@gatekeeper-os/shared':
-        specifier: workspace:0.1.0-beta.3
+        specifier: workspace:0.1.0-beta.4
         version: link:../gkos-shared
       openclaw:
         specifier: 'catalog:'
@@ -189,10 +189,10 @@ importers:
   packages/gkos-gatekeeper-github:
     dependencies:
       '@gatekeeper-os/gatekeeper-kit':
-        specifier: workspace:0.1.0-beta.3
+        specifier: workspace:0.1.0-beta.4
         version: link:../gatekeeper-kit
       '@gatekeeper-os/shared':
-        specifier: workspace:0.1.0-beta.3
+        specifier: workspace:0.1.0-beta.4
         version: link:../gkos-shared
       openclaw:
         specifier: 'catalog:'
@@ -217,10 +217,10 @@ importers:
   packages/gkos-gatekeeper-mcp:
     dependencies:
       '@gatekeeper-os/gatekeeper-kit':
-        specifier: workspace:0.1.0-beta.3
+        specifier: workspace:0.1.0-beta.4
         version: link:../gatekeeper-kit
       '@gatekeeper-os/shared':
-        specifier: workspace:0.1.0-beta.3
+        specifier: workspace:0.1.0-beta.4
         version: link:../gkos-shared
       '@modelcontextprotocol/sdk':
         specifier: 1.30.0
@@ -248,10 +248,10 @@ importers:
   packages/gkos-kernel:
     dependencies:
       '@gatekeeper-os/gatekeeper-kit':
-        specifier: workspace:0.1.0-beta.3
+        specifier: workspace:0.1.0-beta.4
         version: link:../gatekeeper-kit
       '@gatekeeper-os/shared':
-        specifier: workspace:0.1.0-beta.3
+        specifier: workspace:0.1.0-beta.4
         version: link:../gkos-shared
       openclaw:
         specifier: 'catalog:'
