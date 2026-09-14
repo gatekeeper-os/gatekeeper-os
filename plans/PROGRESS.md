@@ -2825,3 +2825,128 @@ restored original8MiB/8MiB memlock and unchanged original Sep7 snapshot tables;
 VM shut off. Local lint/build/types,605hosttests/39files,6snapshot+5selector checks pass.
 Evidence vm-artifacts/20260914-125418-phase-3 and beta4-acceptance-20260914/diagnostic*.
 No merge or Tier1 lockfile regeneration before a complete npm-only pass.
+
+## 2026-09-14 — beta.4 invocation 2: BLOCKED_PRODUCT_BEHAVIOR; hard stop
+
+Run **20260914-130203-phase-3**, revision 8c796a0bf69a69ed83ed4264c85f49337809444a,
+scenario runId 2026-09-14T13:02:15Z, exit1 at approvals. Invocation2 of at most3;
+**no third invocation**, because the product-behavior hard-stop rule takes precedence.
+
+| Stage | Passed / executed |
+|---|---|
+| Registry identities + downloaded archive SHA512 | 5/5 |
+| Messaging cell creation | 1/1 |
+| Registry/unit/environment selector | 1/1 |
+| Install policy | 14/14 |
+| Kernel-live, including no-grant OS tools | 114/114 |
+| Selected conformance | 38/38 |
+| Owner-only audience | 72/72 |
+| Approval-stage assertions | 5/6; failed fixture-apply-tool-result |
+| Actual approval apply / reject decisions | 0 / 0 — never reached |
+| Model turns / provider requests | 24 / 37 |
+
+The corrected fixture metadata passed the shipped schemas (the original name is a
+failing negative control). Published kernel/fs and synthetic published-kit driver
+were healthy, and the operator introduced an owner-only fixture grant. The first
+approval model request had both OS tools but **no gk_fixture_record_write** in either
+of its two provider requests. after_tool_call recorded error=true for that tool.
+
+Exact denial retrieved through supported read-only Gateway `chat.history`,
+session `agent:approval-fixture:kernel-fixture-apply`:
+**`Tool gk_fixture_record_write not found`** (toolName=gk_fixture_record_write,
+isError=true). No upstream SQLite inspection, raw model bodies, or credentials
+collected. Read-only diagnosis booted the retained current disk, without snapshot
+reset or model invocation, and started its existing managed Gateway only to read
+history. Do not reclassify this behavior by changing fixture names/vendors again,
+widening policy, replacing packaged manifests, or patching product code.
+
+Effective config at failure (full structural receipt in project-kit
+`beta4-acceptance-20260914/effective-config-invocation2.json`):
+
+```json
+{
+  "tools": {
+    "profile": "messaging",
+    "alsoAllow": [
+      "gkos-kernel"
+    ],
+    "deny": [
+      "group:runtime",
+      "group:fs",
+      "group:automation",
+      "browser"
+    ],
+    "exec": {
+      "mode": "deny"
+    },
+    "sessions": {
+      "visibility": "self"
+    },
+    "elevated": {
+      "enabled": false
+    }
+  },
+  "agents": {
+    "ownership": "explicit",
+    "approvalFixtureTools": null
+  },
+  "plugins": {
+    "allow": [
+      "gkos-kernel",
+      "gkos-gatekeeper-fs",
+      "gkos-kernel-monitor",
+      "gkos-channel-ingress",
+      "gkos-gatekeeper-fixture"
+    ],
+    "deny": []
+  },
+  "kernel": {
+    "enabled": true,
+    "hooks": {
+      "allowConversationAccess": true
+    },
+    "config": {
+      "operators": [
+        {
+          "channel": "vmchan",
+          "senderId": "operator"
+        }
+      ],
+      "install": {
+        "allowSources": [],
+        "allowHashes": []
+      },
+      "egress": {
+        "denyPatterns": [
+          "grant:[a-z0-9]{8}",
+          "phase-three-denied-marker"
+        ]
+      }
+    }
+  }
+}
+```
+
+Other structural settings: all fixture agents had no per-agent tools override;
+real cell-local kernel/fs plugins retained alongside passive monitor, synthetic
+channel and synthetic approval driver. Kernel enabled with conversation hooks;
+install allowSources/allowHashes empty. Registry/unit-selected cell kernel-test,
+loopback port19100; canonical token SecretRef retained. Protected-baseline receipts
+cover tools, auth, install policy and default sandbox unchanged across modes.
+
+Both failed invocations and their exact stage counts remain on record. Harness
+SHA256 verified unchanged after each run. Acceptance and read-only diagnostic
+cleanups restored original8MiB/8MiB limits and unchanged original Sep7 internal
+snapshot tables; VM shut off. Local605hosttests/39files and schema checks pass but
+cannot override failed npm-only acceptance. All model traffic local deterministic.
+
+Private draft acceptance PR24: https://github.com/gatekeeper-os/gatekeeper-os/pull/24
+Build-test is separate evidence, never authority to merge a failed acceptance.
+**No acceptance merge, no Tier1 lockfile regeneration, no community PR9 merge.**
+Community PR9 remains draft at30844e8feff14496a0a843efd6759565bf330a01.
+No public-flip gate reached. No visibility change, tag push, npm write, trusted
+publisher setup, release-workflow rerun, phase tag or upstream post.
+
+Evidence: `vm-artifacts/20260914-130203-phase-3/` (checks, hashes, run, cleanup)
+and project-kit `beta4-acceptance-20260914/` (both-run acceptance-summary.json,
+registry receipts, invocation2-diagnostic.log, effective config and cleanup).
