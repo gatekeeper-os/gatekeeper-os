@@ -422,7 +422,7 @@ original installed snapshot. Unlike source checkpoints, it stops the snapshot's
 Gateway and removes `/home/tester/src`, then transfers only `test/npm-only` fixtures
 and their runner to `/home/tester/npm-acceptance`. No repository is cloned or synced;
 no product is built or copied from the host. All five `@gatekeeper-os` packages are
-installed at `0.1.0-beta.3` from `https://registry.npmjs.org` into an empty prefix.
+installed at `0.1.0-beta.4` from `https://registry.npmjs.org` into an empty prefix.
 Registry identity, dist-tags, publish times and integrity metadata are retained.
 
 The installed CLI provisions `kernel-test --port 19100 --policy messaging`.

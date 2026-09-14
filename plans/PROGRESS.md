@@ -2744,3 +2744,43 @@ After publication: npm-only up to3 invocations with harness-only repairs; hard s
 on product behavior; require all stages including38conformance, owner-only audience
 and approval apply/reject. Only on success merge harness after green build-test,
 then real beta.3 Tier1 lockfile and community PR9 after green build-test.
+
+## 2026-09-14 — beta.4 registry verified; acceptance authorized
+
+Beta.3 acceptance is superseded. Live anonymous reads at 12:52:22–12:52:27 UTC
+verify all five beta.4 exact version documents, listing entries, beta/latest tags,
+publication timestamps, and downloaded archive SHA512 against both metadata surfaces.
+All five beta.3 listings contain deprecation notices. Raw metadata, headers and
+archives: project-kit `beta4-acceptance-20260914/registry/`.
+
+| Package | Version | beta / latest | Published UTC | Listing modified UTC |
+|---|---|---|---|---|
+| @gatekeeper-os/shared | 0.1.0-beta.4 | 0.1.0-beta.4 / 0.1.0-beta.4 | 2026-09-14T00:54:37.340Z | 2026-09-14T12:47:26.814Z |
+| @gatekeeper-os/gatekeeper-kit | 0.1.0-beta.4 | 0.1.0-beta.4 / 0.1.0-beta.4 | 2026-09-14T00:54:49.026Z | 2026-09-14T12:47:50.139Z |
+| @gatekeeper-os/kernel | 0.1.0-beta.4 | 0.1.0-beta.4 / 0.1.0-beta.4 | 2026-09-14T00:56:03.583Z | 2026-09-14T12:48:13.582Z |
+| @gatekeeper-os/gatekeeper-fs | 0.1.0-beta.4 | 0.1.0-beta.4 / 0.1.0-beta.4 | 2026-09-14T00:57:37.490Z | 2026-09-14T12:48:37.366Z |
+| @gatekeeper-os/cli | 0.1.0-beta.4 | 0.1.0-beta.4 / 0.1.0-beta.4 | 2026-09-14T00:56:16.696Z | 2026-09-14T12:49:04.960Z |
+
+Verified archive SHA512 (hex):
+
+- @gatekeeper-os/shared: `0155f9c93fee6b78034b09ef3da6063b5c1e143cd6d9f717f374a0f8915636e438050490d01c0690d366e4028078210454b21b9e9f52034257ac2f39c2ceb40f`
+- @gatekeeper-os/gatekeeper-kit: `e68538e0aafe3d9f5b6542a2a1f29644c8b734fd962cf1386b9093f0b7da8e4679442737eb0bf768bfe6581d1e8c426e2cb70b503a3be2492c0f9ab13e0599b2`
+- @gatekeeper-os/kernel: `ce20bbff4f1ef86da0e7352cfa5587a79500763e1a41350003f4ec799c1193cba221a10f6df460d329bbf2b0c62a8f85f7f97472100d29c165b57c2edc6011c7`
+- @gatekeeper-os/gatekeeper-fs: `cdcce25df998639557a6497ff3f9c7e1d975c4cfb8440cac7006fb65db52c87d3da849664b3c224a0d09cdf84d859544aa04d4db630d1bac5e9d5626bffd631e`
+- @gatekeeper-os/cli: `e1b357e9ef58fbd65475d2494ffabf2fe63a6ca716f70c2b9d787a97e3f37aef036b87f0a41299895653291345d7339373530f9e50a02bb3d8350620c535a114`
+
+Registry incident: kernel beta.3 and gatekeeper-fs beta.4 listings lagged their
+version documents until a later write (Matt's handoff; historical kernel mismatch
+is independently recorded above). Current consistency independently verified.
+Release handoff template BETA4-PRIVATE-HANDOFF now requires publish to exit and
+every listing to verify before any tag/deprecate write; post-write reads required.
+No npm writes were performed here.
+
+Acceptance branch rebased onto ef68cd81263059506b550fa3bb8f08e20907084b; append-only
+PROGRESS conflict resolved retaining both histories. Pre-rebase branch bundle saved
+in beta4-acceptance-20260914. Only harness/fixture/doc changes; product baseline unchanged.
+Up to three invocations, repairs only between completed runs; product failure hard
+stop with effective config/exact denial. Require registry, cell, selector, install
+policy, kernel-live/no-grant OS tools, 38 conformance checks, audience and approvals.
+Only end-to-end PASS permits green build-test acceptance merge, then real beta.4
+Tier1 lock and green community PR9 merge. No visibility/tag/publisher/release/upstream actions.

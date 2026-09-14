@@ -37,10 +37,11 @@ Its `os.approvals.apply` path must refuse and keep the host file unchanged. Succ
 apply/reject evidence comes only from the explicitly synthetic driver and does not
 establish filesystem writes, real channel transport, or full production readiness.
 
-## beta.3 publication prerequisite
+## beta.4 acceptance target
 
-Rebased on beta.3 main after PR21/PR22. The install command and registry receipt
-require exactly @gatekeeper-os/*@0.1.0-beta.3. Do not run until Matt confirms
-publication. This rebase is not acceptance evidence. All prior failed-run records
-remain in PROGRESS; selector, registry port, ownership and parent-first snapshot
-preflight fixes are retained. No product baseline is replaced by the fixture.
+Beta.4 is published and independently verified; beta.3 acceptance is superseded.
+Rebased onto beta.4 main ef68cd81263059506b550fa3bb8f08e20907084b. Install commands
+and registry receipts require exactly @gatekeeper-os/*@0.1.0-beta.4. Preserve all
+prior failed runs. Up to three invocations, harness/fixture/VM-preflight repairs
+only between completed runs; product behavior failure is an immediate hard stop.
+No product baseline is replaced by the fixture.
