@@ -2600,3 +2600,28 @@ manifest parity checks do not claim fixed-kit runtime acceptance on those old pi
 Guest cleanup PASS: graceful poweroff, original 8 MiB MEMLOCK limits restored,
 original September 7 base/installed snapshot hashes unchanged. No snapshot reset
 was used for this diagnosis/regression work; original acceptance state was retained.
+
+## 2026-09-15 — PR #25 review follow-up: CI defect
+
+CI run [34942757481](https://github.com/gatekeeper-os/gatekeeper-os/actions/runs/34942757481)
+passed unit/build/manifest checks, then failed the packed gate at `fixture-apply`
+with `UNAUTHORIZED` (3 model turns / 6 provider requests). Tool visibility and
+fixture submission passed; the sanitized RPC error alone did not identify auth.
+
+**Real product defect hidden by the local environment:** CI pins Node 22.22.3;
+the previous guest evidence used Node 24.20.0. Node 22's `node:sqlite` reads a TEXT
+instance key containing NUL separators as only its vendor prefix. The stored bytes
+and parameterized lookups are intact, but the action's decoded instance identity
+fails the kernel's final equality check and approval fails closed. A standalone
+round trip reproduces truncation on 22.22.3 and 22.23.2, not 24.19.0. Existing kernel
+unit fixtures used a mocked, NUL-free `fixture-instance` and missed this defect.
+
+Fix: read the two instance-key fields via `CAST(... AS BLOB)` and decode full UTF-8
+bytes. Persisted schema-1 TEXT keys, uniqueness, comparisons, authority checks,
+lockdown and uncertain-action behavior remain unchanged; no migration or pin bump.
+New real-SQLite regression failed before the fix (`fixture` versus full identity),
+then passed along with 57 store/action/approval/kernel tests. It covers two accounts
+with the same vendor and action ID, UTF-8, every instance/action read path, reopen,
+duplicate submissions, and distinct persistent lockdown. Full CI/packed rerun pending.
+Evidence: `../beta5-preparation-20260915/` outside this checkout (failed CI log,
+`store-red.log`, `store-green.log`). No test removed or weakened.

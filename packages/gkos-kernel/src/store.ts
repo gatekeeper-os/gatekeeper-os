@@ -39,7 +39,7 @@ export class Store {
   }
   setGrantStatus(handle:string,status:GrantStatus):boolean{ return Number(this.db.prepare("UPDATE grants SET status=? WHERE handle=?").run(status,handle).changes)===1; }
   upsertInstance(r:InstanceRecord):void{ this.db.prepare(`INSERT INTO instances(id,vendor,resourceKey,operatorId,observerStrategy,lockdown) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET observerStrategy=excluded.observerStrategy,lockdown=MAX(instances.lockdown,excluded.lockdown)`).run(r.id,r.vendor,r.resourceKey,r.operatorId,r.observerStrategy,r.lockdown); }
-  getInstance(id:string):InstanceRecord|null{ return (this.db.prepare("SELECT * FROM instances WHERE id=?").get(id) as InstanceRecord|undefined)??null; }
+  getInstance(id:string):InstanceRecord|null{ return instanceRow<InstanceRecord>(this.db.prepare("SELECT *, CAST(id AS BLOB) AS instanceBytes FROM instances WHERE id=?").get(id), "id"); }
   lockdownInstance(id:string):void{ this.db.prepare("UPDATE instances SET lockdown=1 WHERE id=?").run(id); }
   addIntroduction(v:{agentId:string;sessionKey?:string;url:string;reason?:string;requestedBy?:string}):number{ return Number(this.db.prepare("INSERT INTO introductions(agentId,sessionKey,url,reason,status,createdAt,requestedBy) VALUES(?,?,?,?,?,?,?)").run(v.agentId,v.sessionKey??null,v.url,v.reason??null,"pending",Date.now(),v.requestedBy??null).lastInsertRowid); }
   /** Operator-visible pending resource introductions, bounded by the caller. */
@@ -51,9 +51,9 @@ export class Store {
   /** Claim a run digest before delivery: uncertain sends are not repeated. */
   claimNotification(runId:string):boolean{return Number(this.db.prepare("INSERT OR IGNORE INTO notifications(runId,createdAt) VALUES(?,?)").run(runId,Date.now()).changes)===1;}
   countPendingRequests():number{ return this.count("introductions"); }
-  addAction(instance:string,actionId:number,d:ActionDescription):PendingAction{ this.db.prepare("INSERT OR IGNORE INTO actions(gatekeeperInstance,actionId,descriptionJson,status,submittedAt) VALUES(?,?,?,?,?)").run(instance,actionId,JSON.stringify(d),"pending",Date.now()); return this.db.prepare("SELECT * FROM actions WHERE gatekeeperInstance=? AND actionId=?").get(instance,actionId) as unknown as PendingAction; }
-  listActions(pendingOnly=true):PendingAction[]{ return this.db.prepare(`SELECT * FROM actions${pendingOnly?" WHERE status='pending'":""} ORDER BY id`).all() as unknown as PendingAction[]; }
-  getAction(id:number):PendingAction|null{ return (this.db.prepare("SELECT * FROM actions WHERE id=?").get(id) as unknown as PendingAction|undefined)??null; }
+  addAction(instance:string,actionId:number,d:ActionDescription):PendingAction{ this.db.prepare("INSERT OR IGNORE INTO actions(gatekeeperInstance,actionId,descriptionJson,status,submittedAt) VALUES(?,?,?,?,?)").run(instance,actionId,JSON.stringify(d),"pending",Date.now()); return instanceRow<PendingAction>(this.db.prepare("SELECT *, CAST(gatekeeperInstance AS BLOB) AS instanceBytes FROM actions WHERE gatekeeperInstance=? AND actionId=?").get(instance,actionId), "gatekeeperInstance")!; }
+  listActions(pendingOnly=true):PendingAction[]{ return this.db.prepare(`SELECT *, CAST(gatekeeperInstance AS BLOB) AS instanceBytes FROM actions${pendingOnly?" WHERE status='pending'":""} ORDER BY id`).all().map(row=>instanceRow<PendingAction>(row,"gatekeeperInstance")!); }
+  getAction(id:number):PendingAction|null{ return instanceRow<PendingAction>(this.db.prepare("SELECT *, CAST(gatekeeperInstance AS BLOB) AS instanceBytes FROM actions WHERE id=?").get(id), "gatekeeperInstance"); }
   decideAction(id:number,status:"applied"|"rejected"|"reverted"|"failed",operatorId:string,error?:string):boolean{ const now=Date.now(); return Number(this.db.prepare("UPDATE actions SET status=?,decidedBy=?,decidedAt=?,appliedAt=CASE WHEN ?='applied' THEN ? ELSE appliedAt END,error=? WHERE id=?").run(status,operatorId,now,status,now,error??null,id).changes)===1; }
   /** Persist the originating capability separately; duplicate submissions cannot rebind it. */
   bindAction(id:number,handle:string,agentId:string,sessionKey:string):void{this.db.prepare("INSERT OR IGNORE INTO action_bindings(id,handle,agentId,sessionKey) VALUES(?,?,?,?)").run(id,handle,agentId,sessionKey);}
@@ -70,3 +70,13 @@ export class Store {
   private count(table:"actions"|"introductions"):number{return Number((this.db.prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE status='pending'`).get() as {n:number}).n);}
 }
 function grantRow(row:unknown):Grant|null{ if(!row)return null;const r=row as Grant&{expiresAt:number|null;title:string|null};const {expiresAt,title,...base}=r;return {...base,...(expiresAt===null?{}:{expiresAt}),...(title===null?{}:{title})}; }
+
+// Node 22 SQLite TEXT results truncate at embedded NULs. Keep the persisted TEXT
+// keys and SQL comparisons unchanged; decode their full UTF-8 bytes on read.
+// This also reads preexisting schema-1 rows without migrating or rebinding them.
+function instanceRow<T>(row:unknown, field:"id"|"gatekeeperInstance"):T|null {
+  if (!row) return null;
+  const {instanceBytes,...rest} = row as Record<string,unknown>;
+  if (!(instanceBytes instanceof Uint8Array)) throw new Error("Invalid instance identity.");
+  return {...rest,[field]:Buffer.from(instanceBytes).toString("utf8")} as T;
+}
