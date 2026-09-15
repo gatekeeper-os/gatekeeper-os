@@ -74,11 +74,19 @@ export function blueprintEntry(b: Blueprint, workspace: string): Record<string,J
     sandbox:{...b.sandbox,...(b.sandbox.mode!=='off'?{scope:'agent',backend:'docker',docker:{network:'none',readOnlyRoot:true,capDrop:['ALL']}}:{})}};
 }
 interface Snapshot {version:1; blueprint:string; fingerprint:string; workspace:string; files:Record<string,string>; entry:Record<string,Json>}
+/** Catalog-owned messaging additions may change independently of a blueprint's source policy. */
+function blueprintPolicyShape(value: Json | undefined): Json | undefined {
+  const copy=structuredClone(value);
+  if(object(copy)&&object(copy.tools)&&copy.tools.profile==='messaging'&&copy.tools.allow===undefined&&Array.isArray(copy.tools.alsoAllow))
+    copy.tools.alsoAllow=copy.tools.alsoAllow.filter(id=>typeof id!=='string'||!/^gkos-gatekeeper-[a-z][a-z0-9_]*$/.test(id));
+  return copy;
+}
 /** Values are never included in drift reports. Missing files and agent policy are distinct paths. */
 export function blueprintDrift(snapshot: Snapshot, liveEntry: Json|undefined): string[] {
   const paths:string[]=[];
   for(const [name,expected] of Object.entries(snapshot.files)) {const path=join(snapshot.workspace,name);assertPlainPath(path);if(!existsSync(path)||digest(readFileSync(path,'utf8'))!==expected)paths.push('workspace/'+name);}
-  for(const [key,value] of Object.entries(snapshot.entry))if(canonicalize(object(liveEntry)?liveEntry[key]:undefined)!==canonicalize(value))paths.push('config/'+key);
+  const source=blueprintPolicyShape(snapshot.entry),current=blueprintPolicyShape(liveEntry);
+  for(const [key,value] of Object.entries(object(source)?source:{}))if(canonicalize(object(current)?current[key]:undefined)!==canonicalize(value))paths.push('config/'+key);
   return paths;
 }
 function templateRoot():string {
@@ -147,7 +155,7 @@ export async function applyBlueprint(cell:Cell,root:string,id:string,catalog:str
     if(readFileSync(fragment,'utf8')!==fragmentBefore)fail('agent fragment changed during provisioning; pending journal retained');
     entries[id]=entry;
     writeJson(fragment,desired);
-    if(canonicalize(getPath(mergeFragments(join(cell.osDir,'config.d')),`agents.entries.${id}`))!==canonicalize(entry))fail('later fragment overrides blueprint policy; pending journal retained');
+    if(canonicalize(blueprintPolicyShape(getPath(mergeFragments(join(cell.osDir,'config.d')),`agents.entries.${id}`)))!==canonicalize(blueprintPolicyShape(entry)))fail('later fragment overrides blueprint policy; pending journal retained');
     writeJson(intent,{version:1,agent:id,blueprint:b.name,stage:'reconciling'});
     const result=await applyConfig();if(result.conflicts?.length)fail('configuration conflicts; pending journal retained');
     const after=liveEntry(readOwnedConfig(cell),id);

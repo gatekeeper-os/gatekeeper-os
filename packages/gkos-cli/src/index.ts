@@ -80,3 +80,6 @@ export async function main(argv: string[]): Promise<void> {
   }
   process.exit(code);
 }
+
+/** Pure desired-state preview; the same catalog-aware merge used by config apply. */
+export { mergeFragments } from "./commands/config-apply.js";

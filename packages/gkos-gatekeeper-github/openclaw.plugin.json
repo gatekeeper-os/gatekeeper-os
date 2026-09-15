@@ -2,7 +2,19 @@
   "id": "gkos-gatekeeper-github",
   "name": "GitHub Gatekeeper",
   "description": "Mediates agent access to GitHub repositories, issues, and pull requests.",
-  "contracts": { "tools": [] },
+  "contracts": { "tools": [
+      "gk_github_issue_comment",
+      "gk_github_issue_create",
+      "gk_github_issue_get",
+      "gk_github_pull_comment",
+      "gk_github_pull_diff",
+      "gk_github_pull_get",
+      "gk_github_pull_review",
+      "gk_github_repo_get",
+      "gk_github_repo_list_issues",
+      "gk_github_repo_list_pulls",
+      "gk_github_repo_read_file"
+    ] },
   "activation": { "onStartup": true },
   "configSchema": { "type": "object", "additionalProperties": false, "properties": {
     "clientId": { "type": "string" }, "clientSecret": { "type": "object" }, "apiBase": { "type": "string", "default": "https://api.github.com" } } },

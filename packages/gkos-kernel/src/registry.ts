@@ -2,7 +2,7 @@
 import { readFileSync, realpathSync } from "node:fs";
 import { Value } from "typebox/value";
 import { GatekeeperToolDefSchema, SupportedResourceSchema, type ApprovalQueue, type Gatekeeper, type GatekeeperSession, type GatekeeperToolDef, type GatekeeperVendor, type Grant, type SupportedResource } from "@gatekeeper-os/shared";
-import { gatekeeperRuntimeSlot } from "@gatekeeper-os/gatekeeper-kit";
+import { gatekeeperRuntimeSlot, validateGatekeeperManifest } from "@gatekeeper-os/gatekeeper-kit";
 
 /** Enabled gatekeeper identity and static, schema-checked catalog metadata. */
 export interface CatalogEntry { pluginId:string; vendor:string; apiVersion:1; root:string; tools:GatekeeperToolDef[]; resources:SupportedResource[]; enabled?:boolean; }
@@ -28,6 +28,7 @@ export class Registry {
       const root=realpathSync(raw.root);if(!Array.isArray(raw.tools)||!Array.isArray(raw.resources))throw new Error("Invalid gatekeeper catalog metadata.");
       for(const tool of raw.tools){if(!Value.Check(GatekeeperToolDefSchema,tool)||names.has(tool.name)||!tool.name.startsWith(`gk_${raw.vendor}_`))throw new Error("Invalid gatekeeper catalog tool.");names.add(tool.name);}
       for(const resource of raw.resources)if(!Value.Check(SupportedResourceSchema,resource)||resource.tools.some(n=>!raw.tools.some(t=>t.name===n&&t.resourceType===resource.type)))throw new Error("Invalid gatekeeper catalog resource.");
+      validateGatekeeperManifest(root,raw.pluginId,raw.tools.map(tool=>tool.name));
       const entry={...raw,root,tools:structuredClone(raw.tools),resources:structuredClone(raw.resources)};this.entries.set(entry.vendor,entry);this.tools.push(...entry.tools);
     }
   }

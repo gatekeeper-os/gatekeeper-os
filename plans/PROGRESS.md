@@ -2539,3 +2539,64 @@ Structural comparison against beta.3 proves only version/pin metadata and releas
 documentation changed; the third-party lock graph is byte-identical after normalizing
 workspace specifier beta.4 back to beta.3. Packed/model gate and hosted manifest
 inspection must still pass before local tagging. VM acceptance remains unrun.
+
+## 2026-09-15 — Per-gatekeeper tool ownership repair (PR only; no release)
+
+User authorized diagnosis-before-edit and a fix against main, not beta.5 or another
+npm-only acceptance invocation. The original beta.4 hard-stop runs remain failed.
+
+Diagnosis was reported before product edits. Pinned upstream `2026.9.2` commit
+`3928bad9badfcb6c7d140530435e806fb8092190` rejects undeclared registrations under the
+registering plugin owner **before** tool-policy filtering: mechanism (b), not direct
+manifest-list expansion (a). Retained guest log at 13:06:33.479 UTC says
+`plugin must declare contracts.tools for: gk_fixture_record_write (plugin=gkos-kernel, ...)`.
+Fixture contracts were absent; fs contracts empty; kernel enumerated fs names.
+Exact source links, log lines, manifest comparison and unavailable-temp-log caveat:
+[diagnosis and repair](../docs/gatekeeper-tool-ownership.md).
+
+Implementation: kit-owned wrappers use each gatekeeper's manifest identity and
+exact declared tool set; every execution delegates to the full kernel runtime with
+catalog/root/cell checks plus existing grant, audience, parameter and one-shot-stash
+checks. Sanitized failures retain failed audit status. CLI config reconciliation
+adds/removes enabled catalog plugin IDs in messaging policies; catalog changes force
+restart. Messaging blueprint reconciliation recognizes only catalog-owned IDs as
+derived. Runtime explicit allowlists, sandbox policy, native denials, kernel manifest,
+OS/RPC surface, package versions and dependency/pin lockfiles are unchanged.
+
+Focused packed-regression receipts (not full npm-only acceptance):
+
+| Evidence log | Model turns / provider requests | Result |
+|---|---:|---|
+| `beta4-red.log` | 3 / 6 | Expected `fixture-tool-not-visible` on real npm beta.4 archives |
+| `fixed-packed1.log` | 5 / 10 | All model/approval checks passed; final plugin-list assertion failed |
+| `fixed-packed2.log` | 5 / 10 | Same retained failure; diagnostic-print edit had not matched its target |
+| `packed-list-diagnosis.log`, `packed-retained.log` | 0 / 0 each | Harness diagnosis: fixture-only plugins.allow; stale persisted registry |
+| `beta4-red-final.log` | 3 / 6 | Same final harness: expected `fixture-tool-not-visible`; three plugins cleanly loaded |
+| `fixed-packed-final.log` | 5 / 10 | **PASS, exit 0**, all stages including clean plugin listing |
+
+Final harness preserves all installed plugin IDs in `plugins.allow`, refreshes the
+upstream plugin registry after its synthetic config change, and reads messaging
+policy through the **installed CLI tarball's** catalog-aware merge. It never adds
+fixture tool allowances itself. Beta.4 fallback uses beta.4's shipped baseline.
+Final fix proves no-grant OS tools, granted filesystem tools, independently owned
+fixture tool absent from kernel manifest, owner-only fixture grants, synthetic
+approval apply/reject with real recorded effects and audit, revoked-tool hiding,
+and unchanged native denials. Deterministic loopback model; no provider API spend.
+
+Host checks: 615 tests / 39 files, build, all package typechecks, eslint, catalog,
+secrets, ten package licenses, release helper unit (1), script tests (12), packed
+unit tests (3) passed. Initial missing-manifest OAuth test fixtures and narrow test
+type errors were repaired; failed logs retained. This does not claim full beta.5
+acceptance, real external provider acceptance, or physical filesystem write support.
+
+Evidence is retained privately at
+`~/projects/Personal/openclaw-os-agent-kit/gatekeeper-policy-fix-20260915/`, including
+`regression-receipt.json`, source/log provenance, both negative controls and every
+failed fixed-artifact run. No visibility/publication/tag/publisher/release-workflow,
+phase-tag, upstream post, PR merge, or community Tier 1 lock regeneration performed.
+Community template/skill companion stays on its historical dependency pins; new
+manifest parity checks do not claim fixed-kit runtime acceptance on those old pins.
+
+Guest cleanup PASS: graceful poweroff, original 8 MiB MEMLOCK limits restored,
+original September 7 base/installed snapshot hashes unchanged. No snapshot reset
+was used for this diagnosis/regression work; original acceptance state was retained.

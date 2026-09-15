@@ -7,7 +7,7 @@ Source of truth: `docs/agent-operating-rules.md` (keep the two in sync; this is 
    Never read upstream's SQLite. Never write under the upstream install root or edit its systemd unit (drop-ins only).
 2. **Upstream stays updatable.** The pin lives only in `gkos.lock.json`. Every plugin declares `openclaw.compat.pluginApi`
    (kept byte-identical to the workspace catalog — `pnpm check:catalog`). Kernel schema migrations run only after a pin is committed.
-3. **Capabilities.** Every gatekeeper reach goes through `Kernel.resolveGrant()`. Gatekeepers never call `api.registerTool`.
+3. **Capabilities.** Every gatekeeper reach goes through `Kernel.resolveGrant()`. Vendor code never calls `api.registerTool`; kit-owned wrappers declare each gatekeeper's own manifest tools and delegate execution to the kernel.
    A resource becomes ambient only through operator config. Non-operators cannot create grants. Gate hooks fail closed.
 4. **Secrecy.** Never log secrets, prompts, headers, tokens, or request/response bodies. Sanitize vendor errors. Tool
    descriptions never mention approvals, queues, caching, OAuth, or simulation.

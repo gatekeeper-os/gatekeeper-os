@@ -422,7 +422,7 @@ export interface GatekeeperVendor {
   createAccount?(operatorId: string): Promise<GatekeeperAccount>;
   getAccount(operatorId: string): Promise<GatekeeperAccount | null>;
   getSupportedResources(): Promise<SupportedResource[]>;
-  /** Tool definitions (TypeBox schemas) for every tool this vendor exposes; the kernel registers them. */
+  /** Tool definitions (TypeBox schemas) for every tool this vendor exposes; the kit declares kernel-routed wrappers. */
   getTools(): Promise<GatekeeperToolDef[]>;
 }
 
@@ -440,7 +440,7 @@ export interface ObserverVerifier { readonly vendor: string; readonly opaque: st
 export interface ToolResult { content: Array<{ type: "text"; text: string }>; details?: unknown; }
 ```
 
-An important adaptation: in Cloudflare OS the agent gets a TypeScript API and writes code against it (Code Mode). OpenClaw agents primarily call tools, so gatekeepers expose **tools whose first parameter is a grant handle** (DECISION). The kernel, not the gatekeeper, registers these tools with OpenClaw (`api.registerTool`) so that every call is funneled through `before_tool_call` → `resolveGrant` → `GatekeeperSession.call`. A gatekeeper cannot accidentally expose an unguarded tool because it never calls `registerTool` itself — `defineGatekeeper()` in the kit forbids it. Code-mode support (a generated `.d.ts` per grant, mirroring `getTypeScriptTypes()`) is deferred to v1.1 and only enabled when OpenClaw's `code_execution` tool is on.
+An important adaptation: in Cloudflare OS the agent gets a TypeScript API and writes code against it (Code Mode). OpenClaw agents primarily call tools, so gatekeepers expose **tools whose first parameter is a grant handle** (DECISION). The kit declares inert wrappers under each gatekeeper's own upstream identity and exact manifest contract. Vendor code never receives `api.registerTool`; every wrapper executes through the kernel's checked runtime transport, `before_tool_call` → `resolveGrant` → `GatekeeperSession.call`. See [the pinned registration diagnosis](gatekeeper-tool-ownership.md). Code-mode support (a generated `.d.ts` per grant, mirroring `getTypeScriptTypes()`) is deferred to v1.1 and only enabled when OpenClaw's `code_execution` tool is on.
 
 ### 4.4 Grants and introductions (the capability model)
 
@@ -624,8 +624,7 @@ export default definePluginEntry({
     api.registerTool({ name: "os_list_grants", description: "List the resources you currently have access to.",
       parameters: Type.Object({}), execute: (toolCallId) => kernel.listGrantsForCall(toolCallId) });
 
-    // --- gatekeeper tools are registered BY THE KERNEL on behalf of each gatekeeper (see §4.3)
-    kernel.registerGatekeeperTools(api);
+    // --- kit-owned per-gatekeeper wrappers delegate to the full kernel runtime (see §4.3).
 
     if (api.registrationMode !== "full") return;
     // --- lifecycle (full only)
@@ -645,7 +644,7 @@ export default definePluginEntry({
 
 Notes on the verified SDK shapes used above: `registerHttpRoute` takes `path`, `auth: "gateway" | "plugin"`, `match: "exact" | "prefix"`, optional `handleUpgrade`/`replaceExisting`, and a `handler(req, res)` that returns `true` when it handled the request; OAuth callbacks arrive unauthenticated from the browser, so the route uses `auth: "plugin"` and the kernel validates the nonce itself. `registerCli`'s registrar receives `{ program }` (the command object to configure) and `opts` may carry `commands`, `descriptors`, and `parentPath`. `registerGatewayMethod` opts include `profileAccess: "required" | "independent"`. `registerService` receives a `ctx` with a process-local `gatewayEvents` facade when a broadcaster is present.
 
-**VERIFIED for the S-1 test path on 2026-09-07:** a `gateway_start` call to `registerTool()` returns successfully, but the late tool is absent from all 40 model requests across 20 fresh scripted sessions. Evidence: `vm-artifacts/20260907-184712-phase-0/{spike-S1.jsonl,model-tools.jsonl}` and `plans/spike-S1.md` item i. Use the already-planned catalog-cache design: the kernel reads `os/gatekeepers.json` (written by `gkos gatekeeper add`) at register time and registers the cached `GatekeeperToolDef[]`; the live vendor object is published by its lifecycle service and resolved through its checked runtime slot at use time (§4.2). This is the same trick cloudflare-os uses with `getTypeScriptTypes()` — tool *shapes* are static metadata, only *execution* needs the live driver.
+**VERIFIED for the S-1 test path on 2026-09-07:** a `gateway_start` call to `registerTool()` returns successfully, but the late tool is absent from all 40 model requests across 20 fresh scripted sessions. Evidence: `vm-artifacts/20260907-184712-phase-0/{spike-S1.jsonl,model-tools.jsonl}` and `plans/spike-S1.md` item i. Use the already-planned catalog-cache design: the kernel reads `os/gatekeepers.json` (written by `gkos gatekeeper add`) at register time and validates the cached `GatekeeperToolDef[]` against each manifest. The kit registers those shapes under each gatekeeper's identity during registration; the live vendor object is published by its lifecycle service and resolved through its checked runtime slot at use time (§4.2). This is the same trick cloudflare-os uses with `getTypeScriptTypes()` — tool *shapes* are static metadata, only *execution* needs the live driver.
 
 ### 5.2 Hook handlers — exact behavior
 
@@ -690,7 +689,7 @@ separate paired-device-authorized path.
 
 `onBeforeToolCall(e, ctx)` — **Gate/Modify.** For `gk_*`: parse `params.grant`; `resolveGrant(ctx.agentId, ctx.sessionKey, handle)` → else `{block: true, blockReason: "No such grant"}`. Check `audience` vs. observers. Dry-run the tool to obtain its `ObservationDescription` or `ActionDescription`; if an action has `awaitDecision`, return `requireApproval` with `onResolution` that records the decision; otherwise stash the resolved session on the call (keyed by `e.toolCallId`) and return `{}`. For `os_*`: stash `{agentId, sessionKey}` by `toolCallId` and pass. `toolCallId` is documented as optional on the event (**VERIFIED**); S-1 observed it on 20/20 calls on the tested path, not a universal guarantee — if it can be absent, the kernel blocks the call (fail closed) and logs a diagnostic, because without it the tool body cannot know who is calling.
 
-Gatekeeper tool `execute(toolCallId, params)` (registered by the kernel): fetch the stashed session by `toolCallId` (fail closed if missing); call `session.call(tool, params, ctx)`; the gatekeeper does the queue calls internally; return the result. Any thrown error is converted to a tool error whose text is the gatekeeper's *sanitized* message (the kit strips URLs, tokens, and vendor error bodies). Stash entries expire after `tools.exec.timeoutSeconds` or on `after_tool_call`, whichever comes first.
+Gatekeeper tool `execute(toolCallId, params)` (kit wrapper, kernel execution): fetch the stashed session by `toolCallId` (fail closed if missing); call `session.call(tool, params, ctx)`; the gatekeeper does the queue calls internally; return the result. Any thrown error is converted to a tool error whose text is the gatekeeper's *sanitized* message (the kit strips URLs, tokens, and vendor error bodies). Stash entries expire after `tools.exec.timeoutSeconds` or on `after_tool_call`, whichever comes first.
 
 `onAfterToolCall` — audit record with duration and outcome. `onAgentEnd` — audit + `drainer.kick(agentId)`. `onSessionEnd` — close all sessions for `sessionKey`.
 
@@ -1114,8 +1113,10 @@ projection and install-policy integration are still outstanding.
 **2026-09-08 live integration correction:** the pinned loader requires every tool
 registered by the kernel to appear in the kernel manifest's `contracts.tools`;
 reading catalog metadata alone does not authorize registration. The manifest now
-includes the three approved filesystem names. Additional catalog vendors require
-corresponding contract projection before reload. Manifest config schemas must be
+includes the three approved filesystem names. That kernel-manifest projection was superseded on 2026-09-15: each gatekeeper now
+declares its own exact contracts, kit wrappers carry that plugin ownership, and
+config apply reconciles messaging admission from the catalog. No kernel manifest
+expansion is permitted; see [diagnosis and repair](gatekeeper-tool-ownership.md). Manifest config schemas must be
 self-contained; a relative `$ref` to `config.schema.json` is rejected. No upstream
 modification is needed. A resolved driver session retains the exact queue object
 used at `startSession()` through both dry and real calls; a fresh equivalent queue

@@ -203,6 +203,6 @@ export interface GatekeeperVendor {
   getAccount(operatorId: string): Promise<GatekeeperAccount | null>;
   /** List the resource types supported by this account or vendor. */
   getSupportedResources(): Promise<SupportedResource[]>;
-  /** Tool definitions for every tool this vendor exposes; the kernel registers them. */
+  /** Tool definitions for every tool this vendor exposes; the kit declares kernel-routed wrappers under this vendor's plugin identity. */
   getTools(): Promise<GatekeeperToolDef[]>;
 }

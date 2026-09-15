@@ -30,6 +30,8 @@ export interface GatekeeperRuntime extends GatekeeperRuntimeIdentity {
   getVendor(): GatekeeperVendor;
   revoke(): void;
 }
+import { kernelToolRuntimeSlot, validateGatekeeperManifest } from "./tool-contracts.js";
+
 const forbidden = /approv|oauth|cache|queue|simulat/i;
 
 /** Access transport only: the kernel still validates enablement/catalog identity and uses resolveGrant(). */
@@ -38,7 +40,7 @@ export function gatekeeperRuntimeSlot(pluginId: string) {
   return createPluginRuntimeStore<GatekeeperRuntime>({ pluginId, errorMessage: "Gatekeeper unavailable." });
 }
 
-/** Validate before loading a vendor; never registers tools or starts services in discovery modes. */
+/** Validate driver/manifest metadata; discovery declares inert kernel-routed tools, never starts services. */
 export function defineGatekeeper(def: GatekeeperDefinition) {
   if (!/^[a-z][a-z0-9_]*$/.test(def.vendor) || def.id !== `gkos-gatekeeper-${def.vendor}` || def.apiVersion !== 1) throw new Error("Invalid gatekeeper identity.");
   const resources = new Map<string, SupportedResource>();
@@ -64,10 +66,28 @@ export function defineGatekeeper(def: GatekeeperDefinition) {
   for (const name of Object.keys(def.actions ?? {})) if (!def.tools.some(tool => tool.name === name && tool.kind === "action")) throw new Error("Undeclared action implementation.");
   // Capture identity/factory now; callers cannot redirect the slot by mutating the declaration after validation.
   const { id, vendor, apiVersion, name, description, createVendor } = def;
+  const declarations = structuredClone(def.tools);
   return definePluginEntry({ id, name, description, register(api: OpenClawPluginApi) {
     if (api.id !== id) throw new Error("Plugin identity mismatch.");
-    if (api.registrationMode !== "full") return;
+    if (!["full", "discovery", "tool-discovery"].includes(api.registrationMode)) return;
+    if (!api.rootDir) throw new Error("Plugin root unavailable.");
+    const declaredRoot = realpathSync(api.rootDir);
+    validateGatekeeperManifest(declaredRoot, id, declarations.map(tool => tool.name));
     const slot = gatekeeperRuntimeSlot(id);
+    // The kit declares wrappers under the owning plugin API. Vendor code never gets this API;
+    // the kernel alone executes calls, consuming its preflight stash and rechecking the grant.
+    for (const tool of declarations) api.registerTool({
+      name: tool.name, label: tool.name, description: tool.description, parameters: tool.parameters,
+      execute: async (callId, params) => {
+        try {
+          const live = slot.getRuntime();
+          live.getVendor(); // Revoked/stopped/replaced drivers cannot retain execution authority.
+          return await kernelToolRuntimeSlot().getRuntime().executeGatekeeperTool(
+            { pluginId: id, vendor, apiVersion, root: declaredRoot, stateDir: live.stateDir }, callId, tool.name, params as Record<string, unknown>);
+        } catch { return { content: [{ type: "text" as const, text: "Operation denied." }], details: { status: "error" } }; }
+      },
+    });
+    if (api.registrationMode !== "full") return;
     let owned: GatekeeperRuntime | undefined;
     api.registerService({ id: `${id}-driver`, start(ctx) {
       if (!api.rootDir) throw new Error("Plugin root unavailable.");

@@ -3,7 +3,11 @@
   "name": "Filesystem Gatekeeper",
   "description": "Mediates agent access to specific host directories.",
   "contracts": {
-    "tools": []
+    "tools": [
+      "gk_fs_dir_list",
+      "gk_fs_file_read",
+      "gk_fs_file_write"
+    ]
   },
   "activation": {
     "onStartup": true

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, symlinkSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve, join } from 'node:path';
-import { applyBlueprint, assertPlainPath, blueprintEntry, loadBlueprint, validateBlueprint } from './blueprint.js';
+import { applyBlueprint, blueprintDrift, assertPlainPath, blueprintEntry, loadBlueprint, validateBlueprint } from './blueprint.js';
 import { resolveCell, type Cell } from '../util/cell.js';
 import { openclaw, readOwnedConfig, configRevision } from '../util/openclaw.js';
 vi.mock('../util/openclaw.js', async importOriginal => ({...await importOriginal<typeof import('../util/openclaw.js')>(),openclaw:vi.fn(),readOwnedConfig:vi.fn(),configRevision:vi.fn()}));
@@ -40,4 +40,15 @@ describe('blueprint safety and provisioning',()=>{
   it('retains interrupted operation evidence and refuses blind retries',async()=>{await expect(applyBlueprint(cell,join(templates,'coder'),'dev',catalog,async()=>{throw new Error('simulated crash');})).rejects.toThrow('simulated crash');expect(existsSync(join(cell.osDir,'blueprints/dev/pending.json'))).toBe(true);expect(existsSync(join(cell.osDir,'blueprints/dev/snapshot.json'))).toBe(false);await expect(applyBlueprint(cell,join(templates,'coder'),'dev',catalog,applyConfig)).rejects.toThrow(/incomplete provisioning/);});
   it('refuses concurrent config revision changes before any mutation',async()=>{vi.mocked(configRevision).mockReturnValueOnce('a'.repeat(64)).mockReturnValue('b'.repeat(64));await expect(applyBlueprint(cell,join(templates,'coder'),'dev',catalog,applyConfig)).rejects.toThrow(/config changed/);expect(openclaw).not.toHaveBeenCalled();});
   it('refuses main and traversal agent ids',async()=>{for(const id of ['main','../other','constructor']){await expect(applyBlueprint(cell,join(templates,'coder'),id,catalog,applyConfig)).rejects.toThrow(/agent id/);}});
+});
+
+it('treats only catalog messaging ids as derived; native policy drift still blocks',()=>{
+ const entry=blueprintEntry(load('assistant').blueprint,'/fixture');
+ const snapshot={version:1 as const,blueprint:'assistant',fingerprint:'test',workspace:'/fixture',files:{},entry};
+ const live=structuredClone(entry) as any;live.tools.alsoAllow.push('gkos-gatekeeper-fixture');
+ expect(blueprintDrift(snapshot,live)).toEqual([]);
+ live.tools.deny=[];expect(blueprintDrift(snapshot,live)).toContain('config/tools');
+ const explicit=structuredClone(entry) as any;explicit.tools.allow=['os_list_grants'];
+ const changed=structuredClone(explicit);changed.tools.alsoAllow.push('gkos-gatekeeper-fixture');
+ expect(blueprintDrift({...snapshot,entry:explicit},changed)).toContain('config/tools');
 });

@@ -1,10 +1,22 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { assertPluginList, packedRegistry } from './packed-load.mjs';
+import { pluginId, resources, tools, toolName } from './packed-fixture/metadata.mjs';
+
+test('packed third-party gatekeeper has its own exact contract and cannot hide in the kernel surface', () => {
+  const fixture = JSON.parse(readFileSync(new URL('./packed-fixture/openclaw.plugin.json', import.meta.url), 'utf8'));
+  const kernel = JSON.parse(readFileSync(new URL('../packages/gkos-kernel/openclaw.plugin.json', import.meta.url), 'utf8'));
+  assert.equal(fixture.id, pluginId);
+  assert.deepEqual(fixture.contracts.tools, tools.map(tool => tool.name));
+  assert.equal(tools[0].name, toolName);
+  assert.equal(kernel.contracts.tools.includes(toolName), false);
+  assert.deepEqual(resources.flatMap(resource => resource.tools), [toolName]);
+  assert.match(toolName, /^gk_[a-z]+_[a-z]+_[a-z]+$/);
+});
 
 test('packed plugin gate fails closed for missing, disabled, duplicate and diagnostic reports', () => {
   const clean = { plugins: [{ id: 'driver', enabled: true, status: 'loaded' }], diagnostics: [], registry: { diagnostics: [] } };
