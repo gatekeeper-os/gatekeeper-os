@@ -2973,3 +2973,16 @@ No npm-only VM run occurred. Beta.4 invocation 1 remains FAIL_FIXTURE and invoca
 2 remains PRODUCT HARD STOP; no third beta.4 invocation is implied. Beta.5 requires
 consistent publication, separate invocation authorization and genuine npm-only
 acceptance before PR #24 or community Tier 1 PR #9 can merge.
+
+Final preparation receipt: release PR #26 passed hosted build-test
+[35020228678](https://github.com/gatekeeper-os/gatekeeper-os/actions/runs/35020228678)
+and merged as `24e33815dabd1c761861291e4152a6212c26d131`. The clean canonical
+`main` tree equals the fully gated candidate `0b82fd77a3f2c8134bbab70d394e29e7cba7c042`;
+release helper dry-run reports zero outstanding version/notes writes. Local annotated
+`v0.1.0-beta.5` targets that merge commit; tag object
+`f41367e246b8e44e3ad58d5192e4adf91300d7f2`. Gates were run explicitly before creating
+the local annotation, not rerun through the helper's tag mode. No tag was pushed.
+This harness is finally rebased onto that merged main (tree-identical to its tested
+candidate rebase before this prose addition). Guest cleanup exit 0: VM shut off,
+original 8 MiB limits restored, original base/installed snapshots unchanged.
+Publication commands are in `plans/BETA5-PRIVATE-HANDOFF.md`; stop after this handoff.
