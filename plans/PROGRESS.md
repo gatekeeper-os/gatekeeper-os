@@ -2645,3 +2645,49 @@ against" section is byte-identical. Host: 616 tests / 39 files, typecheck, lint,
 catalog/secrets and 12 script tests pass. A host packed attempt timed out during
 plugin npm install before any model turn (not a passing gate); the guest packed
 run above completed. Neither failure nor environmental difference is waived.
+
+## 2026-09-15 — beta.5 preparation after ordered green merges
+
+Community [PR #12](https://github.com/gatekeeper-os/gatekeepers/pull/12) merged first:
+`f73b57a23163cd412c6753530298af17e8fcd212`, after green build-test run
+`34942891684`. Exact template manifest/defineGatekeeper metadata parity and the
+byte-identical core/community authoring skill are verified. Historical template
+package pins remain explicitly separate from live beta.5 runtime acceptance.
+
+Core [PR #25](https://github.com/gatekeeper-os/gatekeeper-os/pull/25) merged second:
+`109f94c5daca3293a41245f18b92a1a1348a4989`, after green build-test run
+[35018907345](https://github.com/gatekeeper-os/gatekeeper-os/actions/runs/35018907345)
+on `5103c598aee4fb99d3f3865f4bd2b2e6e023d5d1`. The original failing Node 22.22.3
+environment now passes the unchanged approval assertions plus the new backstop.
+Independent guest runs also pass on Node 22.22.3 and Node 24.20.0: five model turns,
+ten deterministic provider requests, three loaded plugins, registrant-independent
+policy denial, apply/reject effects/audit, revoked tools hidden and native denials.
+The exact-Node-22 store regression passes as well. No authorization test weakened.
+
+Beta.5 preparation changes five publishable package versions, all exact internal
+pins (including private consumers), two plugin version fields, and the release
+lock; upstream remains 2026.9.2 and kernel schema remains 1. Release notes explicitly
+state the beta.1–beta.4 tool-ownership limitation and the Node 22 defect. A read-only
+listing verifier supports the required manual publish → wait → verify all five →
+latest tags → verify latest → sequential beta.4 deprecation ordering. Its live
+positive control verified all five currently published beta.4 listings, exact docs,
+tag endpoints, archive identities/SHA512 and internal pins. Beta.5 release gates
+and final clean-main local tag are recorded below when complete.
+
+Beta.5 candidate release gates **PASS**: lint/catalog/secrets, build and all package
+typechecks, 616 tests / 39 files, release-helper test, 12 script regressions,
+ten packed-license checks, and five disabled-manifest inspections on the pin.
+Exact Node 22.22.3 guest packed gate passes with `kernelVersion:0.1.0-beta.5`, three
+loaded plugins, five model turns / ten provider requests, independent gatekeeper
+backstop and approval apply/reject/revoke assertions. Deterministic model: no paid
+provider calls. Ordered pack and publish **dry-run** select exactly five beta.5
+packages; each retained archive has verified identity, SHA512 and exact internal
+pins. The listing verifier's positive beta.4 control passes, and unpublished
+beta.5 correctly fails closed (404); no claim of beta.5 registry availability.
+
+Receipts: `beta5-preparation-20260915/{beta5-guest-packed.log,beta5-artifacts.json,
+beta5-tests.log,beta5-typecheck.log,beta5-lint.log,beta5-publish-dry-run.log}` outside
+the checkout. Hosted candidate build-test and clean-main local tagging remain
+required. This preparation does not rerun npm-only acceptance or erase any failed
+beta.4 receipt; no publication/deprecation/tag push/visibility/publisher setup/
+release-workflow rerun/phase-tag/upstream post has occurred.
