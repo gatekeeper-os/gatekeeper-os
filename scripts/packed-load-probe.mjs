@@ -9,7 +9,7 @@ import { resourceUrl, toolName } from './packed-fixture/metadata.mjs';
 const require = createRequire(process.argv[2]);
 const { GatewayClient } = await import(pathToFileURL(require.resolve('openclaw/plugin-sdk/gateway-runtime')).href);
 const clients = [];
-const result = { modelTurns: 0, providerRequests: 0, noGrantTools: false, grantedTools: false, fixtureApprovalApply: false, fixtureApprovalReject: false, revokedTools: false, nativeDenied: true, turns: [] };
+const result = { modelTurns: 0, providerRequests: 0, noGrantTools: false, grantedTools: false, fixtureApprovalApply: false, fixtureApprovalReject: false, revokedTools: false, nativeDenied: true, registrantIndependentBackstop: false, turns: [] };
 result.toolsPolicy = JSON.parse(readFileSync(process.env.OPENCLAW_CONFIG_PATH, 'utf8')).tools;
 let current, stage = 'model-listen';
 const model = createServer(async (req, res) => {
@@ -77,6 +77,12 @@ try {
   assert(status.gatekeepers.some(item => item.vendor === 'fixture' && item.healthy), 'fixture-not-ready');
   stage = 'initial-grants';
   assert((await paired.client.request('os.grants.list', { agentId: 'main' })).length === 0, 'initial-grant-present');
+  stage = 'registrant-independent-backstop';
+  const beforePolicy = (await paired.client.request('os.audit.query', {limit:1000})).filter(item => item.title === 'Capability policy denied call').length;
+  const backstop = await paired.client.request('packed.backstop', {});
+  const afterPolicy = (await paired.client.request('os.audit.query', {limit:1000})).filter(item => item.title === 'Capability policy denied call').length;
+  result.registrantIndependentBackstop = backstop.registeredBy === 'gkos-gatekeeper-fixture' && backstop.normalDenied && backstop.bypassDenied && backstop.controlExecutions === 1 && backstop.unsafeExecutions === 0 && afterPolicy - beforePolicy === 2;
+  assert(result.registrantIndependentBackstop, 'registrant-independent-backstop');
   const empty = await turn(paired.client, 'no-grant');
   result.noGrantTools = empty.names.every(names => ['os_list_grants', 'os_request_access'].every(name => names.includes(name)) && !names.some(name => name.startsWith('gk_')));
   assert(result.noGrantTools, 'no-grant-os-tools');

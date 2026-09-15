@@ -118,6 +118,20 @@ Hardened baseline (upstream security page): `gateway.bind: loopback`, `auth.mode
 
 Manifest `openclaw.plugin.json`: `id`, `name`, `description`, `contracts.{tools[],agentToolResultMiddleware,trustedToolPolicies,gatewayMethodDispatch,workerProviders,…}`, `activation.onStartup`, `configSchema`, `toolMetadata.<tool>.optional`, `cliCommands`. Unknown top-level `gkos` metadata is **VERIFIED** to permit the S-1 probe load/RPC on 2026.9.2. This does not imply it is preserved in snapshot reports. `configSchema` remains mandatory, including disabled placeholder plugins (pinned `docs/plugins/manifest.md`). `openclaw.compat.pluginApi` is enforced at install time for non-bundled sources; `peerDependencies.openclaw` is npm metadata only.
 
+**VERIFIED ownership contract (2026.9.2, commit `3928bad9badfcb6c7d140530435e806fb8092190`).**
+`registerTool` is bound to the calling plugin record by
+[`registry-api.ts:183`](https://github.com/openclaw/openclaw/blob/3928bad9badfcb6c7d140530435e806fb8092190/src/plugins/registry-api.ts#L183).
+Every tool must belong to that record's exact `contracts.tools` set; undeclared
+names are rejected before registration, and accepted tools retain `pluginId: record.id`
+([`registry-registrars-tools-hooks.ts:212`](https://github.com/openclaw/openclaw/blob/3928bad9badfcb6c7d140530435e806fb8092190/src/plugins/registry-registrars-tools-hooks.ts#L212)).
+A kernel manifest cannot declare tools on behalf of a different plugin (nor can a
+gatekeeper manifest authorize registration under the kernel). Factory-produced tools
+are rechecked against their owner's contract
+([`tools.ts:1378`](https://github.com/openclaw/openclaw/blob/3928bad9badfcb6c7d140530435e806fb8092190/src/plugins/tools.ts#L1378)).
+Plugin-ID policy expansion groups accepted tools by this ownership; it does not
+expand manifest arrays directly. GatekeeperOS therefore uses kit-owned wrappers
+registered under each gatekeeper identity, not registrations on its behalf by the kernel.
+
 `package.json`: `type: module`, `peerDependencies.openclaw`, `openclaw.extensions[]`, `openclaw.compat.{pluginApi,minGatewayVersion}`, `openclaw.build.{openclawVersion,pluginSdkVersion}`.
 
 Entry definers: `defineToolPlugin`, `definePluginEntry({id,name,description,register(api),configSchema?,reload?})`, `defineChannelPluginEntry`, `defineSetupPluginEntry`. Registration modes: `full`, `discovery`, `tool-discovery`, `setup-only`, `setup-runtime`, `cli-metadata` — runtime unavailable in `setup-only`/`cli-metadata` (check `api.registrationMode`). SDK subpaths: `openclaw/plugin-sdk/plugin-entry`, `/core`, `/channel-core`, `/runtime-store`, `/gateway-method-runtime`. All plugin APIs are declared experimental.
@@ -646,3 +660,23 @@ checks still gate every execution. `gkos config apply` adds/removes enabled cata
 plugin IDs in messaging policies (including messaging agents). Native denials,
 explicit runtime allowlists, and sandbox settings remain unchanged. Blueprint
 application does not install gatekeepers or create grants.
+
+### Registrant-independent trusted-policy backstop (2026-09-15)
+
+VERIFIED on unmodified pinned 2026.9.2 by the packed gate: a kit-registered
+`gk_fixture_record_write` owned by `gkos-gatekeeper-fixture`, absent from the kernel
+manifest, is denied without a grant by `gkos-kernel`'s `gkos-capability-policy`.
+The test-only fixture also substitutes an unsafe execution canary for the kit
+wrapper's delegation. It executes directly as a positive control, but cannot
+execute through the upstream host boundary. Two distinct kernel policy audit
+denials prove neither wrapper self-denial nor mere tool hiding caused the result.
+
+The pinned policy runner iterates registered policies and matches tool names, not
+tool-owner identity:
+[`src/plugins/trusted-tool-policy.ts`](https://github.com/openclaw/openclaw/blob/3928bad9badfcb6c7d140530435e806fb8092190/src/plugins/trusted-tool-policy.ts).
+The packed test uses public SDK exports `getPluginRuntimeGatewayRequestScope`
+(`/plugin-runtime`) for read-only actual registry ownership, and
+`wrapToolWithBeforeToolCallHook` / `getBeforeToolCallPolicyDiagnosticState`
+(`/agent-harness-runtime`) for the real host boundary. No upstream registry or
+policy is monkey-patched. This tests supported-pipeline enforcement, not isolation
+from arbitrary in-process code, which the unsafe direct positive control illustrates.

@@ -167,8 +167,8 @@ export async function checkPackedLoad(packages, temporary, repo) {
       const status = JSON.parse(await run(process.execPath, [join(repo, 'scripts/packed-load-probe.mjs'), join(repo, 'packages/gkos-kernel/package.json'), `ws://127.0.0.1:${port}`, String(modelPort), fixtureRoot], options, 'Packed live kernel/model gate'));
       if (status.healthy !== true || status.kernelVersion !== published.find(item => item.pluginId === 'gkos-kernel')?.version) throw new Error('Packed live kernel status mismatch');
 
-      if (status.modelTurns !== 5 || status.noGrantTools !== true || status.grantedTools !== true || status.nativeDenied !== true || status.fixtureApprovalApply !== true || status.fixtureApprovalReject !== true || status.revokedTools !== true) throw new Error('Packed model gate incomplete');
-      console.log(`Packed load: ${plugins.length} packed plugins + independent gatekeeper, authenticated live kernel; ${ordinary.length} installed library/CLI smoke checks; ${status.modelTurns} model turns, no-grant os_* / granted gk_fs_* / independent fixture apply + reject + revoke / native denials PASS`);
+      if (status.registrantIndependentBackstop !== true || status.modelTurns !== 5 || status.noGrantTools !== true || status.grantedTools !== true || status.nativeDenied !== true || status.fixtureApprovalApply !== true || status.fixtureApprovalReject !== true || status.revokedTools !== true) throw new Error('Packed model gate incomplete');
+      console.log(`Packed load: ${plugins.length} packed plugins + independent gatekeeper, authenticated live kernel; ${ordinary.length} installed library/CLI smoke checks; ${status.modelTurns} model turns, no-grant os_* / granted gk_fs_* / registrant-independent backstop / independent fixture apply + reject + revoke / native denials PASS`);
     } finally {
       // Preserve only structural probe evidence in CI output before temporary state cleanup.
       try {

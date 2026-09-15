@@ -2625,3 +2625,23 @@ with the same vendor and action ID, UTF-8, every instance/action read path, reop
 duplicate submissions, and distinct persistent lockdown. Full CI/packed rerun pending.
 Evidence: `../beta5-preparation-20260915/` outside this checkout (failed CI log,
 `store-red.log`, `store-green.log`). No test removed or weakened.
+
+Registrant-independent backstop **PASS** on pinned upstream 2026.9.2 in the isolated
+guest packed gate: actual registry owner `gkos-gatekeeper-fixture`; kernel-owned
+trusted policy present; both the real kit tool and a copy with an unsafe execute
+callback are blocked without a grant. The direct unsafe positive control executes
+once, the host-wrapped unsafe callback zero times. Exactly two kernel
+`Capability policy denied call` audit records distinguish trusted-policy denial
+from the later kernel hook or kit delegation. No upstream patch/mutation/import
+outside public SDK subpaths. This remains a supported-pipeline test, not malicious
+plugin isolation. The packed gate also passes all five model turns / ten provider
+requests, apply/reject effects and audit, revocation, three loaded plugins and
+native denials. `guest-packed-review.log` uses Node 24.20.0; hosted Node 22 CI remains
+required, and a Node 22 guest rerun will exercise the original failing environment.
+
+REVIEW item 2, threat-model ownership/catalog admission, and pinned upstream
+contracts.tools ownership text updated. The entire "What it does not defend
+against" section is byte-identical. Host: 616 tests / 39 files, typecheck, lint,
+catalog/secrets and 12 script tests pass. A host packed attempt timed out during
+plugin npm install before any model turn (not a passing gate); the guest packed
+run above completed. Neither failure nor environmental difference is waived.
