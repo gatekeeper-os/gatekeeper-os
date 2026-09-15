@@ -2950,3 +2950,26 @@ publisher setup, release-workflow rerun, phase tag or upstream post.
 Evidence: `vm-artifacts/20260914-130203-phase-3/` (checks, hashes, run, cleanup)
 and project-kit `beta4-acceptance-20260914/` (both-run acceptance-summary.json,
 registry receipts, invocation2-diagnostic.log, effective config and cleanup).
+
+## 2026-09-15 — npm-only harness retargeted to beta.5 (not invoked)
+
+Saved the pre-rebase branch at `752f57fa086dead5f28dca555853ebbcaaf35060` in
+`beta5-preparation-20260915/npm-only-before-beta5.bundle`. Rebased through the
+beta.5 release candidate after PR #25; preserved both PROGRESS histories, including
+every original failed-run line. Product sources remain identical to beta.5 main;
+only harness/tests/documentation differ.
+
+Installer and registry receipts now require all five exact `0.1.0-beta.5` artifacts.
+The independent approval fixture declares its own exact `contracts.tools`, and
+uses the installed CLI's exported `mergeFragments()` to derive its catalog
+messaging admission. A strict guard allows only that plugin ID; native denials,
+exec mode, profile, retained plugin IDs and unrelated policy cannot change.
+This fixture uses product policy-preview code, not an assertion that config apply
+ran in that step. It never supplies a replacement product implementation.
+
+Host-only verification: 13 selector/catalog/manifest tests, six original-snapshot
+preflight tests, lint/catalog/secrets and full suite **629 tests / 41 files PASS**.
+No npm-only VM run occurred. Beta.4 invocation 1 remains FAIL_FIXTURE and invocation
+2 remains PRODUCT HARD STOP; no third beta.4 invocation is implied. Beta.5 requires
+consistent publication, separate invocation authorization and genuine npm-only
+acceptance before PR #24 or community Tier 1 PR #9 can merge.

@@ -22,9 +22,9 @@ trap cleanup EXIT
 printf '%s\n' '{"mode":"npm-only","snapshot":"installed","repoClone":false,"productSourceBuild":false,"policy":"messaging","fullPhaseAcceptance":false,"realFilesystemWritesEnabled":false}' > "$evidence/scope.json"
 [ ! -e /home/tester/npm-acceptance-prefix ] || { echo "FAIL registry-prefix-not-empty"; exit 1; }
 npm install --global --prefix /home/tester/npm-acceptance-prefix --ignore-scripts --registry=https://registry.npmjs.org \
-  @gatekeeper-os/shared@0.1.0-beta.4 @gatekeeper-os/gatekeeper-kit@0.1.0-beta.4 \
-  @gatekeeper-os/kernel@0.1.0-beta.4 @gatekeeper-os/gatekeeper-fs@0.1.0-beta.4 \
-  @gatekeeper-os/cli@0.1.0-beta.4 > /home/tester/npm-only-install.log 2>&1
+  @gatekeeper-os/shared@0.1.0-beta.5 @gatekeeper-os/gatekeeper-kit@0.1.0-beta.5 \
+  @gatekeeper-os/kernel@0.1.0-beta.5 @gatekeeper-os/gatekeeper-fs@0.1.0-beta.5 \
+  @gatekeeper-os/cli@0.1.0-beta.5 > /home/tester/npm-only-install.log 2>&1
 node registry.mjs
 gkos --version > "$evidence/cli-version"
 openclaw --version > "$evidence/upstream-version"

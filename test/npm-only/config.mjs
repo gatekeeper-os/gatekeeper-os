@@ -3,6 +3,7 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
 import {selectCell,configGet} from './selector.mjs';
+import {checkedCatalogTools} from './catalog-policy.mjs';
 const cell=selectCell(),state=cell.stateDir,file=cell.file;
 if(process.env.GKOS_KERNEL_VM!=='1'||process.cwd()!=='/home/tester/npm-acceptance'||process.env.OPENCLAW_STATE_DIR!==state||process.env.OPENCLAW_CONFIG_PATH!==file)throw new Error('VM required');
 const cfg=JSON.parse(readFileSync(file,'utf8')),mode=process.argv[2]??'normal';
@@ -12,7 +13,7 @@ if(!livePlugins.entries?.['gkos-kernel']?.enabled||!livePlugins.entries?.['gkos-
 if(cfg.gateway.auth.token?.source!=='env'||cfg.gateway.auth.token.id!=='GKOS_GATEWAY_TOKEN'||!process.env.GKOS_GATEWAY_TOKEN)throw new Error('canonical cell token required');
 if(!liveSecurity.installPolicy?.enabled||!liveSecurity.installPolicy.exec.command||!existsSync(cell.catalog))throw new Error('installed policy and catalog required');
 const protect=()=>JSON.stringify({tools:cfg.tools,token:cfg.gateway.auth,installPolicy:cfg.security.installPolicy,install:entry.config.install,defaultsSandbox:cfg.agents.defaults.sandbox});
-const protectedBefore=protect();
+let protectedBefore=protect();
 function addPlugin(id,folder){
  cfg.plugins.allow=[...new Set([...cfg.plugins.allow,id])];
  cfg.plugins.load.paths=[...new Set([...cfg.plugins.load.paths,resolve(folder)])];
@@ -58,10 +59,16 @@ if(mode==='normal'){
  if(catalog.gatekeepers.some(e=>e.vendor==='fixture'))throw new Error('approval fixture collision');
  catalog.gatekeepers.push({pluginId:'gkos-gatekeeper-fixture',vendor:'fixture',apiVersion:1,root:resolve('approval-driver'),tools,resources});
  writeFileSync(catalogFile,JSON.stringify(catalog,null,2)+'\n',{mode:0o600});
+ // Use the actual installed CLI's catalog derivation, not a fixture-authored allowance.
+ // This previews product reconciliation; it is not a claim that config apply ran here.
+ const {mergeFragments}=await import('/home/tester/npm-acceptance-prefix/lib/node_modules/@gatekeeper-os/cli/dist/index.js');
+ const derived=mergeFragments(join(state,'os/config.d')).tools;
+ cfg.tools=checkedCatalogTools(cfg.tools,derived,'gkos-gatekeeper-fixture');
+ const expected=JSON.parse(protectedBefore);expected.tools=cfg.tools;protectedBefore=JSON.stringify(expected);
  writeFileSync(resolve('approval-effects.jsonl'),'',{mode:0o600});
 }else throw new Error('unknown fixture mode');
 if(protect()!==protectedBefore)throw new Error('protected messaging policy changed');
 writeFileSync(file,JSON.stringify(cfg,null,2)+'\n',{mode:0o600});
-const receipt={mode,cell,rawGatewayPortPresent:cfg.gateway.port!==undefined,baselineToolsUnchanged:true,installPolicyUnchanged:true,authUnchanged:true,defaultsSandboxUnchanged:true,toolsHash:createHash('sha256').update(JSON.stringify(cfg.tools)).digest('hex'),productPluginPaths:cfg.plugins.load.paths.filter(p=>!p.startsWith('/home/tester/npm-acceptance/')),catalogSha256:createHash('sha256').update(readFileSync(join(state,'os/gatekeepers.json'))).digest('hex')};
+const receipt={mode,cell,rawGatewayPortPresent:cfg.gateway.port!==undefined,baselineToolsUnchanged:mode!=='approvals',catalogPolicyDerived:mode==='approvals',nativePolicyUnchanged:true,installPolicyUnchanged:true,authUnchanged:true,defaultsSandboxUnchanged:true,toolsHash:createHash('sha256').update(JSON.stringify(cfg.tools)).digest('hex'),productPluginPaths:cfg.plugins.load.paths.filter(p=>!p.startsWith('/home/tester/npm-acceptance/')),catalogSha256:createHash('sha256').update(readFileSync(join(state,'os/gatekeepers.json'))).digest('hex')};
 writeFileSync(join(dirname(process.env.GKOS_SCENARIO_REPORT),'config-'+mode+'-receipt.json'),JSON.stringify(receipt,null,2)+'\n',{mode:0o600});
 console.log('PASS fixture-config-'+mode+'-protected-baseline');

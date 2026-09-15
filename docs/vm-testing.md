@@ -422,8 +422,13 @@ original installed snapshot. Unlike source checkpoints, it stops the snapshot's
 Gateway and removes `/home/tester/src`, then transfers only `test/npm-only` fixtures
 and their runner to `/home/tester/npm-acceptance`. No repository is cloned or synced;
 no product is built or copied from the host. All five `@gatekeeper-os` packages are
-installed at `0.1.0-beta.4` from `https://registry.npmjs.org` into an empty prefix.
+installed at `0.1.0-beta.5` from `https://registry.npmjs.org` into an empty prefix.
 Registry identity, dist-tags, publish times and integrity metadata are retained.
+Beta.5 preparation is not publication or a VM invocation; all five packages must
+be consistently listed and verified before a separately authorized run. The
+independent approvals fixture owns its manifest tools and obtains its sole added
+messaging plugin admission from the installed CLI catalog-policy preview, with a
+strict unchanged-native-policy check. This fixture step is not config-apply CLI evidence.
 
 The installed CLI provisions `kernel-test --port 19100 --policy messaging`.
 Its packaged kernel, filesystem driver, config fragments and install policy are

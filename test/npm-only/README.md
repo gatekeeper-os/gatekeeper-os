@@ -30,18 +30,32 @@ install-policy command/config, product plugin paths, and first-party catalog ent
 Fixture agents use the messaging assistant blueprint's `sandbox.mode: off`; global
 native fs/runtime/automation/browser denial remains unchanged and is checked on
 actual model tool lists. Only the synthetic approvals mode appends a test vendor to
-the existing catalog; it does not replace the real fs vendor.
+the existing catalog; it does not replace the real fs vendor. The approvals mode adds only catalog-derived
+messaging admission for that plugin, with all native denials unchanged.
 
 **Limitations remain:** real filesystem action application is disabled in this beta.
 Its `os.approvals.apply` path must refuse and keep the host file unchanged. Successful
 apply/reject evidence comes only from the explicitly synthetic driver and does not
 establish filesystem writes, real channel transport, or full production readiness.
 
-## beta.4 acceptance target
+## beta.5 acceptance target (prepared, not run)
 
-Beta.4 is published and independently verified; beta.3 acceptance is superseded.
-Rebased onto beta.4 main ef68cd81263059506b550fa3bb8f08e20907084b. Install commands
-and registry receipts require exactly @gatekeeper-os/*@0.1.0-beta.4. Preserve all
-prior failed runs. Up to three invocations, harness/fixture/VM-preflight repairs
-only between completed runs; product behavior failure is an immediate hard stop.
-No product baseline is replaced by the fixture.
+Rebased onto the beta.5 release candidate after core PR #25. Install commands and
+registry receipts require exactly @gatekeeper-os/*@0.1.0-beta.5. Beta.5 must be
+published with all five consistent listings/tags and verified archives before an
+explicitly authorized VM invocation. Preparation did not run acceptance.
+
+The independent approval fixture declares its own exact `contracts.tools`.
+After adding it to the existing catalog, fixture config obtains messaging policy
+from the **installed CLI's** `mergeFragments()` export. A fail-closed comparator
+permits only the derived fixture plugin ID; any changed denial, runtime setting,
+profile, unrelated allowance, or removed retained plugin fails. No hand-authored
+tool allowance and no product code is transferred. This is catalog-policy preview
+coverage; it does not claim the config-apply command ran at this fixture step.
+
+Preserve all prior failed runs. Beta.4 invocation 1 remains a fixture failure;
+invocation 2 remains a product hard stop. Neither is reclassified by this rebase.
+Any future product behavior failure is an immediate hard stop; harness-only repairs
+belong between completed runs. No third beta.4 invocation, beta.5 VM invocation,
+community Tier 1 lock regeneration, or acceptance/harness merge is authorized by
+this preparation.
