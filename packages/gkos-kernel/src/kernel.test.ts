@@ -20,6 +20,7 @@ vi.mock("./registry.js",()=>({instanceId:()=>"fixture-instance",Registry:class{
   resources(){return[{entry:{vendor:"test"},resource:{urlPattern:"https://fixture.invalid/:id"}}];}
   introduce(...args:unknown[]){fixture.introduce(...args);return Promise.resolve({resource:{type:"item",title:"Fixture"},resourceKey:"fixture"});}
   openSession(){return Promise.resolve({session:{call:fixture.call,close:fixture.close},instanceId:"fixture-instance",gatekeeper:{applyAction:fixture.apply,rejectAction:fixture.reject}});}
+  entryForTool(name:string){return name==="gk_test_read"?{pluginId:"gkos-gatekeeper-test",vendor:"test",apiVersion:1,root:process.env.OPENCLAW_STATE_DIR}:undefined;}
   toolNames(){return["gk_test_read"];}
   health(){return [{vendor:"test",healthy:true}];}
 }}));
@@ -91,13 +92,10 @@ describe("kernel channel-policy regression boundaries",()=>{
   });
   it("blocks an owner-only call if a non-owner arrives after preflight",async()=>{
     const{handle}=await grant();
-    const tools:Parameters<OpenClawPluginApi["registerTool"]>[0][]=[];
-    kernel.registerGatekeeperTools({registerTool:tool=>{tools.push(tool);}} as OpenClawPluginApi);
+    const tool=executionTool();
     const event={toolName:"gk_test_read",toolCallId:"call-a",params:{grant:handle}};
     expect(await kernel.onBeforeToolCall(event,{...ctx,toolName:event.toolName})).toEqual({});
     await kernel.onBeforeAgentRun({prompt:"Hello",messages:[],senderId:"observer",senderIsOwner:false},ctx);
-    const tool=tools[0];
-    if(!tool||typeof tool==="function"||Array.isArray(tool))throw new Error("Unexpected tool registration");
     await expect(tool.execute("call-a",event.params)).rejects.toThrow("Operation denied.");
     expect(fixture.call).toHaveBeenCalledTimes(1); // dry-run only: no resource read after audience changed
     expect((await kernel.onBeforePromptBuild({prompt:"Read",messages:[]},ctx)).toolsAllow).not.toContain("gk_test_read");
@@ -111,8 +109,7 @@ describe("kernel channel-policy regression boundaries",()=>{
   it("locks existing authority before a shared prompt and does not clear it on owner return",async()=>{
     const {handle}=await grant();
     const event={toolName:"gk_test_read",toolCallId:"group-race",params:{grant:handle}};
-    const tools:Parameters<OpenClawPluginApi["registerTool"]>[0][]=[];
-    kernel.registerGatekeeperTools({registerTool:tool=>{tools.push(tool);}} as OpenClawPluginApi);
+    const tool=executionTool();
     expect(await kernel.onBeforeToolCall(event,{...ctx,toolName:event.toolName})).toEqual({});
     fixture.authority.mockReturnValue({...ctx,senderId:"owner",senderIsOwner:true,privateAudience:false,text:"Read https://fixture.invalid/item"});
     await kernel.onReplyDispatch({} as HookEvent<"reply_dispatch">,{} as HookCtx<"reply_dispatch">);
@@ -121,7 +118,6 @@ describe("kernel channel-policy regression boundaries",()=>{
     expect(narrowed.appendContext).toBeUndefined();
     expect(kernel.capabilityPolicy().evaluate(event,{...ctx,toolName:event.toolName})).toMatchObject({block:true});
     await expect(kernel.resolveGrant(ctx.agentId,ctx.sessionKey,handle)).rejects.toThrow("audience");
-    const tool=tools[0];if(!tool||typeof tool==="function"||Array.isArray(tool))throw new Error("Unexpected tool");
     await expect(tool.execute(event.toolCallId,event.params)).rejects.toThrow("Operation denied");
     await dispatch();
     expect((await kernel.onBeforePromptBuild({prompt:"Read",messages:[]},ctx)).toolsAllow).not.toContain("gk_test_read");
@@ -225,10 +221,7 @@ it('does not let a read-only paired client pause the cell',async()=>{
 
 it('fuzzes post-preflight parameter rewriting without executing a changed call', async () => {
   const { handle } = await grant();
-  const tools: Parameters<OpenClawPluginApi['registerTool']>[0][] = [];
-  kernel.registerGatekeeperTools({ registerTool: tool => { tools.push(tool); } } as OpenClawPluginApi);
-  const tool = tools[0];
-  if (!tool || typeof tool === 'function' || Array.isArray(tool)) throw new Error('Unexpected tool');
+  const tool = executionTool();
   let seed = 0x9e3779b9;
   const next = () => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return seed >>> 0; };
   for (let index = 0; index < 256; index++) {
@@ -262,4 +255,28 @@ it('does not reopen queued resources when persistent maintenance starts during a
   expect(resolve).toHaveBeenCalledTimes(1);
   expect(fixture.apply).toHaveBeenCalledExactlyOnceWith(1);
   expect((await rpc('os.approvals.list')).output).toMatchObject({ actions: [{ id: 2, status: 'pending' }] });
+});
+
+function executionTool() { return {execute:(id:string,params:Record<string,unknown>)=>kernel.executeGatekeeperTool({pluginId:"gkos-gatekeeper-test",vendor:"test",apiVersion:1,root:process.env.OPENCLAW_STATE_DIR!,stateDir:process.env.OPENCLAW_STATE_DIR!},id,"gk_test_read",params)}; }
+
+it('rejects a different plugin/root/state/tool before consuming a valid preflight',async()=>{
+ const {handle}=await grant();const params={grant:handle};
+ const identity={pluginId:'gkos-gatekeeper-test',vendor:'test',apiVersion:1 as const,root:process.env.OPENCLAW_STATE_DIR!,stateDir:process.env.OPENCLAW_STATE_DIR!};
+ expect(await kernel.onBeforeToolCall({toolName:'gk_test_read',toolCallId:'identity-call',params},{...ctx,toolName:'gk_test_read'})).toEqual({});
+ for(const changed of [{pluginId:'gkos-gatekeeper-other'},{vendor:'other'},{root:tmpdir()},{stateDir:tmpdir()}])
+  await expect(kernel.executeGatekeeperTool({...identity,...changed},'identity-call','gk_test_read',params)).rejects.toThrow('Operation denied');
+ await expect(kernel.executeGatekeeperTool(identity,'identity-call','gk_unknown_read',params)).rejects.toThrow('Operation denied');
+ expect(fixture.call).toHaveBeenCalledTimes(1);
+ await expect(kernel.executeGatekeeperTool(identity,'identity-call','gk_test_read',params)).resolves.toMatchObject({content:[{text:'fixture'}]});
+});
+
+it('records kernel execution failure even when the kit returns a sanitized tool result',async()=>{
+ const {handle}=await grant(),id='failed-result',params={grant:handle};
+ await kernel.onBeforeToolCall({toolName:'gk_test_read',toolCallId:id,params},{...ctx,toolName:'gk_test_read'});
+ fixture.call.mockRejectedValueOnce(new Error('private vendor failure'));
+ await expect(executionTool().execute(id,params)).rejects.toThrow('Operation denied');
+ await kernel.onAfterToolCall({toolName:'gk_test_read',toolCallId:id,params},{...ctx,toolName:'gk_test_read'});
+ const report=await rpc('os.audit.query',{limit:100});
+ expect(report.ok).toBe(true);
+ expect((report.output as Array<{kind:string;ok:boolean}>).some((row)=>row.kind==='tool'&&row.ok===false)).toBe(true);
 });

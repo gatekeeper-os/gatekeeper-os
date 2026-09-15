@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { Store } from "./store.js";
+import { instanceId } from "./registry.js";
 import type { Grant } from "@gatekeeper-os/shared";
 
 describe("Store", () => {
@@ -52,4 +53,30 @@ it('refuses a future OS schema instead of overwriting its version during rollbac
   expect(()=>store.migrate()).toThrow('schema incompatible');store.close();
   const check=new DatabaseSync(path,{readOnly:true});
   expect(check.prepare("SELECT v FROM meta WHERE k='schema'").get()?.v).toBe('2');check.close();
+});
+
+// Real Node SQLite, including the pinned Node 22 runner: mocks with "fixture-instance"
+// cannot reveal TEXT read truncation at the NUL separators used in production.
+it("round-trips persisted instance identities without merging accounts or losing lockdown", () => {
+  const path = join(mkdtempSync(join(tmpdir(), "instance-roundtrip-")), "gkos.sqlite");
+  const grant:Grant = {handle:"grant:cccccccc",agentId:"a",cellId:"c",vendor:"fixture",resourceType:"record",resourceKey:"https://fixture.invalid/résumé",operatorId:"owner-a",scope:"agent",audience:"owner-only",status:"active",createdAt:1,createdBy:"operator"};
+  const keys = [instanceId(grant), instanceId({...grant, operatorId:"owner-b"})];
+  let store = new Store(path); store.migrate();
+  try {
+    for (const [index, key] of keys.entries()) {
+      store.upsertInstance({id:key,vendor:grant.vendor,resourceKey:grant.resourceKey,operatorId:index ? "owner-b" : "owner-a",observerStrategy:"private-only",lockdown:0});
+      const action = store.addAction(key, 1, {title:"Write",description:"",implementsRevert:false});
+      expect(action.gatekeeperInstance).toBe(key);
+      expect(store.getAction(action.id)?.gatekeeperInstance).toBe(key);
+      expect(store.getInstance(key)?.id).toBe(key);
+    }
+    store.lockdownInstance(keys[0]!);
+    store.close(); store = new Store(path); store.migrate();
+    expect(store.listActions().map(action => action.gatekeeperInstance)).toEqual(keys);
+    expect(store.listActions(false).map(action => action.gatekeeperInstance)).toEqual(keys);
+    expect(store.getInstance(keys[0]!)?.lockdown).toBe(1);
+    expect(store.getInstance(keys[1]!)?.lockdown).toBe(0);
+    expect(store.addAction(keys[0]!, 1, {title:"Duplicate",description:"",implementsRevert:false}).id).toBe(store.listActions()[0]!.id);
+    expect(store.listActions()).toHaveLength(2);
+  } finally { store.close(); }
 });

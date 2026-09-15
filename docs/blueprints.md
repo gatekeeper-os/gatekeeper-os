@@ -99,3 +99,12 @@ the kernel still hides ungranted `gk_*` schemas and enforces capability checks.
 Its prompt filter preserves native tool groups within upstream's existing policy
 intersection, so it cannot restore native tools an operator denied. This makes
 sandboxed exec usable without weakening the capability boundary.
+
+### Per-gatekeeper tool ownership
+
+See [pinned registration diagnosis and catalog reconciliation](gatekeeper-tool-ownership.md). Each driver
+manifest declares its exact tools. The kit owns upstream wrappers; kernel grant
+checks still gate every execution. `gkos config apply` adds/removes enabled catalog
+plugin IDs in messaging policies (including messaging agents). Native denials,
+explicit runtime allowlists, and sandbox settings remain unchanged. Blueprint
+application does not install gatekeepers or create grants.

@@ -7,3 +7,5 @@ export { CacheMutationStore } from "./cache-mutation-store.js";
 export { ActionSequencer } from "./action-sequencer.js";
 export { sanitizeError } from "./sanitize.js";
 export { TestApprovalQueue } from "./testing.js";
+
+export { validateGatekeeperManifest, kernelToolRuntimeSlot, type KernelToolRuntime } from "./tool-contracts.js";

@@ -9,6 +9,7 @@ import { resolveCell, resolveCellFromRegistry } from "../util/cell.js";
 import { writeFileIfChanged, writeJson } from "../util/fsx.js";
 import { parseFragment, type Json } from "../util/json5.js";
 import { digest, readLockfile, writeLockfile } from "../util/lockfile.js";
+import { reconcileGatekeeperPolicy } from "../util/gatekeeper-policy.js";
 import { assertRuntimeSandbox } from "../util/policy.js";
 import { canonicalize, diffPaths, mergeAll, type ConfigChange } from "../util/merge.js";
 import { configRevision, transactionalPatch, openclaw, ownedSlice, readOwnedConfig, RESTART_REQUIRING } from "../util/openclaw.js";
@@ -40,7 +41,7 @@ export function mergeFragments(configD: string): Json {
   if (runtime !== -1) assertRuntimeSandbox(fragments[runtime]!);
   const merged = mergeAll(fragments);
   if (runtime !== -1) assertRuntimeSandbox(merged);
-  return merged;
+  return reconcileGatekeeperPolicy(merged, join(configD, "..", "gatekeepers.json"));
 }
 
 /**
@@ -88,6 +89,9 @@ export async function reconcile(
   const skipRestart = opts.skipRestart ?? false;
   const generatedPath = join(cell.osDir, "config.generated.json");
 
+  const catalogPath = join(cell.osDir, "gatekeepers.json"), catalogState = join(cell.osDir, "gatekeepers.applied.sha256");
+  const catalogDigest = digest(existsSync(catalogPath) ? readFileSync(catalogPath, "utf8") : "absent");
+  const catalogChanged = !existsSync(catalogState) || readFileSync(catalogState, "utf8") !== catalogDigest;
   const desired = mergeFragments(join(cell.osDir, "config.d"));
   const generated = `${JSON.stringify(desired, null, 2)}\n`;
   const fingerprint = digest(generated);
@@ -108,7 +112,7 @@ export async function reconcile(
   // Idempotence: the fragments produced the same generated file and the live owned paths still match. A forced
   // run past a detected conflict is never in sync — the whole point is to rewrite the paths that drifted.
   const inSync =
-    changes.length === 0 && lock?.configFingerprint === fingerprint && !adopted && conflicts.length === 0;
+    changes.length === 0 && !catalogChanged && lock?.configFingerprint === fingerprint && !adopted && conflicts.length === 0;
   if (inSync && !dryRunOnly) {
     return { changed: false, changes: [], fingerprint, restarted: false };
   }
@@ -124,10 +128,11 @@ export async function reconcile(
       throw new StepError("config patch --dry-run rejected the generated config; no upstream write performed");
     }
     if (dryRunOnly) {
-      return { changed: changes.length > 0, changes, fingerprint, restarted: false };
+      return { changed: changes.length > 0 || catalogChanged, changes, fingerprint, restarted: false };
     }
 
     // No gap between the caller's revision and upstream's lock/snapshot/atomic publication guard.
+    if (catalogDigest !== digest(existsSync(catalogPath) ? readFileSync(catalogPath, "utf8") : "absent")) throw new StepError("catalog changed before commit; nothing written");
     const persistedRevision = transactionalPatch(cell, candidatePath, revision);
     if (configRevision(cell) !== persistedRevision) throw new StepError("config changed after commit; checkpoint not recorded");
     const afterDigests = digestOwned(ownedSlice(readOwnedConfig(cell)));
@@ -143,7 +148,7 @@ export async function reconcile(
     if (!lintOk) throw new StepError("doctor --lint failed after apply; checkpoint not recorded");
 
     const restartNeeded =
-      !skipRestart && [...changes.map(c => c.path), ...conflicts].some(path => RESTART_REQUIRING.some(k => path === k || path.startsWith(`${k}.`)));
+      !skipRestart && (catalogChanged || [...changes.map(c => c.path), ...conflicts].some(path => RESTART_REQUIRING.some(k => path === k || path.startsWith(`${k}.`))));
     let restarted = false;
     if (restartNeeded) {
       const restart = openclaw(cell, ["gateway", "restart"]);
@@ -152,6 +157,8 @@ export async function reconcile(
     }
 
     if (configRevision(cell) !== persistedRevision) throw new StepError("config changed before checkpoint; checkpoint not recorded");
+    if (catalogDigest !== digest(existsSync(catalogPath) ? readFileSync(catalogPath, "utf8") : "absent")) throw new StepError("catalog changed during apply; checkpoint not recorded");
+    writeFileIfChanged(catalogState, catalogDigest, 0o600);
     writeFileIfChanged(generatedPath, generated, 0o600);
     if (lock) {
       writeLockfile(cell, { ...lock, configFingerprint: fingerprint, ownedDigests: afterDigests });

@@ -1,0 +1,6 @@
+{
+  "name": "gkos-gatekeeper-fixture",
+  "private": true,
+  "type": "module",
+  "openclaw": { "extensions": ["./index.mjs"] }
+}

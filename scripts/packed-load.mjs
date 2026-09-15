@@ -3,11 +3,12 @@ import { execFile, spawn } from 'node:child_process';
 import { createHash, randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
 import { createServer as createTcpServer } from 'node:net';
-import { mkdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { setTimeout as delay } from 'node:timers/promises';
+import { pluginId as fixturePluginId, resources, tools as fixtureTools, toolName } from './packed-fixture/metadata.mjs';
 
 const exec = promisify(execFile);
 function isolatedEnvironment(state, config, npmrc) {
@@ -115,10 +116,7 @@ export async function checkPackedLoad(packages, temporary, repo) {
       }
     }
     const cliRoot = join(smoke, 'node_modules/@gatekeeper-os/cli');
-    const tools = JSON.parse(await run('pnpm', ['exec', 'tsx', join(repo, 'scripts/packed-tool-policy.ts'), cliRoot], { ...options, cwd: repo }, 'Packed messaging policy read'));
-    if (tools.profile !== 'messaging') throw new Error('Packed model gate requires shipped messaging policy');
     const live = JSON.parse(readFileSync(config, 'utf8'));
-    live.tools = tools;
     live.models = { providers: { spike: { baseUrl: `http://127.0.0.1:${modelPort}/v1`, api: 'openai-completions', apiKey: randomBytes(32).toString('hex'),
       models: [{ id: 'spike', name: 'Packed deterministic model', reasoning: false, input: ['text'], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 128000, maxTokens: 1024 }] } } };
     live.agents = { defaults: { workspace, model: { primary: 'spike/spike' } }, entries: { main: { workspace, sandbox: { mode: 'off' } } }, ownership: 'explicit' };
@@ -131,12 +129,31 @@ export async function checkPackedLoad(packages, temporary, repo) {
       if (entry.pluginId !== 'gkos-gatekeeper-fs') throw new Error('Unexpected first-party packed catalog entry');
       entry.root = fsRoot;
     }
+    const kernelManifest = JSON.parse(readFileSync(join(state, 'extensions/gkos-kernel/openclaw.plugin.json'), 'utf8'));
+    if (kernelManifest.contracts?.tools?.includes(toolName)) throw new Error('Packed fixture must not be enumerated by kernel');
+    const fixturePluginRoot = join(smoke, 'fixture-gatekeeper');
+    cpSync(join(repo, 'scripts/packed-fixture'), fixturePluginRoot, { recursive: true });
+    catalog.gatekeepers.push({ pluginId: fixturePluginId, vendor: 'fixture', apiVersion: 1, root: fixturePluginRoot, tools: fixtureTools, resources });
     mkdirSync(join(state, 'os'), { recursive: true });
     writeFileSync(join(state, 'os/gatekeepers.json'), JSON.stringify(catalog), { mode: 0o600 });
+    const tools = JSON.parse(await run('pnpm', ['exec', 'tsx', join(repo, 'scripts/packed-tool-policy.ts'), cliRoot, join(state, 'os/config.d')], { ...options, cwd: repo }, 'Packed messaging policy read'));
+    if (tools.profile !== 'messaging') throw new Error('Packed model gate requires shipped messaging policy');
+    live.tools = tools;
+    live.plugins.load = { ...live.plugins.load, paths: [...live.plugins.load?.paths ?? [], fixturePluginRoot] };
+    live.plugins.allow = [...new Set([...live.plugins.allow ?? [], ...plugins.map(item => item.pluginId), fixturePluginId])];
+    live.plugins.entries[fixturePluginId] = { enabled: true };
     live.plugins.entries['gkos-kernel'].hooks = { allowConversationAccess: true };
     live.plugins.entries['gkos-gatekeeper-fs'].config = { roots: [fixtureRoot] };
     writeFileSync(config, JSON.stringify(live), { mode: 0o600 });
     await cli(['config', 'validate'], 'Packed Gateway config validation');
+    await cli(['plugins', 'registry', '--refresh'], 'Packed plugin registry refresh');
+    const pluginReport = JSON.parse(await cli(['plugins', 'list', '--json'], 'Packed plugins list'));
+    const checkedIds = [...plugins.map(item => item.pluginId), fixturePluginId];
+    // Fixed test-plugin metadata only; no config or model/RPC payloads are emitted.
+    console.log('Packed plugin metadata: ' + JSON.stringify(pluginReport.plugins.filter(plugin => checkedIds.includes(plugin.id))
+      .map(plugin => ({ id: plugin.id, enabled: plugin.enabled, status: plugin.status, diagnostics: plugin.diagnostics }))));
+    console.log('Packed plugin policy: ' + JSON.stringify({ allow: live.plugins.allow, enabled: Object.fromEntries(Object.entries(live.plugins.entries).map(([id, entry]) => [id, entry.enabled])), registryDiagnostics: pluginReport.registry?.diagnostics, diagnostics: pluginReport.diagnostics }));
+    assertPluginList(pluginReport, checkedIds);
     const gateway = spawn(process.execPath, [upstream, 'gateway', 'run'], { ...options, stdio: 'ignore' });
     const stopped = new Promise(done => gateway.once('exit', done));
     try {
@@ -149,9 +166,9 @@ export async function checkPackedLoad(packages, temporary, repo) {
       }
       const status = JSON.parse(await run(process.execPath, [join(repo, 'scripts/packed-load-probe.mjs'), join(repo, 'packages/gkos-kernel/package.json'), `ws://127.0.0.1:${port}`, String(modelPort), fixtureRoot], options, 'Packed live kernel/model gate'));
       if (status.healthy !== true || status.kernelVersion !== published.find(item => item.pluginId === 'gkos-kernel')?.version) throw new Error('Packed live kernel status mismatch');
-      assertPluginList(JSON.parse(await cli(['plugins', 'list', '--json'], 'Packed plugins list')), plugins.map(item => item.pluginId));
-      if (status.modelTurns !== 2 || status.noGrantTools !== true || status.grantedTools !== true || status.nativeDenied !== true) throw new Error('Packed model gate incomplete');
-      console.log(`Packed load: ${plugins.length} enabled plugins, authenticated live kernel; ${ordinary.length} installed library/CLI smoke checks; ${status.modelTurns} model turns, no-grant os_* / granted gk_fs_* / native denials PASS`);
+
+      if (status.registrantIndependentBackstop !== true || status.modelTurns !== 5 || status.noGrantTools !== true || status.grantedTools !== true || status.nativeDenied !== true || status.fixtureApprovalApply !== true || status.fixtureApprovalReject !== true || status.revokedTools !== true) throw new Error('Packed model gate incomplete');
+      console.log(`Packed load: ${plugins.length} packed plugins + independent gatekeeper, authenticated live kernel; ${ordinary.length} installed library/CLI smoke checks; ${status.modelTurns} model turns, no-grant os_* / granted gk_fs_* / registrant-independent backstop / independent fixture apply + reject + revoke / native denials PASS`);
     } finally {
       // Preserve only structural probe evidence in CI output before temporary state cleanup.
       try {

@@ -52,8 +52,7 @@ export default definePluginEntry({
       execute: (toolCallId) => kernel.listGrantsForCall(toolCallId),
     });
 
-    // gatekeeper tools are registered by the kernel on behalf of each gatekeeper (plan §4.3)
-    kernel.registerGatekeeperTools(api);
+    // Gatekeeper kit declares per-plugin wrappers; the full kernel runtime alone executes them.
 
     // Discovery declarations above are inert. Only full registration owns lifecycle and operator surfaces.
     if (api.registrationMode !== "full") return;

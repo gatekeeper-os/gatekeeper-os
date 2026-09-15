@@ -10,3 +10,12 @@ an offline test queue. Kernel authorization and tool registration remain exclusi
 
 Phase 2 acceptance is library-only: `scripts/vm/test.sh phase-2`. No Gateway, external API, or production state is used.
 See the skeleton's ordering/recovery section for single-writer ownership, uncertain-action handling and sync approval binding.
+
+### Per-gatekeeper tool ownership
+
+See [pinned registration diagnosis and catalog reconciliation](../../docs/gatekeeper-tool-ownership.md). Each driver
+manifest declares its exact tools. The kit owns upstream wrappers; kernel grant
+checks still gate every execution. `gkos config apply` adds/removes enabled catalog
+plugin IDs in messaging policies (including messaging agents). Native denials,
+explicit runtime allowlists, and sandbox settings remain unchanged. Blueprint
+application does not install gatekeepers or create grants.

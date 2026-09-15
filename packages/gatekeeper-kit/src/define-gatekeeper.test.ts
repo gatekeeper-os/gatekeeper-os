@@ -19,7 +19,7 @@ describe("defineGatekeeper", () => {
 });
 
 // Unit fixture only: this exercises the real builder/SDK slot without starting an OpenClaw Gateway.
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, vi } from "vitest";
@@ -35,10 +35,12 @@ function fixture(mode: OpenClawPluginApi["registrationMode"] = "full", vendor?: 
   const dir = mkdtempSync(join(tmpdir(), "gkos-runtime-test-")); dirs.push(dir);
   const createVendor = vi.fn((): GatekeeperVendor => vendor ?? { vendor: "x", apiVersion: 1, describe: async () => ({ title: "X", description: "" }), connectAccount: async () => ({ url: "https://example.test" }), getAccount: async () => null, getSupportedResources: async () => base.resources, getTools: async () => [tool] });
   const entry = defineGatekeeper({ ...base, tools: [tool], createVendor });
+  writeFileSync(join(dir,"openclaw.plugin.json"),JSON.stringify({id:base.id,contracts:{tools:[tool.name]}}));
+  const registered: Parameters<OpenClawPluginApi["registerTool"]>[0][] = [];
   const services: OpenClawPluginService[] = [];
   // Only fields actually read by this builder are supplied; no production authorization is mocked as accepted.
-  entry.register?.({ id: "gkos-gatekeeper-x", registrationMode: mode, rootDir: dir, pluginConfig: {}, registerService: service => { services.push(service); } } as OpenClawPluginApi);
-  return { services, createVendor, ctx: { stateDir: dir, config: {}, logger } };
+  entry.register?.({ id: "gkos-gatekeeper-x", registrationMode: mode, rootDir: dir, pluginConfig: {}, registerTool: tool => {registered.push(tool);}, registerService: service => { services.push(service); } } as OpenClawPluginApi);
+  return { services, registered, createVendor, ctx: { stateDir: dir, config: {}, logger } };
 }
 describe("builder validation and lifecycle", () => {
   it.each(["APPROVAL", "OAuth", "cache", "QUEUE", "simulation"])("rejects internal description %s", description => {
@@ -101,4 +103,30 @@ describe("retained nested runtime handles", () => {
     expect(() => session.call(tool.name, {}, { agentId: "agent", sessionKey: "session", queue })).toThrow(/unavailable/);
     expect(call).toHaveBeenCalledTimes(1); expect(() => bound.applyAction(1)).toThrow(/unavailable/);
   });
+});
+
+import { kernelToolRuntimeSlot } from './tool-contracts.js';
+it.each([{}, {id:base.id,contracts:{tools:[]}}, {id:'gkos-gatekeeper-other',contracts:{tools:[tool.name]}}, {id:base.id,contracts:{tools:[tool.name,tool.name]}}, {id:base.id,contracts:{tools:[tool.name,'gk_x_other_get']}}])('rejects installed manifest mismatch before registration: %j', manifest=>{
+  const f=fixture('cli-metadata');writeFileSync(join(f.ctx.stateDir,'openclaw.plugin.json'),JSON.stringify(manifest));
+  const registerTool=vi.fn();const entry=defineGatekeeper({...base,tools:[tool]});
+  const api:Partial<OpenClawPluginApi>={id:base.id,rootDir:f.ctx.stateDir,registrationMode:'tool-discovery',registerTool};
+  expect(()=>entry.register?.(api as OpenClawPluginApi)).toThrow(/contracts.tools/);
+  expect(registerTool).not.toHaveBeenCalled();
+});
+it.each(['discovery','tool-discovery'] as const)('declares owned wrappers but never starts vendor in %s',mode=>{
+  const f=fixture(mode);expect(f.registered).toHaveLength(1);expect(f.services).toHaveLength(0);expect(f.createVendor).not.toHaveBeenCalled();
+});
+it('fails closed before kernel start and after driver stop; delegates only to the kernel',async()=>{
+ const f=fixture();await f.services[0]!.start(f.ctx);
+ const registered=f.registered[0];if(!registered||typeof registered==='function'||Array.isArray(registered))throw new Error('fixture');
+ const kernel=kernelToolRuntimeSlot();kernel.clearRuntime();
+ expect(await registered.execute('call', {grant:'grant:00000000'})).toMatchObject({details:{status:'error'}});
+ const execute=vi.fn().mockResolvedValue({content:[{type:'text',text:'kernel result'}],details:{}});
+ try {
+  kernel.setRuntime({executeGatekeeperTool:execute});
+  await registered.execute('call',{grant:'grant:00000000'});
+  expect(execute).toHaveBeenCalledWith(expect.objectContaining({pluginId:base.id,root:f.ctx.stateDir,stateDir:f.ctx.stateDir}),'call',tool.name,{grant:'grant:00000000'});
+  await f.services[0]!.stop?.(f.ctx);execute.mockClear();
+  expect(await registered.execute('call',{grant:'grant:00000000'})).toMatchObject({details:{status:'error'}});expect(execute).not.toHaveBeenCalled();
+ } finally {kernel.clearRuntime();}
 });

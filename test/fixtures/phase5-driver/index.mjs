@@ -1,4 +1,4 @@
-// VM-only synthetic provider; the fs identity reuses an existing kernel contract, not filesystem acceptance.
+// VM-only synthetic provider; declares its own fs tool contract; not filesystem acceptance.
 import { appendFileSync } from 'node:fs';
 import { defineGatekeeper } from '../../../packages/gatekeeper-kit/dist/index.js';
 const file='/home/tester/phase5-effects.jsonl';

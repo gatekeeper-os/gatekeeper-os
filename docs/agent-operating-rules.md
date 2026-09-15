@@ -8,7 +8,7 @@ These rules bind any agent working on GatekeeperOS. They become the repository's
 
 **INVARIANT 2 — Upstream must remain updatable.** The upstream version is chosen only by `gkos.lock.json`. Every OS plugin declares an `openclaw.compat.pluginApi` range. The update pipeline stages, runs conformance, activates, verifies, and rolls back on failure. All OS state lives under `<stateDir>/os/`. Kernel schema migrations run only after a pin is committed, never during a failed update, so rollback is always schema-neutral.
 
-**Capability invariants.** Every agent reach into a gatekeeper goes through `Kernel.resolveGrant()`. A gatekeeper never calls `api.registerTool` itself — the kernel registers tools on its behalf. A resource becomes ambient only through operator configuration; a gatekeeper never asserts its own ambience. A non-operator can never create a grant. Gate hooks fail closed.
+**Capability invariants.** Every agent reach into a gatekeeper goes through `Kernel.resolveGrant()`. Vendor code never calls `api.registerTool` itself — kit-owned wrappers declare tools under the gatekeeper's own manifest identity and delegate every execution to the kernel. A resource becomes ambient only through operator configuration; a gatekeeper never asserts its own ambience. A non-operator can never create a grant. Gate hooks fail closed.
 
 **Secrecy invariant.** Never log secrets, prompts, headers, tokens, or request/response bodies. Vendor error messages are sanitized before they reach a tool result or a log; only numeric codes are recorded. Tool descriptions never mention approvals, queues, caching, OAuth, or simulation.
 

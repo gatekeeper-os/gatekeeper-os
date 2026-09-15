@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { IncomingMessage, ServerResponse } from "node:http";
 import { Socket } from "node:net";
 import { tmpdir } from "node:os";
@@ -47,8 +47,9 @@ async function begin(operator = "operator-a", resourceTypes?: string[]) {
 beforeEach(() => {
   runtime.clear(); clock = 0;
   const root = mkdtempSync(join(tmpdir(), "gkos-oauth-")), path = join(root, "gatekeepers.json");
+  for(const vendor of ["example","other"]){mkdirSync(join(root,vendor));writeFileSync(join(root,vendor,"openclaw.plugin.json"),JSON.stringify({id:`gkos-gatekeeper-${vendor}`,contracts:{tools:[]}}));}
   writeFileSync(path, JSON.stringify({ version: 1, gatekeepers: ["example", "other"].map(vendor => ({
-    pluginId: `gkos-gatekeeper-${vendor}`, vendor, apiVersion: 1, root, tools: [],
+    pluginId: `gkos-gatekeeper-${vendor}`, vendor, apiVersion: 1, root:join(root,vendor), tools: [],
     resources: [{ type: "item", title: "Item", description: "Fixture item", urlPattern: "https://example.invalid/:id", grantable: true, observerStrategy: "private-only", tools: [] }],
   })) }));
   registry = new Registry(path, root); fixture = vendorFixture(); install(fixture.vendor); install(vendorFixture("other").vendor);

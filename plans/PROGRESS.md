@@ -2539,3 +2539,109 @@ Structural comparison against beta.3 proves only version/pin metadata and releas
 documentation changed; the third-party lock graph is byte-identical after normalizing
 workspace specifier beta.4 back to beta.3. Packed/model gate and hosted manifest
 inspection must still pass before local tagging. VM acceptance remains unrun.
+
+## 2026-09-15 — Per-gatekeeper tool ownership repair (PR only; no release)
+
+User authorized diagnosis-before-edit and a fix against main, not beta.5 or another
+npm-only acceptance invocation. The original beta.4 hard-stop runs remain failed.
+
+Diagnosis was reported before product edits. Pinned upstream `2026.9.2` commit
+`3928bad9badfcb6c7d140530435e806fb8092190` rejects undeclared registrations under the
+registering plugin owner **before** tool-policy filtering: mechanism (b), not direct
+manifest-list expansion (a). Retained guest log at 13:06:33.479 UTC says
+`plugin must declare contracts.tools for: gk_fixture_record_write (plugin=gkos-kernel, ...)`.
+Fixture contracts were absent; fs contracts empty; kernel enumerated fs names.
+Exact source links, log lines, manifest comparison and unavailable-temp-log caveat:
+[diagnosis and repair](../docs/gatekeeper-tool-ownership.md).
+
+Implementation: kit-owned wrappers use each gatekeeper's manifest identity and
+exact declared tool set; every execution delegates to the full kernel runtime with
+catalog/root/cell checks plus existing grant, audience, parameter and one-shot-stash
+checks. Sanitized failures retain failed audit status. CLI config reconciliation
+adds/removes enabled catalog plugin IDs in messaging policies; catalog changes force
+restart. Messaging blueprint reconciliation recognizes only catalog-owned IDs as
+derived. Runtime explicit allowlists, sandbox policy, native denials, kernel manifest,
+OS/RPC surface, package versions and dependency/pin lockfiles are unchanged.
+
+Focused packed-regression receipts (not full npm-only acceptance):
+
+| Evidence log | Model turns / provider requests | Result |
+|---|---:|---|
+| `beta4-red.log` | 3 / 6 | Expected `fixture-tool-not-visible` on real npm beta.4 archives |
+| `fixed-packed1.log` | 5 / 10 | All model/approval checks passed; final plugin-list assertion failed |
+| `fixed-packed2.log` | 5 / 10 | Same retained failure; diagnostic-print edit had not matched its target |
+| `packed-list-diagnosis.log`, `packed-retained.log` | 0 / 0 each | Harness diagnosis: fixture-only plugins.allow; stale persisted registry |
+| `beta4-red-final.log` | 3 / 6 | Same final harness: expected `fixture-tool-not-visible`; three plugins cleanly loaded |
+| `fixed-packed-final.log` | 5 / 10 | **PASS, exit 0**, all stages including clean plugin listing |
+
+Final harness preserves all installed plugin IDs in `plugins.allow`, refreshes the
+upstream plugin registry after its synthetic config change, and reads messaging
+policy through the **installed CLI tarball's** catalog-aware merge. It never adds
+fixture tool allowances itself. Beta.4 fallback uses beta.4's shipped baseline.
+Final fix proves no-grant OS tools, granted filesystem tools, independently owned
+fixture tool absent from kernel manifest, owner-only fixture grants, synthetic
+approval apply/reject with real recorded effects and audit, revoked-tool hiding,
+and unchanged native denials. Deterministic loopback model; no provider API spend.
+
+Host checks: 615 tests / 39 files, build, all package typechecks, eslint, catalog,
+secrets, ten package licenses, release helper unit (1), script tests (12), packed
+unit tests (3) passed. Initial missing-manifest OAuth test fixtures and narrow test
+type errors were repaired; failed logs retained. This does not claim full beta.5
+acceptance, real external provider acceptance, or physical filesystem write support.
+
+Evidence is retained privately at
+`~/projects/Personal/openclaw-os-agent-kit/gatekeeper-policy-fix-20260915/`, including
+`regression-receipt.json`, source/log provenance, both negative controls and every
+failed fixed-artifact run. No visibility/publication/tag/publisher/release-workflow,
+phase-tag, upstream post, PR merge, or community Tier 1 lock regeneration performed.
+Community template/skill companion stays on its historical dependency pins; new
+manifest parity checks do not claim fixed-kit runtime acceptance on those old pins.
+
+Guest cleanup PASS: graceful poweroff, original 8 MiB MEMLOCK limits restored,
+original September 7 base/installed snapshot hashes unchanged. No snapshot reset
+was used for this diagnosis/regression work; original acceptance state was retained.
+
+## 2026-09-15 — PR #25 review follow-up: CI defect
+
+CI run [34942757481](https://github.com/gatekeeper-os/gatekeeper-os/actions/runs/34942757481)
+passed unit/build/manifest checks, then failed the packed gate at `fixture-apply`
+with `UNAUTHORIZED` (3 model turns / 6 provider requests). Tool visibility and
+fixture submission passed; the sanitized RPC error alone did not identify auth.
+
+**Real product defect hidden by the local environment:** CI pins Node 22.22.3;
+the previous guest evidence used Node 24.20.0. Node 22's `node:sqlite` reads a TEXT
+instance key containing NUL separators as only its vendor prefix. The stored bytes
+and parameterized lookups are intact, but the action's decoded instance identity
+fails the kernel's final equality check and approval fails closed. A standalone
+round trip reproduces truncation on 22.22.3 and 22.23.2, not 24.19.0. Existing kernel
+unit fixtures used a mocked, NUL-free `fixture-instance` and missed this defect.
+
+Fix: read the two instance-key fields via `CAST(... AS BLOB)` and decode full UTF-8
+bytes. Persisted schema-1 TEXT keys, uniqueness, comparisons, authority checks,
+lockdown and uncertain-action behavior remain unchanged; no migration or pin bump.
+New real-SQLite regression failed before the fix (`fixture` versus full identity),
+then passed along with 57 store/action/approval/kernel tests. It covers two accounts
+with the same vendor and action ID, UTF-8, every instance/action read path, reopen,
+duplicate submissions, and distinct persistent lockdown. Full CI/packed rerun pending.
+Evidence: `../beta5-preparation-20260915/` outside this checkout (failed CI log,
+`store-red.log`, `store-green.log`). No test removed or weakened.
+
+Registrant-independent backstop **PASS** on pinned upstream 2026.9.2 in the isolated
+guest packed gate: actual registry owner `gkos-gatekeeper-fixture`; kernel-owned
+trusted policy present; both the real kit tool and a copy with an unsafe execute
+callback are blocked without a grant. The direct unsafe positive control executes
+once, the host-wrapped unsafe callback zero times. Exactly two kernel
+`Capability policy denied call` audit records distinguish trusted-policy denial
+from the later kernel hook or kit delegation. No upstream patch/mutation/import
+outside public SDK subpaths. This remains a supported-pipeline test, not malicious
+plugin isolation. The packed gate also passes all five model turns / ten provider
+requests, apply/reject effects and audit, revocation, three loaded plugins and
+native denials. `guest-packed-review.log` uses Node 24.20.0; hosted Node 22 CI remains
+required, and a Node 22 guest rerun will exercise the original failing environment.
+
+REVIEW item 2, threat-model ownership/catalog admission, and pinned upstream
+contracts.tools ownership text updated. The entire "What it does not defend
+against" section is byte-identical. Host: 616 tests / 39 files, typecheck, lint,
+catalog/secrets and 12 script tests pass. A host packed attempt timed out during
+plugin npm install before any model turn (not a passing gate); the guest packed
+run above completed. Neither failure nor environmental difference is waived.

@@ -24,8 +24,16 @@ operator is present, write what needs review into `plans/REVIEW-REQUESTED.md` an
 4. **Implement** `vendor.ts` (describe, connectAccount with `OAuthNonceMachine`, getAccount via `TokenStore`, resources, tools),
    `account.ts` (`getGatekeeperFor(url)` validates access with the operator's own credentials), one `KitGatekeeper` subclass per
    resource type. Pass credentials and resource ids through constructors from the account, never through tool params.
-5. **Register**: id `gkos-gatekeeper-<vendor>` in `openclaw.plugin.json` with `"gkos": { "gatekeeper": { "vendor": "<v>", "apiVersion": 1 } }`; `package.json`
-   with `openclaw.compat` from the catalog; `deploy-inputs.json`; add to `config/gatekeepers.json`.
+5. **Register declaratively** with `defineGatekeeper()`: the root `openclaw.plugin.json` id must match the definition id
+   (`gkos-gatekeeper-<vendor>`), and `contracts.tools` must list exactly the names in `src/tools.ts` (no missing, extra, or
+   duplicate names). Include `"gkos": { "gatekeeper": { "vendor": "<v>", "apiVersion": 1 } }`; `package.json` with
+   `openclaw.compat` from the catalog; and `deploy-inputs.json`. The kit validates the actual root manifest at registration
+   and owns the upstream tool wrappers under this gatekeeper's plugin identity; driver code never calls `api.registerTool`.
+   Every wrapper dispatches through the kernel's grant checks and observation/action pipeline; registration does not grant access.
+   Add the reviewed gatekeeper to `config/gatekeepers.json` and the cell's `os/gatekeepers.json` catalog, then run
+   `gkos config apply` for that cell. Catalog reconciliation admits enabled gatekeeper plugin ids in the messaging profile's
+   `tools.alsoAllow` and removes their managed admission when removed/disabled. Do not hand-add tool names to the kernel's
+   manifest or widen its global surface. Preserve native denials, the runtime profile's explicit `tools.allow`, and sandbox settings.
 6. **STOP 2 — ask the operator whether to proceed to Phase 2.**
 
 ## Phase 2 — responsibilities 4–7 (approvals, caching, simulation, observers)
@@ -40,7 +48,9 @@ operator is present, write what needs review into `plans/REVIEW-REQUESTED.md` an
    binding spans sub-resources with distinct ACLs *and* there is a per-observer oracle. Distinguish "no access" (403/404 →
    false) from transient errors (throw) so failures are loud.
 10. **Conformance**: `pnpm conformance --only deferred-approval,require-approval-roundtrip` plus the kit harness tests; the
-    secret-leak grep must pass.
+    secret-leak grep must pass. Verify the packed model-turn gate with a tool absent from the kernel manifest: it is hidden
+    without a grant, available with the correct owner grant, and rejected without authority. A manifest/declaration check or
+    successful build alone is not model-turn evidence; retain exact denial and effective policy on failure.
 
 ## Gotchas
 - `types`/descriptions leak nothing about internals; the agent must not be able to tell an action was simulated.
