@@ -3066,3 +3066,19 @@ Acceptance merge remains gated on green build-test at the final pushed head.
 Only after that merge may the real beta.5 Tier1 lock and community PR9 land.
 All three repositories remain private; beta.5 remote tag absent; release workflow
 34706409757 remains its original failed attempt1. No forbidden actions performed.
+
+
+## Beta.5 public launch preflight (2026-09-16)
+
+Matt explicitly authorized the ordered public launch and reported trusted publishers
+configured for all five packages against gatekeeper-os/gatekeeper-os/release.yml.
+Preflight found all three repositories already public before any visibility
+mutation in this launch turn; all three ruleset lists were empty. Core main was
+acceptance merge56987a5a1d191185396bfde702f77514859f0c59; clean checkout, local
+v0.1.0-beta.5 commit24e33815dabd1c761861291e4152a6212c26d131 is its ancestor.
+Tracked literal scan found167 lines, all intentional survivors: migration10,
+BETA2 handoff6, BETA3/4/5 handoffs1 each, PROGRESS148. No product/runtime hits.
+Core/org READMEs still described beta.3 preparation. This docs-only correction
+records the beta.5 npm-only run and retains the real-filesystem/connected-provider
+limits. Install command remains npm install --global @gatekeeper-os/cli@beta.
+Public-flip/release actions wait for green docs PRs; no product code changes.

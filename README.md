@@ -14,11 +14,14 @@ than handing the agent unrestricted service credentials.
 agent environments. This is **not a Linux distribution**, an OpenClaw fork, or a
 Cloudflare product. It is an independent project built on those projects' work.
 
-**Status: private beta.3 preparation; beta.2 is published but affected by a messaging-policy defect.**
-Messaging cells in beta.1 and beta.2 did not expose the kernel's `os_*` and `gk_*`
-tools to the agent. Beta.3 admits only `gkos-kernel`; native denials are unchanged.
-Repositories remain private. Beta.3 publication and npm-only fresh-VM end-to-end
-acceptance are pending. See the [release notes](plans/release-notes-beta.3.md).
+**Status: published beta.5; npm-only messaging-cell acceptance passed.**
+All five `@gatekeeper-os` packages are published at `0.1.0-beta.5`.
+A fresh snapshot-based npm-only run passed on Node **22.22.3** and unmodified
+OpenClaw **2026.9.2**, including independently owned gatekeeper tools and
+synthetic approval apply/reject effects and audit. Real filesystem writes remain
+disabled; real connected-provider and chat-transport acceptance is not established.
+See the [beta.5 release notes](plans/release-notes-beta.5.md) and
+[acceptance receipts](plans/PROGRESS.md).
 
 [Architecture](docs/implementation-plan.md) · [Acceptance status](docs/phase-checklist.md) ·
 [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) ·
@@ -49,7 +52,7 @@ alone can enforce security or that arbitrary plugins become safe.
 | Concept | What it does |
 |---|---|
 | **Cell** | A named Gateway environment with its own state, configuration, credentials, and grants. Use separate OS users or hosts when stronger isolation is needed. |
-| **Kernel** | Owns grant resolution, tool exposure, authorization, approval decisions, and audit. Gatekeepers do not register their own agent tools. |
+| **Kernel** | Owns grant resolution, tool exposure, authorization, approval decisions, and audit. Kit-owned wrappers register exact manifest tools under each gatekeeper identity; the kernel authorizes and executes calls. |
 | **Grant** | An opaque handle connecting an authorized agent to a particular resource. A pasted URL from an untrusted sender is not authority. |
 | **Gatekeeper** | A driver for a service or resource, responsible for authentication, bounded operations, and integration with the kernel's action pipeline. |
 | **Pending action** | A proposed external effect. When supported, an overlay lets subsequent reads reflect it before the effect is applied. Rejecting it removes that pending view. |
@@ -91,9 +94,9 @@ be reversed.
 |---|---|
 | Host installation, cells, configuration and backup | Phase 1 source-install acceptance passed on Ubuntu and macOS. This is not a claim that every later driver supports both platforms. |
 | Contracts and gatekeeper kit | Phase 2 accepted: encrypted token storage, nonce replay/expiry controls, pending-action overlays and lifecycle helpers. |
-| Kernel and filesystem driver | Phase 3 source-install evidence, with an explicit Telegram deferral. Kernel-live ran under the **full profile**, not the shipped messaging baseline; grant enforcement, owner-only audience, operator commands, routing and approvals have source-install VM evidence only. |
-| Packed model-turn gate | Tests the CLI tarball’s shipped **messaging baseline** with a deterministic local provider: no-grant `os_list_grants` / `os_request_access`, granted `gk_fs_*`, and unchanged native denials. Real beta.2 tarballs fail; fixed tarballs pass. This is not npm-only VM end-to-end acceptance. |
-| npm-only cell provisioning | Beta.2 registry identities 5/5, cell creation, selector and install policy 14/14 passed. Kernel-live stopped on missing `os_list_grants`; 38 selected conformance checks, owner-only audience and approvals were not reached. Beta.3 end-to-end acceptance pending. |
+| Kernel and filesystem driver | Beta.5 npm-only **messaging baseline**: 114/114 kernel-live checks, including no-grant OS tools, granted filesystem reads, revocation, native denials and simulated-write refusal. Earlier source/full-profile evidence remains historical. |
+| Packed model-turn gate | Published beta.5 release candidate passed on Node22.22.3 with independent gatekeeper tool ownership, trusted-policy backstop, synthetic apply/reject effects and audit. Separate from the npm-only run below. |
+| npm-only end-to-end checkpoint | **PASS**, run `20260916-220009-phase-3`, Node22.22.3 / OpenClaw2026.9.2: registry identities/tags/times/archive SHA512 5/5, actual cell creation and selector, install policy14/14, kernel-live114/114, selected conformance38/38, owner-only audience72/72, independent approval30/30; 25 local model turns /39 requests. No product source checkout/build/patch. |
 | Filesystem writes | Bounded Linux reads and simulated writes are implemented. **Real writes remain disabled** because the approved atomic confinement requirement is not satisfied. |
 | Real messaging transports | Synthetic public-SDK ingress is tested. Real Telegram validation is deferred, not passed. No real Slack acceptance is claimed. |
 | GitHub | Phase 4 reference driver and real-provider acceptance remain in progress. |
@@ -109,9 +112,9 @@ the shipped messaging baseline or a substitute for remaining beta gates.
 See the [phase checklist](docs/phase-checklist.md) for evidence and the
 [Telegram deferral](plans/telegram-validation-deferred.md) for its exact scope.
 
-## Try it from npm — after beta.3 publication
+## Try it from npm
 
-After Matt publishes beta.3, on a disposable evaluation machine with Node 22.22.3+:
+On a disposable evaluation machine with Node 22.22.3+:
 
 ```sh
 npm install --global @gatekeeper-os/cli@beta
@@ -119,15 +122,16 @@ gkos --version
 gkos cell create evaluation --port 19100 --policy messaging
 ```
 
-Beta.2 npm-only registry install, cell creation and install policy were verified,
-but messaging kernel tools were missing. Do not use beta.2 as end-to-end evidence.
-Beta.3 npm-only VM acceptance runs only after publication. The packed model-turn
-gate covers the fixed shipped baseline, not all VM acceptance stages.
-No stable version or ClawHub listing exists yet.
+`@beta` resolves to the published beta.5 line. The snapshot-based npm-only
+messaging-cell run passed all selected stages, including independent-gatekeeper
+approval effects and audit. Those effects use a synthetic provider; they do not
+enable real filesystem writes or prove connected-provider/channel acceptance.
+Earlier failed beta runs remain failed evidence in [PROGRESS](plans/PROGRESS.md).
+No stable release or ClawHub listing exists yet.
 
 ## Getting started as a developer
 
-Repository access is currently required. Use the Node version in
+Use the Node version in
 [`.node-version`](.node-version) and pnpm version in
 [`package.json`](package.json); the current pins are Node 22.22.3 and pnpm 10.15.0.
 The upstream runtime pin is `openclaw@2026.9.2` in
@@ -166,8 +170,7 @@ gkos audit tail --limit 20 --json
 
 The installer provisions the cell; model credentials and channel configuration
 are separate operator setup. Installation does not grant access to arbitrary
-directories or external accounts. The post-publication npm command is shown above; `curl | bash` remains unavailable while the
-source repository is private. See the
+directories or external accounts. The verified npm command is shown above; no `curl | bash` installer is advertised here. See the
 [CLI documentation](packages/gkos-cli/README.md) for command details.
 
 ## Security boundaries
