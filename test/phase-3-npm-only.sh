@@ -8,7 +8,7 @@ unset GKOS_FROM_SOURCE OPENCLAW_PROFILE OPENCLAW_STATE_DIR OPENCLAW_CONFIG_PATH 
 export OPENCLAW_NO_AUTO_UPDATE=1
 evidence=/home/tester/npm-acceptance-evidence
 mkdir -m 700 -p "$evidence"
-stage=registry-install gateway_pid=''
+stage=runtime-preflight gateway_pid=''
 cleanup(){
   rc=$?; trap - EXIT
   if [ -n "$gateway_pid" ]; then kill "$gateway_pid" 2>/dev/null || true; wait "$gateway_pid" 2>/dev/null || true; fi
@@ -20,6 +20,23 @@ cleanup(){
 }
 trap cleanup EXIT
 printf '%s\n' '{"mode":"npm-only","snapshot":"installed","repoClone":false,"productSourceBuild":false,"policy":"messaging","fullPhaseAcceptance":false,"realFilesystemWritesEnabled":false}' > "$evidence/scope.json"
+# Provision the README-pinned engine in a test-only prefix. Never alter the
+# snapshot's Node/upstream installation or reuse a source-built product.
+node --version > "$evidence/guest-node-before"
+[ "$(uname -sm)" = 'Linux x86_64' ]
+runtime=/home/tester/npm-acceptance-runtime
+mkdir -m 700 "$runtime"
+archive=node-v22.22.3-linux-x64.tar.xz
+curl -fsS --retry 2 "https://nodejs.org/dist/v22.22.3/$archive" -o "$runtime/$archive"
+curl -fsS --retry 2 https://nodejs.org/dist/v22.22.3/SHASUMS256.txt -o "$runtime/SHASUMS256.txt"
+(cd "$runtime" && grep -E "^[a-f0-9]{64}  $archive$" SHASUMS256.txt > selected.sha256 && sha256sum -c selected.sha256)
+cp "$runtime/selected.sha256" "$evidence/guest-node-archive-sha256"
+tar -xJf "$runtime/$archive" -C "$runtime"
+export PATH="$runtime/node-v22.22.3-linux-x64/bin:$PATH"
+node --version > "$evidence/guest-node-version"
+test "$(cat "$evidence/guest-node-version")" = v22.22.3
+node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({version:process.version,executable:process.execPath,required:"v22.22.3",source:"https://nodejs.org/dist/v22.22.3/",archiveSHA256Verified:true},null,2)+"\n")' "$evidence/guest-runtime.json"
+stage=registry-install
 [ ! -e /home/tester/npm-acceptance-prefix ] || { echo "FAIL registry-prefix-not-empty"; exit 1; }
 npm install --global --prefix /home/tester/npm-acceptance-prefix --ignore-scripts --registry=https://registry.npmjs.org \
   @gatekeeper-os/shared@0.1.0-beta.5 @gatekeeper-os/gatekeeper-kit@0.1.0-beta.5 \

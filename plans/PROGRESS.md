@@ -2986,3 +2986,24 @@ This harness is finally rebased onto that merged main (tree-identical to its tes
 candidate rebase before this prose addition). Guest cleanup exit 0: VM shut off,
 original 8 MiB limits restored, original base/installed snapshots unchanged.
 Publication commands are in `plans/BETA5-PRIVATE-HANDOFF.md`; stop after this handoff.
+
+## Beta.5 published registry barrier and npm-only authorization (2026-09-16)
+
+Live read-only verification at 2026-09-16T21:58:22.937803+00:00: all five beta.5 identities present in full listings and exact-version documents; both beta/latest tag surfaces point to beta.5. Downloaded archives match SHA512 integrity and contain the exact package identity and internal beta.5 pins.
+
+| Package | Published UTC | Archive integrity |
+| --- | --- | --- |
+| `@gatekeeper-os/shared` | 2026-09-16T21:45:46.361Z | `sha512-w9g/s4BL4vC1SOPqCe+j/IPqEMnwVeGZuiP9ZsfkJd2zaxfYREKQON95CA0cHRhHVuG1w3DOGL0IhcNpFjiSkw==` |
+| `@gatekeeper-os/gatekeeper-kit` | 2026-09-16T21:45:57.542Z | `sha512-vcuA4HA3LDbNgCIlYSqgwEmTfIf8l4plxlhQMgEhAruD8dYDCr8Bb6QT5v3+x6HY8xfwjBciCtVkUBgQF1Gmeg==` |
+| `@gatekeeper-os/kernel` | 2026-09-16T21:46:17.729Z | `sha512-TtbL/wwvmmpfdT9YCAxb6RBWKcdIPsjJE5HJhs9P++qUS2bQP3FC+vAmAce7ZQzLrkHXGxCCueBhnFHPHkN5rw==` |
+| `@gatekeeper-os/gatekeeper-fs` | 2026-09-16T21:46:26.997Z | `sha512-WJdyWhCo/fPuGgkvHozlI6KKej8qc0YPqhzacCy2gdTWexuAiG8k/GSwbvnH9deem5AU+6wIPDCWcMNO/vnU2Q==` |
+| `@gatekeeper-os/cli` | 2026-09-16T21:46:51.071Z | `sha512-LR3ZYzontEB3kcWRiyHbHu1k54I1losKPxmOFQWqzBFi9MHK1BFJU0pZx1aHhLBr1Ce8U3GiFgLmXDFpnZzNog==` |
+
+All five beta.4 exact-version and full-listing deprecation notices agree verbatim:
+> Tool ownership prevents exposing gatekeeper tools absent from the kernel manifest. Fixed in 0.1.0-beta.5; upgrade all five @gatekeeper-os packages together.
+
+Durable receipts: `/home/matthew/projects/Personal/openclaw-os-agent-kit/beta5-npm-acceptance-20260916/registry-beta5.json` and `registry-beta4-deprecations.json`.
+
+Matt authorized up to three fresh npm-only invocations; only harness/fixture/preflight fixes between invocations, product-behavior failure is a hard stop. At least one passing run must use guest Node 22.22.3. The test runner now downloads official Node 22.22.3 to a disposable test-only prefix, checks its published SHA256, asserts the version and records the selected executable/version in every guest receipt. No installed upstream or product is patched. Original VM snapshots remain immutable. All model traffic is deterministic and guest-local.
+
+On an end-to-end pass only: merge the acceptance branch after green build-test, regenerate the real beta.5 community Tier 1 lock and merge PR9 after green build-test. No visibility change, tag push, publisher setup, release workflow rerun, phase tag or upstream post is authorized.
