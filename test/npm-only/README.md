@@ -38,7 +38,7 @@ Its `os.approvals.apply` path must refuse and keep the host file unchanged. Succ
 apply/reject evidence comes only from the explicitly synthetic driver and does not
 establish filesystem writes, real channel transport, or full production readiness.
 
-## beta.5 acceptance target (prepared, not run)
+## beta.5 acceptance target and preparation
 
 Rebased onto the beta.5 release candidate after core PR #25. Install commands and
 registry receipts require exactly @gatekeeper-os/*@0.1.0-beta.5. Beta.5 must be
@@ -59,3 +59,13 @@ Any future product behavior failure is an immediate hard stop; harness-only repa
 belong between completed runs. No third beta.4 invocation, beta.5 VM invocation,
 community Tier 1 lock regeneration, or acceptance/harness merge is authorized by
 this preparation.
+
+## Published beta.5 result (2026-09-16)
+
+The separately authorized run `20260916-220009-phase-3` passed every stage on
+Node **22.22.3**, installed into a disposable test-only runtime prefix after
+verification against the official archive SHA256. `guest-runtime.json` records
+the selected version/executable; original snapshot Node is left unchanged.
+The five products came only from npm. Independent gatekeeper apply/reject and
+recorded effects/audit passed; limitations above still apply. See
+`plans/PROGRESS.md` for counts, retained failed history and merge gates.

@@ -424,6 +424,9 @@ and their runner to `/home/tester/npm-acceptance`. No repository is cloned or sy
 no product is built or copied from the host. All five `@gatekeeper-os` packages are
 installed at `0.1.0-beta.5` from `https://registry.npmjs.org` into an empty prefix.
 Registry identity, dist-tags, publish times and integrity metadata are retained.
+The npm-only runner installs the README-pinned Node 22.22.3 in a disposable
+test-only prefix, verifies the official archive SHA256, and retains its version
+and executable in `guest-runtime.json`; snapshot Node/upstream are not modified.
 Beta.5 preparation is not publication or a VM invocation; all five packages must
 be consistently listed and verified before a separately authorized run. The
 independent approvals fixture owns its manifest tools and obtains its sole added

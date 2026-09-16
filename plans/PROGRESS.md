@@ -3007,3 +3007,62 @@ Durable receipts: `/home/matthew/projects/Personal/openclaw-os-agent-kit/beta5-n
 Matt authorized up to three fresh npm-only invocations; only harness/fixture/preflight fixes between invocations, product-behavior failure is a hard stop. At least one passing run must use guest Node 22.22.3. The test runner now downloads official Node 22.22.3 to a disposable test-only prefix, checks its published SHA256, asserts the version and records the selected executable/version in every guest receipt. No installed upstream or product is patched. Original VM snapshots remain immutable. All model traffic is deterministic and guest-local.
 
 On an end-to-end pass only: merge the acceptance branch after green build-test, regenerate the real beta.5 community Tier 1 lock and merge PR9 after green build-test. No visibility change, tag push, publisher setup, release workflow rerun, phase tag or upstream post is authorized.
+
+
+### Beta.5 npm-only acceptance PASS — invocation 1/3 (2026-09-16)
+
+Run **20260916-220009-phase-3**, harness commit
+`38d154010ae3ab225f5f9dc099e289be8722d8c3`, command
+`scripts/vm/test.sh phase-3 installed npm-only`, original Sep7 `installed` snapshot.
+Guest **Node v22.22.3** (official archive SHA256 checked), pinned upstream
+**2026.9.2**. Exit 0, final stage `complete`; no retry or product patch. Harness
+SHA256 checks all passed after completion. No product source checkout/build in guest.
+
+| Stage | Result |
+| --- | --- |
+| Registry identities/tags/times/archive SHA512 | 5/5 |
+| Actual CLI messaging cell creation | PASS |
+| Effective registry/unit/environment selector | PASS |
+| Install policy | 14/14 |
+| Kernel-live, including no-grant OS tools | 114/114 |
+| Selected same-run live conformance | 38/38 |
+| Owner-only audience | 72/72 |
+| Independent gatekeeper approval apply/reject | 30/30 |
+| Model turns / local provider requests | 25 / 39 |
+
+Independent `gkos-gatekeeper-fixture` owns `gk_fixture_record_write`; the actual
+installed kernel manifest does **not** enumerate it. Both model turns retained
+the fixture and OS tools, preserved native denials, returned a tool result and
+queued exactly one pending action. Shared-token decisions were denied; paired
+operator apply/reject succeeded; each produced exactly one fixture effect, cleared
+the queue, and passed its `action.decide` audit check. The published kit/kernel/fs
+remained in place. Approval config's sole admission addition came from installed
+CLI catalog-policy derivation; native policy, install policy, auth and default
+sandbox remained unchanged. No claim that preview exercised config-apply.
+
+Retained structural effect records: submit vendor-id1, apply vendor-id1,
+submit vendor-id2, reject vendor-id2. Kernel decision audit: action3 apply/ok at
+2026-09-16T22:05:20.733Z; action4 reject/ok at 22:05:21.060Z (also recorded by the
+existing drainer path at 22:05:21.064Z). These are synthetic provider effects,
+**not enabled real filesystem writes**. The separate real filesystem apply remains
+refused and leaves its fixture file unchanged, as required. No connected-provider
+or full-phase acceptance claim.
+
+Artifacts: acceptance worktree `vm-artifacts/20260916-220009-phase-3/` (including
+`guest-runtime.json`, `registry.json`, every stage report, policy receipts, frozen
+harness hashes, and `libvirt-preflight.json`). Durable root:
+`~/projects/Personal/openclaw-os-agent-kit/beta5-npm-acceptance-20260916/`.
+`approval-effects-audit.json` was exported read-only from the retained guest disk
+after completion, with no snapshot reset or extra model turn; it includes only
+structural effect/audit fields and the two manifest tool lists. It is supplemental
+to the passing same-run assertions, not a second acceptance invocation.
+
+Acceptance cleanup restored original 8MiB/8MiB daemon limits and unchanged Sep7
+base/installed internal snapshots; VM shut off. The read-only receipt-export boot
+uses the same cleanup discipline. Host 629 tests/41 files, typecheck and lint pass;
+focused selector/catalog13 and preflight6 also pass.
+
+Acceptance merge remains gated on green build-test at the final pushed head.
+Only after that merge may the real beta.5 Tier1 lock and community PR9 land.
+All three repositories remain private; beta.5 remote tag absent; release workflow
+34706409757 remains its original failed attempt1. No forbidden actions performed.
