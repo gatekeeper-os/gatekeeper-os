@@ -108,3 +108,9 @@ checks still gate every execution. `gkos config apply` adds/removes enabled cata
 plugin IDs in messaging policies (including messaging agents). Native denials,
 explicit runtime allowlists, and sandbox settings remain unchanged. Blueprint
 application does not install gatekeepers or create grants.
+
+## Recorded runtime checkpoint
+
+Implemented provisioning: `20260912-083358-phase-6` passed 48/48 checks and four synthetic-model turns. Corrected two-cell checkpoint `20260912-155827-phase-9` passed runtime 28 checks/one turn and messaging 34 checks/three turns: coder Docker exec with network:none/read-only root/no socket, coder refusal before mutation in messaging, assistant/ops/researcher provisioning, exact web-tool controls and both deep audits. Full driver integration remains unaccepted; HTTP is deferred beyond this beta.
+
+See [PROGRESS](../plans/PROGRESS.md) for the original receipts.

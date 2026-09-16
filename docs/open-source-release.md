@@ -1,74 +1,59 @@
-# Open-source beta publication
+# Open-source beta release status
 
-Recorded 2026-09-09: the intended beta will be published as open source, with a
-thorough project introduction and explicit acknowledgment of OpenClaw and
-Cloudflare OS. A separate GitHub organization is a possibility, not a completed
-decision. The current development repository remains private.
+As of 2026-09-16, `gatekeeper-os/gatekeeper-os`, `gatekeeper-os/gatekeepers`
+and `gatekeeper-os/.github` are public. Five packages are published at
+`0.1.0-beta.5`: `@gatekeeper-os/{shared,gatekeeper-kit,kernel,gatekeeper-fs,cli}`.
+Both `beta` and `latest` select that version; no stable release exists.
 
-## License decision
+## Completed release checkpoints
 
-**Current decision: retain MIT for original GatekeeperOS contributions.** MIT was
-already confirmed during beta authorization and is implemented in the root
-license, package metadata and package copies. This continuation does not silently
-change that decision.
+- npm-only acceptance `20260916-220009-phase-3` passed on guest Node22.22.3 /
+  OpenClaw2026.9.2: five registry identities/tags/times/archive SHA512, cell creation
+  and selector, install-policy14/14, kernel-live114/114, selected conformance38/38,
+  owner-only72/72, independent approval30/30; 25 local model turns /39 requests.
+  No product source checkout/build/patch. Effects and audit were synthetic.
+- Core [PR24](https://github.com/gatekeeper-os/gatekeeper-os/pull/24) merged the
+  acceptance; community [PR9](https://github.com/gatekeeper-os/gatekeepers/pull/9)
+  merged the real beta.5 Tier 1 registry lockfile.
+- Trusted npm publishers are configured for all five packages against
+  `gatekeeper-os/gatekeeper-os`, workflow `release.yml`.
+- [Release run35157645735](https://github.com/gatekeeper-os/gatekeeper-os/actions/runs/35157645735)
+  passed the public-source guard and gates; all five packages logged
+  `already published, skipping`. No npm write was needed.
+- All three main branches require strict, up-to-date `build-test`; rulesets
+  .github23568975, core23568976, community23568977 prohibit force-push/deletion.
+  Secret scanning and push protection are enabled on all three.
+- [Community live sync35156945324, attempt2](https://github.com/gatekeeper-os/gatekeepers/actions/runs/35156945324)
+  ran and passed anonymous core-main fetch/parity, not skipped.
+  [PR13](https://github.com/gatekeeper-os/gatekeepers/pull/13) removed the temporary
+  skip path after green CI35159265021; fetch/parity failures are now fatal.
+- [GitHub beta.5 prerelease](https://github.com/gatekeeper-os/gatekeeper-os/releases/tag/v0.1.0-beta.5)
+  and the annotated `phase-9` checkpoint are published. Phase9 is a release
+  checkpoint, not a claim that every earlier full-phase acceptance gate passed.
 
-| Option | Practical distinction |
-|---|---|
-| **MIT — current recommendation** | Simple permissive reuse, modification and commercial redistribution; retain copyright and license notices. No express patent-license clause. |
-| Apache-2.0 | Also permissive, with an explicit contributor patent grant and patent-litigation termination terms; more detailed notice and modification obligations. |
-| AGPL-3.0 | Strong copyleft, including source-offer obligations for users interacting over a network with modified versions; choose only if that reciprocity is an intentional project goal. |
+## Remaining acceptance and distribution limits
 
-Both MIT and Apache-2.0 allow commercial and closed-source downstream use. If the
-goal changes to stronger patent provisions or reciprocal source availability,
-revisit the choice deliberately before publication. No such change is made here.
-Third-party material retains its own terms regardless of the project's choice;
-see [provenance](acknowledgments.md) and [NOTICE](../NOTICE).
+Real filesystem writes stay disabled. Real messaging transports, real GitHub/MCP
+driver acceptance and a ClawHub listing are not established. Phases5–7 have the
+scoped runtime checkpoints in the [checklist](phase-checklist.md), not full
+connected-provider/channel/update-matrix acceptance. No failed historical run
+is reclassified by the beta.5 pass.
 
-## Publication checks
+GHSA-22jj-m53c-524m was closed by OpenClaw maintainers on 2026-09-12 as requiring
+no change: denied tools do not execute and logs/session transcripts are owned by
+the operator on the operator's host. GatekeeperOS leaves synchronous approval off
+by default for its own log hygiene, not pending upstream remediation. See the
+[full disposition](../plans/upstream-native-approval-logging.md).
 
-These checks prepare distribution; they do not replace the original phase plan,
-waive any acceptance gate, or turn pre-beta code into a completed beta.
+## License and ongoing release review
 
-- [ ] Complete remaining Phase 4–7 implementation and acceptance with real evidence;
-  keep any explicitly authorized deferral visible in release notes.
-- [ ] Reconcile release-hardening requirements from the original plan with the
-  actual beta artifacts; no placeholder publishing script is a release mechanism.
-- [ ] Refresh README examples against the exact beta candidate; verify installation
-  from the source archive and any package format actually offered.
-- [ ] Review source, git history, release assets and CI artifacts for credentials,
-  private conversations, personal host details and material not authorized for
-  public distribution. A source secret-pattern scan alone is not a history audit.
-- [ ] Finish the provenance/dependency review, preserve upstream notices and
-  modified-file attribution, and check packed/bundled license contents.
-- [ ] Publish tested-platform and upstream-pin details, known limits, changelog
-  and acceptance references that public readers can actually access. Do not link
-  private VM paths as though evidence were public.
-- [ ] Verify a usable private vulnerability-reporting route and contribution guidance.
-- [ ] After the separately authorized public flip, re-run gatekeepers `build-test`
-  and confirm **Live core-main fetch and parity (required when readable)** ran and
-  passed, not skipped. Verify anonymous access without credentials before removing
-  the temporary private-core skip path. Pinned-snapshot parity is not live-sync evidence.
-- [ ] Select the destination organization/repository and finalize public branding.
-- [ ] Publish only the reviewed beta candidate after readiness is verified; do not
-  infer authorization to publish incomplete work from the future release intent.
+Original GatekeeperOS contributions remain MIT. Adapted and third-party material
+retains its own terms, notices and attribution; see [provenance](acknowledgments.md)
+and [NOTICE](../NOTICE). No relicensing is implied.
 
-## Possible GitHub organization
-
-No organization name is reserved, no organization has been created, and no
-repository has been transferred. The name should make the project's independence
-clear and avoid implying it is the official OpenClaw or Cloudflare organization.
-
-Once the owner chooses the destination, prepare the transfer as a concrete change:
-
-- Establish organization ownership, recovery and least-privilege maintainer roles.
-- Check repository transfer effects on Actions, branch protections/rulesets,
-  integrations, security reporting, secrets, package ownership and release rights.
-- Update repository/package metadata, installer and documentation links, badges,
-  workflow references and support contacts; verify old-link redirects separately.
-- Decide whether the existing `@gatekeeper-os/*` package namespace is available and
-  appropriate; a GitHub organization does not reserve an npm scope.
-- Verify the destination, visibility and access after transfer, then test the
-  published installation instructions from a clean environment.
-
-Do not rename or transfer the development repository merely to make draft links
-look final. Keep development moving while naming is unresolved.
+Future releases require fresh, exact-artifact evidence and explicit authorization.
+Review source/history/assets for credentials and personal material, packed license
+contents, compatibility pins, platform limits, and the vulnerability-reporting
+route. A source secret-pattern scan alone is not a history audit. Keep legitimate
+private reporting and owner-only resource boundaries even though the repositories
+are public. This status document is not a command to publish or repeat a release.

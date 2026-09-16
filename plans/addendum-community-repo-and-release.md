@@ -1,5 +1,14 @@
 # Plan addendum — community repo and npm release
 
+> Historical record, superseded for launch status. Its preparation commands and
+> authorization holds are not current instructions and must not be replayed.
+> Five packages are published at beta.5, all three repos are public, and npm-only
+> run `20260916-220009-phase-3` passed. Remaining limits and the completed release
+> gates are in [current release status](../README.md#release-status). Original
+> failed receipts remain failed. Native approval policy follows the
+> [closed advisory disposition](upstream-native-approval-logging.md), not a pending upstream change.
+
+
 **Date:** 2026-09-12 · **Applies to:** `docs/implementation-plan.md` §8 (repository layout) and §9 Phase 9 · **Status:** decided; to be merged into the repo's plan by the agent in the same commit that starts the work.
 
 **Rename decision 2026-09-12:** GatekeeperOS, npm `@gatekeeper-os`, GitHub

@@ -3082,3 +3082,24 @@ Core/org READMEs still described beta.3 preparation. This docs-only correction
 records the beta.5 npm-only run and retains the real-filesystem/connected-provider
 limits. Install command remains npm install --global @gatekeeper-os/cli@beta.
 Public-flip/release actions wait for green docs PRs; no product code changes.
+
+
+## Post-launch documentation reconciliation — 2026-09-16
+
+Docs-only refresh: published beta.5/npm-only run `20260916-220009-phase-3`, public
+repositories, trusted publishing and completed community live-sync are now current
+status, not preparation. Phase5 run `20260912-074628-phase-5`, Phase6 provisioning
+`20260912-083358-phase-6` plus corrected two-cell `20260912-155827-phase-9`, and
+Phase7 `20260912-065811-phase-7` are scoped runtime passes, not full acceptance.
+No product behavior, versions, tags, publication or upstream posts changed.
+
+Matt supplied the final advisory disposition: GHSA-22jj-m53c-524m was closed by
+OpenClaw maintainers on 2026-09-12 as requiring no change because denied tools
+do not execute and Gateway logs and session transcripts belong to the operator
+on the operator's host. GatekeeperOS's synchronous `awaitDecision` → native
+`requireApproval` path remains off by default by its own log-hygiene choice,
+not pending an upstream fix. Enabling GitHub `synchronousActions` can retain
+raw arguments in operator Gateway logs on denial/no route. Prior failed body
+scans remain failed, with no full GitHub/MCP acceptance implied. Historical
+entries above describe knowledge and authorization at the time, not current
+release state. See [full survivor audit](POSTLAUNCH-DOCS-AUDIT.md).

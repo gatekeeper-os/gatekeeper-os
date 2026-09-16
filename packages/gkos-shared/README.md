@@ -14,6 +14,10 @@ live implementations or approval callbacks. Normalize optional void decision res
 Metadata schemas do not prove authorization or validate vendor business rules; those remain the kernel/kit's responsibility.
 
 Grant handles use eight lowercase Crockford base32 symbols (`0-9a-hjkmnp-tv-z`), including the plan's `7k3m9q2p` example.
-The old scaffold's all-alphanumeric regex was not base32. No runtime grant data has shipped yet.
+The old scaffold's all-alphanumeric regex was not base32. The published beta uses this format; existing data is not automatically migrated.
 
 Checks: `pnpm --filter @gatekeeper-os/shared test` and `pnpm --filter @gatekeeper-os/shared typecheck`.
+
+## Distribution
+
+`@gatekeeper-os/shared@0.1.0-beta.5` is published; `beta` and `latest` select it (no stable release). For cell installation use `npm install --global @gatekeeper-os/cli@beta` on a disposable evaluation machine, then follow the [CLI instructions](../gkos-cli/README.md). The npm package-page README updates on the next publication; this documentation change does not alter the existing archive.

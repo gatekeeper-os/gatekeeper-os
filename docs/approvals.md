@@ -27,3 +27,9 @@ silently retried. A local synthetic channel receipt is not proof of external del
 
 The current CLI is line-oriented, not a full-screen TUI. Full Phase 5 acceptance
 still requires the accepted GitHub/secrecy flow and a real operator-channel receipt.
+
+## Recorded runtime checkpoint
+
+Implemented scoped checkpoint `20260912-074628-phase-5`: 49/49 checks, six synthetic-model turns through a real Gateway; CLI tables/previews/revert, timer-only drain (10,812 ms), eligibility and stop/resume, digest and operator-command controls. Not a full-screen TUI. Full mode `20260912-074825-phase-5` exited 2; real GitHub integration and real operator-channel acceptance remain.
+
+See [PROGRESS](../plans/PROGRESS.md) for the original receipts.

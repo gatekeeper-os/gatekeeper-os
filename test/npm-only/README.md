@@ -38,7 +38,7 @@ Its `os.approvals.apply` path must refuse and keep the host file unchanged. Succ
 apply/reject evidence comes only from the explicitly synthetic driver and does not
 establish filesystem writes, real channel transport, or full production readiness.
 
-## beta.5 acceptance target and preparation
+## Historical beta.5 preparation (superseded by the passing result below)
 
 Rebased onto the beta.5 release candidate after core PR #25. Install commands and
 registry receipts require exactly @gatekeeper-os/*@0.1.0-beta.5. Beta.5 must be
@@ -56,9 +56,9 @@ coverage; it does not claim the config-apply command ran at this fixture step.
 Preserve all prior failed runs. Beta.4 invocation 1 remains a fixture failure;
 invocation 2 remains a product hard stop. Neither is reclassified by this rebase.
 Any future product behavior failure is an immediate hard stop; harness-only repairs
-belong between completed runs. No third beta.4 invocation, beta.5 VM invocation,
-community Tier 1 lock regeneration, or acceptance/harness merge is authorized by
-this preparation.
+belong between completed runs. The preparation itself authorized no invocation or merge; the later separately
+authorized beta.5 run, community Tier 1 lock regeneration and acceptance merges
+are complete. This does not authorize repeating failed older-version runs.
 
 ## Published beta.5 result (2026-09-16)
 

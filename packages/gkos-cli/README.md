@@ -5,7 +5,7 @@ GatekeeperOS is an independent project. It is not affiliated with or endorsed by
 Host orchestration uses upstream CLI/config APIs. Capability operations use the live
 Gateway's paired-device operator RPCs; the CLI never opens the kernel database.
 
-## Install after beta.2 publication
+## Install the published beta
 
 ```sh
 npm install --global @gatekeeper-os/cli@beta
@@ -13,12 +13,12 @@ gkos --version
 gkos cell create evaluation --port 19100 --policy messaging
 ```
 
-The new scope is not published yet. Use a disposable machine for provisioning.
-The previous scope's `latest` resolves to beta.1 because no stable release exists.
-Its clean-prefix CLI install was verified, not renamed beta.2 cell acceptance.
-The [source installer](../../README.md#getting-started-as-a-developer) remains the
-VM evaluation route. Beta.2 npm-only acceptance follows publication; no ClawHub
-listing is claimed. See [migration](../../docs/migration-gatekeeperos.md).
+Use a disposable machine for provisioning. All five release packages are at
+`0.1.0-beta.5`; `beta` and `latest` select it, with no stable release. npm-only
+acceptance passed in `20260916-220009-phase-3` on Node22.22.3 / OpenClaw2026.9.2.
+See the [release status](../../README.md#release-status) for remaining limits.
+The npm package-page README updates on the next publication; this docs change
+neither republishes nor changes the existing archive. No ClawHub listing is claimed.
 
 Implemented commands:
 
@@ -65,5 +65,7 @@ flow. Static filesystem account connection has live Phase 3 evidence; real GitHu
 OAuth and effects require Phase 4 acceptance. No connection grants resources by
 itself. Shared grants are rejected under the owner-only beta boundary.
 
-Blueprint application, the full update/rollback pipeline and general gatekeeper
-installation commands remain later-phase work; they are not successful stubs.
+Blueprint provisioning and staged update/rollback are implemented with scoped runtime
+checkpoints; see [blueprints](../../docs/blueprints.md) and [updating](../../docs/updating.md).
+Full driver-integrated acceptance remains open. General gatekeeper installation
+is not a successful stub or an accepted integration.

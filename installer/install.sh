@@ -8,8 +8,8 @@
 #   ./installer/install.sh                                     from a checkout (the supported path today)
 #   GKOS_FROM_SOURCE=/path/to/checkout bash installer/install.sh
 #
-# `curl -fsSL …/install.sh | bash` still requires source access while gatekeeper-os/gatekeeper-os is private.
-# After beta.2 publication, the npm path is: npm install --global @gatekeeper-os/cli@beta.
+# This script requires a checkout of the public gatekeeper-os/gatekeeper-os repository.
+# The published beta.5 npm path is: npm install --global @gatekeeper-os/cli@beta.
 # This script remains the source-install VM evaluation route; it requires a checkout.
 set -euo pipefail
 
@@ -29,9 +29,9 @@ if [ -z "$src_root" ] && [ -n "$here" ] && [ -f "$here/../gkos.lock.json" ]; the
 fi
 [ -n "$src_root" ] && [ -f "$src_root/gkos.lock.json" ] || fail \
 "no source checkout found.
-  After beta.2 publication, the npm path is: npm install --global @gatekeeper-os/cli@beta
+  The published beta.5 npm path is: npm install --global @gatekeeper-os/cli@beta
   This source evaluation script needs repository access; curl-to-bash is not available.
-  Clone the private repository and run the script from it:
+  Clone the public repository and run the script from it:
       git clone https://github.com/gatekeeper-os/gatekeeper-os.git
       cd gatekeeper-os && ./installer/install.sh
   or set GKOS_FROM_SOURCE=/path/to/checkout."

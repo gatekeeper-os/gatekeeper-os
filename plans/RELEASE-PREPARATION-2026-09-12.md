@@ -1,5 +1,14 @@
 # First beta release handoff — 2026-09-12
 
+> Historical record, superseded for launch status. Its preparation commands and
+> authorization holds are not current instructions and must not be replayed.
+> Five packages are published at beta.5, all three repos are public, and npm-only
+> run `20260916-220009-phase-3` passed. Remaining limits and the completed release
+> gates are in [current release status](../README.md#release-status). Original
+> failed receipts remain failed. Native approval policy follows the
+> [closed advisory disposition](upstream-native-approval-logging.md), not a pending upstream change.
+
+
 **Preparation only. No package publication, tag push, visibility change or upstream post.**
 
 ## Approved gate corrections
@@ -27,7 +36,8 @@
   Failed probes, other warnings and suppressed findings fail.
 - MCP stays a private read-only demo. Generic actions remain
   `awaitDecision:true` / `implementsRevert:false`; `append_note` is unregistered
-  pending upstream logging acceptance. Synthetic deferred evidence is not native
+  by GatekeeperOS's log-hygiene choice, not pending an upstream fix
+  (GHSA-22jj-m53c-524m closed as requiring no change on 2026-09-12). Synthetic deferred evidence is not native
   action acceptance.
 
 ## Release set and evidence

@@ -8,3 +8,7 @@ pnpm conformance [--gateway ws://127.0.0.1:19100] [--token …] [--only a,b] [--
 ```
 Uses a deterministic test model provider (registered by `src/test-provider/`) that emits scripted tool calls, so most tests need
 no paid model.
+
+## Distribution
+
+This is a source/workspace package, not one of the five published beta packages. Its implementation or tests do not establish full driver acceptance. See the [release status](../../README.md#release-status).

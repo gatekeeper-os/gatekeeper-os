@@ -1,5 +1,14 @@
 # GatekeeperOS beta.4 — contingency publication handoff
 
+> Historical record, superseded for launch status. Its preparation commands and
+> authorization holds are not current instructions and must not be replayed.
+> Five packages are published at beta.5, all three repos are public, and npm-only
+> run `20260916-220009-phase-3` passed. Remaining limits and the completed release
+> gates are in [current release status](../README.md#release-status). Original
+> failed receipts remain failed. Native approval policy follows the
+> [closed advisory disposition](upstream-native-approval-logging.md), not a pending upstream change.
+
+
 **2026-09-14 status: published and verified.** Beta.3 is deprecated; discard its
 acceptance plan. The manual publication commands below are retained as a release
 handoff template/history, not an instruction to republish beta.4.
