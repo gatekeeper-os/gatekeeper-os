@@ -1,5 +1,14 @@
 # GatekeeperOS beta.3 — private publication handoff
 
+> Historical record, superseded for launch status. Its preparation commands and
+> authorization holds are not current instructions and must not be replayed.
+> Five packages are published at beta.5, all three repos are public, and npm-only
+> run `20260916-220009-phase-3` passed. Remaining limits and the completed release
+> gates are in [current release status](../README.md#release-status). Original
+> failed receipts remain failed. Native approval policy follows the
+> [closed advisory disposition](upstream-native-approval-logging.md), not a pending upstream change.
+
+
 Preparation does not publish, deprecate or push the local tag. Matt runs the
 following only after verifying the reported tag SHA. The process-only git-check
 override permits pnpm publication from detached HEAD; no repository config changes.

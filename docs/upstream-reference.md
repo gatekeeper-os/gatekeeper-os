@@ -216,7 +216,7 @@ directly from them:
 - Also on the API: `registerToolMetadata`, `registerControlUiDescriptor`, `registerRuntimeLifecycle`, `registerSecurityAuditCollector`, `registerConfigMigration`, `registerReload({ restartPrefixes, hotPrefixes })`, `enqueueNextTurnInjection`, `api.source`, `api.rootDir`.
 - `security.installPolicy` (operator config) runs a trusted local command that returns `allow` / `warn` / `block` for skill and plugin installs after staging; it is the primary install boundary and fails closed when enabled but unavailable. `before_install` is a secondary plugin-runtime hook that trusted/bundled install paths may skip. `plugins.installs`, `plugins.load`, and `security.installPolicy` changes: installPolicy hot-applies; `plugins.load`/`plugins.installs` need a restart.
 - `openclaw backup create` sources: the state directory (usually `~/.openclaw`, so `os/` is included), the active config path, `credentials/` if outside the state dir, and every configured agent directory.
-- Trusted sources for install are ClawHub packages and the bundled/official catalog; arbitrary npm/git/local sources warn and need `--force` non-interactively. The OS source installer now projects its bundled first-party artifacts through `plugins.load.paths`; the old-scope five-package beta.1 was registry-verified on 2026-09-12. Renamed `@gatekeeper-os/*` beta.2 artifacts are not yet published (see `docs/migration-gatekeeperos.md`).
+- Trusted sources for install are ClawHub packages and the bundled/official catalog; arbitrary npm/git/local sources warn and need `--force` non-interactively. The OS source installer now projects its bundled first-party artifacts through `plugins.load.paths`; all five `@gatekeeper-os/*` release artifacts are published at beta.5 and npm-only acceptance passed in `20260916-220009-phase-3` (see `docs/migration-gatekeeperos.md`).
 
 ## 10. Historical S-1 observations and discrepancy (2026-09-07)
 
@@ -323,9 +323,10 @@ npm 11), and per-package trusted-publisher configuration. Source:
 <https://docs.npmjs.com/trusted-publishers/>. npm provenance generation requires
 public source and a public package; source:
 <https://docs.npmjs.com/generating-provenance-statements/>. A private core repo
-therefore does not satisfy the prepared provenance workflow; its public-source
-guard deliberately fails. This observation authorizes neither visibility changes
-nor an npm login. The first manual publish remains Matt's addendum step 5.
+would fail the workflow's public-source guard. The three repositories are now
+public; release run35157645735 passed the guard and skipped all five already
+published beta.5 packages. Trusted publishers are configured. This historical
+constraint is not a request to repeat the first manual publish.
 
 ## Completed continuation retest (2026-09-07)
 

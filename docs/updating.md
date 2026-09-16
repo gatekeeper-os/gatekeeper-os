@@ -1,6 +1,6 @@
 # Update and rollback
 
-Phase 7 implementation is under review. **This is not beta acceptance.** The full live
+Phase 7 implementation is merged with a scoped runtime pass. **This is not full Phase 7 acceptance.** The full live
 conformance adapter depends on outstanding acceptance work; compatibility smoke is insufficient.
 
 ## Check availability
@@ -70,3 +70,9 @@ A source-installer rerun on a per-cell updated runtime is refused, avoiding acci
 reversion to the source bundle's old pin. A successfully committed but paused cell may be
 resumed by an authenticated administrator with `gkos kernel maintenance off`, after
 reviewing the committed journal and healthy exact runtime. This does not bypass conformance.
+
+## Recorded runtime checkpoint
+
+Implemented staged update/rollback: `20260912-065811-phase-7` passed nine assertions plus 3×14 real-Gateway probes on guest Node24.20.0; actual 2026.9.2→2026.9.4 activation, compatibility/conformance refusals, grants preserved, explicit rollback and SIGKILL recovery. Test-only reduced conformance is rejected by the production full validator. Full mode `20260912-070750-phase-7` exited 2; connected-provider conformance, post-activation model observation, scheduled delivery and the full nightly update matrix remain.
+
+See [PROGRESS](../plans/PROGRESS.md) for the original receipts.

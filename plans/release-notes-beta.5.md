@@ -28,5 +28,8 @@ green build-test; the community Tier1 lock uses the real beta.5 registry artifac
 Beta.4's failed npm-only runs remain failed. Real filesystem writes remain simulate-only; the
 successful approval effects are synthetic. Real connected-provider/channel
 acceptance is not established by these tests. The documented in-process trust
-boundary and upstream native-approval logging limitation remain; synchronous
-approval remains disabled by default. See docs/threat-model.md for unchanged limits.
+boundary remains. GHSA-22jj-m53c-524m was closed by maintainers on 2026-09-12
+as requiring no upstream change: denied tools do not execute and logs/transcripts
+are operator-owned. Synchronous approval remains disabled by default as
+GatekeeperOS's own log-hygiene choice, not pending upstream. See
+[threat model](../docs/threat-model.md) for the full disposition and limits.

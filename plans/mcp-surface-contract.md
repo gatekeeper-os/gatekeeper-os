@@ -3,8 +3,10 @@
 Status: **STOP1 approved by Matt: “Approved continue”, 2026-09-12.**
 **STOP2 approved by Matt on 2026-09-12** for responsibilities4–7.
 The active runtime surface is narrowed to the reviewed observation; native actions
-remain unregistered and hard-gated by the upstream logging issue. This is the next item in Matt's overnight order after
-Phase7, Phase5 and Phase6, not full Phase8 or beta acceptance.
+remain unregistered under GatekeeperOS's own native-approval log-hygiene choice.
+GHSA-22jj-m53c-524m was closed on 2026-09-12 as requiring no upstream change;
+see [disposition](upstream-native-approval-logging.md). Scoped MCP runtime evidence
+is recorded in PROGRESS; full Phase8 acceptance remains unestablished.
 
 ## Approved STOP1 decision
 

@@ -30,26 +30,19 @@ Upstream-owned `OPENCLAW_*` variables and upstream Gateway service names are unc
 GatekeeperOS-owned drop-ins/helper prefixes change. No automatic migration of an
 existing cell is claimed: old configs/env/plugin ids must be reconciled deliberately.
 
-## Publication and acceptance hold
+## Current publication and acceptance
 
-Beta.1 exists only under `@clawkeepers`. Beta.2 under `@gatekeeper-os` has not been
-published. The old scope’s `latest` resolves to beta.1 because no stable release
-exists. New-scope install commands are post-publication instructions, not evidence
-of an available registry package. No real messaging, fs-write or other unproven
-acceptance claim changes with this rename.
+The rename is complete. Five `@gatekeeper-os` packages are published at
+`0.1.0-beta.5`, with both `beta` and `latest` selecting it and no stable release.
+The three repositories are public; trusted publishers are configured. npm-only
+acceptance `20260916-220009-phase-3` passed on Node22.22.3 / OpenClaw2026.9.2;
+core PR24 and community PR9 merged the acceptance and real registry dependency lock.
+Real filesystem writes, real transports, GitHub/MCP full acceptance and ClawHub
+listing remain unestablished.
 
-The last npm-only beta.1 run `20260913-002140-phase-3` exited 1 after 5/5 registry
-identities, messaging-cell/effective-selector checks and 14/14 install-policy checks.
-A harness ownership declaration failed upstream validation; kernel-live, audience
-and approvals did not run (0 model turns). The fixture-only correction passed a
-schema probe but was not rerun. VM shutdown/memlock restoration/original snapshot
-preservation are recorded in PROGRESS. Its harness changes remain separately
-unmerged; this identifier-only PR does not adopt them or claim acceptance.
-
-After Matt publishes beta.2: run npm-only VM acceptance against the five exact new
-packages and merge the community Tier 1 dependency switch only after green CI.
-No visibility change, publish, tag push, trusted-publisher setup, release-workflow
-rerun, phase tag or upstream post is authorized by this preparation.
+The old-scope beta.1 and earlier renamed releases remain historical migration
+receipts, not current installation instructions. Their failed runs are retained
+unchanged in PROGRESS; the later pass does not reclassify them.
 
 ## Intentional old-name survivors
 
@@ -59,10 +52,10 @@ rerun, phase tag or upstream post is authorized by this preparation.
   attribution provenance, including the original project name; LICENSE unchanged.
 - This migration note and the publication handoff: old→new mapping and exact old
   npm deprecation targets are necessary operator instructions.
-- Separate community rename: temporary npm aliases and lockfile/identity tests
-  resolve the actual published beta.1 kit/shared; the old example plugin id matches
-  that kit’s enforced contract. New beta.2 deps/contract switch stays unmerged until
-  publication. Community’s historical validation receipt/NOTICE stay as recorded.
+- Separate community rename: historical temporary npm aliases/identity tests
+  resolved the old beta.1 kit/shared. Those aliases were removed by the merged
+  real beta.5 registry dependency switch. Community’s historical validation
+  receipt and NOTICE retain the original identifiers.
 - Existing external checkout/worktree paths and immutable VM/disclosure receipts
   retain their names. Remotes are repointed; unrelated worktrees are not rewritten.
 

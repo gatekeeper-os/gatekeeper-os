@@ -415,7 +415,7 @@ This command never publishes, logs into npm, tags, or claims the later npm-only
 Phase 9 acceptance. The release's kernel changes also require the independent
 `phase-3 installed kernel-live` checkpoint. Preserve failed runs as failed evidence.
 
-## Private post-publish npm-only acceptance
+## Published-package npm-only acceptance
 
 `scripts/vm/test.sh phase-3 installed npm-only` uses the owned libvirt VM and the
 original installed snapshot. Unlike source checkpoints, it stops the snapshot's
@@ -427,8 +427,8 @@ Registry identity, dist-tags, publish times and integrity metadata are retained.
 The npm-only runner installs the README-pinned Node 22.22.3 in a disposable
 test-only prefix, verifies the official archive SHA256, and retains its version
 and executable in `guest-runtime.json`; snapshot Node/upstream are not modified.
-Beta.5 preparation is not publication or a VM invocation; all five packages must
-be consistently listed and verified before a separately authorized run. The
+The published beta.5 run `20260916-220009-phase-3` passed all selected stages on
+Node22.22.3 / OpenClaw2026.9.2 after five-package listing/integrity verification. The
 independent approvals fixture owns its manifest tools and obtains its sole added
 messaging plugin admission from the installed CLI catalog-policy preview, with a
 strict unchanged-native-policy check. This fixture step is not config-apply CLI evidence.

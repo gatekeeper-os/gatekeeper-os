@@ -1,5 +1,14 @@
 # GatekeeperOS beta.5 — Matt's publication commands
 
+> Historical record, superseded for launch status. Its preparation commands and
+> authorization holds are not current instructions and must not be replayed.
+> Five packages are published at beta.5, all three repos are public, and npm-only
+> run `20260916-220009-phase-3` passed. Remaining limits and the completed release
+> gates are in [current release status](../README.md#release-status). Original
+> failed receipts remain failed. Native approval policy follows the
+> [closed advisory disposition](upstream-native-approval-logging.md), not a pending upstream change.
+
+
 Preparation does **not** publish or deprecate. Keep the release tag local; do not
 push it, change visibility, configure trusted publishers, or rerun a release workflow.
 The final handoff supplies the independently verified tag commit SHA. Run these

@@ -25,7 +25,7 @@ existed. No phase tag or advancement. See `plans/PROGRESS.md`.
 exited **0** from `base`. c/j are now answered: documented naming limits with a
 live 64-character schema-boundary test, and catalog-selected SDK runtime slots
 with enabled/disabled/stopped checks. All eleven structural assertions pass.
-**Publication update:** private `gatekeeper-os/gatekeeper-os` created; live CI passed at `dbb663c` (run linked above). Phase 0 merge/tag has not yet been performed; no Phase 1 work.
+**Historical publication checkpoint:** the repository was created and live CI passed at `dbb663c` (run linked above). Its then-pending Phase 0 merge/tag was subsequently completed, as recorded above; current public beta status is in the root README.
 
 ## Phase 1 — Host layer and installer
 
@@ -102,8 +102,10 @@ under the explicit Telegram-only validation deferral, after candidate CI/merge.
 
 ## Phase 5 — Approvals UX and auto-approval
 
+Implemented scoped checkpoint `20260912-074628-phase-5`: 49/49 checks, six synthetic-model turns through a real Gateway; CLI tables/previews/revert, timer-only drain (10,812 ms), eligibility and stop/resume, digest and operator-command controls. Not a full-screen TUI. Full mode `20260912-074825-phase-5` exited 2; real GitHub integration and real operator-channel acceptance remain. The unchecked full-phase criteria below are not erased by this scoped checkpoint.
+
 - [ ] `gkos approvals list/apply/reject/revert` with previews — evidence:
-- [ ] Chat commands `/approvals`, `/approve`, `/reject`, `/grants`, `/grant <url>` claimed before the model; non-operators get silence — evidence:
+- [ ] Deferred chat commands `/approvals`, `/approvals apply`, `/reject`, `/grants`, `/grant <url>` claimed before the model; non-operators get silence. Native `/approve` remains upstream-owned, not a deferred-action alias — real-channel evidence pending:
 - [ ] Auto-approval applies within 30 s only when both rule and `autoApprovable` are present — evidence:
 - [ ] Drainer stops at first non-eligible action and resumes after it is decided — evidence:
 - [ ] One digest per run to the operator channel — evidence:
@@ -111,11 +113,7 @@ under the explicit Telegram-only validation deferral, after candidate CI/merge.
 
 ## Phase 6 — Blueprints
 
-2026-09-12 implementation checkpoint: **48/48 VM checks, four synthetic-model
-turns through the real Gateway**; no full acceptance or tag. All four templates
-provision, but HTTP is missing, GitHub integration is separate, and the default
-global deny policy still needs an explicit operator decision for coder/ops.
-The VM uses an isolated fixture policy; production/default baseline is unchanged.
+Implemented provisioning: `20260912-083358-phase-6` passed 48/48 checks and four synthetic-model turns. Corrected two-cell checkpoint `20260912-155827-phase-9` passed runtime 28 checks/one turn and messaging 34 checks/three turns: coder Docker exec with network:none/read-only root/no socket, coder refusal before mutation in messaging, assistant/ops/researcher provisioning, exact web-tool controls and both deep audits. Full driver integration remains unaccepted; HTTP is deferred beyond this beta. Original full-mode run `20260912-084641-phase-6` exited 2. The later explicit runtime policy supersedes the initial fixture-policy limitation, not the full integration gate.
 
 - [ ] `assistant`, `coder`, `ops`, `researcher` apply to a fresh cell and produce working agents — evidence:
 - [x] `blueprint lint` rejects `exec` without `sandbox.mode: "all"` — `vm-artifacts/20260912-083358-phase-6/scenarios.json`, `unsafe-lint-rejected`; 21 blueprint unit checks also pass.
@@ -125,12 +123,7 @@ The VM uses an isolated fixture policy; production/default baseline is unchanged
 
 ## Phase 7 — Update and rollback
 
-**2026-09-12 implementation checkpoint, not full acceptance:** draft PR #11 implements the
-host pipeline and passes `phase-7 installed runtime-checkpoint` (artifact
-`20260912-065811-phase-7`, 9 checkpoint assertions + three 14-check real Gateway probes).
-This proves reduced runtime update/rollback and rejection behavior without accepting the
-full connected-provider conformance flow; full mode remains blocked (artifact
-`20260912-070750-phase-7`, exit 2). See `plans/PROGRESS.md` for exact scope and open gates.
+Implemented staged update/rollback: `20260912-065811-phase-7` passed nine assertions plus 3×14 real-Gateway probes on guest Node24.20.0; actual 2026.9.2→2026.9.4 activation, compatibility/conformance refusals, grants preserved, explicit rollback and SIGKILL recovery. Test-only reduced conformance is rejected by the production full validator. Full mode `20260912-070750-phase-7` exited 2; connected-provider conformance, post-activation model observation, scheduled delivery and the full nightly update matrix remain. The pipeline is merged, not a pending draft. The original full-phase criteria below remain distinct from this reduced runtime checkpoint.
 
 - [ ] `gkos update --to <latest>` from snapshot `connected` completes all nine pipeline steps; grants intact afterwards — evidence:
 - [ ] Compat-range block stops at step 2 with a clear message — evidence:
@@ -138,7 +131,7 @@ full connected-provider conformance flow; full mode remains blocked (artifact
 - [ ] Kill during step 7 → `gkos rollback` restores a healthy previous version with grants intact — evidence:
 - [ ] `gkos update --check` posts an availability message — evidence:
 - [ ] `.github/workflows/conformance-matrix.yml` runs against `latest`, `beta`, `extended-stable` and reports verdicts — evidence: workflow run URL
-- [x] `docs/updating.md` and the operator skill's upgrade/rollback reference written — evidence: `db17a1d`, draft PR #11; runtime/full-gate distinction and recovery procedure documented.
+- [x] `docs/updating.md` and the operator skill's upgrade/rollback reference written — evidence: `db17a1d`, subsequently merged PR #11; runtime/full-gate distinction and recovery procedure documented.
 - [ ] Tag `phase-7`
 
 ## Definition of done (engagement)

@@ -49,8 +49,10 @@ Proceed with the already-reviewed two-tool demo mapping using:
    native approval binding and explicit reconciliation rather than blind retries.
 4. Owner-only observations; no generic MCP ACL oracle or shared-audience access.
 5. Adversarial synthetic VM tests followed by an explicitly configured real server
-   if/when available. Native denied/no-route secrecy remains a full acceptance
-   blocker until a supported upstream fix passes. No approval/logging bypass.
+   if/when available. GatekeeperOS retains its body-free diagnostic criterion
+   and keeps generic native actions disabled by its own log-hygiene choice.
+   GHSA-22jj-m53c-524m was closed 2026-09-12 as requiring no upstream change;
+   see [disposition](upstream-native-approval-logging.md). No approval bypass.
 
 This decision does not approve a new server, broaden tool schemas, enable stdio,
 merge phase branches, release a beta, publish a package, or deploy to production.

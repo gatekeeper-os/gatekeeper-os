@@ -56,7 +56,7 @@ alone can enforce security or that arbitrary plugins become safe.
 | **Grant** | An opaque handle connecting an authorized agent to a particular resource. A pasted URL from an untrusted sender is not authority. |
 | **Gatekeeper** | A driver for a service or resource, responsible for authentication, bounded operations, and integration with the kernel's action pipeline. |
 | **Pending action** | A proposed external effect. When supported, an overlay lets subsequent reads reflect it before the effect is applied. Rejecting it removes that pending view. |
-| **Blueprint** | A planned versioned agent configuration: workspace material, tools, skills, and sandbox requirements. Full application and validation are Phase 6 work. |
+| **Blueprint** | A versioned agent configuration with implemented provisioning, drift checks and sandbox validation. Scoped checkpoints passed; full driver integration remains. |
 
 ```mermaid
 flowchart LR
@@ -100,10 +100,10 @@ be reversed.
 | Filesystem writes | Bounded Linux reads and simulated writes are implemented. **Real writes remain disabled** because the approved atomic confinement requirement is not satisfied. |
 | Real messaging transports | Synthetic public-SDK ingress is tested. Real Telegram validation is deferred, not passed. No real Slack acceptance is claimed. |
 | GitHub | Phase 4 reference driver and real-provider acceptance remain in progress. |
-| Approval UX and auto-approval | Kernel infrastructure exists; Phase 5 TUI, real-driver behavior and notification acceptance remain. |
-| Blueprints | Scaffold exists; full Phase 6 behavior and acceptance remain. |
-| Upgrades and rollback | The upstream pin exists. The complete staged update/rollback and compatibility pipeline is Phase 7 work, not a finished feature. |
-| MCP, HTTP and further drivers | Later scope; placeholder packages do not imply functioning integrations. |
+| Approval UX and auto-approval | Implemented scoped checkpoint `20260912-074628-phase-5`: 49/49 checks, six synthetic-model turns through a real Gateway; CLI tables/previews/revert, timer-only drain (10,812 ms), eligibility and stop/resume, digest and operator-command controls. Not a full-screen TUI. Full mode `20260912-074825-phase-5` exited 2; real GitHub integration and real operator-channel acceptance remain. |
+| Blueprints | Implemented provisioning: `20260912-083358-phase-6` passed 48/48 checks and four synthetic-model turns. Corrected two-cell checkpoint `20260912-155827-phase-9` passed runtime 28 checks/one turn and messaging 34 checks/three turns: coder Docker exec with network:none/read-only root/no socket, coder refusal before mutation in messaging, assistant/ops/researcher provisioning, exact web-tool controls and both deep audits. Full driver integration remains unaccepted; HTTP is deferred beyond this beta. |
+| Upgrades and rollback | Implemented staged update/rollback: `20260912-065811-phase-7` passed nine assertions plus 3×14 real-Gateway probes on guest Node24.20.0; actual 2026.9.2→2026.9.4 activation, compatibility/conformance refusals, grants preserved, explicit rollback and SIGKILL recovery. Test-only reduced conformance is rejected by the production full validator. Full mode `20260912-070750-phase-7` exited 2; connected-provider conformance, post-activation model observation, scheduled delivery and the full nightly update matrix remain. |
+| MCP, HTTP and further drivers | MCP read-only boundary implemented; `20260912-160720-phase-8` passed 105 package tests, 46 Gateway checks and eight synthetic-model turns. Generic/native actions remain disabled (`nativeDenialNotTested:true`); real-provider/full acceptance remains. HTTP is deferred beyond this beta. |
 
 The [Phase 3 acceptance record](plans/phase-3-acceptance.md) reports 410 workspace
 tests, six VM checkpoints and 23 actual model turns for the accepted candidate.
@@ -206,20 +206,34 @@ test results do not imply an independent security audit.
 | `packages/gkos-gatekeeper-github` | GitHub reference driver under development |
 | `packages/gkos-cli` | Host operations and paired operator commands |
 | `packages/gkos-conformance` | Live Gateway compatibility and acceptance checks |
-| `packages/gkos-blueprints` | Agent-template scaffold |
-| `packages/gkos-gatekeeper-mcp`, `packages/gatekeeper-http` | Later-driver placeholders |
+| `packages/gkos-blueprints` | Versioned templates and provisioning |
+| `packages/gkos-gatekeeper-mcp`, `packages/gatekeeper-http` | MCP read-only boundary; HTTP placeholder |
 | `installer/`, `config/` | Installation and configuration inputs |
 | `scripts/vm/`, `test/` | Disposable-machine harness and phase scenarios |
 | `docs/`, `plans/` | Design, evidence, limitations and implementation progress |
 
-## Road to the open-source beta
+## Release status
 
-The five-package beta.2 is published under `@gatekeeper-os`; beta.3 is private
-preparation for the messaging-policy correction. Repositories remain private.
-Public visibility, trusted publishing, community registry-switch builds and
-npm-only fresh-VM acceptance are separate gates. No acceptance gate is waived.
-The Telegram deferral stays visible. The [publication checklist](docs/open-source-release.md)
-records release checks; the [migration note](docs/migration-gatekeeperos.md) records the rename.
+All five `@gatekeeper-os/{shared,gatekeeper-kit,kernel,gatekeeper-fs,cli}` packages
+are published at **0.1.0-beta.5**. Both `beta` and `latest` resolve to that version;
+there is **no stable release**. The core, community and organization-profile
+repositories are public. npm trusted publishing is configured for all five
+packages against `gatekeeper-os/gatekeeper-os` and `release.yml`.
+
+npm-only acceptance **passed**, run `20260916-220009-phase-3`, on guest Node
+22.22.3 / OpenClaw2026.9.2. Community Tier 1 uses the real registry lockfile;
+anonymous live core synchronization passed and fetch failures are now fatal.
+The beta.5 prerelease and `phase-9` release checkpoint are published. These do
+not establish real filesystem writes, real messaging transports, real GitHub/MCP
+driver acceptance or a ClawHub listing. Earlier failed receipts remain failures.
+See [publication record](docs/open-source-release.md), [ledger](plans/PROGRESS.md)
+and [migration history](docs/migration-gatekeeperos.md).
+
+### Native approval logging disposition
+
+**GHSA-22jj-m53c-524m disposition (2026-09-12):** the OpenClaw maintainers closed the advisory as not requiring a change: “crosses no OpenClaw trust boundary — a denied tool still never executes, and the logs are operator-owned on the operator's host, where the same tool arguments are already retained in operator-readable session transcripts”. GatekeeperOS keeps the synchronous path (`awaitDecision` → native `requireApproval`) off by default as its own log-hygiene choice, not pending an upstream fix. Enabling it can put tool arguments in the operator's Gateway logs on denial or when no approval route exists; denial still prevents execution. This disposition does not turn previous failed body-secrecy checks into passes or establish full GitHub/MCP acceptance.
+
+See the [reproduction and disposition](plans/upstream-native-approval-logging.md).
 
 ## Acknowledgments
 

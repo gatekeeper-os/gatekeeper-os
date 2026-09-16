@@ -283,8 +283,8 @@ GKOS_CELL=<name>
 retain `awaitDecision:true`, `autoApprovable:false`, `implementsRevert:false` when
 simulation/revert cannot be honestly supplied. The current runtime publishes only
 the reviewed `read_note` observation: append remains excluded from vendor/resource
-metadata and hard-denied until the supported upstream native-approval logging fix
-passes secrecy acceptance. The separate test-only notes adapter has deterministic
+metadata and hard-denied by GatekeeperOS's own native-approval log-hygiene
+choice, not pending an upstream fix (GHSA-22jj-m53c-524m closed 2026-09-12). The separate test-only notes adapter has deterministic
 append semantics and exercises the standard deferred kit lifecycle; fixture
 simulation, local TLS transport and real Gateway evidence are distinct from
 real-provider/native/full acceptance. See `plans/mcp-surface-contract.md`.
@@ -946,9 +946,9 @@ Two public repos under `gatekeeper-os`, plus `.github` for the org profile.
 - **`.github`**: profile README, SECURITY, CONTRIBUTING, CoC, templates (seeded).
 
 
-**Current execution boundary:** “public” above describes the target layout. Both
-repositories remain private; no visibility change is authorized by this addendum
-execution. Reference-driver location is not a claim of completed acceptance.
+**Current release status (2026-09-16):** core, community and org-profile repositories
+are public. The original addendum's visibility hold is superseded by the completed
+public flip. Reference-driver location is not a claim of completed acceptance.
 The npm organization `@gatekeeper-os` exists and Matt owns it.
 
 The core workspace remains:
@@ -1238,13 +1238,14 @@ Order matters: publish nothing until `main` carries the prompt-narrowing fix fro
 10. **Release verification**: fresh VM, install from npm only (no repo clone), run the Phase 3 acceptance path; record in `plans/PROGRESS.md`; tag `phase-9`.
 
 
-**Preparation boundary:** this task prepares steps 1–4, the step-5 dry run, and
-step-6 automation source only. Matt performs the first publish; no npm credential
-is handled by the agent. Steps 7–10 are later work. Full acceptance and the known
-upstream logging blocker are not waived. No release tag is ready while release
-checks fail. Once corrected gates and ordered merges pass, create only the local
-`v0.1.0-beta.1` tag; Matt pushes it after the first manual publish. No `phase-9`
-tag before step 10.
+**Release status (2026-09-16):** the ordered list above records the original
+release plan, not a command sequence to repeat. The five packages are now
+`0.1.0-beta.5`, public repos and trusted publishers are configured, npm-only
+acceptance `20260916-220009-phase-3` passed, and community Tier 1, the beta.5
+prerelease and `phase-9` are published. ClawHub and full driver acceptance remain
+unestablished. GHSA-22jj-m53c-524m was closed as requiring no upstream change;
+synchronous approval remains default-off by GatekeeperOS choice. See the
+[current publication record](open-source-release.md). No new publish is implied.
 
 ---
 
@@ -1256,22 +1257,19 @@ Linux with systemd (Ubuntu 22.04+/Debian 12+/Arch/Fedora 39+), macOS 13+, or Win
 
 ### 10.2 Fresh install (recommended path)
 
-**Rename update 2026-09-12.** The old-scope beta.1 was published; its `latest`
-resolves to a beta because no stable release exists. Renamed beta.2 under
-`@gatekeeper-os` is private preparation, not a registry release. After Matt
-publishes, install with `npm install --global @gatekeeper-os/cli@beta`, then use
+**Published beta (2026-09-16).** All five `@gatekeeper-os` release packages are
+`0.1.0-beta.5`; `beta` and `latest` select it, with no stable release. Install with
+`npm install --global @gatekeeper-os/cli@beta`, then
 `gkos cell create evaluation --port 19100 --policy messaging` on a disposable host.
-Old clean-prefix CLI smoke does not establish renamed-package or cell acceptance.
-Beta.2 npm-only VM acceptance and the community dependency switch follow publication.
-The source-install path below remains the evaluated route. `curl … | bash`
-remains unavailable while the source repository is private.
+npm-only acceptance `20260916-220009-phase-3` passed on Node22.22.3 and
+OpenClaw2026.9.2. The community registry dependency switch is merged.
+Source installation remains supported; standalone `curl | bash` is not an
+accepted installation claim.
 
 ```bash
-# 1. Source-install evaluation inside a disposable VM (repository access required)
+# 1. Source-install evaluation inside a disposable VM (public repository)
 git clone https://github.com/gatekeeper-os/gatekeeper-os.git && cd gatekeeper-os && ./installer/install.sh
 
-#    NOT YET AVAILABLE (private source repository):
-#    curl -fsSL https://raw.githubusercontent.com/gatekeeper-os/gatekeeper-os/main/installer/install.sh | bash
 
 # The installer runs, in order:
 #   preflight.sh                                   → OS/Node/Docker/port checks
@@ -1540,4 +1538,5 @@ gkos-kernel before its narrowing hook can expose OS/granted tools. Add only that
 plugin, preserving native denials; runtime keeps its explicit allowlist.
 Packed-load CI must read policy from the CLI artifact and exercise no-grant and
 granted model turns, not infer tool availability from healthy RPCs. Evidence:
-plans/BETA2-TOOL-DIAGNOSIS.md. No beta.3 release is authorized.
+plans/BETA2-TOOL-DIAGNOSIS.md. This dated diagnosis is historical; the correction
+ships in the published beta.5. See README Release status for current acceptance.

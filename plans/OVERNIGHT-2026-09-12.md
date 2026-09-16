@@ -1,5 +1,14 @@
 # Overnight report — 2026-09-12
 
+> Historical record, superseded for launch status. Its preparation commands and
+> authorization holds are not current instructions and must not be replayed.
+> Five packages are published at beta.5, all three repos are public, and npm-only
+> run `20260916-220009-phase-3` passed. Remaining limits and the completed release
+> gates are in [current release status](../README.md#release-status). Original
+> failed receipts remain failed. Native approval policy follows the
+> [closed advisory disposition](upstream-native-approval-logging.md), not a pending upstream change.
+
+
 **Implementation checkpoints are saved remotely in the requested order:
 Phase7 → Phase5 → Phase6 → gkos-gatekeeper-mcp. Beta is not accepted.**
 
@@ -89,12 +98,15 @@ No transport/auth/action implementation crosses that boundary. STOP2 remains lat
   typecheck, tests, catalog/secrets and10 packed-license checks passed in the phase branches.
 - Independent phase branches need deliberate integration and combined regression;
   kernel edits overlap. No integrated beta is claimed from individually green PRs.
-- Upstream native-approval body logging remains a release blocker; private report
-  was already submitted. No new upstream message or workaround was applied overnight.
+- The original logging concern was subsequently closed by maintainers as
+  requiring no change (GHSA-22jj-m53c-524m, 2026-09-12). GatekeeperOS keeps
+  synchronous approval off by default for its own log hygiene, not pending upstream.
+  See [disposition](upstream-native-approval-logging.md). No new upstream post.
 
 **Next review:** approve/change the concrete MCP surface; decide the installed
 coder/ops global-tool policy. Then integrate accepted changes, close missing driver
-and real-transport gates, and rerun full acceptance after a supported logging fix.
+and real-transport gates. The historical request for an upstream logging fix was
+closed; future acceptance must reflect GatekeeperOS's own explicit logging policy.
 
 
 ## Post-report continuation — MCP STOP1 approved (2026-09-12)

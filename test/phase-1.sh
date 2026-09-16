@@ -274,7 +274,7 @@ cat > "$EV/scope.json" <<'JSON'
     "kernelAcceptance": "Bundled kernel/fs health is checked by install; full Phase 3 acceptance is separate",
     "gatekeeperAcceptance": "No resource grants or gatekeeper operations are exercised by this installer regression",
     "conformance": "This installer regression does not run the Phase 3 conformance suites",
-    "curlInstaller": "the repository is private and no @gatekeeper-os/* package is published; source install only",
+    "curlInstaller": "This regression exercises source installation, not standalone curl-to-bash; published beta.5 npm acceptance is recorded separately",
     "macos": "platform-specific acceptance; see platform.txt for this run"
   }
 }
