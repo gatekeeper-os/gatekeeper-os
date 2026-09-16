@@ -1,0 +1,1 @@
+{"id":"gkos-kernel-monitor","name":"VM-only passive kernel monitor","activation":{"onStartup":true},"configSchema":{"type":"object","additionalProperties":false,"properties":{}}}

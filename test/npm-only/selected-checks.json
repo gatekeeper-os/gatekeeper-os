@@ -1,0 +1,54 @@
+{
+  "plugin-loads": [
+    "plugin-loaded-gkos-kernel",
+    "plugin-loaded-gkos-gatekeeper-fs"
+  ],
+  "rpc-methods": [
+    "rpc-status",
+    "rpc-gatekeepers",
+    "rpc-grants",
+    "rpc-approvals",
+    "rpc-audit"
+  ],
+  "hooks-fire": [
+    "hook-call-correlation",
+    "lifecycle-hooks-fired",
+    "successful-call-audited",
+    "observation-audited"
+  ],
+  "tool-narrowing": [
+    "no-grant-narrowing",
+    "valid-grant-narrowing",
+    "untrusted-url-no-grant",
+    "untrusted-url-narrowing",
+    "revoked-tool-absent"
+  ],
+  "gate-blocks": [
+    "shared-auth-introduction-denied",
+    "forged-identity-denied",
+    "unknown-grant-denied",
+    "unknown-policy-audited",
+    "disabled-hooks-tools-visible",
+    "disabled-hooks-policy-denied",
+    "disabled-hooks-policy-audited"
+  ],
+  "fs-gatekeeper": [
+    "operator-introduced",
+    "directory-list-succeeded",
+    "file-read-succeeded",
+    "outside-introduction-denied",
+    "path-escape-denied",
+    "grant-revoked",
+    "revocation-audited"
+  ],
+  "cli-mounted": [
+    "cli-kernel-status",
+    "cli-upstream-mounted",
+    "cli-grant-add",
+    "cli-grant-list",
+    "cli-grant-revoke",
+    "cli-audit-tail",
+    "cli-wrong-cell-denied",
+    "cli-invalid-input-denied"
+  ]
+}

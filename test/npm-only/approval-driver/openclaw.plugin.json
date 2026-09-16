@@ -1,0 +1,16 @@
+{
+  "id": "gkos-gatekeeper-fixture",
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  },
+  "contracts": {
+    "tools": [
+      "gk_fixture_record_write"
+    ]
+  }
+}

@@ -29,7 +29,7 @@ snap="${2:-$default_snap}"
 mode="${3:-full}"
 case "$phase:$mode" in
   *:full) install_only=0;;
-  phase-8:mcp-boundary) install_only=0;;
+  phase-8:mcp-boundary|phase-3:npm-only) install_only=0;;
 
   phase-9:prepublish|phase-6:blueprint-sandbox) install_only=0;;
   phase-7:runtime-checkpoint) install_only=0;;
@@ -42,8 +42,25 @@ out="$REPO_ROOT/vm-artifacts/$ts-$phase"; mkdir -p "$out"
 echo "$snap" > "$out/snapshot"
 echo "$mode" > "$out/mode"
 
+if [ "$phase:$mode" = phase-3:npm-only ]; then
+  source "$REPO_ROOT/scripts/vm/preflight.sh"
+  vm_test_preflight
+fi
 bash "$REPO_ROOT/scripts/vm/reset.sh" "$snap"
-bash "$REPO_ROOT/scripts/vm/sync.sh"
+if [ "$phase:$mode" = phase-3:npm-only ]; then
+  [ "$DRIVER" = libvirt ] || vm_die 'npm-only acceptance currently requires the owned libvirt VM'
+  VM_SRC=/home/tester/npm-acceptance
+  # The installed snapshot contains an old source checkout. Remove it before any
+  # product invocation; transfer only test fixtures, never a checkout or build.
+  vm_call exec 'systemctl --user stop "openclaw-gateway*.service" || true; python3 -c '\''import pathlib,shutil; p=pathlib.Path("/home/tester/src"); shutil.rmtree(p) if p.exists() else None; p=pathlib.Path("/home/tester/npm-acceptance"); shutil.rmtree(p) if p.exists() else None; p.mkdir(mode=0o700)'\'''
+  transport="ssh -F /dev/null -i $LV_KEY -p $LV_PORT -o BatchMode=yes -o UserKnownHostsFile=$STATE_DIR/known_hosts"
+  rsync -az -e "$transport" "$REPO_ROOT/test/npm-only/" "$VM_USER@127.0.0.1:$VM_SRC/"
+  rsync -az -e "$transport" "$REPO_ROOT/test/phase-3-npm-only.sh" "$VM_USER@127.0.0.1:$VM_SRC/run.sh"
+  git -C "$REPO_ROOT" rev-parse HEAD > "$out/revision"
+  (cd "$REPO_ROOT" && sha256sum test/phase-3-npm-only.sh && find test/npm-only -type f -exec sha256sum {} +) > "$out/harness-sha256"
+else
+  bash "$REPO_ROOT/scripts/vm/sync.sh"
+fi
 
 # Secrets are injected as env for this run only (docs/vm-testing.md §6); never written into the VM tree.
 if [ -s "$REPO_ROOT/scripts/vm/secrets.env" ]; then
@@ -51,6 +68,7 @@ if [ -s "$REPO_ROOT/scripts/vm/secrets.env" ]; then
 fi
 
 test_script="test/$phase.sh"
+if [ "$phase:$mode" = phase-3:npm-only ]; then test_script=run.sh; fi
 if [ "$phase:$mode" = phase-3:install-integration ]; then test_script=test/phase-3-install.sh; fi
 
 if [ "$phase:$mode" = phase-3:install-hook ]; then test_script=test/phase-3-install-hook.sh; fi

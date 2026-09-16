@@ -414,3 +414,83 @@ not the old npm scope. No snapshot is modified or replaced.
 This command never publishes, logs into npm, tags, or claims the later npm-only
 Phase 9 acceptance. The release's kernel changes also require the independent
 `phase-3 installed kernel-live` checkpoint. Preserve failed runs as failed evidence.
+
+## Private post-publish npm-only acceptance
+
+`scripts/vm/test.sh phase-3 installed npm-only` uses the owned libvirt VM and the
+original installed snapshot. Unlike source checkpoints, it stops the snapshot's
+Gateway and removes `/home/tester/src`, then transfers only `test/npm-only` fixtures
+and their runner to `/home/tester/npm-acceptance`. No repository is cloned or synced;
+no product is built or copied from the host. All five `@gatekeeper-os` packages are
+installed at `0.1.0-beta.5` from `https://registry.npmjs.org` into an empty prefix.
+Registry identity, dist-tags, publish times and integrity metadata are retained.
+The npm-only runner installs the README-pinned Node 22.22.3 in a disposable
+test-only prefix, verifies the official archive SHA256, and retains its version
+and executable in `guest-runtime.json`; snapshot Node/upstream are not modified.
+Beta.5 preparation is not publication or a VM invocation; all five packages must
+be consistently listed and verified before a separately authorized run. The
+independent approvals fixture owns its manifest tools and obtains its sole added
+messaging plugin admission from the installed CLI catalog-policy preview, with a
+strict unchanged-native-policy check. This fixture step is not config-apply CLI evidence.
+
+The installed CLI provisions `kernel-test --port 19100 --policy messaging`.
+Its packaged kernel, filesystem driver, config fragments and install policy are
+used unchanged. Test fixtures add a loopback synthetic model, passive observations,
+disposable filesystem roots and a synthetic channel, preserving global messaging
+denials and the canonical cell-token SecretRef. Guest-only ports 19100/19101 are
+not exposed on the host. Install-policy checks cover actual CLI denial/explicit
+operator allowance and unavailable-policy fail-closed behavior. Kernel scenarios
+retain the selected 38 live conformance assertions through a dependency-free
+test-only evidence adapter, plus owner-only audience checks.
+
+The real filesystem driver still refuses applying writes; that limitation is not
+patched away or recast as successful provider-write acceptance. Any synthetic
+approval effects are recorded separately from real filesystem/provider effects.
+Only structural evidence is collected from `npm-acceptance-evidence`; cell configs,
+credentials, raw model traffic and Gateway logs stay private in the disposable VM.
+The first failing command stops the run. Do not patch the product or retry a failed
+acceptance as if it were the original result. No publication, release workflow,
+visibility change or phase tag is performed by this checkpoint.
+
+### Libvirt preflight: transient memlock and daemon identity
+
+Verified on nova's session libvirt 12.7.0 / QEMU 11.1 (2026-09-12):
+`qemu-img snapshot -a installed` and QEMU capability probing can fail with
+`Failed to initialize io_uring: Cannot allocate memory` when the session
+`virtqemud` inherits an 8 MiB soft/hard MEMLOCK limit. The tested process-only
+workaround is **soft MEMLOCK 0**, preserving the original hard limit; do not
+interpret this as increasing available memory or apply it to unrelated failures.
+
+For `phase-3 installed npm-only`, `scripts/vm/test.sh` now automatically sources
+`preflight.sh`: acquire the owned-state acceptance lock, require the VM off, hold
+an interactive session connection, verify exactly one same-user timed virtqemud,
+and record its PID/start identity and limits. `libvirt-preflight.py` applies the
+process-only 0/8MiB fallback only to the evidenced 8MiB/8MiB condition (already-zero
+is retained; unknown limits fail closed). No sudo or persistent host config edits.
+
+The runner's EXIT/INT/TERM traps request graceful guest poweroff, then terminate
+the keeper; its `finally` restores original limits on the same PID/start identity,
+closes the connection, and compares the original internal snapshot table. Cleanup
+failure produces exit98. Forced poweroff, snapshot recreation and release retries
+are never performed. As with all traps, SIGKILL/host power loss cannot be handled.
+A lost daemon identity is a recorded failure, never a reason to modify a new PID.
+
+If original registrations have disappeared, supply the directory holding the
+retained original `<snapshot>.original.xml` files via
+`GKOS_VM_SNAPSHOT_XML_DIR`. Preflight verifies snapshot name and owned disk,
+records each XML SHA256, and uses `snapshot-create --redefine` only for missing
+registrations, restoring original ancestors before the requested child. Every
+ancestor must have its own matching original XML and owned disk; missing XML,
+invalid names and parent cycles fail closed. Existing registrations are untouched;
+it never creates/replaces an internal snapshot. Host-only regression:
+`python3 test/vm-snapshot-registration.test.py` (fake libvirt; no VM start/reset).
+
+The artifact `libvirt-preflight.json` records before/applied/restored limits,
+identity and snapshot equality. Keep scripts immutable during the single run.
+Other VM modes and read-only diagnostic boots still require an explicitly held
+connection and the same transient cleanup discipline; they do not implicitly
+opt into this nova-specific workaround.
+
+Inspection of a failed run must preserve its current guest disk: do not revert to
+`installed` before reading retained logs/configs. Booting the current disk starts
+its normal services; make only read-only diagnostic queries and redact auth fields.

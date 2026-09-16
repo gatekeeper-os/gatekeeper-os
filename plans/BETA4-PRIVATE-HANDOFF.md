@@ -1,11 +1,19 @@
 # GatekeeperOS beta.4 — contingency publication handoff
 
-Do not publish until checking whether kernel beta.3 has recovered. Recheck its
-packument, exact version document, tarball integrity and dist-tags consistently;
-if recovered before beta.4 publication, discard the never-pushed beta.4 tag and
-proceed with beta.3 npm-only acceptance using its tag and rebased harness instead.
-The beta.4 preparation does not authorize publication or any VM run while registry
-listings are inconsistent. All five `latest` tags were still beta.2 at preparation.
+**2026-09-14 status: published and verified.** Beta.3 is deprecated; discard its
+acceptance plan. The manual publication commands below are retained as a release
+handoff template/history, not an instruction to republish beta.4.
+
+## Registry indexing barrier (release handoff template)
+
+Never run dist-tag or deprecate writes until the publish process has exited and
+every package listing has been verified. Check all exact version documents,
+packument version entries and publication times, archive SHA512, internal pins,
+and beta tags. A version document or successful command alone is insufficient.
+Kernel beta.3 and gatekeeper-fs beta.4 listings lagged their version documents
+until a later write (operator-reported incident); do not use concurrent metadata
+writes to repair or probe indexing. After authorized tag/deprecation writes,
+read listings and dist-tag endpoints again to confirm the actual result.
 
 ## Manual publication from the tag SHA (Matt only)
 
@@ -50,8 +58,7 @@ npm deprecate @gatekeeper-os/cli@0.1.0-beta.3 "Superseded by beta.4 due to a reg
 Before npm-only acceptance, the kernel version referenced by the selected CLI and
 filesystem installation path must be present consistently in registry listings.
 The CLI directly pins kernel and gatekeeper-fs; gatekeeper-fs does not have a direct
-kernel dependency. The acceptance harness currently targets beta.3; if beta.4 is
-published, update its artifact identifiers to beta.4 before the authorized run.
+kernel dependency. The acceptance harness now targets the verified beta.4 artifacts.
 Preserve all failed-run evidence. Up to three invocations, harness-only fixes between;
 product failure is a hard stop. All 38 selected conformance checks, owner-only audience
 and approval apply/reject must pass before harness/community PR9 merges with green
