@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+OpenClaw 2026.9.5 made `createPluginRuntimeStore` slots private to each managed plugin
+instance, so the SDK slot can no longer carry objects between plugins. Gatekeeper drivers and
+tool execution no longer rely on it:
+
+- The kernel loads each enabled catalog driver itself from the module declared at
+  `gkos.gatekeeper.driver` inside the validated catalog root. It re-validates the driver with
+  its own kit and owns the driver's start/stop and revocation. Gatekeeper plugins no longer
+  register a driver service.
+- Kit tool wrappers return an inert `Operation denied.` placeholder. The kernel executes the
+  call in public tool-result middleware (`contracts.agentToolResultMiddleware`), after
+  consuming the preflight and rechecking the grant. Without a running kernel nothing executes.
+- **Breaking kit API:** the root `@gatekeeper-os/gatekeeper-kit` entry is now driver-safe and
+  never imports `openclaw`. `defineGatekeeper` moved to `@gatekeeper-os/gatekeeper-kit/plugin`.
+  Drivers export `defineGatekeeperDriver({...})` from `src/driver.ts`, and `src/index.ts`
+  becomes `defineGatekeeper(driver)`. `gatekeeperRuntimeSlot`, `kernelToolRuntimeSlot` and
+  `GatekeeperRuntime` are removed.
+
+Known gap: on 2026.9.5+ upstream also runs agent hooks and tools on a separately loaded
+discovery instance of the kernel, which cannot reach the full-mode kernel runtime. Agent-facing
+calls still fail closed there. Verified end to end on 2026.9.2 and 2026.9.4; on 2026.9.6 the
+driver is healthy and grants resolve, but agent tool use remains blocked.
+
 ## 0.1.0-beta.5
 
 beta.1–beta.4 cannot expose tools of gatekeepers the kernel manifest does not enumerate; fixed by per-gatekeeper tool ownership

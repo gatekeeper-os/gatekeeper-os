@@ -1,8 +1,9 @@
-/** Catalog-backed gatekeeper registry with checked live runtime attachment. */
+/** Catalog-backed gatekeeper registry. The kernel loads and owns every catalog driver; no plugin hands it one. */
 import { readFileSync, realpathSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 import { Value } from "typebox/value";
 import { GatekeeperToolDefSchema, SupportedResourceSchema, type ApprovalQueue, type Gatekeeper, type GatekeeperSession, type GatekeeperToolDef, type GatekeeperVendor, type Grant, type SupportedResource } from "@gatekeeper-os/shared";
-import { gatekeeperRuntimeSlot, validateGatekeeperManifest } from "@gatekeeper-os/gatekeeper-kit";
+import { defineGatekeeperDriver, gatekeeperDriverPath, startGatekeeperDriver, validateGatekeeperManifest, type GatekeeperDefinition, type LiveGatekeeper, type VendorContext } from "@gatekeeper-os/gatekeeper-kit";
 
 /** Enabled gatekeeper identity and static, schema-checked catalog metadata. */
 export interface CatalogEntry { pluginId:string; vendor:string; apiVersion:1; root:string; tools:GatekeeperToolDef[]; resources:SupportedResource[]; enabled?:boolean; }
@@ -10,9 +11,11 @@ interface CatalogFile { version:1; gatekeepers:CatalogEntry[]; }
 /** Runtime binding retained only for the duration of a resolved grant session. */
 export interface OpenedSession { session:GatekeeperSession; gatekeeper:Gatekeeper; instanceId:string; }
 
-/** Validates static metadata and resolves a fresh, identity-checked runtime slot for every use. */
+/** Validates static metadata and owns the live drivers it starts from catalog roots. */
 export class Registry {
   readonly entries=new Map<string,CatalogEntry>();
+  /** Kernel-owned live drivers keyed by vendor; populated only by start() and revoked by stop(). */
+  readonly drivers=new Map<string,LiveGatekeeper>();
   readonly tools:GatekeeperToolDef[]=[];
   constructor(readonly catalogPath:string,readonly stateDir:string){ this.load(); }
   toolNames():string[]{return this.tools.map(t=>t.name);}
@@ -32,11 +35,27 @@ export class Registry {
       const entry={...raw,root,tools:structuredClone(raw.tools),resources:structuredClone(raw.resources)};this.entries.set(entry.vendor,entry);this.tools.push(...entry.tools);
     }
   }
+  /**
+   * Load each enabled catalog driver from its manifest-declared module inside the validated root, re-validate it with
+   * the kernel's own kit, and start it. A failing driver stays unavailable and never blocks the kernel.
+   */
+  async start(host:{config:unknown;logger:VendorContext["logger"]}):Promise<void>{
+    this.stop();
+    for(const entry of this.entries.values()){
+      try{
+        const pluginConfig=enabledPluginConfig(host.config,entry.pluginId);if(!pluginConfig)throw new Error();
+        const loaded:unknown=(await import(pathToFileURL(gatekeeperDriverPath(entry.root)).href)).default;
+        const def=defineGatekeeperDriver(loaded as GatekeeperDefinition);
+        if(def.id!==entry.pluginId||def.vendor!==entry.vendor||def.apiVersion!==entry.apiVersion||def.tools.length!==entry.tools.length||entry.tools.some(t=>!def.tools.some(d=>d.name===t.name)))throw new Error();
+        this.drivers.set(entry.vendor,startGatekeeperDriver(def,{pluginConfig:structuredClone(pluginConfig),stateDir:realpathSync(this.stateDir),logger:host.logger}));
+      }catch{host.logger.warn(`GatekeeperOS: gatekeeper ${entry.vendor} unavailable.`);}
+    }
+  }
+  /** Revoke every driver; retained vendor, account, resource and session handles fail closed. */
+  stop():void{for(const driver of this.drivers.values())driver.revoke();this.drivers.clear();}
   private live(vendor:string){
-    const entry=this.entries.get(vendor);if(!entry)throw new Error("Gatekeeper unavailable.");
-    const runtime=gatekeeperRuntimeSlot(entry.pluginId).tryGetRuntime();
-    if(!runtime||runtime.pluginId!==entry.pluginId||runtime.vendor!==entry.vendor||runtime.apiVersion!==entry.apiVersion||realpathSync(runtime.root)!==entry.root||realpathSync(runtime.stateDir)!==realpathSync(this.stateDir))throw new Error("Gatekeeper unavailable.");
-    return {entry,vendor:runtime.getVendor()};
+    const entry=this.entries.get(vendor),driver=this.drivers.get(vendor);if(!entry||!driver)throw new Error("Gatekeeper unavailable.");
+    return {entry,vendor:driver.vendor};
   }
   /** Resolve a live vendor for operator-only account setup, never for resource access. */
   connection(vendorName:string):GatekeeperVendor{return this.live(vendorName).vendor;}
@@ -53,6 +72,13 @@ export class Registry {
   }
   /** Return safe health metadata without exposing resource identities. */
   health(){return [...this.entries.values()].map(entry=>{try{this.live(entry.vendor);return {vendor:entry.vendor,healthy:true,accounts:0};}catch{return {vendor:entry.vendor,healthy:false,accounts:0};}});}
+}
+/** Upstream enablement for a catalog plugin and its lifecycle-owned config; undefined when upstream would not load it. */
+function enabledPluginConfig(config:unknown,id:string):Record<string,unknown>|undefined{
+  const plugins=(config as {plugins?:{enabled?:boolean;allow?:unknown;deny?:unknown;entries?:Record<string,{enabled?:boolean;config?:Record<string,unknown>}|undefined>}}|undefined)?.plugins;
+  if(plugins?.enabled===false||(Array.isArray(plugins?.deny)&&plugins.deny.includes(id))||(Array.isArray(plugins?.allow)&&!plugins.allow.includes(id)))return;
+  const entry=plugins?.entries?.[id];if(entry?.enabled===false)return;
+  return entry?.config??{};
 }
 /** Stable cell-local resource/account key; never an authorization decision on its own. */
 export function instanceId(g:Grant):string{return `${g.vendor}\u0000${g.operatorId}\u0000${g.resourceKey}`;}

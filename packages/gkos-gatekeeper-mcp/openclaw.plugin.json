@@ -55,7 +55,8 @@
   "gkos": {
     "gatekeeper": {
       "vendor": "mcp",
-      "apiVersion": 1
+      "apiVersion": 1,
+      "driver": "./dist/driver.js"
     }
   }
 }

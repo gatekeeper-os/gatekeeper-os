@@ -66,6 +66,8 @@ repair registration under the wrong plugin identity.
 - The **kit**, not vendor code, registers inert wrappers under each gatekeeper's
   upstream identity during full/discovery/tool-discovery. No driver receives an API.
   Wrappers delegate to the existing full kernel runtime slot at execution time;
+  **(superseded 2026-09-26: wrappers now return an inert placeholder that only the kernel's
+  tool-result middleware replaces; the kernel loads drivers itself. See `upstream-reference.md`.)**
   registration order cannot grant authority or require a pending-API registry.
 - Kernel execution checks plugin/vendor/API/root/cell identity against the catalog,
   consumes the original call stash, and rechecks grant/audience/parameters. Shutdown

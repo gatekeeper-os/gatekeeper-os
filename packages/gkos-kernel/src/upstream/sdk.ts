@@ -22,3 +22,9 @@ export type HookHandler<K extends HookName> = Parameters<typeof on<K>>[1];
 export type HookEvent<K extends HookName> = Parameters<HookHandler<K>>[0];
 export type HookCtx<K extends HookName> = Parameters<HookHandler<K>>[1];
 export type HookResult<K extends HookName> = ReturnType<HookHandler<K>>;
+/** Tool-result middleware shapes (identical in 2026.9.2 and 2026.9.6 published declarations): the event carries
+ *  toolCallId, toolName, args, isError and the tool's result; returning `{ result }` replaces that result. */
+declare const registerToolResultMiddleware: import("openclaw/plugin-sdk/plugin-entry").OpenClawPluginApi["registerAgentToolResultMiddleware"];
+type ToolResultMiddleware = Parameters<typeof registerToolResultMiddleware>[0];
+export type ToolResultEvent = Parameters<ToolResultMiddleware>[0];
+export type ToolResultCtx = Parameters<ToolResultMiddleware>[1];

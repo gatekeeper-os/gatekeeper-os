@@ -37,7 +37,7 @@ start_gateway boundary
 node test/scripts/mcp-boundary-scenarios.mjs
 kill "$gateway_pid"; wait "$gateway_pid" || true; gateway_pid=''
 ln -s ../../../packages/gkos-gatekeeper-mcp/node_modules test/fixtures/mcp-notes/node_modules
-pnpm exec tsup test/fixtures/mcp-notes/index.ts --format esm --out-dir test/fixtures/mcp-notes/dist --external @gatekeeper-os/gatekeeper-kit --external typebox > /home/tester/mcp-fixture-build.log 2>&1
+pnpm exec tsup test/fixtures/mcp-notes/index.ts test/fixtures/mcp-notes/driver.ts --format esm --out-dir test/fixtures/mcp-notes/dist --external @gatekeeper-os/gatekeeper-kit --external typebox > /home/tester/mcp-fixture-build.log 2>&1
 pnpm exec tsx test/scripts/mcp-boundary-config.mjs fixture
 openclaw config validate > /home/tester/mcp-fixture-validation.log 2>&1
 start_gateway fixture

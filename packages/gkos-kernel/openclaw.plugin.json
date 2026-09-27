@@ -15,6 +15,10 @@
     "trustedToolPolicies": [
       "gkos-capability-policy"
     ],
+    "agentToolResultMiddleware": [
+      "openclaw",
+      "codex"
+    ],
     "gatewayMethodDispatch": [
       "os.status",
       "os.grants.list",

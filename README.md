@@ -23,6 +23,12 @@ disabled; real connected-provider and chat-transport acceptance is not establish
 See the [beta.5 release notes](plans/release-notes-beta.5.md) and
 [acceptance receipts](plans/PROGRESS.md).
 
+> **Compatibility: beta.5 works with OpenClaw 2026.9.2–2026.9.4 only.** OpenClaw 2026.9.5
+> made SDK runtime-store slots private to each plugin instance, which cuts the kernel off
+> from gatekeeper drivers and from its own runtime. On 2026.9.5+ every gatekeeper and
+> `os_*` call fails closed. The fix is in progress; see
+> [upstream reference](docs/upstream-reference.md#2026-09-26--openclaw-202695-instance-scoped-runtime-slots).
+
 [Architecture](docs/implementation-plan.md) · [Acceptance status](docs/phase-checklist.md) ·
 [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) ·
 [Acknowledgments](docs/acknowledgments.md) · [License](LICENSE)

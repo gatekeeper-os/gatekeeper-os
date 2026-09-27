@@ -1,10 +1,5 @@
-import { defineGatekeeper } from "@gatekeeper-os/gatekeeper-kit";
-import { boundaryResource } from "./manifest.js";
-import { mcpTools } from "./tools.js";
-import { McpVendor } from "./vendor.js";
-/** Approved STOP2 read-only runtime; generic native effects remain gated. */
-export default defineGatekeeper({
-  id: "gkos-gatekeeper-mcp", vendor: "mcp", apiVersion: 1, name: "MCP Gatekeeper",
-  description: "Mediates explicitly configured MCP server introductions.",
-  resources: [boundaryResource("demo")], tools: mcpTools, createVendor: ctx => new McpVendor(ctx),
-});
+// OpenClaw plugin entry: declares this gatekeeper's tools. The kernel loads ./driver.js itself.
+import { defineGatekeeper } from "@gatekeeper-os/gatekeeper-kit/plugin";
+import driver from "./driver.js";
+
+export default defineGatekeeper(driver);

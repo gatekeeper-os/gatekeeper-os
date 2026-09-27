@@ -12,5 +12,12 @@
     "tools": [
       "gk_fixture_record_write"
     ]
+  },
+  "gkos": {
+    "gatekeeper": {
+      "vendor": "fixture",
+      "apiVersion": 1,
+      "driver": "./driver.mjs"
+    }
   }
 }

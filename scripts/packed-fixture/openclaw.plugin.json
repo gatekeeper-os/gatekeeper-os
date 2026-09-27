@@ -2,5 +2,6 @@
   "id": "gkos-gatekeeper-fixture",
   "contracts": { "tools": ["gk_fixture_record_write"] },
   "activation": { "onStartup": true },
-  "configSchema": { "type": "object", "additionalProperties": false, "properties": {} }
+  "configSchema": { "type": "object", "additionalProperties": false, "properties": {} },
+  "gkos": { "gatekeeper": { "vendor": "fixture", "apiVersion": 1, "driver": "./driver.mjs" } }
 }

@@ -5,15 +5,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { GatekeeperAccount, GatekeeperVendor } from "@gatekeeper-os/shared";
-import type { GatekeeperRuntime } from "@gatekeeper-os/gatekeeper-kit";
 import { Registry } from "./registry.js";
 import { OAuthRouter } from "./oauth.js";
 
-const runtime = vi.hoisted(() => new Map<string, GatekeeperRuntime>());
-vi.mock("@gatekeeper-os/gatekeeper-kit", async importOriginal => ({
-  ...await importOriginal<typeof import("@gatekeeper-os/gatekeeper-kit")>(),
-  gatekeeperRuntimeSlot: (id: string) => ({ tryGetRuntime: () => runtime.get(id) }),
-}));
 
 const noResource = async (): Promise<never> => { throw new Error("Not a resource fixture."); };
 function vendorFixture(name = "example") {
@@ -28,10 +22,8 @@ function vendorFixture(name = "example") {
   return { vendor, connect, complete, account, accounts };
 }
 let router: OAuthRouter, registry: Registry, fixture: ReturnType<typeof vendorFixture>, clock: number;
-function install(vendor: GatekeeperVendor) {
-  const entry = registry.entries.get(vendor.vendor)!;
-  runtime.set(entry.pluginId, { pluginId: entry.pluginId, vendor: vendor.vendor, apiVersion: 1, root: entry.root, stateDir: registry.stateDir, getVendor: () => vendor, revoke() {} });
-}
+// Stands in for Registry.start(): driver loading is covered by registry.test.ts.
+function install(vendor: GatekeeperVendor) { registry.drivers.set(vendor.vendor, { vendor, revoke() {} }); }
 async function request(url: string, method = "GET") {
   const req = new IncomingMessage(new Socket()); req.method = method; req.url = url;
   const res = new ServerResponse(req), end = vi.spyOn(res, "end").mockReturnValue(res);
@@ -45,7 +37,7 @@ async function begin(operator = "operator-a", resourceTypes?: string[]) {
   return { start: start.url, state, callback: `/os/gatekeeper/example/oauth/callback?state=${state}&code=fixture-code`, response };
 }
 beforeEach(() => {
-  runtime.clear(); clock = 0;
+  clock = 0;
   const root = mkdtempSync(join(tmpdir(), "gkos-oauth-")), path = join(root, "gatekeepers.json");
   for(const vendor of ["example","other"]){mkdirSync(join(root,vendor));writeFileSync(join(root,vendor,"openclaw.plugin.json"),JSON.stringify({id:`gkos-gatekeeper-${vendor}`,contracts:{tools:[]}}));}
   writeFileSync(path, JSON.stringify({ version: 1, gatekeepers: ["example", "other"].map(vendor => ({
@@ -101,14 +93,10 @@ describe("kernel account routing with real registry and kit nonce state", () => 
     const b = await begin(); router.clear();
     expect((await request(b.callback)).status).toBe(400);
   });
-  it("checks catalog root/cell and refuses unavailable runtimes before issuing a URL", async () => {
-    const record = runtime.get("gkos-gatekeeper-example")!;
-    runtime.set("gkos-gatekeeper-example", { ...record, stateDir: tmpdir() });
+  it("refuses stopped or absent kernel-owned drivers before issuing a URL", async () => {
+    registry.stop();
     await expect(router.connect("example", "operator-a")).rejects.toThrow("Account connection unavailable.");
-    runtime.set("gkos-gatekeeper-example", { ...record, root: tmpdir() });
-    await expect(router.connect("example", "operator-a")).rejects.toThrow("Account connection unavailable.");
-    runtime.delete("gkos-gatekeeper-example");
-    await expect(router.connect("example", "operator-a")).rejects.toThrow("Account connection unavailable.");
+    expect(fixture.connect).not.toHaveBeenCalled();
   });
   it("refuses bounded malformed/unsupported operator connection requests", async () => {
     for (const [vendor, operator, types] of [["missing", "a", undefined], ["../example", "a", undefined], ["example", "", undefined], ["example", "x".repeat(513), undefined], ["example", "a\n", undefined], ["example", "a", ["unknown"]], ["example", "a", ["item", "item"]], ["example", "a", Array(33).fill("item")]] as const) {

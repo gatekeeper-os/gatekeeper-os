@@ -1,7 +1,7 @@
 import './kernel-config.mjs';
 import {readFileSync,writeFileSync} from 'node:fs';
 import {resolve} from 'node:path';
-import {resources,tools} from '../fixtures/phase5-driver/index.mjs';
+import {resources,tools} from '../fixtures/phase5-driver/driver.mjs';
 const cfg=JSON.parse(readFileSync(process.env.OPENCLAW_CONFIG_PATH,'utf8'));
 cfg.plugins.allow=['gkos-kernel','gkos-gatekeeper-fs','gkos-channel-ingress'];
 cfg.plugins.load.paths=['packages/gkos-kernel','test/fixtures/phase5-driver','test/fixtures/phase5-channel'].map(p=>resolve(p));

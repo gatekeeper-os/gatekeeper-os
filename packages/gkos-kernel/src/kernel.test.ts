@@ -22,6 +22,8 @@ vi.mock("./registry.js",()=>({instanceId:()=>"fixture-instance",Registry:class{
   openSession(){return Promise.resolve({session:{call:fixture.call,close:fixture.close},instanceId:"fixture-instance",gatekeeper:{applyAction:fixture.apply,rejectAction:fixture.reject}});}
   entryForTool(name:string){return name==="gk_test_read"?{pluginId:"gkos-gatekeeper-test",vendor:"test",apiVersion:1,root:process.env.OPENCLAW_STATE_DIR}:undefined;}
   toolNames(){return["gk_test_read"];}
+  async start(){}
+  stop(){}
   health(){return [{vendor:"test",healthy:true}];}
 }}));
 
@@ -257,26 +259,51 @@ it('does not reopen queued resources when persistent maintenance starts during a
   expect((await rpc('os.approvals.list')).output).toMatchObject({ actions: [{ id: 2, status: 'pending' }] });
 });
 
-function executionTool() { return {execute:(id:string,params:Record<string,unknown>)=>kernel.executeGatekeeperTool({pluginId:"gkos-gatekeeper-test",vendor:"test",apiVersion:1,root:process.env.OPENCLAW_STATE_DIR!,stateDir:process.env.OPENCLAW_STATE_DIR!},id,"gk_test_read",params)}; }
+/** Drives the real execution boundary as upstream does: the kit's inert placeholder, then kernel tool-result middleware. */
+const placeholder={content:[{type:"text" as const,text:"Operation denied."}],details:{}};
+async function middleware(id:string,params:Record<string,unknown>,toolName="gk_test_read",isError=false){
+  return kernel.onToolResult({toolCallId:id,toolName,args:params,isError,result:placeholder},{runtime:"openclaw",agentId:ctx.agentId,sessionKey:ctx.sessionKey,runId:ctx.runId});
+}
+function executionTool() { return {execute:async(id:string,params:Record<string,unknown>)=>{
+  const result=(await middleware(id,params))?.result;
+  if(!result||(result.details as {status?:string}|undefined)?.status==="error")throw new Error("Operation denied.");
+  return result;
+}}; }
+async function toolAudit(){const report=await rpc('os.audit.query',{limit:100});expect(report.ok).toBe(true);return(report.output as Array<{kind:string;ok:boolean;title:string}>).filter(row=>row.kind==='tool');}
 
-it('rejects a different plugin/root/state/tool before consuming a valid preflight',async()=>{
- const {handle}=await grant();const params={grant:handle};
- const identity={pluginId:'gkos-gatekeeper-test',vendor:'test',apiVersion:1 as const,root:process.env.OPENCLAW_STATE_DIR!,stateDir:process.env.OPENCLAW_STATE_DIR!};
- expect(await kernel.onBeforeToolCall({toolName:'gk_test_read',toolCallId:'identity-call',params},{...ctx,toolName:'gk_test_read'})).toEqual({});
- for(const changed of [{pluginId:'gkos-gatekeeper-other'},{vendor:'other'},{root:tmpdir()},{stateDir:tmpdir()}])
-  await expect(kernel.executeGatekeeperTool({...identity,...changed},'identity-call','gk_test_read',params)).rejects.toThrow('Operation denied');
- await expect(kernel.executeGatekeeperTool(identity,'identity-call','gk_unknown_read',params)).rejects.toThrow('Operation denied');
- expect(fixture.call).toHaveBeenCalledTimes(1);
- await expect(kernel.executeGatekeeperTool(identity,'identity-call','gk_test_read',params)).resolves.toMatchObject({content:[{text:'fixture'}]});
+it('replaces the placeholder only after consuming a valid preflight, once',async()=>{
+ const {handle}=await grant(),params={grant:handle};
+ expect(await kernel.onBeforeToolCall({toolName:'gk_test_read',toolCallId:'exec-call',params},{...ctx,toolName:'gk_test_read'})).toEqual({});
+ expect(await middleware('exec-call',params)).toEqual({result:{content:[{type:'text',text:'fixture'}],details:{}}});
+ expect(await middleware('exec-call',params)).toMatchObject({result:{details:{status:'error'}}});
+ expect(fixture.call).toHaveBeenCalledTimes(2); // dry-run plus exactly one execution
+ expect(await toolAudit()).toMatchObject([{title:'gk_test_read',ok:true}]);
 });
 
-it('records kernel execution failure even when the kit returns a sanitized tool result',async()=>{
- const {handle}=await grant(),id='failed-result',params={grant:handle};
- await kernel.onBeforeToolCall({toolName:'gk_test_read',toolCallId:id,params},{...ctx,toolName:'gk_test_read'});
+it('ignores non-gatekeeper tools and denies unknown tools, host-flagged failures and a stopped kernel',async()=>{
+ const {handle}=await grant(),params={grant:handle};
+ expect(await middleware('native-call',{},'exec')).toBeUndefined();
+ for(const [id,tool,isError] of [['unknown-call','gk_unknown_read',false],['flagged-call','gk_test_read',true]] as const){
+  expect(await kernel.onBeforeToolCall({toolName:'gk_test_read',toolCallId:id,params},{...ctx,toolName:'gk_test_read'})).toEqual({});
+  expect(await middleware(id,params,tool,isError)).toMatchObject({result:{content:[{text:'Operation denied.'}],details:{status:'error'}}});
+  expect(await middleware(id,params)).toMatchObject({result:{details:{status:'error'}}}); // the preflight was consumed
+ }
+ expect(await kernel.onBeforeToolCall({toolName:'gk_test_read',toolCallId:'stopped-call',params},{...ctx,toolName:'gk_test_read'})).toEqual({});
+ await kernel.stop();
+ expect(await middleware('stopped-call',params)).toMatchObject({result:{details:{status:'error'}}});
+ expect(fixture.call).toHaveBeenCalledTimes(3); // dry-runs only
+ await kernel.start();
+});
+
+it('owns gk audit in middleware whatever the after_tool_call order, and records failure',async()=>{
+ const {handle}=await grant(),params={grant:handle};
+ await kernel.onBeforeToolCall({toolName:'gk_test_read',toolCallId:'early-after',params},{...ctx,toolName:'gk_test_read'});
+ await kernel.onAfterToolCall({toolName:'gk_test_read',toolCallId:'early-after',params},{...ctx,toolName:'gk_test_read'});
+ await expect(executionTool().execute('early-after',params)).resolves.toMatchObject({content:[{text:'fixture'}]});
+ await kernel.onBeforeToolCall({toolName:'gk_test_read',toolCallId:'failed-result',params},{...ctx,toolName:'gk_test_read'});
  fixture.call.mockRejectedValueOnce(new Error('private vendor failure'));
- await expect(executionTool().execute(id,params)).rejects.toThrow('Operation denied');
- await kernel.onAfterToolCall({toolName:'gk_test_read',toolCallId:id,params},{...ctx,toolName:'gk_test_read'});
- const report=await rpc('os.audit.query',{limit:100});
- expect(report.ok).toBe(true);
- expect((report.output as Array<{kind:string;ok:boolean}>).some((row)=>row.kind==='tool'&&row.ok===false)).toBe(true);
+ const denied=await middleware('failed-result',params);
+ expect(JSON.stringify(denied)).not.toContain('private vendor failure');
+ await kernel.onAfterToolCall({toolName:'gk_test_read',toolCallId:'failed-result',params},{...ctx,toolName:'gk_test_read'});
+ expect((await toolAudit()).map(row=>row.ok)).toEqual([false,true]); // newest first; exactly one row per call
 });
