@@ -3,7 +3,7 @@
 GatekeeperOS is an independent project. It is not affiliated with or endorsed by the OpenClaw Foundation. OpenClaw is a trademark of its owner.
 
 The filesystem reference driver provides scoped directory listing, bounded Linux
-file reads, and operator-approved text writes (published beta.5 simulates writes only). No OAuth or external credentials
+file reads, and operator-approved text writes (since 0.1.0-beta.6; beta.5 and earlier simulate writes only). No OAuth or external credentials
 are required. Explicit `config.roots` is an allowlist; empty roots deny all
 introductions. The kernel authenticates the operator and activates grants;
 account lookup does not grant access. Accounts are per-operator and revocable.
@@ -44,7 +44,7 @@ See the [approved filesystem contract](../../plans/fs-contract.md).
 
 ## Acceptance scope
 
-Real apply (unreleased): VM checkpoint `20260927-051331-phase-3` passed on guest Node 22.22.3,
+Real apply (0.1.0-beta.6): VM checkpoint `20260927-051331-phase-3` passed on guest Node 22.22.3,
 kernel 6.8.0, ext4, in `rename` mode: real write, refusal, CE-2 detection, revert and
 bind-mount refusal ([receipt](../../plans/fs-apply-checkpoint.md)). The packed model-turn gate
 covers approved create/replace, rejection and uncertain blocking.
@@ -58,4 +58,4 @@ checkpoints, not the current implementation limit. See [PROGRESS](../../plans/PR
 
 ## Distribution
 
-`@gatekeeper-os/gatekeeper-fs@0.1.0-beta.5` is published; `beta` and `latest` select it (no stable release). For cell installation use `npm install --global @gatekeeper-os/cli@beta` on a disposable evaluation machine, then follow the [CLI instructions](../gkos-cli/README.md). The npm package-page README updates on the next publication; this documentation change does not alter the existing archive.
+This README ships with `@gatekeeper-os/gatekeeper-fs@0.1.0-beta.6`; `beta` selects the newest beta (no stable release). For cell installation use `npm install --global @gatekeeper-os/cli@beta` on a disposable evaluation machine, then follow the [CLI instructions](../gkos-cli/README.md).

@@ -8,6 +8,12 @@ Includes the validated lifecycle builder, two-stage OAuth nonces, encrypted acco
 persistent simulation stores, action sequencing, a resource-session base class, fixed-message error sanitization, and
 an offline test queue. Kernel authorization and execution remain kernel-owned; the kit registers exact manifest-declared upstream wrappers under each driver's identity.
 
+Two entry points (since 0.1.0-beta.6). The root `@gatekeeper-os/gatekeeper-kit` entry is driver-safe and never imports
+`openclaw`: a gatekeeper's `src/driver.ts` exports `defineGatekeeperDriver({...})`, and the kernel loads that module
+directly from `gkos.gatekeeper.driver` in the plugin manifest. `@gatekeeper-os/gatekeeper-kit/plugin` provides
+`defineGatekeeper`; the plugin entry `src/index.ts` is `export default defineGatekeeper(driver)`. Build both entries
+(`tsup src/index.ts src/driver.ts`). `gatekeeperRuntimeSlot`, `kernelToolRuntimeSlot` and `GatekeeperRuntime` were removed.
+
 Phase 2 acceptance is library-only: `scripts/vm/test.sh phase-2`. No Gateway, external API, or production state is used.
 See the skeleton's ordering/recovery section for single-writer ownership, uncertain-action handling and sync approval binding.
 
@@ -22,4 +28,4 @@ application does not install gatekeepers or create grants.
 
 ## Distribution
 
-`@gatekeeper-os/gatekeeper-kit@0.1.0-beta.5` is published; `beta` and `latest` select it (no stable release). For cell installation use `npm install --global @gatekeeper-os/cli@beta` on a disposable evaluation machine, then follow the [CLI instructions](../gkos-cli/README.md). The npm package-page README updates on the next publication; this documentation change does not alter the existing archive.
+This README ships with `@gatekeeper-os/gatekeeper-kit@0.1.0-beta.6`; `beta` selects the newest beta (no stable release). For cell installation use `npm install --global @gatekeeper-os/cli@beta` on a disposable evaluation machine, then follow the [CLI instructions](../gkos-cli/README.md).
