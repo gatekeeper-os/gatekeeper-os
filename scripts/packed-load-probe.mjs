@@ -2,14 +2,14 @@
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { createServer } from 'node:http';
-import { randomUUID } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { createHash, randomUUID } from 'node:crypto';
+import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { resourceUrl, toolName } from './packed-fixture/metadata.mjs';
 const require = createRequire(process.argv[2]);
 const { GatewayClient } = await import(pathToFileURL(require.resolve('openclaw/plugin-sdk/gateway-runtime')).href);
 const clients = [];
-const result = { modelTurns: 0, providerRequests: 0, noGrantTools: false, grantedTools: false, fixtureApprovalApply: false, fixtureApprovalReject: false, revokedTools: false, nativeDenied: true, registrantIndependentBackstop: false, turns: [] };
+const result = { modelTurns: 0, providerRequests: 0, noGrantTools: false, grantedTools: false, fixtureApprovalApply: false, fixtureApprovalReject: false, revokedTools: false, fsWriteApplied: false, fsWriteReplaced: false, fsWriteRejected: false, fsUncertainBlocks: false, nativeDenied: true, registrantIndependentBackstop: false, turns: [] };
 result.toolsPolicy = JSON.parse(readFileSync(process.env.OPENCLAW_CONFIG_PATH, 'utf8')).tools;
 let current, stage = 'model-listen';
 const model = createServer(async (req, res) => {
@@ -22,7 +22,7 @@ const model = createServer(async (req, res) => {
     // Only tool identities and booleans leave this loop; no prompts or result bodies.
     const toolMessages = (input.messages ?? []).filter(message => message.role === 'tool');
     current.toolResult ||= toolMessages.length > 0;
-    current.denial ||= toolMessages.some(message => /not found|denied|unavailable/i.test(JSON.stringify(message.content)));
+    current.denial ||= toolMessages.some(message => /not found|denied|unavailable|no such grant/i.test(JSON.stringify(message.content)));
     const call = current.names.length === 1;
     const toolCall = { id: 'packed-call-' + current.id, type: 'function', function: { name: current.tool, arguments: JSON.stringify(current.params) } };
     const delta = call ? { role: 'assistant', tool_calls: [{ index: 0, ...toolCall }] } : { role: 'assistant', content: 'packed-check-complete' };
@@ -50,6 +50,29 @@ const effects = () => {
   const path = join(process.env.OPENCLAW_STATE_DIR, 'packed-fixture-effects.jsonl');
   return existsSync(path) ? readFileSync(path, 'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line)) : [];
 };
+/** Driver-private effect receipts, found by name only; bodies never leave the probe. */
+function receipts(name) {
+  const found = [], walk = dir => { for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.isDirectory()) walk(join(dir, entry.name)); else if (entry.name === name) found.push(JSON.parse(readFileSync(join(dir, entry.name), 'utf8')));
+  } };
+  const root = join(process.env.OPENCLAW_STATE_DIR, 'os/gatekeepers/fs');
+  if (existsSync(root)) walk(root);
+  return found;
+}
+/** One real filesystem write through a model turn, then one explicit operator decision. */
+async function fsWrite(client, handle, id, path, decision) {
+  const content = `packed ${id} write\n`, target = join(process.argv[5], path);
+  const before = existsSync(target) ? readFileSync(target, 'utf8') : undefined;
+  const row = await turn(client, id, 'gk_fs_file_write', { grant: handle, path, content });
+  assert(row.toolResult && !row.denial, id + '-queued');
+  stage = id;
+  const pending = (await client.request('os.approvals.list', {})).actions;
+  assert(pending.length === 1 && pending[0].status === 'pending', id + '-pending');
+  assert((existsSync(target) ? readFileSync(target, 'utf8') : undefined) === before, id + '-premature-effect');
+  let ok = true;
+  try { await client.request('os.approvals.' + decision, { ids: [pending[0].id] }); } catch { ok = false; }
+  return { ok, action: pending[0], content };
+}
 async function connect(auth) {
   let timer;
   try {
@@ -95,6 +118,24 @@ try {
   assert(result.grantedTools, 'granted-filesystem-tools');
   assert(granted.toolResult, 'granted-tool-result');
   assert(granted.names.every(names => !names.includes(toolName)), 'ungranted-fixture-exposed');
+  // Real filesystem apply: an approved write lands with a matching receipt; a rejected one never lands.
+  const applied = await fsWrite(paired.client, grant.handle, 'fs-write-apply', 'packed-apply.txt', 'apply');
+  const bytes = existsSync(join(process.argv[5], 'packed-apply.txt')) ? readFileSync(join(process.argv[5], 'packed-apply.txt')) : undefined;
+  const [receipt] = receipts(`apply-${applied.action.actionId}.receipt.json`);
+  result.fsWriteApplied = applied.ok && !!bytes && bytes.toString('utf8') === applied.content && !!receipt && receipt.path === 'packed-apply.txt' &&
+    receipt.bytes === bytes.length && receipt.sha256 === createHash('sha256').update(bytes).digest('hex') && ['exchange', 'rename', 'link'].includes(receipt.publish);
+  assert(result.fsWriteApplied, 'fs-write-apply-receipt');
+  // Replacing the file just written exercises the replace path (exchange when available, else rename).
+  const replaced = await fsWrite(paired.client, grant.handle, 'fs-write-replace', 'packed-apply.txt', 'apply');
+  const [replacement] = receipts(`apply-${replaced.action.actionId}.receipt.json`);
+  const after = readFileSync(join(process.argv[5], 'packed-apply.txt'));
+  result.fsWriteReplaced = replaced.ok && after.toString('utf8') === replaced.content && replacement?.sha256 === createHash('sha256').update(after).digest('hex') &&
+    ['exchange', 'rename'].includes(replacement?.publish);
+  assert(result.fsWriteReplaced, 'fs-write-replace-receipt');
+  result.fsPublish = { create: receipt.publish, replace: replacement.publish };
+  const rejected = await fsWrite(paired.client, grant.handle, 'fs-write-reject', 'packed-reject.txt', 'reject');
+  result.fsWriteRejected = rejected.ok && !existsSync(join(process.argv[5], 'packed-reject.txt')) && receipts(`apply-${rejected.action.actionId}.receipt.json`).length === 0;
+  assert(result.fsWriteRejected, 'fs-write-reject-landed');
   stage = 'introduce-fixture';
   const fixtureGrant = await paired.client.request('os.grants.introduce', { agentId: 'main', url: resourceUrl });
   assert(fixtureGrant.status === 'active' && fixtureGrant.audience === 'owner-only', 'fixture-grant-not-active');
@@ -120,6 +161,17 @@ try {
   result.revokedTools = revoked.names.every(names => !names.includes(toolName) && names.includes('gk_fs_file_read') && names.includes('os_list_grants'));
   assert(result.revokedTools, 'revoked-fixture-exposed');
   assert(revoked.toolResult && !revoked.denial, 'revoked-turn-result');
+  // An uncertain outcome (the parent refuses the staged file after intent is journaled) blocks later actions.
+  stage = 'fs-uncertain';
+  assert(process.getuid?.() !== 0, 'fs-uncertain-requires-non-root');
+  mkdirSync(join(process.argv[5], 'locked'), { mode: 0o755 }); chmodSync(join(process.argv[5], 'locked'), 0o555);
+  const uncertain = await fsWrite(paired.client, grant.handle, 'fs-write-uncertain', 'locked/new.txt', 'apply');
+  const blocked = await turn(paired.client, 'fs-after-uncertain', 'gk_fs_file_read', { grant: grant.handle, path: 'packed-apply.txt' });
+  const failed = (await paired.client.request('os.approvals.list', { includeDecided: true })).actions.find(item => item.id === uncertain.action.id);
+  const [journal] = receipts(`apply-${uncertain.action.actionId}.tx.json`);
+  result.fsUncertainBlocks = !uncertain.ok && journal?.phase === 'uncertain' && failed?.status === 'failed' && !existsSync(join(process.argv[5], 'locked/new.txt')) && blocked.toolResult && blocked.denial;
+  chmodSync(join(process.argv[5], 'locked'), 0o755);
+  assert(result.fsUncertainBlocks, 'fs-uncertain-not-blocking');
   // Only structural evidence leaves the probe. Never print tokens or RPC payloads.
   Object.assign(result, { healthy: status.healthy === true, kernelVersion: status.kernelVersion });
   console.log(JSON.stringify(result));
