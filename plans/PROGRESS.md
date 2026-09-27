@@ -3103,3 +3103,38 @@ raw arguments in operator Gateway logs on denial/no route. Prior failed body
 scans remain failed, with no full GitHub/MCP acceptance implied. Historical
 entries above describe knowledge and authorization at the time, not current
 release state. See [full survivor audit](POSTLAUNCH-DOCS-AUDIT.md).
+
+
+## Real filesystem apply — design blocked, 2026-09-16
+
+Design-first investigation at base `a029ed024e36295fc42742f97399e86459d48d4a`:
+[confinement design](fs-apply-confinement.md) and [reproducible counterexamples](fs-apply-confinement-evidence.md).
+Strict Linux openat2 resolution followed by identity checks and rename does not
+prevent parent relocation after the final check, or loss of an external final-name
+edit before rename. Both deterministic disposable-fixture schedules reproduced on
+Linux 6.18.50 x86_64. These are design diagnostics, not product or VM acceptance.
+ATLAS reviewed the contract/kit and agreed the proposed sequence is insufficient;
+its ownership/exchange alternative is not adopted without a stronger proof.
+
+Early stop: real apply/revert remain disabled; package, kernel and kit code unchanged.
+The requested real-write tests and VM checkpoint are blocked by the confinement
+proof, not waived. No VM command was run; run id: **none**; no snapshot restored or
+upstream runtime invoked. The old fs-boundary script is retired (exit 2); future
+acceptance belongs in the maintained fs-enforcement checkpoint via the VM runner.
+README and threat-model proof claims are deliberately not upgraded. Next step is an
+enforced mutation/isolation design satisfying the unchanged contract, or an explicit
+operator-reviewed scope change; another check-then-rename loop is not sufficient.
+Design-only draft PR; no merge, version bump, tag, publication, or upstream post.
+
+## Filesystem apply contract amended — 2026-09-27
+
+Operator decision (Matt): the STOP 1 filesystem contract now applies a
+cooperative-writer adversary model to apply and revert ([amendment](fs-contract.md#amendment-2026-09-27--cooperative-writer-adversary-model-for-apply)).
+Hostile concurrent mutation by a same-UID process is out of scope. The check→publish window
+is documented as residual. CE-1 is reachable only by the excluded adversary. CE-2
+must become detected, recoverable divergence. The threat model gained a matching
+"Filesystem writes: cooperative-writer model" paragraph. The earlier design review
+and counterexamples (draft PR #29) land with this change as the record of why.
+Docs only: no product code, test, VM run, version, tag or publication in this step.
+The simulate-only limit in the threat model stays until the implementation and VM
+checkpoint pass.
