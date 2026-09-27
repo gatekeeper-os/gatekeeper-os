@@ -1,9 +1,6 @@
 /** Manifest identity is the upstream registration and policy boundary, not a grant. */
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import { createPluginRuntimeStore } from "openclaw/plugin-sdk/runtime-store";
-import type { GatekeeperRuntimeIdentity } from "./define-gatekeeper.js";
-import type { ToolResult } from "@gatekeeper-os/shared";
+import { readFileSync, realpathSync } from "node:fs";
+import { join, sep } from "node:path";
 
 /** Require the installed manifest to declare exactly the validated driver/catalog tools. */
 export function validateGatekeeperManifest(root: string, id: string, tools: readonly string[]): void {
@@ -14,11 +11,18 @@ export function validateGatekeeperManifest(root: string, id: string, tools: read
     throw new Error("Gatekeeper manifest id/contracts.tools mismatch.");
   }
 }
-/** Kernel-owned execution transport. No vendor code or standalone tool handler receives authority. */
-export interface KernelToolRuntime {
-  executeGatekeeperTool(identity: GatekeeperRuntimeIdentity, id: string, tool: string, params: Record<string, unknown>): Promise<ToolResult & { details: unknown }>;
-}
-/** Shares the kernel lifecycle slot; discovery never initializes it and stop revokes it. */
-export function kernelToolRuntimeSlot() {
-  return createPluginRuntimeStore<KernelToolRuntime>({ pluginId: "gkos-kernel", errorMessage: "Kernel unavailable." });
+
+/**
+ * Resolve the manifest-declared driver module (`gkos.gatekeeper.driver`) inside the plugin root.
+ * The module is loaded by the kernel, so it must stay inside the catalog-validated root after symlink resolution.
+ */
+export function gatekeeperDriverPath(root: string): string {
+  const manifest = JSON.parse(readFileSync(join(root, "openclaw.plugin.json"), "utf8"));
+  const declared: unknown = manifest.gkos?.gatekeeper?.driver;
+  if (typeof declared !== "string" || !/^\.\/[A-Za-z0-9._/-]+\.m?js$/.test(declared) || declared.split("/").includes("..")) {
+    throw new Error("Gatekeeper manifest driver missing or invalid.");
+  }
+  const canonicalRoot = realpathSync(root), path = realpathSync(join(canonicalRoot, declared));
+  if (!path.startsWith(canonicalRoot + sep)) throw new Error("Gatekeeper driver escapes its root.");
+  return path;
 }

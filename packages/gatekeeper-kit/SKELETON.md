@@ -10,7 +10,8 @@ packages/gkos-gatekeeper-<vendor>/
   openclaw.plugin.json   # id, empty contracts.tools, strict configSchema, gkos.gatekeeper marker
   package.json          # extension entry, pinned compat/catalog peer range
   deploy-inputs.json    # required secret references, never values
-  src/index.ts          # defineGatekeeper declaration
+  src/driver.ts         # defineGatekeeperDriver declaration; loaded by the kernel; never imports openclaw
+  src/index.ts          # defineGatekeeper(driver) from @gatekeeper-os/gatekeeper-kit/plugin
   src/tools.ts          # GatekeeperToolDef metadata; required string grant on every tool
   src/vendor.ts         # account lifecycle, resource discovery
   src/account.ts        # validates operator access before producing a resource
@@ -29,12 +30,12 @@ observer strategies, a required string `grant`, and descriptions without `approv
 It never receives an external service implementation through RPC and never calls `api.registerTool`.
 
 The plugin manifest owns config validation; the builder does not replace that schema with an empty one.
-`createVendor(ctx)` is called only in service `start`, never at import or discovery. `ctx` contains pluginConfig,
+`createVendor(ctx)` is called only by the kernel when it starts the driver, never at import or discovery. `ctx` contains pluginConfig,
 stateDir and a logger, **not** the OpenClaw registration API. Load the cell key privately within this lifecycle when
 constructing `TokenStore`; never log it or return it. Store paths are below `<stateDir>/os/gatekeepers/<vendor>/`.
-The kernel validates a slot against enabled catalog metadata, canonical cell/root and API version, then reaches a
-resource **only via `resolveGrant()`**. Slots are trusted in-process transport, not a malicious-plugin sandbox.
-Retained vendors/accounts/resources/sessions reject use after service stop or replacement. No service ordering assumed.
+The kernel loads the manifest-declared driver from the validated catalog root, re-validates it against catalog metadata,
+then reaches a resource **only via `resolveGrant()`**. This is trusted in-process code, not a malicious-plugin sandbox.
+Retained vendors/accounts/resources/sessions reject use after kernel stop or restart.
 
 A per-resource instance extends `KitGatekeeper`, supplies `resource`, and initializes `overlay` after `super(journalPath)`.
 Use one live resource instance per journal path. The optional journal and sequence paths make pending actions and IDs

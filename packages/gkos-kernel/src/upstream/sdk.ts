@@ -10,7 +10,6 @@ export type {
   AnyAgentTool,
 } from "openclaw/plugin-sdk/plugin-entry";
 export { definePluginEntry, buildJsonPluginConfigSchema } from "openclaw/plugin-sdk/plugin-entry";
-export { createPluginRuntimeStore } from "openclaw/plugin-sdk/runtime-store";
 
 /** Handler options for api.registerGatewayMethod (VERIFIED 2026.9.2): { req, params, client, respond, context, … }. */
 export type GatewayMethodOptions = Parameters<Parameters<import("openclaw/plugin-sdk/plugin-entry").OpenClawPluginApi["registerGatewayMethod"]>[1]>[0];
@@ -22,3 +21,9 @@ export type HookHandler<K extends HookName> = Parameters<typeof on<K>>[1];
 export type HookEvent<K extends HookName> = Parameters<HookHandler<K>>[0];
 export type HookCtx<K extends HookName> = Parameters<HookHandler<K>>[1];
 export type HookResult<K extends HookName> = ReturnType<HookHandler<K>>;
+/** Tool-result middleware shapes (identical in 2026.9.2 and 2026.9.6 published declarations): the event carries
+ *  toolCallId, toolName, args, isError and the tool's result; returning `{ result }` replaces that result. */
+declare const registerToolResultMiddleware: import("openclaw/plugin-sdk/plugin-entry").OpenClawPluginApi["registerAgentToolResultMiddleware"];
+type ToolResultMiddleware = Parameters<typeof registerToolResultMiddleware>[0];
+export type ToolResultEvent = Parameters<ToolResultMiddleware>[0];
+export type ToolResultCtx = Parameters<ToolResultMiddleware>[1];

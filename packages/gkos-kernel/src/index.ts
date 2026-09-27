@@ -52,10 +52,13 @@ export default definePluginEntry({
       execute: (toolCallId) => kernel.listGrantsForCall(toolCallId),
     });
 
-    // Gatekeeper kit declares per-plugin wrappers; the full kernel runtime alone executes them.
+    // Gatekeeper kit declares per-plugin wrappers that return an inert placeholder; the full kernel runtime alone
+    // executes them, through public tool-result middleware (see onToolResult). No cross-plugin runtime handoff.
 
     // Discovery declarations above are inert. Only full registration owns lifecycle and operator surfaces.
     if (api.registrationMode !== "full") return;
+    const [firstTool, ...otherTools] = kernel.gatekeeperToolNames();
+    if (firstTool) api.registerAgentToolResultMiddleware((e, ctx) => kernel.onToolResult(e, ctx), { matcher: [firstTool, ...otherTools], runtimes: ["openclaw", "codex"] });
     api.on("gateway_start", () => kernel.start());
     api.on("gateway_stop", () => kernel.stop());
 

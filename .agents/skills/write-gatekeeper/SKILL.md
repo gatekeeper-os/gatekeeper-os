@@ -24,7 +24,9 @@ operator is present, write what needs review into `plans/REVIEW-REQUESTED.md` an
 4. **Implement** `vendor.ts` (describe, connectAccount with `OAuthNonceMachine`, getAccount via `TokenStore`, resources, tools),
    `account.ts` (`getGatekeeperFor(url)` validates access with the operator's own credentials), one `KitGatekeeper` subclass per
    resource type. Pass credentials and resource ids through constructors from the account, never through tool params.
-5. **Register declaratively** with `defineGatekeeper()`: the root `openclaw.plugin.json` id must match the definition id
+5. **Register declaratively.** `src/driver.ts` exports `defineGatekeeperDriver({...})` and must never import `openclaw`
+   (the kernel loads it directly). `src/index.ts` is `defineGatekeeper(driver)` from `@gatekeeper-os/gatekeeper-kit/plugin`,
+   and the manifest declares `"driver": "./dist/driver.js"` under `gkos.gatekeeper`. The root `openclaw.plugin.json` id must match the definition id
    (`gkos-gatekeeper-<vendor>`), and `contracts.tools` must list exactly the names in `src/tools.ts` (no missing, extra, or
    duplicate names). Include `"gkos": { "gatekeeper": { "vendor": "<v>", "apiVersion": 1 } }`; `package.json` with
    `openclaw.compat` from the catalog; and `deploy-inputs.json`. The kit validates the actual root manifest at registration

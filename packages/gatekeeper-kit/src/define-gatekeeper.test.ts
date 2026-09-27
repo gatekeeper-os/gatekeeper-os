@@ -1,132 +1,145 @@
 import { Type } from "typebox";
-import { describe, expect, it } from "vitest";
-import { defineGatekeeper } from "./define-gatekeeper.js";
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
+import type { Gatekeeper, GatekeeperAccount, GatekeeperVendor } from "@gatekeeper-os/shared";
+import { defineGatekeeper, GATEKEEPER_TOOL_PLACEHOLDER } from "./define-gatekeeper.js";
+import { defineGatekeeperDriver, startGatekeeperDriver } from "./driver.js";
+import { gatekeeperDriverPath } from "./tool-contracts.js";
 
+// Unit fixture only: this exercises the real builder and driver lifecycle without starting an OpenClaw Gateway.
 const base = { vendor: "x", apiVersion: 1 as const, id: "gkos-gatekeeper-x" as const, name: "X", description: "d",
   resources: [{ urlPattern: "https://x/:id", type: "thing", title: "T", description: "D", grantable: true, observerStrategy: "low-stakes" as const, tools: ["gk_x_thing_get"] }],
   createVendor: () => { throw new Error("unused"); } };
-
-describe("defineGatekeeper", () => {
-  it("rejects a tool without grant", () => {
-    expect(() => defineGatekeeper({ ...base, tools: [{ name: "gk_x_thing_get", resourceType: "thing", kind: "observation", description: "Get it.", parameters: Type.Object({}) }] })).toThrow(/grant/);
-  });
-  it("rejects a leaking description", () => {
-    expect(() => defineGatekeeper({ ...base, tools: [{ name: "gk_x_thing_get", resourceType: "thing", kind: "observation", description: "Get it after approval.", parameters: Type.Object({ grant: Type.String() }) }] })).toThrow(/leaks/);
-  });
-  it("accepts a valid tool", () => {
-    expect(() => defineGatekeeper({ ...base, tools: [{ name: "gk_x_thing_get", resourceType: "thing", kind: "observation", description: "Get it.", parameters: Type.Object({ grant: Type.String() }) }] })).not.toThrow();
-  });
-});
-
-// Unit fixture only: this exercises the real builder/SDK slot without starting an OpenClaw Gateway.
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { afterEach, vi } from "vitest";
-import type { OpenClawPluginApi, OpenClawPluginService } from "openclaw/plugin-sdk/plugin-entry";
-import type { GatekeeperVendor } from "@gatekeeper-os/shared";
-import { gatekeeperRuntimeSlot } from "./define-gatekeeper.js";
-const dirs: string[] = [];
-afterEach(() => { gatekeeperRuntimeSlot("gkos-gatekeeper-x").tryGetRuntime()?.revoke(); gatekeeperRuntimeSlot("gkos-gatekeeper-x").clearRuntime(); for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true }); });
 const tool = { name: "gk_x_thing_get", resourceType: "thing", kind: "observation" as const, description: "Get it.", parameters: Type.Object({ grant: Type.String() }) };
 const actionDescription = { title: "Write", description: "One item", implementsRevert: false };
 const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
-function fixture(mode: OpenClawPluginApi["registrationMode"] = "full", vendor?: GatekeeperVendor) {
-  const dir = mkdtempSync(join(tmpdir(), "gkos-runtime-test-")); dirs.push(dir);
-  const createVendor = vi.fn((): GatekeeperVendor => vendor ?? { vendor: "x", apiVersion: 1, describe: async () => ({ title: "X", description: "" }), connectAccount: async () => ({ url: "https://example.test" }), getAccount: async () => null, getSupportedResources: async () => base.resources, getTools: async () => [tool] });
-  const entry = defineGatekeeper({ ...base, tools: [tool], createVendor });
-  writeFileSync(join(dir,"openclaw.plugin.json"),JSON.stringify({id:base.id,contracts:{tools:[tool.name]}}));
-  const registered: Parameters<OpenClawPluginApi["registerTool"]>[0][] = [];
-  const services: OpenClawPluginService[] = [];
-  // Only fields actually read by this builder are supplied; no production authorization is mocked as accepted.
-  entry.register?.({ id: "gkos-gatekeeper-x", registrationMode: mode, rootDir: dir, pluginConfig: {}, registerTool: tool => {registered.push(tool);}, registerService: service => { services.push(service); } } as OpenClawPluginApi);
-  return { services, registered, createVendor, ctx: { stateDir: dir, config: {}, logger } };
+const dirs: string[] = [];
+afterEach(() => { for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true }); });
+function tempDir() { const dir = mkdtempSync(join(tmpdir(), "gkos-kit-test-")); dirs.push(dir); return dir; }
+function vendorFixture(account: GatekeeperAccount | null = null): GatekeeperVendor {
+  return { vendor: "x", apiVersion: 1, describe: async () => ({ title: "X", description: "" }), connectAccount: async () => ({ url: "https://example.test" }), getAccount: async () => account, getSupportedResources: async () => base.resources, getTools: async () => [tool] };
 }
-describe("builder validation and lifecycle", () => {
+function register(mode: OpenClawPluginApi["registrationMode"], createVendor = vi.fn(() => vendorFixture())) {
+  const dir = tempDir();
+  writeFileSync(join(dir, "openclaw.plugin.json"), JSON.stringify({ id: base.id, contracts: { tools: [tool.name] } }));
+  const registered: Parameters<OpenClawPluginApi["registerTool"]>[0][] = [];
+  const registerService = vi.fn();
+  // Only fields actually read by this builder are supplied; no production authorization is mocked as accepted.
+  const api: Partial<OpenClawPluginApi> = { id: base.id, registrationMode: mode, rootDir: dir, pluginConfig: {}, registerTool: t => { registered.push(t); }, registerService };
+  defineGatekeeper({ ...base, tools: [tool], createVendor }).register?.(api as OpenClawPluginApi);
+  return { registered, registerService, createVendor };
+}
+
+describe("driver validation", () => {
+  it("rejects a tool without grant", () => {
+    expect(() => defineGatekeeper({ ...base, tools: [{ ...tool, parameters: Type.Object({}) }] })).toThrow(/grant/);
+  });
   it.each(["APPROVAL", "OAuth", "cache", "QUEUE", "simulation"])("rejects internal description %s", description => {
-    expect(() => defineGatekeeper({ ...base, tools: [{ ...tool, description }] })).toThrow(/leaks/);
+    expect(() => defineGatekeeperDriver({ ...base, tools: [{ ...tool, description }] })).toThrow(/leaks/);
   });
   it.each([Type.Object({ grant: Type.Optional(Type.String()) }), Type.Object({ grant: Type.Number() })])("requires a non-optional string grant", parameters => {
-    expect(() => defineGatekeeper({ ...base, tools: [{ ...tool, parameters }] })).toThrow(/grant/);
+    expect(() => defineGatekeeperDriver({ ...base, tools: [{ ...tool, parameters }] })).toThrow(/grant/);
   });
   it("requires an action descriptor and rejects duplicate tools or orphan mappings", () => {
-    expect(() => defineGatekeeper({ ...base, tools: [{ ...tool, kind: "action" }] })).toThrow(/describe/);
-    expect(() => defineGatekeeper({ ...base, tools: [{ ...tool, kind: "action" }], actions: { [tool.name]: { describe: () => actionDescription } } })).not.toThrow();
-    expect(() => defineGatekeeper({ ...base, tools: [tool, tool] })).toThrow(/duplicate/);
-    expect(() => defineGatekeeper({ ...base, tools: [{ ...tool, resourceType: "other" }] })).toThrow(/mapping/);
+    expect(() => defineGatekeeperDriver({ ...base, tools: [{ ...tool, kind: "action" }] })).toThrow(/describe/);
+    expect(() => defineGatekeeperDriver({ ...base, tools: [{ ...tool, kind: "action" }], actions: { [tool.name]: { describe: () => actionDescription } } })).not.toThrow();
+    expect(() => defineGatekeeperDriver({ ...base, tools: [tool, tool] })).toThrow(/duplicate/);
+    expect(() => defineGatekeeperDriver({ ...base, tools: [{ ...tool, resourceType: "other" }] })).toThrow(/mapping/);
   });
   it("rejects overlong and dotted tool names and accepts the 64-character boundary", () => {
     for (const name of ["gk_x_thing_" + "a".repeat(54), "gk_x_thing_" + "a".repeat(55), "gk_x_thing.get"]) {
       const definition = { ...base, resources: [{ ...base.resources[0]!, tools: [name] }], tools: [{ ...tool, name }] };
-      if (name.length === 64) expect(() => defineGatekeeper(definition)).not.toThrow();
-      else expect(() => defineGatekeeper(definition)).toThrow();
+      if (name.length === 64) expect(() => defineGatekeeperDriver(definition)).not.toThrow();
+      else expect(() => defineGatekeeperDriver(definition)).toThrow();
     }
   });
-  it.each(["discovery", "tool-discovery", "setup-only", "cli-metadata"] as const)("is inert in %s mode", mode => {
-    const f = fixture(mode); expect(f.services).toHaveLength(0); expect(f.createVendor).not.toHaveBeenCalled(); expect(gatekeeperRuntimeSlot("gkos-gatekeeper-x").tryGetRuntime()).toBeNull();
+  it.each([null, 1, {}, { ...base, createVendor: "no", tools: [tool] }, { ...base, id: "gkos-gatekeeper-y", tools: [tool] }, { ...base, apiVersion: 2, tools: [tool] }])("rejects an unchecked or mismatched module export #%#", value => {
+    expect(() => defineGatekeeperDriver(value as Parameters<typeof defineGatekeeperDriver>[0])).toThrow();
   });
-  it("publishes only at start and revokes retained vendors and nested objects on replacement/stop", async () => {
-    const a = fixture(); expect(a.createVendor).not.toHaveBeenCalled(); expect(gatekeeperRuntimeSlot("gkos-gatekeeper-x").tryGetRuntime()).toBeNull();
-    await a.services[0]!.start(a.ctx);
-    const old = gatekeeperRuntimeSlot("gkos-gatekeeper-x").getRuntime(), retained = old.getVendor();
-    const resources = await retained.getSupportedResources(); expect(resources[0]!.type).toBe("thing");
-    expect(old.root).toBe(a.ctx.stateDir); expect(old.stateDir).toBe(a.ctx.stateDir);
-    const b = fixture(); await b.services[0]!.start(b.ctx);
-    expect(() => retained.describe()).toThrow(/unavailable/); expect(() => resources[0]).toThrow(/unavailable/);
-    await a.services[0]!.stop?.(a.ctx); expect(gatekeeperRuntimeSlot("gkos-gatekeeper-x").getRuntime().stateDir).toBe(b.ctx.stateDir);
-    const current = gatekeeperRuntimeSlot("gkos-gatekeeper-x").getRuntime().getVendor();
-    await b.services[0]!.stop?.(b.ctx); expect(() => current.describe()).toThrow(/unavailable/); expect(gatekeeperRuntimeSlot("gkos-gatekeeper-x").tryGetRuntime()).toBeNull();
+  it("returns a frozen snapshot that later mutation of the declaration cannot redirect", () => {
+    const declaration = { ...base, tools: [tool], createVendor: vi.fn(() => vendorFixture()) };
+    const driver = defineGatekeeperDriver(declaration);
+    Object.assign(declaration, { id: "gkos-gatekeeper-evil", createVendor: vi.fn() }); declaration.tools.push({ ...tool, name: "gk_x_thing_other" });
+    expect(Object.isFrozen(driver)).toBe(true);
+    expect(driver.id).toBe(base.id); expect(driver.tools.map(t => t.name)).toEqual([tool.name]);
   });
 });
 
-describe("retained nested runtime handles", () => {
-  it("revokes retained resource sessions as well as the top-level vendor", async () => {
+describe("kernel-owned driver lifecycle", () => {
+  it("rejects a vendor whose identity differs from its declaration", () => {
+    const driver = defineGatekeeperDriver({ ...base, tools: [tool], createVendor: () => ({ ...vendorFixture(), vendor: "y" }) });
+    expect(() => startGatekeeperDriver(driver, { pluginConfig: {}, stateDir: tempDir(), logger })).toThrow(/identity/);
+  });
+  it("passes lifecycle-owned config and revokes retained vendors, resources and sessions", async () => {
     const call = vi.fn(async () => ({ content: [{ type: "text" as const, text: "ok" }] }));
-    const gatekeeper: import("@gatekeeper-os/shared").Gatekeeper = {
+    const gatekeeper: Gatekeeper = {
       describe: async () => ({ resource: base.resources[0]!, title: "T", suggestedName: "T" }),
       getAutoApprovableActions: async () => [], startSession: async () => ({ call, close: async () => {} }),
       applyAction: async () => {}, rejectAction: async () => {}, addObserver: async () => {}, removeObserver: async () => {},
     };
-    const account: import("@gatekeeper-os/shared").GatekeeperAccount = {
+    const account: GatekeeperAccount = {
       describe: async () => ({}), getSupportedResources: async () => base.resources,
       getGatekeeperFor: async () => ({ gatekeeper, resource: base.resources[0]!, resourceKey: "id" }),
       getVerifier: async () => ({ vendor: "x", opaque: "fixture" }), revoke: async () => {}, reconnect: async () => ({ url: "https://example.test" }),
     };
-    const vendor: GatekeeperVendor = { vendor: "x", apiVersion: 1, describe: async () => ({ title: "X", description: "" }), connectAccount: async () => ({ url: "https://example.test" }), getAccount: async () => account, getSupportedResources: async () => base.resources, getTools: async () => [tool] };
-    const f = fixture("full", vendor); await f.services[0]!.start(f.ctx);
-    const liveAccount = (await gatekeeperRuntimeSlot("gkos-gatekeeper-x").getRuntime().getVendor().getAccount("op"))!;
-    const bound = (await liveAccount.getGatekeeperFor("https://example.test/id")).gatekeeper;
+    const createVendor = vi.fn(() => vendorFixture(account)), stateDir = tempDir();
+    const live = startGatekeeperDriver(defineGatekeeperDriver({ ...base, tools: [tool], createVendor }), { pluginConfig: { roots: ["/r"] }, stateDir, logger });
+    expect(createVendor).toHaveBeenCalledExactlyOnceWith({ pluginConfig: { roots: ["/r"] }, stateDir, logger });
+    const resources = await live.vendor.getSupportedResources(); expect(resources[0]!.type).toBe("thing");
+    const bound = (await (await live.vendor.getAccount("op"))!.getGatekeeperFor("https://example.test/id")).gatekeeper;
     const queue = { authorizeObservation: async () => {}, submitAction: async () => {} };
     const session = await bound.startSession(queue);
     await session.call(tool.name, {}, { agentId: "agent", sessionKey: "session", queue }); expect(call).toHaveBeenCalledTimes(1);
-    await f.services[0]!.stop?.(f.ctx);
+    live.revoke();
+    expect(() => live.vendor.describe()).toThrow(/unavailable/); expect(() => resources[0]).toThrow(/unavailable/);
     expect(() => session.call(tool.name, {}, { agentId: "agent", sessionKey: "session", queue })).toThrow(/unavailable/);
     expect(call).toHaveBeenCalledTimes(1); expect(() => bound.applyAction(1)).toThrow(/unavailable/);
   });
 });
 
-import { kernelToolRuntimeSlot } from './tool-contracts.js';
-it.each([{}, {id:base.id,contracts:{tools:[]}}, {id:'gkos-gatekeeper-other',contracts:{tools:[tool.name]}}, {id:base.id,contracts:{tools:[tool.name,tool.name]}}, {id:base.id,contracts:{tools:[tool.name,'gk_x_other_get']}}])('rejects installed manifest mismatch before registration: %j', manifest=>{
-  const f=fixture('cli-metadata');writeFileSync(join(f.ctx.stateDir,'openclaw.plugin.json'),JSON.stringify(manifest));
-  const registerTool=vi.fn();const entry=defineGatekeeper({...base,tools:[tool]});
-  const api:Partial<OpenClawPluginApi>={id:base.id,rootDir:f.ctx.stateDir,registrationMode:'tool-discovery',registerTool};
-  expect(()=>entry.register?.(api as OpenClawPluginApi)).toThrow(/contracts.tools/);
-  expect(registerTool).not.toHaveBeenCalled();
+describe("plugin entry", () => {
+  it.each(["setup-only", "cli-metadata"] as const)("is inert in %s mode", mode => {
+    const f = register(mode); expect(f.registered).toHaveLength(0); expect(f.createVendor).not.toHaveBeenCalled();
+  });
+  it.each(["full", "discovery", "tool-discovery"] as const)("declares owned inert wrappers and never starts a driver in %s mode", async mode => {
+    const f = register(mode);
+    expect(f.registered).toHaveLength(1); expect(f.registerService).not.toHaveBeenCalled();
+    const wrapper = f.registered[0];
+    if (!wrapper || typeof wrapper === "function" || Array.isArray(wrapper)) throw new Error("fixture");
+    expect(wrapper.catalogMode).toBe("direct-only"); // stays on the middleware path under Tool Search
+    // The placeholder must not be an error status: upstream keeps that flag even after middleware replaces the result.
+    expect(await wrapper.execute("call", { grant: "grant:00000000" })).toEqual({ content: [{ type: "text", text: GATEKEEPER_TOOL_PLACEHOLDER }], details: {} });
+    expect(f.createVendor).not.toHaveBeenCalled();
+  });
+  it.each([{}, { id: base.id, contracts: { tools: [] } }, { id: "gkos-gatekeeper-other", contracts: { tools: [tool.name] } }, { id: base.id, contracts: { tools: [tool.name, tool.name] } }, { id: base.id, contracts: { tools: [tool.name, "gk_x_other_get"] } }])("rejects installed manifest mismatch before registration: %j", manifest => {
+    const dir = tempDir(); writeFileSync(join(dir, "openclaw.plugin.json"), JSON.stringify(manifest));
+    const registerTool = vi.fn(), entry = defineGatekeeper({ ...base, tools: [tool] });
+    const api: Partial<OpenClawPluginApi> = { id: base.id, rootDir: dir, registrationMode: "tool-discovery", registerTool };
+    expect(() => entry.register?.(api as OpenClawPluginApi)).toThrow(/contracts.tools/);
+    expect(registerTool).not.toHaveBeenCalled();
+  });
 });
-it.each(['discovery','tool-discovery'] as const)('declares owned wrappers but never starts vendor in %s',mode=>{
-  const f=fixture(mode);expect(f.registered).toHaveLength(1);expect(f.services).toHaveLength(0);expect(f.createVendor).not.toHaveBeenCalled();
-});
-it('fails closed before kernel start and after driver stop; delegates only to the kernel',async()=>{
- const f=fixture();await f.services[0]!.start(f.ctx);
- const registered=f.registered[0];if(!registered||typeof registered==='function'||Array.isArray(registered))throw new Error('fixture');
- const kernel=kernelToolRuntimeSlot();kernel.clearRuntime();
- expect(await registered.execute('call', {grant:'grant:00000000'})).toMatchObject({details:{status:'error'}});
- const execute=vi.fn().mockResolvedValue({content:[{type:'text',text:'kernel result'}],details:{}});
- try {
-  kernel.setRuntime({executeGatekeeperTool:execute});
-  await registered.execute('call',{grant:'grant:00000000'});
-  expect(execute).toHaveBeenCalledWith(expect.objectContaining({pluginId:base.id,root:f.ctx.stateDir,stateDir:f.ctx.stateDir}),'call',tool.name,{grant:'grant:00000000'});
-  await f.services[0]!.stop?.(f.ctx);execute.mockClear();
-  expect(await registered.execute('call',{grant:'grant:00000000'})).toMatchObject({details:{status:'error'}});expect(execute).not.toHaveBeenCalled();
- } finally {kernel.clearRuntime();}
+
+describe("manifest driver path", () => {
+  function root(driver: unknown) {
+    const dir = tempDir(); mkdirSync(join(dir, "dist"));
+    writeFileSync(join(dir, "dist", "driver.js"), "export default {};");
+    writeFileSync(join(dir, "openclaw.plugin.json"), JSON.stringify({ id: base.id, gkos: { gatekeeper: { vendor: "x", apiVersion: 1, driver } } }));
+    return dir;
+  }
+  it("resolves a declared module inside the root", () => {
+    const dir = root("./dist/driver.js");
+    expect(gatekeeperDriverPath(dir)).toBe(join(dir, "dist", "driver.js"));
+  });
+  it.each([undefined, 1, "dist/driver.js", "/etc/passwd.js", "./../x.js", "./dist/../../x.js", "./dist/driver.ts", "./missing.js"])("rejects a missing, absolute, traversing or non-module driver %j", driver => {
+    expect(() => gatekeeperDriverPath(root(driver))).toThrow();
+  });
+  it("rejects a symlinked driver that resolves outside the root", () => {
+    const outside = tempDir(); writeFileSync(join(outside, "evil.js"), "export default {};");
+    const dir = root("./link.js"); symlinkSync(join(outside, "evil.js"), join(dir, "link.js"));
+    expect(() => gatekeeperDriverPath(dir)).toThrow(/escapes/);
+  });
 });

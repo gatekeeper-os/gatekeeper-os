@@ -681,3 +681,56 @@ The packed test uses public SDK exports `getPluginRuntimeGatewayRequestScope`
 (`/agent-harness-runtime`) for the real host boundary. No upstream registry or
 policy is monkey-patched. This tests supported-pipeline enforcement, not isolation
 from arbitrary in-process code, which the unsafe direct positive control illustrates.
+
+## 2026-09-26 — OpenClaw 2026.9.5+ instance-scoped runtime slots
+
+**VERIFIED (published dist diff 2026.9.4 → 2026.9.6; live gateway runs on nova):**
+`createPluginRuntimeStore` now resolves through `getPluginInstanceRuntimeSlot`, whose source
+comment reads "Named SDK slots share only within the exact managed plugin instance." It is keyed
+by an AsyncLocalStorage invocation owner. The `{ pluginId }` and `{ key }` forms fall back to the
+global named slot only outside a plugin invocation. The 2026.9.6 CHANGELOG does not mention the
+change. The "Supported attachment surface" above therefore no longer holds on 2026.9.5+.
+
+Consequences observed on 2026.9.6:
+1. Cross-plugin driver handoff (gatekeeper service → kernel) reads an empty slot. The nightly
+   `conformance-matrix` has failed `filesystem-driver-healthy` since 2026-09-19 (first 2026.9.5 run).
+2. Agent hooks and tools run on a separately loaded **discovery-mode** kernel instance: a
+   different module instance from the full-mode instance that ran `gateway_start`. A plain
+   module-level variable is not shared either. `before_prompt_build` and `before_tool_call` see no
+   runtime, so every `os_*`/`gk_*` call fails closed ("before_tool_call hook failed").
+3. With `tools.toolSearch` at its 2026.9.6 default (enabled, mode `tools`), the model sees
+   `tool_search`/`tool_describe`/`tool_call`. Tool visibility still follows the kernel's
+   prompt-time narrowing.
+
+**Downstream fix for (1), no upstream change:** the kernel loads each enabled catalog driver from
+the manifest-declared `gkos.gatekeeper.driver` module inside the validated root and owns its
+lifecycle. Kit wrappers return an inert placeholder, and the kernel executes the call in public
+tool-result middleware (`api.registerAgentToolResultMiddleware`, manifest
+`contracts.agentToolResultMiddleware`). That API has identical admission code in 2026.9.2 and
+2026.9.6 (declared runtimes, explicitly enabled plugin). A middleware failure yields upstream's
+failure result. The placeholder must not carry an error status, because upstream ORs the input
+error flag into the final result.
+
+End-to-end evidence (throwaway harness on nova: isolated state under `/tmp`, stub
+openai-completions model, real operator grant, `gk_fs_dir_list`):
+- 2026.9.2 and 2026.9.4: the directory listing is returned to the model through the middleware,
+  with one `ok:true` tool audit row. Identical to unfixed `main` on 2026.9.4.
+- 2026.9.6: driver healthy and the grant resolves (unfixed `main` cannot issue the grant), but
+  (2) still blocks agent use.
+
+**Fix for (2) (operator decision 2026-09-26):** `upstream/runtime-handoff.ts` is a process-level
+holder (`Symbol.for("gatekeeper-os.kernel.runtime")`) carrying only the kernel's own runtime.
+Full-mode `start()` publishes it and `stop()` withdraws it. Upstream runs `gateway_stop` before an
+instance is replaced or disposed. Like the pre-2026.9.5 SDK slot it replaces, this is not a
+boundary against in-process code. It deliberately does not reintroduce cross-plugin object
+sharing, because drivers are kernel-loaded.
+
+**Tool Search:** calls made through `tool_call` get policy and `before_tool_call` hooks, but the
+catalog bridge does not apply result middleware (observed on 2026.9.6: the placeholder reached the
+model inside the `{ tool, result }` envelope). The kit marks wrappers `catalogMode: "direct-only"`,
+which upstream types document as "hidden catalog bridges cannot preserve its result contract"
+(present in 2026.9.2–2026.9.6). `tool_call` then refuses them as unknown ids.
+
+Final end-to-end matrix: 2026.9.2, 2026.9.4, and 2026.9.6 with Tool Search on and off all execute
+`gk_fs_dir_list` via middleware with one `ok` audit row. On 2026.9.6 a bogus grant is denied by
+`gkos-capability-policy`.
