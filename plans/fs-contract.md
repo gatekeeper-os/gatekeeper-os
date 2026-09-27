@@ -84,3 +84,59 @@ filesystem enforcement is claimed. The vendor/account methods remain stubs.
 below — do not proceed past either without operator approval.” Step 3 is “STOP 1 —
 present the tool surface and URL patterns for operator review.” Prior Continue requests authorized preparation. The later “continuew” reply followed the
 concrete approval request and authorizes proceeding past STOP 1 only.
+
+## Amendment 2026-09-27 — cooperative-writer adversary model for apply
+
+Status: **operator decision (Matt), 2026-09-27.** The text above is unchanged and
+still governs the tool surface, URL policy and read path. This amendment changes
+only the adversary model for real filesystem **apply and revert**. It follows the
+design review in [fs-apply-confinement.md](fs-apply-confinement.md), whose two
+reproduced counterexamples ([evidence](fs-apply-confinement-evidence.md)) show that
+no check-then-publish construction reachable from Node satisfies the original
+wording against a hostile process running as the same Unix user.
+
+**Adversary model.** Apply assumes *cooperative writers* on the operator's host:
+the operator, their editors, and their tools may edit files in a granted tree at
+any time, but no process races the driver on purpose. Hostile concurrent mutation
+of the operator's own tree by a same-UID process is out of scope. This matches
+[the threat model](../docs/threat-model.md): other code running as the Gateway's
+user is trusted, like plugins; mutually distrusting parties get separate cells.
+
+**What this assumes about the agent.** The agent is still an adversary (threat
+model adversary 1). The guarantee holds only while the agent cannot run its own
+code or native file tools against the granted tree. The baseline cell denies the
+runtime, filesystem and automation tool groups (`config/config.d/00-baseline.json5`). An operator
+who gives the agent `exec`, native file tools, or a sandbox mount over a granted
+directory has let a possibly steered same-UID writer in, and the cooperative-writer
+guarantee no longer holds for that tree.
+
+**Benign concurrent edits.** Before publishing, the driver re-reads the target's
+identity (device, inode, link count, size, timestamps) and content hash and compares
+them with the baseline recorded when the write was queued. If anything changed, it
+refuses and keeps both versions. The window between that last check and the
+publishing syscall is **residual**: an edit that lands inside it is not prevented.
+With `RENAME_EXCHANGE`, the driver then checks that the file it swapped out is the
+baseline, so an edit that replaced the file in that window is detected and kept.
+With plain `rename`, an edit that replaced the file in that window is lost.
+The effect receipt records which publish mode ran.
+
+**Counterexamples.**
+- *CE-1* (parent moved outside the grant between the final check and publication)
+  needs a process that deliberately moves an ancestor of the target mid-transaction.
+  Only the excluded adversary does that. The driver still rechecks the parent's
+  identity and path before and after publishing. If it detects a move, it records
+  `uncertain` and blocks the resource. It does not claim to prevent the move.
+- *CE-2* (external replacement of the final name) must become detected, recoverable
+  divergence, never silent loss, whenever the publish mode can observe it: a
+  replacement before the final check is refused with both versions kept; one in
+  the exchange window is detected after the swap with both versions kept. In
+  plain-`rename` mode the check→publish window above is the documented exception.
+
+**Obligations that still hold.** No symlink following; no multiply linked,
+special, oversized or non-text targets; parents are never created and permissions
+are never changed; the preimage is journaled durably before any mutation; any
+ambiguous outcome is `uncertain`, keeps its intent and preimage, blocks the resource
+across restart, and is never retried or cleaned up automatically. Revert restores
+only the persisted preimage, and only when the current file is the recorded applied
+version. Revert of an originally absent file stays unimplemented. No race-safety
+against hostile processes on the same host is claimed.

@@ -3125,3 +3125,16 @@ README and threat-model proof claims are deliberately not upgraded. Next step is
 enforced mutation/isolation design satisfying the unchanged contract, or an explicit
 operator-reviewed scope change; another check-then-rename loop is not sufficient.
 Design-only draft PR; no merge, version bump, tag, publication, or upstream post.
+
+## Filesystem apply contract amended — 2026-09-27
+
+Operator decision (Matt): the STOP 1 filesystem contract now applies a
+cooperative-writer adversary model to apply and revert ([amendment](fs-contract.md#amendment-2026-09-27--cooperative-writer-adversary-model-for-apply)).
+Hostile concurrent mutation by a same-UID process is out of scope. The check→publish window
+is documented as residual. CE-1 is reachable only by the excluded adversary. CE-2
+must become detected, recoverable divergence. The threat model gained a matching
+"Filesystem writes: cooperative-writer model" paragraph. The earlier design review
+and counterexamples (draft PR #29) land with this change as the record of why.
+Docs only: no product code, test, VM run, version, tag or publication in this step.
+The simulate-only limit in the threat model stays until the implementation and VM
+checkpoint pass.

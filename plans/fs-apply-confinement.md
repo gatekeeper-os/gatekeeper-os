@@ -1,6 +1,11 @@
 # Filesystem apply confinement — design and blocking proof obligations
 
 Status: **design-only; implementation blocked; real apply remains denied**.
+
+> **2026-09-27:** the operator amended the contract to a cooperative-writer adversary
+> model ([Amendment 2026-09-27](fs-contract.md#amendment-2026-09-27--cooperative-writer-adversary-model-for-apply)).
+> This document is unchanged below. It is the record of why race-safety against a
+> hostile same-UID writer is not claimed, and it no longer blocks cooperative-writer apply.
 Date: 2026-09-16. Base: `a029ed024e36295fc42742f97399e86459d48d4a`.
 This document reports the design before product implementation. It does not change
 [the approved contract](fs-contract.md), narrow its threat model, or claim a VM pass.
