@@ -2,7 +2,7 @@
 import { spawnSync } from 'node:child_process';
 import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
@@ -139,12 +139,19 @@ try {
     const afterReject=await turn('rejected-read',{tool:'gk_fs_file_read',params:{grant:grant.handle,path:'example.txt'}});
     check('rejected-overlay-gone',afterReject.sawInside&&!afterReject.sawOverlay);
     check('rejection-audited',(await paired.client.request('os.audit.query',{limit:1000})).some(a=>a.kind==='action.decide'&&a.actionId===pending[0].id&&a.decision==='reject'&&a.ok));
-    await turn('unsafe-write',{tool:'gk_fs_file_write',params:{grant:grant.handle,path:'example.txt',content:'phase-three-overlay'}});
+    // Real apply (fs contract amendment 2026-09-27): an approved write lands; a stale baseline is refused, never retried.
+    await turn('approved-write',{tool:'gk_fs_file_write',params:{grant:grant.handle,path:'applied.txt',content:'phase-three-applied\n'}});
+    const approved=(await paired.client.request('os.approvals.list',{})).actions;
+    check('approved-write-pending',approved.length===1&&!existsSync('/home/tester/kernel-resource/applied.txt'));
+    check('approved-write-applied',!(await denied(paired.client,'os.approvals.apply',{ids:[approved[0].id]})));
+    check('approved-write-landed',readFileSync('/home/tester/kernel-resource/applied.txt','utf8')==='phase-three-applied\n');
+    await turn('stale-write',{tool:'gk_fs_file_write',params:{grant:grant.handle,path:'example.txt',content:'phase-three-overlay'}});
     const unsafe=(await paired.client.request('os.approvals.list',{})).actions;
-    check('unsafe-write-pending',unsafe.length===1);
-    check('unsafe-write-apply-denied',await denied(paired.client,'os.approvals.apply',{ids:[unsafe[0].id]}));
-    check('unsafe-write-host-unchanged',readFileSync('/home/tester/kernel-resource/example.txt','utf8')==='inside-fixture-content\n');
-    check('unsafe-write-no-auto-retry',(await paired.client.request('os.approvals.list',{})).actions.length===0);
+    check('stale-write-pending',unsafe.length===1);
+    writeFileSync('/home/tester/kernel-resource/example.txt','external-edit\n');
+    check('stale-write-apply-denied',await denied(paired.client,'os.approvals.apply',{ids:[unsafe[0].id]}));
+    check('stale-write-external-edit-kept',readFileSync('/home/tester/kernel-resource/example.txt','utf8')==='external-edit\n');
+    check('stale-write-no-auto-retry',(await paired.client.request('os.approvals.list',{})).actions.length===0);
     check('uncertain-action-audited',(await paired.client.request('os.audit.query',{limit:1000})).some(a=>a.kind==='action.decide'&&a.actionId===unsafe[0].id&&a.decision==='failed'&&a.ok===false));
     const revokedCli=cli(['grant','revoke',grant.handle,'--cell','kernel-test','--json']);
     check('cli-grant-revoke',revokedCli.ok&&revokedCli.value.revoked===true);
