@@ -69,3 +69,14 @@ the selected version/executable; original snapshot Node is left unchanged.
 The five products came only from npm. Independent gatekeeper apply/reject and
 recorded effects/audit passed; limitations above still apply. See
 `plans/PROGRESS.md` for counts, retained failed history and merge gates.
+
+## beta.6 retarget (prepared 2026-09-27; not run)
+
+Rebased onto the prepared 0.1.0-beta.6 release (`262b80b`, local tag `v0.1.0-beta.6`). Install commands and registry
+receipts now require exactly `@gatekeeper-os/*@0.1.0-beta.6`. The kernel scenarios expect real filesystem apply under
+the cooperative-writer contract: an approved write lands, and a stale baseline is refused, keeps the external edit,
+is not retried, and is audited as `failed`. They no longer expect every apply to be denied. The approval scope
+records `realFilesystemWritesEnabled: true`. Run only after all five beta.6 listings pass
+`scripts/verify-release-listing.py 0.1.0-beta.6`. Until then this branch is neither merged nor run, and the beta.5
+result above remains that release's evidence.
+

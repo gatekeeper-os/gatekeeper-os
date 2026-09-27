@@ -90,6 +90,6 @@ try{
   check(decision+'-audited',(await paired.client.request('os.audit.query',{limit:1000})).some(a=>a.kind==='action.decide'&&a.actionId===pending[0].id&&a.decision===decision&&a.ok));
  }
  check('real-filesystem-still-unchanged',readFileSync('/home/tester/kernel-resource/example.txt','utf8')==='inside-fixture-content\n');
- report.scope={syntheticDriver:true,publishedKit:true,publishedKernel:true,realFilesystemWritesEnabled:false};
+ report.scope={syntheticDriver:true,publishedKit:true,publishedKernel:true,realFilesystemWritesEnabled:true};
 }catch(error){report.failure=/^[a-z0-9-]+$/.test(error.message)?error.message:'scenario-error';process.exitCode=1;console.log('FAIL '+report.failure);}
 finally{save();await shared?.client.stopAndWait({timeoutMs:5000});await paired?.client.stopAndWait({timeoutMs:5000});await new Promise(resolve=>server.close(resolve));}
