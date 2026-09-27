@@ -1,6 +1,6 @@
 {
   "name": "@gatekeeper-os/cli",
-  "version": "0.1.0-beta.5",
+  "version": "0.1.0-beta.6",
   "description": "The gkos binary: install, cells, status, doctor, config apply, backups.",
   "type": "module",
   "bin": {
@@ -25,9 +25,9 @@
     "typescript": "catalog:",
     "vitest": "catalog:",
     "@types/node": "catalog:",
-    "@gatekeeper-os/kernel": "workspace:0.1.0-beta.5",
-    "@gatekeeper-os/gatekeeper-fs": "workspace:0.1.0-beta.5",
-    "@gatekeeper-os/shared": "workspace:0.1.0-beta.5"
+    "@gatekeeper-os/kernel": "workspace:0.1.0-beta.6",
+    "@gatekeeper-os/gatekeeper-fs": "workspace:0.1.0-beta.6",
+    "@gatekeeper-os/shared": "workspace:0.1.0-beta.6"
   },
   "license": "MIT",
   "repository": {

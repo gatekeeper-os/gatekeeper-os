@@ -3149,3 +3149,15 @@ including real-write apply/replace/reject and uncertain blocking. Run from a tem
 VM-owning checkout, since removed; the snapshots were restored and not modified, and the VM was left shut off.
 Residual: in `rename` mode a replacement landing between the final check and the rename is lost (documented).
 
+## 0.1.0-beta.6 prepared (not published) — 2026-09-27
+
+Five release packages and every internal `workspace:` pin move to 0.1.0-beta.6. The lockfile was regenerated with the
+pinned pnpm 10.15.0 (specifier-only diff). The OpenClaw pin 2026.9.2, compat range and kernel schema are unchanged.
+[Release notes](release-notes-beta.6.md): real filesystem apply under the cooperative-writer contract, kernel-owned
+drivers for OpenClaw 2026.9.5+ (breaking kit API, #30), and corrected package READMEs. Gates before the PR:
+`pnpm lint`, `pnpm typecheck`, and `pnpm test` (900/900, run with a private `TMPDIR`: a stray host `/tmp/a`
+breaks one CLI symlink fixture on this host only) all pass. `check-package-licenses --pack --validate` passes 10
+packed artifacts and the 10-turn packed model gate on Node 24.20.0 and on official Node 22.22.3. Publish dry-run
+selects exactly the five packages. [Matt's commands](BETA6-PRIVATE-HANDOFF.md). No publish, tag push, deprecation,
+visibility change or upstream post.
+

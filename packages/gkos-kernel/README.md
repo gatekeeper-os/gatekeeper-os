@@ -19,8 +19,8 @@ The drainer starts with the gateway and runs every 30 seconds and at `agent_end`
 
 With operator `notify: {channel, target}` configured, pending counts are batched once per run through the installed `openclaw message send` CLI. Digests never contain action bodies or resource URLs. An uncertain send is audited and not automatically repeated. Real-channel digest acceptance and GitHub action acceptance remain Phases 5 and 4 respectively.
 
-Old unbound pending actions cannot acquire authority from another grant. They require reconciliation, as do failed/uncertain resource effects. No exactly-once guarantee across external APIs is claimed. Filesystem real writes continue to fail closed under the approved atomicity contract; unsupported platforms deny filesystem data access.
+Old unbound pending actions cannot acquire authority from another grant. They require reconciliation, as do failed/uncertain resource effects. No exactly-once guarantee across external APIs is claimed. Filesystem writes apply only under the filesystem driver's cooperative-writer contract, and its ambiguous outcomes also require reconciliation; unsupported platforms deny filesystem data access.
 
 ## Distribution
 
-`@gatekeeper-os/kernel@0.1.0-beta.5` is published; `beta` and `latest` select it (no stable release). For cell installation use `npm install --global @gatekeeper-os/cli@beta` on a disposable evaluation machine, then follow the [CLI instructions](../gkos-cli/README.md). The npm package-page README updates on the next publication; this documentation change does not alter the existing archive.
+This README ships with `@gatekeeper-os/kernel@0.1.0-beta.6`; `beta` selects the newest beta (no stable release). For cell installation use `npm install --global @gatekeeper-os/cli@beta` on a disposable evaluation machine, then follow the [CLI instructions](../gkos-cli/README.md).

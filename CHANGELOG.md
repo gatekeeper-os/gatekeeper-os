@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-beta.6
+
+Real filesystem apply under the cooperative-writer contract; kernel-owned drivers for OpenClaw 2026.9.5+
+(breaking kit API); corrected package READMEs. Release notes: [plans/release-notes-beta.6.md](plans/release-notes-beta.6.md).
 
 ### Real filesystem apply (cooperative-writer contract)
 

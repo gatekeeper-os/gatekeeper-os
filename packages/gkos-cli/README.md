@@ -13,12 +13,12 @@ gkos --version
 gkos cell create evaluation --port 19100 --policy messaging
 ```
 
-Use a disposable machine for provisioning. All five release packages are at
-`0.1.0-beta.5`; `beta` and `latest` select it, with no stable release. npm-only
-acceptance passed in `20260916-220009-phase-3` on Node22.22.3 / OpenClaw2026.9.2.
+Use a disposable machine for provisioning. This README ships with the five release
+packages at `0.1.0-beta.6`; `beta` selects the newest beta, with no stable release.
+npm-only acceptance of beta.5 passed in `20260916-220009-phase-3` on Node22.22.3 /
+OpenClaw2026.9.2; beta.6 npm-only acceptance follows publication.
 See the [release status](../../README.md#release-status) for remaining limits.
-The npm package-page README updates on the next publication; this docs change
-neither republishes nor changes the existing archive. No ClawHub listing is claimed.
+No ClawHub listing is claimed.
 
 Implemented commands:
 
@@ -37,9 +37,10 @@ gkos audit tail [--limit 1–1000]
 All accept `--cell <name>` (default: `default`) and `--json`. `audit tail` is a
 bounded, newest-first snapshot, not a follow stream; time filtering is not yet
 implemented and unsupported options are rejected. Approval commands expose the
-kernel's existing decisions, not a promise that a driver can apply or revert:
-real filesystem writes remain disabled. These mutating commands are not all
-idempotent.
+kernel's existing decisions, not a promise that a driver can apply or revert.
+Filesystem writes apply under the cooperative-writer contract (see the filesystem
+gatekeeper README); revert is available only for replaced files. These mutating
+commands are not all idempotent.
 
 The cell registry selects the loopback port; cell naming selects both state and
 config paths. No arbitrary endpoint, token, or operator-identity option is accepted.
