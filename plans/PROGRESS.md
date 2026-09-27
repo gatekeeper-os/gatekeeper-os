@@ -3138,3 +3138,14 @@ and counterexamples (draft PR #29) land with this change as the record of why.
 Docs only: no product code, test, VM run, version, tag or publication in this step.
 The simulate-only limit in the threat model stays until the implementation and VM
 checkpoint pass.
+
+## Filesystem apply implemented and VM checkpoint passed — 2026-09-27
+
+Implementation #32 (`6cd3875`, `packages/gkos-gatekeeper-fs` only; kernel and kit unchanged) under the
+cooperative-writer amendment. VM checkpoint **`20260927-051331-phase-3`** (snapshot `installed`, guest Node
+v22.22.3, kernel 6.8.0-138-generic, ext4, publish mode `rename`): real write, refusal, CE-2 detection,
+revert, and bind-mount refusal all PASS. [Receipt](fs-apply-checkpoint.md). The packed model-turn gate now runs 10 turns,
+including real-write apply/replace/reject and uncertain blocking. Run from a temporary detached worktree of the
+VM-owning checkout, since removed; the snapshots were restored and not modified, and the VM was left shut off.
+Residual: in `rename` mode a replacement landing between the final check and the rename is lost (documented).
+
