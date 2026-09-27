@@ -1,4 +1,4 @@
-/** STOP 1-approved filesystem surface; STOP 2 approved; host-file application remains fail closed. */
+/** STOP 1-approved filesystem surface; host application follows the 2026-09-27 cooperative-writer amendment (plans/fs-contract.md). */
 import { Type } from "typebox";
 import { GrantHandle, type GatekeeperToolDef } from "@gatekeeper-os/shared";
 

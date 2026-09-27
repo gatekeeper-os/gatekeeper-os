@@ -159,7 +159,7 @@ describe("authorization, persistence, and simulation", () => {
     renameSync(root, `${root}-old`); mkdirSync(root);
     await expect(resource()).rejects.toThrow();
   });
-  it("keeps all host application disabled and preserves external edits and pending rejection", async () => {
+  it("refuses a stale baseline, keeps the external edit, and creates new files only after decision", async () => {
     writeFileSync(join(root, "text"), "baseline"); const s = await setup();
     await s.call("gk_fs_file_write", { path: "text", content: "pending" });
     writeFileSync(join(root, "text"), "external");
@@ -167,8 +167,9 @@ describe("authorization, persistence, and simulation", () => {
     expect(readFileSync(join(root, "text"), "utf8")).toBe("external");
     await s.gatekeeper.rejectAction(1);
     await s.call("gk_fs_file_write", { path: "new", content: "pending" });
-    await expect(s.gatekeeper.applyAction(2)).rejects.toThrow(); expect(existsSync(join(root, "new"))).toBe(false);
-    await s.gatekeeper.rejectAction(2);
+    expect(existsSync(join(root, "new"))).toBe(false);
+    await s.gatekeeper.applyAction(2);
+    expect(readFileSync(join(root, "new"), "utf8")).toBe("pending");
   });
   it("refuses grants overlapping private state and private state with unsafe permissions", async () => {
     const v = new FsVendor({ stateDir: join(base, "state"), pluginConfig: { roots: [base] }, logger });
@@ -180,19 +181,5 @@ describe("authorization, persistence, and simulation", () => {
     expect(lstatSync(dir).mode & 0o077).toBe(0);
     chmodSync(dir, 0o755);
     await expect(s.call("gk_fs_file_write", { path: "new", content: "pending" })).rejects.toThrow();
-  });
-});
-
-// This is a fixture-only proof of why prechecks cannot justify enabling host writes.
-// Production ConfinedIO exposes no rename/replace API and create() always denies.
-describe("host-write feasibility gate", () => {
-  it("demonstrates a check-then-rename would overwrite an intervening external edit", () => {
-    const target = join(root, "target"), proposed = join(root, "proposed");
-    writeFileSync(target, "baseline"); writeFileSync(proposed, "proposal");
-    expect(readFileSync(target, "utf8")).toBe("baseline"); // obsolete precheck
-    writeFileSync(target, "external edit");
-    renameSync(proposed, target); // exactly the unsafe pattern the driver must not use
-    expect(readFileSync(target, "utf8")).toBe("proposal");
-    expect(() => new ConfinedIO(DirectoryBinding.capture(root)).create("target", "denied", base)).toThrow();
   });
 });

@@ -125,7 +125,7 @@ describe("account lifetime and fail-closed application", () => {
     expect(await v.createAccount("operator")).not.toBe(account);
     await expect(result.gatekeeper.describe()).rejects.toThrow(error);
   });
-  it("offers metadata and guarded sessions but no host application, verifier, or observer path", async () => {
+  it("offers metadata and guarded sessions, denies unknown actions, and has no verifier or observer path", async () => {
     const v = vendor(), account = await v.createAccount("operator");
     expect((await v.getTools()).map(tool => tool.name)).toEqual(["gk_fs_dir_list", "gk_fs_file_read", "gk_fs_file_write"]);
     expect(await account.getSupportedResources()).toEqual(await v.getSupportedResources());
