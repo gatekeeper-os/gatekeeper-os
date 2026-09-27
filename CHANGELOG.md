@@ -19,10 +19,16 @@ tool execution no longer rely on it:
   becomes `defineGatekeeper(driver)`. `gatekeeperRuntimeSlot`, `kernelToolRuntimeSlot` and
   `GatekeeperRuntime` are removed.
 
-Known gap: on 2026.9.5+ upstream also runs agent hooks and tools on a separately loaded
-discovery instance of the kernel, which cannot reach the full-mode kernel runtime. Agent-facing
-calls still fail closed there. Verified end to end on 2026.9.2 and 2026.9.4; on 2026.9.6 the
-driver is healthy and grants resolve, but agent tool use remains blocked.
+- On 2026.9.5+ upstream runs agent hooks and tools on a separately loaded discovery-mode kernel.
+  The kernel now hands its own runtime to those copies through a process-level holder
+  (`upstream/runtime-handoff.ts`). Only full-mode `start()` publishes it, and `stop()` withdraws it.
+  It never carries another plugin's objects.
+- Gatekeeper wrappers are `catalogMode: "direct-only"`. Tool Search (on by default in 2026.9.6)
+  does not apply result middleware through its catalog bridge, so these tools stay directly visible.
+
+Verified end to end on 2026.9.2, 2026.9.4 and 2026.9.6 (Tool Search on and off): a real grant
+executes `gk_fs_dir_list` through the kernel with one `ok` audit row, and a bogus grant is denied
+by the capability policy.
 
 ## 0.1.0-beta.5
 

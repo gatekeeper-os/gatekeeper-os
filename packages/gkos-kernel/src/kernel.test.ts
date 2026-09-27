@@ -5,13 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { HookCtx, HookEvent, OpenClawPluginApi } from "./upstream/sdk.js";
 import { Kernel } from "./kernel.js";
 
-// Driver and SDK transport are test doubles; kernel store, grants and hook handlers are real.
+// Drivers are test doubles; the kernel runtime handoff is real; kernel store, grants and hook handlers are real.
 // This does not claim live channel dispatch or upstream hook ordering acceptance.
 const fixture=vi.hoisted(()=>({call:vi.fn(),close:vi.fn(),introduce:vi.fn(),authority:vi.fn(),apply:vi.fn(),reject:vi.fn(),notify:vi.fn()}));
-vi.mock("./upstream/sdk.js",()=>({createPluginRuntimeStore:()=>{let runtime:unknown;return{
-  tryGetRuntime:()=>runtime,getRuntime:()=>{if(!runtime)throw new Error("Kernel unavailable");return runtime;},
-  setRuntime:(value:unknown)=>{runtime=value;},clearRuntime:()=>{runtime=undefined;},
-};}}));
 vi.mock("./upstream/notify.js",()=>({sendOperatorDigest:fixture.notify}));
 vi.mock("./upstream/channel-authority.js",()=>({resolveChannelTurnAuthority:fixture.authority}));
 vi.mock("./registry.js",()=>({instanceId:()=>"fixture-instance",Registry:class{
@@ -306,4 +302,14 @@ it('owns gk audit in middleware whatever the after_tool_call order, and records 
  expect(JSON.stringify(denied)).not.toContain('private vendor failure');
  await kernel.onAfterToolCall({toolName:'gk_test_read',toolCallId:'failed-result',params},{...ctx,toolName:'gk_test_read'});
  expect((await toolAudit()).map(row=>row.ok)).toEqual([false,true]); // newest first; exactly one row per call
+});
+
+it('lets an unstarted kernel copy (upstream discovery instance) reach the live runtime until stop',async()=>{
+ await grant();
+ const facade=new Kernel(api as OpenClawPluginApi); // never started, like the 2026.9.5+ discovery-mode instance
+ expect((await facade.onBeforePromptBuild({prompt:"Read",messages:[]},ctx)).toolsAllow).toContain('gk_test_read');
+ await kernel.stop();
+ expect((await facade.onBeforePromptBuild({prompt:"Read",messages:[]},ctx)).toolsAllow).toEqual(["os_request_access","os_list_grants"]);
+ await expect(facade.start()).resolves.toBeUndefined(); await facade.stop(); // a successor may start once the old runtime is withdrawn
+ await kernel.start();
 });

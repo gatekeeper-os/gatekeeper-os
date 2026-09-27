@@ -24,6 +24,8 @@ export function defineGatekeeper(def: GatekeeperDefinition) {
     validateGatekeeperManifest(realpathSync(api.rootDir), id, declarations.map(tool => tool.name));
     for (const tool of declarations) api.registerTool({
       name: tool.name, label: tool.name, description: tool.description, parameters: tool.parameters,
+      // Tool Search's hidden catalog bridge does not apply result middleware, so the placeholder would reach the model.
+      catalogMode: "direct-only",
       execute: async () => ({ content: [{ type: "text" as const, text: GATEKEEPER_TOOL_PLACEHOLDER }], details: {} }),
     });
   } });

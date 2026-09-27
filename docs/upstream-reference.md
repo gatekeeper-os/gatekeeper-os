@@ -718,5 +718,19 @@ openai-completions model, real operator grant, `gk_fs_dir_list`):
 - 2026.9.6: driver healthy and the grant resolves (unfixed `main` cannot issue the grant), but
   (2) still blocks agent use.
 
-(2) is open: it needs the kernel's own full-mode runtime reachable from its discovery instances
-without the SDK slot.
+**Fix for (2) (operator decision 2026-09-26):** `upstream/runtime-handoff.ts` is a process-level
+holder (`Symbol.for("gatekeeper-os.kernel.runtime")`) carrying only the kernel's own runtime.
+Full-mode `start()` publishes it and `stop()` withdraws it. Upstream runs `gateway_stop` before an
+instance is replaced or disposed. Like the pre-2026.9.5 SDK slot it replaces, this is not a
+boundary against in-process code. It deliberately does not reintroduce cross-plugin object
+sharing, because drivers are kernel-loaded.
+
+**Tool Search:** calls made through `tool_call` get policy and `before_tool_call` hooks, but the
+catalog bridge does not apply result middleware (observed on 2026.9.6: the placeholder reached the
+model inside the `{ tool, result }` envelope). The kit marks wrappers `catalogMode: "direct-only"`,
+which upstream types document as "hidden catalog bridges cannot preserve its result contract"
+(present in 2026.9.2–2026.9.6). `tool_call` then refuses them as unknown ids.
+
+Final end-to-end matrix: 2026.9.2, 2026.9.4, and 2026.9.6 with Tool Search on and off all execute
+`gk_fs_dir_list` via middleware with one `ok` audit row. On 2026.9.6 a bogus grant is denied by
+`gkos-capability-policy`.

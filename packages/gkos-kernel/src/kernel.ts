@@ -8,7 +8,7 @@ import { evaluateInstall, ApprovalDecisionParams, ConnectGatekeeperParams, Intro
 import { Type, type TSchema } from "typebox";
 import { Value } from "typebox/value";
 import type { GatewayMethodOptions, HookCtx, HookEvent, HookResult, OpenClawPluginApi, OpenClawPluginServiceContext, PluginTrustedToolPolicyRegistration, ToolResultCtx, ToolResultEvent } from "./upstream/sdk.js";
-import { createPluginRuntimeStore } from "./upstream/sdk.js";
+import { createKernelRuntimeHandoff } from "./upstream/runtime-handoff.js";
 import { Store } from "./store.js";
 import { Registry, instanceId } from "./registry.js";
 import { AuditLog } from "./audit.js";
@@ -24,7 +24,7 @@ import { osPaths } from "./upstream/paths.js";
 interface CallStash{agentId:string;sessionKey:string;runId?:string;session?:GatekeeperSession;queue?:ApprovalQueue;grant?:Grant;tool?:string;paramsJson?:string;expiresAt:number;startedAt:number;}
 interface Runtime{store:Store;registry:Registry;audit:AuditLog;approvals:ApprovalQueueImpl;actions:ActionCoordinator;oauth:OAuthRouter;timer?:ReturnType<typeof setInterval>;stash:Map<string,CallStash>;inflight:Map<string,CallStash>;notes:Map<string,string[]>;sessions:Map<string,Map<GatekeeperSession,string>>;}
 type GatewayMethod=(opts:GatewayMethodOptions)=>Promise<void>|void;
-const slot=createPluginRuntimeStore<Runtime>({pluginId:"gkos-kernel",errorMessage:"Kernel unavailable."});
+const slot=createKernelRuntimeHandoff<Runtime>("Kernel unavailable.");
 const text=(value:string)=>({content:[{type:"text" as const,text:value}],details:{}});
 /** Version of the loaded package, not a copied development pin. */
 const kernelVersion: string = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
