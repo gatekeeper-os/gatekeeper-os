@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Real filesystem apply (cooperative-writer contract)
+
+`gk_fs_file_write` actions now apply to disk after an operator decision, under the
+[2026-09-27 contract amendment](plans/fs-contract.md#amendment-2026-09-27--cooperative-writer-adversary-model-for-apply).
+The driver journals a preimage, stages beside the target, rechecks the baseline, publishes
+(`RENAME_EXCHANGE` through an optional system `exch`/`mv --exchange`, else `rename`; new files via
+`link()`), verifies, fsyncs, and writes an effect receipt. Ambiguous outcomes are `uncertain` and
+block the resource. Revert restores the preimage of a replaced file. No race-safety against
+hostile same-user processes is claimed; in `rename` mode an edit landing in the final check→publish
+window is lost. VM checkpoint `20260927-051331-phase-3`.
+
+Operator notes:
+- Writes pending from beta.5 can now be applied. They are refused if the file changed after the
+  write was requested. They keep `implementsRevert: false`, because it is fixed when the action is
+  requested.
+- Private driver state gains `apply-*.tx.json`, `*.receipt.json` and `preimage-*.json`. A preimage
+  holds the replaced file's contents and stays under the cell's private state directory.
+- The packed model-turn gate now runs 10 turns, including real-write apply, reject and uncertain blocking.
+
+### Kernel-owned drivers (OpenClaw 2026.9.5+)
+
 OpenClaw 2026.9.5 made `createPluginRuntimeStore` slots private to each managed plugin
 instance, so the SDK slot can no longer carry objects between plugins. Gatekeeper drivers and
 tool execution no longer rely on it:
