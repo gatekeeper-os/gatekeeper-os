@@ -802,4 +802,12 @@ waits for verification against a 2026.10 build.
    `main` (2026.9.2 pin) and the pin branch: the staged fs plugin lacked `dist/driver.js`, so the
    kernel logged `gatekeeper fs unavailable`. The last fresh-base `phase-1` before this ran on
    2026-09-09, before kernel-owned drivers landed.
+6. **2026.10.1 (npm `latest` since 2026-10-10, inside the declared range) is not yet compatible.**
+   It rejects the retired `agents.list` config shape that 2026.9.9 still migrates with a warning
+   (product cell configs already use keyed `agents.entries`; the smoke config now does too, and it
+   validates on 2026.9.2, 2026.9.9 and 2026.10.1). With that fixed, the smoke passes config and health on
+   2026.10.1 but fails `authenticated-kernel-rpc`. VM test configs (`kernel-config.mjs`,
+   `phase5-config.mjs`, `channel-config.mjs`, `blueprint-scenarios.mjs`, `npm-only/config.mjs`,
+   `spike-config.mjs`, `deterministic-agent-turn.sh`) still write `agents.list`. Nightly `latest`
+   stays red until 2026.10 support lands or the range is narrowed.
 

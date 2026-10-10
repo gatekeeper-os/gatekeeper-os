@@ -41,7 +41,8 @@ writeFileSync(configPath, JSON.stringify({
   models: { providers: { smoke: { baseUrl: 'http://127.0.0.1:19101/v1', api: 'openai-completions', apiKey: randomBytes(16).toString('hex'),
     models: [{ id: 'smoke', name: 'Deterministic smoke model', reasoning: false, input: ['text'],
       cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 128000, maxTokens: 1024 }] } } },
-  agents: { defaults: { workspace: join(state, 'workspace'), model: { primary: 'smoke/smoke' } }, list: [{ id: 'main', default: true }] },
+  // Keyed entries: 2026.10.1 rejects the retired `agents.list` that 2026.9.9 still migrates with a warning.
+  agents: { defaults: { workspace: join(state, 'workspace'), model: { primary: 'smoke/smoke' } }, entries: { main: {} } },
   tools: { profile: 'full' },
   plugins: { allow: ['gkos-kernel', 'gkos-gatekeeper-fs'],
     load: { paths: ['packages/gkos-kernel', 'packages/gkos-gatekeeper-fs'].map(path => resolve(path)) },
