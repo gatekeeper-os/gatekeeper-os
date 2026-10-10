@@ -3161,3 +3161,20 @@ packed artifacts and the 10-turn packed model gate on Node 24.20.0 and on offici
 selects exactly the five packages. [Matt's commands](BETA6-PRIVATE-HANDOFF.md). No publish, tag push, deprecation,
 visibility change or upstream post.
 
+## 2026-10-10 — upstream pin 2026.9.2 → 2026.9.9
+
+Libvirt `clawos-test`, shared phase-0-bootstrap state, run from a worktree of the original checkout.
+
+| Run | Snapshot | Pin | Result |
+|---|---|---|---|
+| `20261010-221646-phase-1` | base | 2026.9.9 | exit 1, 9 FAIL — staged fs plugin lacks `dist/driver.js` (`gatekeeper fs unavailable`) |
+| A/B on `main` `f08e746` | base | 2026.9.2 | exit 1, identical 9 FAIL — pre-existing beta.6 regression, not the pin |
+| `20261010-224746-phase-1` | base | 2026.9.9 | **exit 0, 25/25** with driver staging fix |
+| `20261010-230120-phase-1` install-only | base | 2026.9.9 | exit 0; snapshot `installed-2026-9-9` taken (original `installed` untouched) |
+| `20261010-230617-phase-3` kernel-live | installed-2026-9-9 | 2026.9.9 | **exit 0, 104/104**, live verdict ok; guest Node 24.21.0 |
+
+Host: lint, `check:catalog` (dev resolution = pin; drift negative-tested), typecheck against the 2026.9.9
+SDK, 900/900 unit tests, 10-turn packed gate on 2026.9.2 and 2026.9.9 (fails on 2026.9.9 without
+`direct-only` kernel tools), extended live smoke on 2026.9.2/2026.9.6/2026.9.9.
+Not run: `phase-3 npm-only` (frozen on published beta.5, unsupported on 2026.9.5+), phases 4–9.
+

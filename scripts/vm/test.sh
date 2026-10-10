@@ -3,9 +3,12 @@
 # Usage: scripts/vm/test.sh phase-1 [snapshot]   (snapshot defaults per docs/vm-testing.md §5 table)
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 phase="${1:?phase, e.g. phase-1}"
+# The installed snapshot carries the upstream it was installed with, so its default name follows the pin:
+# after a pin move, installed-based phases refuse to run until a matching snapshot is taken.
+pin_snap="installed-$(node -p 'require(process.argv[1]).upstream.version' "$REPO_ROOT/gkos.lock.json" | tr . -)"
 case "$phase" in
   phase-0|phase-1) default_snap=base;;
-  phase-3|phase-4|phase-6|phase-8|phase-9) default_snap=installed;;
+  phase-3|phase-4|phase-6|phase-8|phase-9) default_snap="$pin_snap";;
   phase-5|phase-7) default_snap=connected;;
   phase-2)
     # Explicit library-only exception in docs/vm-testing.md. No VM or Gateway is started.
