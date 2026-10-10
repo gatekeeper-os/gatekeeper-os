@@ -50,7 +50,7 @@ bash "$src_root/installer/preflight.sh"
 if ! command -v node >/dev/null 2>&1; then
   [ "$GKOS_ALLOW_NODE_PROVISION" = "1" ] || fail \
 "node is not installed.
-  Install Node 22.22.3+, 24.15+ or 25.9+ and re-run. This installer provisions Node
+  Install Node 24.16+ or 26.1+ (required by the pinned upstream) and re-run. This installer provisions Node
   automatically only on a disposable machine, which must opt in with
   GKOS_ALLOW_NODE_PROVISION=1 (the VM acceptance run sets it)."
   log "provisioning Node via upstream's installer (disposable host, no onboarding)"

@@ -1,5 +1,5 @@
 # Layers GatekeeperOS on the upstream image without modifying upstream layers (plan §10.6).
-ARG OPENCLAW_PIN=2026.9.2
+ARG OPENCLAW_PIN=2026.9.9
 FROM ghcr.io/openclaw/openclaw:${OPENCLAW_PIN}
 ARG GKOS_VERSION=latest
 USER root

@@ -35,14 +35,14 @@ esac
 # Non-root
 [ "$(id -u)" -ne 0 ] || fail "run as a normal user, not root"
 
-# Node (docs: 22.22.3+, 24.15+, or 25.9+). Missing Node is not fatal here: install.sh decides whether it may be
+# Node: the pinned upstream's engines (openclaw@2026.9.9: >=24.16.0 <25 || >=26.1.0). Missing Node is not fatal here: install.sh decides whether it may be
 # provisioned, which is only ever true on a disposable machine.
 if command -v node >/dev/null; then
   v="$(node -p 'process.versions.node')"
   node -e '
     const [M,m,p]=process.versions.node.split(".").map(Number);
-    const ok=(M===22&&(m>22||(m===22&&p>=3)))||(M===24&&m>=15)||(M===25&&m>=9)||M>=26;
-    process.exit(ok?0:1)' && ok "node $v" || fail "node $v is below the minimum (22.22.3+, 24.15+, 25.9+)"
+    const ok=(M===24&&m>=16)||(M===26&&m>=1)||M>26;
+    process.exit(ok?0:1)' && ok "node $v" || fail "node $v is below the pinned upstream minimum (24.16+ or 26.1+)"
 else
   warn "node not found — install.sh decides whether it may be provisioned"
 fi

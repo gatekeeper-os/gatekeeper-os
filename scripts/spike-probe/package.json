@@ -39,8 +39,8 @@
       "minGatewayVersion": "2026.9.2"
     },
     "build": {
-      "openclawVersion": "2026.9.2",
-      "pluginSdkVersion": "2026.9.2"
+      "openclawVersion": "2026.9.9",
+      "pluginSdkVersion": "2026.9.9"
     }
   },
   "private": true

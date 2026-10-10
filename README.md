@@ -142,8 +142,8 @@ No stable release or ClawHub listing exists yet.
 
 Use the Node version in
 [`.node-version`](.node-version) and pnpm version in
-[`package.json`](package.json); the current pins are Node 22.22.3 and pnpm 10.15.0.
-The upstream runtime pin is `openclaw@2026.9.2` in
+[`package.json`](package.json); the current pins are Node 24.16.0 and pnpm 10.15.0.
+The upstream runtime pin is `openclaw@2026.9.9` in
 [`gkos.lock.json`](gkos.lock.json). Compatibility ranges are not a claim that
 every version in the range has passed acceptance.
 

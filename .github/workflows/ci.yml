@@ -42,3 +42,16 @@ jobs:
           [[ "$actual" == "OpenClaw $pin" || "$actual" == "OpenClaw $pin "* ]]
           pnpm run validate:plugins
           node scripts/check-package-licenses.mjs --pack --validate
+  node-floor:
+    # Package engines stay >=22.22.3 because the declared floor (openclaw 2026.9.2) runs on Node 22.
+    # The pinned upstream needs Node 24.16+, so this job builds and tests without installing it.
+    needs: secret-scan
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22.22.3", cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm test

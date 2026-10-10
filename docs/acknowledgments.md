@@ -7,9 +7,9 @@ This page identifies that work rather than presenting the design as wholly new.
 ## OpenClaw — execution foundation
 
 - Repository: <https://github.com/openclaw/openclaw>
-- Pinned release: [v2026.9.2](https://github.com/openclaw/openclaw/tree/v2026.9.2),
+- Pinned release: [v2026.9.9](https://github.com/openclaw/openclaw/tree/v2026.9.9),
   as recorded in `gkos.lock.json`.
-- License: [MIT, copyright 2026 OpenClaw Foundation](https://github.com/openclaw/openclaw/blob/v2026.9.2/LICENSE).
+- License: [MIT, copyright 2026 OpenClaw Foundation](https://github.com/openclaw/openclaw/blob/v2026.9.9/LICENSE).
   OpenClaw also maintains its own `THIRD_PARTY_NOTICES.md`.
 
 The upstream Gateway, agents, channels and plugin SDK provide the runtime.

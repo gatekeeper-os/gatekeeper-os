@@ -13,14 +13,15 @@ jobs:
     timeout-minutes: 15
     strategy:
       fail-fast: false
-      matrix: { tag: [pinned, latest, beta, extended-stable] }
+      matrix: { tag: [pinned, floor, latest, beta, extended-stable] }
     env:
       OPENCLAW_NO_AUTO_UPDATE: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
-        # Rolling upstream requires >=24.16; pinned build CI retains Node 22 coverage.
+        # The pin (2026.9.9) and rolling upstream require >=24.16; 2026.9.2 (floor) accepts 24.15+.
+        # Node 22 package coverage lives in ci.yml's node-floor job.
         with: { node-version: "24", cache: pnpm }
       - name: Select isolated runner state
         run: |
