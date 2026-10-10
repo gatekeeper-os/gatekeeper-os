@@ -19,7 +19,7 @@ const model=createServer(async(req,res)=>{
   if(req.method!=='POST'||!current)throw new Error();
   let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>2000000)throw new Error();}
   const input=JSON.parse(raw);current.names.push((input.tools??[]).map(t=>t.function?.name??t.name));
-  const messages=input.messages??[],lastUser=messages.findLastIndex(m=>m.role==='user');
+  const messages=input.messages??[],lastUser=messages.findLastIndex(m=>m.role==='user'&&!JSON.stringify(m.content??'').includes('<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>'));
   const results=messages.slice(lastUser+1).filter(m=>m.role==='tool');
   for(const result of results){const body=typeof result.content==='string'?result.content:JSON.stringify(result.content);current.result=true;current.overlay||=body.includes('fixture-base-fixture-change');current.base||=body.includes('fixture-base');current.denied||=/denied|no such grant|unavailable|blocked|not found/i.test(body);}
   const call=!!current.tool&&results.length===0&&current.calls===0;if(call)current.calls++;
@@ -33,7 +33,7 @@ async function connect(auth){let client,timer;try{const hello=await new Promise(
 async function denied(client,method,params){try{await client.request(method,params);return false;}catch{return true;}}
 async function turn(id,tool,params,agentId='main'){
  current={id,tool,params,names:[],calls:0,result:false,base:false,overlay:false,denied:false};
- await paired.client.request('agent',{agentId,sessionKey:`agent:${agentId}:mcp-${id}`,message:'Run the synthetic fixture operation once.',idempotencyKey:randomUUID()},{expectFinal:true,timeoutMs:120000});
+ await paired.client.request('agent',{agentId,sessionKey:`agent:${agentId}:mcp-${id}`,message:'Run the synthetic fixture operation once.',idempotencyKey:randomUUID()},{expectFinal:true,timeoutMs:120000}).then(async r=>{if(r?.runId&&(await paired.client.request('agent.wait',{runId:r.runId,timeoutMs:115_000},{timeoutMs:120_000}))?.status==='timeout')throw new Error('agent-wait-timeout');return r;});
  const row={...current};delete row.params;report.turns.push(row);save();current=undefined;
  check(id+'-actual-model',row.names.length>0);if(tool)check(id+'-result',row.calls===1&&row.result);return row;
 }

@@ -734,3 +734,42 @@ which upstream types document as "hidden catalog bridges cannot preserve its res
 Final end-to-end matrix: 2026.9.2, 2026.9.4, and 2026.9.6 with Tool Search on and off all execute
 `gk_fs_dir_list` via middleware with one `ok` audit row. On 2026.9.6 a bogus grant is denied by
 `gkos-capability-policy`.
+
+## 2026-10-10 — OpenClaw 2026.9.9
+
+**VERIFIED (live runs on nova, isolated state under `/tmp`, stub openai-completions model):**
+published 0.1.0-beta.6 (`262b80b`, npm `latest`) needs no change for 2026.9.9. Results:
+
+| Run | 2026.9.2 | 2026.9.6 | 2026.9.9 |
+|---|---|---|---|
+| Extended `scripts/ci/live-smoke.ts`, 15 checks | pass | pass | pass |
+| Same, kernel runtime handoff disabled (negative control) | — | **fails** at `granted-tool-offered-directly` | pass |
+| Host harness, Tool Search off: grant, `gk_fs_dir_list`, one `ok` tool audit row, unknown grant denied | — | pass | pass |
+| Host harness, Tool Search on (`tools` mode) | — | — | pass |
+
+Observations on 2026.9.9:
+1. **Agent hooks reach the full-mode kernel instance.** With the process-level handoff replaced by
+   a per-module symbol, granted calls still execute on 2026.9.9 but fail closed on 2026.9.6. The
+   handoff stays, because 2026.9.5–2026.9.8 need it. It is no longer load-bearing on 2026.9.9.
+2. **Tool Search bridge refusal text changed.** `tool_call` on a `catalogMode: "direct-only"` gk tool
+   now returns "This tool is already available directly, not through the tool catalog". On
+   2026.9.6 it was an unknown id. No placeholder reaches the model either way. With a grant and
+   Tool Search on, the model sees `gk_fs_*` directly next to `tool_search`/`tool_call`/`tool_describe`.
+   Kernel `os_*` tools are reachable only through the bridge in that mode.
+3. **`agent` acknowledges before the run settles.** With `expectFinal: true` the RPC returned
+   `status: "ok"` and a `runId` in about 200 ms; the run ended seconds later. Drivers follow with
+   `agent.wait { runId }`. In 2026.9.2, `waitForAgentJob` returns the cached snapshot of a
+   completed run immediately, so the extra call is harmless on the pin.
+4. **Trailing internal-context message.** Model requests now end with a user-role
+   `<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>` message, including after tool results. Stub models that
+   took "messages after the last user message" as the tool results saw none.
+5. **Two `observation` rows per `gk_fs_dir_list` call** appear identically on 2026.9.6 and 2026.9.9.
+   This is existing kernel behavior, not an upstream change.
+
+Test hygiene, not product behavior: run disposable gateways with a scrubbed environment. 2026.9.2
+auto-installs plugins for ambient provider credentials and then refuses to report ready until
+restarted. 2026.9.9 suppresses ambient channel auto-configuration.
+
+Outside the declared range: the nightly `beta` lane resolves `2026.10.1-beta.2`, and a prerelease
+never satisfies `<2026.11.0`, so that lane has failed by design since 2026-10-06. Widening the range
+waits for verification against a 2026.10 build.

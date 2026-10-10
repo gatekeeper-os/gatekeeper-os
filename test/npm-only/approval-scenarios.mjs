@@ -24,7 +24,7 @@ const server=createServer(async(req,res)=>{
     let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>2_000_000)throw new Error();}
     const input=JSON.parse(raw),names=(input.tools??[]).map(t=>t.function?.name??t.name);
     current.names.push(names);
-    const messages=input.messages??[],lastUser=messages.findLastIndex(m=>m.role==='user');
+    const messages=input.messages??[],lastUser=messages.findLastIndex(m=>m.role==='user'&&!JSON.stringify(m.content??'').includes('<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>'));
     const results=messages.slice(lastUser+1).filter(m=>m.role==='tool');
     // Fixture contents are compared in memory, never copied into logs or evidence.
     for(const result of results){const body=typeof result.content==='string'?result.content:JSON.stringify(result.content);
@@ -53,7 +53,7 @@ async function denied(client,method,params){try{await client.request(method,para
 async function turn(id,{tool,params={},agentId='main',message='Run the test operation once.',client=paired.client}={}){
   current={id,tool,params,names:[],calls:0,sawResult:false,sawInside:false,sawOverlay:false,sawOutside:false,sawListing:false,sawDenial:false};
   const before=records().length;
-  try { await client.request('agent',{agentId,sessionKey:`agent:${agentId}:kernel-${id}`,message,idempotencyKey:randomUUID()},{expectFinal:true,timeoutMs:120_000}); }
+  try { await client.request('agent',{agentId,sessionKey:`agent:${agentId}:kernel-${id}`,message,idempotencyKey:randomUUID()},{expectFinal:true,timeoutMs:120_000}).then(async r=>{if(r?.runId&&(await client.request('agent.wait',{runId:r.runId,timeoutMs:115_000},{timeoutMs:120_000}))?.status==='timeout')throw new Error('agent-wait-timeout');return r;}); }
   catch { throw new Error('turn-'+id); }
   const row={...current};delete row.params;row.hooks=records().slice(before).map(({hook,tool,callId,error,senderIsOwner})=>({hook,tool,callId,error,senderIsOwner}));
   report.turns.push(row);save();current=undefined;

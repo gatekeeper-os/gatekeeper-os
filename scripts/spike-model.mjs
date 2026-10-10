@@ -17,7 +17,7 @@ const server = createServer(async (req, res) => {
     const names = (request.tools ?? []).map(t => t.function?.name ?? t.name);
     appendFileSync(join(process.env.OPENCLAW_STATE_DIR, 'os', 'model-tools.jsonl'), JSON.stringify({ names })+'\n', { mode: 0o600 });
     const messages = request.messages ?? [];
-    const lastUser = messages.findLastIndex(m => m.role === 'user');
+    const lastUser = messages.findLastIndex(m => m.role === 'user' && !JSON.stringify(m.content ?? '').includes('<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>'));
     const alreadyCalled = messages.slice(lastUser+1).some(m => m.role === 'tool');
     const selected = names.includes('probe_late') && toolCalls % 2 ? 'probe_late' : 'probe_echo';
     const call = !alreadyCalled && names.includes(selected);
