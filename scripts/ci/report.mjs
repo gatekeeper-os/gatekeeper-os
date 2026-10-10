@@ -12,6 +12,7 @@ appendFileSync(process.env.GITHUB_STEP_SUMMARY,
   `### ${verdict.tag ?? 'unresolved'}: ${verdict.status}\n\n` +
   `Upstream: ${verdict.version ?? 'unresolved'}; declared range: ${verdict.range ?? 'unknown'}.\n\n` +
   (verdict.status === 'unsupported' ? 'Not compatible with the declared range; live tests were NOT run.\n\n' : '') +
-  'Scope: plugin metadata, live kernel/filesystem startup, health and read-only operator RPCs. ' +
+  'Scope: plugin metadata, live kernel/filesystem startup, health, operator RPCs, and one stub-model agent turn ' +
+  'executing a granted filesystem tool through the kernel. ' +
   '**Not full scenario conformance or Phase 7 update/rollback acceptance.**\n');
 if (verdict.status === 'failed') process.exitCode = 1;

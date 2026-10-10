@@ -19,17 +19,18 @@ All five `@gatekeeper-os` packages are published at `0.1.0-beta.5`.
 A fresh snapshot-based npm-only run passed on Node **22.22.3** and unmodified
 OpenClaw **2026.9.2**, including independently owned gatekeeper tools and
 synthetic approval apply/reject effects and audit. Real filesystem writes are
-disabled in beta.5; the prepared, not yet published, 0.1.0-beta.6 applies them under
+disabled in beta.5; the published 0.1.0-beta.6 applies them under
 the cooperative-writer contract (see the proof row below). Real connected-provider and chat-transport
 acceptance is not established.
 See the [beta.5 release notes](plans/release-notes-beta.5.md) and
 [acceptance receipts](plans/PROGRESS.md).
 
-> **Compatibility: published beta.5 works with OpenClaw 2026.9.2–2026.9.4 only.** OpenClaw
-> 2026.9.5 made SDK runtime-store slots private to each plugin instance, which cuts the beta.5
-> kernel off from gatekeeper drivers and from its own runtime. On 2026.9.5+, beta.5 fails every
-> gatekeeper and `os_*` call closed. The next release fixes this; see
-> [upstream reference](docs/upstream-reference.md#2026-09-26--openclaw-202695-instance-scoped-runtime-slots).
+> **Compatibility: 0.1.0-beta.6 works with OpenClaw 2026.9.2 through 2026.9.9**, verified end to
+> end on 2026.9.2, 2026.9.4, 2026.9.6 and 2026.9.9
+> ([2026.9.9 evidence](docs/upstream-reference.md#2026-10-10--openclaw-202699)). Beta.5 works with
+> 2026.9.2–2026.9.4 only: OpenClaw 2026.9.5 made SDK runtime-store slots private to each plugin
+> instance, so on 2026.9.5+ beta.5 fails every gatekeeper and `os_*` call closed. Upgrade to beta.6;
+> see [upstream reference](docs/upstream-reference.md#2026-09-26--openclaw-202695-instance-scoped-runtime-slots).
 
 [Architecture](docs/implementation-plan.md) · [Acceptance status](docs/phase-checklist.md) ·
 [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) ·

@@ -37,7 +37,7 @@ function assert(condition, code) { if (!condition) throw new Error('Packed model
 async function turn(client, id, tool = 'os_list_grants', params = {}) {
   stage = 'turn-' + id;
   current = { id, names: [], toolResult: false, denial: false, tool, params };
-  await client.request('agent', { agentId: 'main', sessionKey: 'agent:main:packed-' + id, message: 'Run the test operation once.', idempotencyKey: randomUUID() }, { expectFinal: true, timeoutMs: 120000 });
+  await client.request('agent', { agentId: 'main', sessionKey: 'agent:main:packed-' + id, message: 'Run the test operation once.', idempotencyKey: randomUUID() }, { expectFinal: true, timeoutMs: 120000 }).then(async r => { if (r?.runId && (await client.request('agent.wait', { runId: r.runId, timeoutMs: 115000 }, { timeoutMs: 120000 }))?.status === 'timeout') throw new Error('agent-wait-timeout'); return r; });
   result.modelTurns++;
   const { params: _privateParams, ...row } = current; current = undefined; result.turns.push(row);
   assert(row.names.length > 0, 'model-not-used');

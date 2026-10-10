@@ -20,7 +20,7 @@ const server=createServer(async(req,res)=>{try{
   let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>2_000_000)throw new Error();}
   const input=JSON.parse(raw);if(!current)throw new Error();
   current.requests++;const names=(input.tools??[]).map(t=>t.function?.name??t.name);current.names.push(names);
-  const msgs=input.messages??[],lastUser=msgs.findLastIndex(m=>m.role==='user'),results=msgs.slice(lastUser+1).filter(m=>m.role==='tool');
+  const msgs=input.messages??[],lastUser=msgs.findLastIndex(m=>m.role==='user'&&!JSON.stringify(m.content??'').includes('<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>')),results=msgs.slice(lastUser+1).filter(m=>m.role==='tool');
   current.sawGuide ||= JSON.stringify(msgs).includes('Blueprint guide');
   for(const result of results){const text=typeof result.content==='string'?result.content:JSON.stringify(result.content);current.sawMarker ||= text.includes('BLUEPRINT_SANDBOX_OK');}
   const call=current.tool&&results.length===0&&current.calls===0;if(call)current.calls++;
@@ -63,7 +63,7 @@ try{
  for(let i=0;i<40;i++){const rows=await paired.client.request('agents.list',{});if((rows.agents??[]).filter(a=>a.id.startsWith('bp-')).length===roles.length)break;await new Promise(r=>setTimeout(r,500));}
  for(const role of roles){
    current={role,requests:0,calls:0,names:[],sawMarker:false,sawGuide:false,tool:role==='coder'?'exec':undefined};
-   await paired.client.request('agent',{agentId:'bp-'+role,sessionKey:'agent:bp-'+role+':phase6-'+randomUUID(),message:'Run the isolated blueprint checkpoint once.',idempotencyKey:randomUUID()},{expectFinal:true,timeoutMs:120000});
+   await paired.client.request('agent',{agentId:'bp-'+role,sessionKey:'agent:bp-'+role+':phase6-'+randomUUID(),message:'Run the isolated blueprint checkpoint once.',idempotencyKey:randomUUID()},{expectFinal:true,timeoutMs:120000}).then(async r=>{if(r?.runId&&(await paired.client.request('agent.wait',{runId:r.runId,timeoutMs:115_000},{timeoutMs:120_000}))?.status==='timeout')throw new Error('agent-wait-timeout');return r;});
    report.turns.push({role,requests:current.requests,calls:current.calls,sawMarker:current.sawMarker,toolNames:[...new Set(current.names.flat())]});save();
    check('model-turn-'+role,current.requests>0);check('guide-in-context-'+role,current.sawGuide);if(role==='researcher')check('researcher-web-only',current.names.some(n=>n.includes('web_search')&&n.includes('web_fetch'))&&current.names.every(n=>n.every(t=>['web_search','web_fetch'].includes(t))));else check('request-tool-'+role,current.names.some(n=>n.includes('os_request_access')));check('ungranted-gk-hidden-'+role,current.names.every(n=>!n.some(t=>t.startsWith('gk_'))));
    if(role==='coder'){check('coder-exec-present',current.names.some(n=>n.includes('exec')));check('coder-fs-present',current.names.some(n=>n.includes('read')&&n.includes('write')));check('coder-sandbox-exec-result',current.calls===1&&current.sawMarker);}

@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased
+
+### OpenClaw 2026.9.9 verified; nightly smoke now drives a granted tool call
+
+No product change. Published 0.1.0-beta.6 runs end to end on OpenClaw 2026.9.9: a real operator
+grant, `gk_fs_dir_list` executed by the kernel with one `ok` tool audit row, and an unknown grant
+denied, with Tool Search off and on. Evidence and upstream observations:
+[upstream reference](docs/upstream-reference.md#2026-10-10--openclaw-202699).
+
+- The nightly `conformance-matrix` smoke now runs an agent turn with a local deterministic stub
+  model: grant, direct tool offer, kernel execution, audit, and unknown-grant denial. Health
+  checks alone stayed green on 2026.9.6 while every agent-side call failed closed. A negative
+  control (kernel runtime handoff disabled) passes every earlier check on 2026.9.6 and fails at
+  `granted-tool-offered-directly`. The smoke fixture root moved out of upstream state, which the
+  fs gatekeeper refuses to grant.
+- VM scenario drivers and stub models handle two 2026.9.9 behaviors. The `agent` RPC acknowledges
+  before the run settles, so drivers follow it with `agent.wait`; 2026.9.2 returns the cached
+  snapshot immediately. Model requests now carry an internal-context user message after tool
+  results, which stubs no longer mistake for a new user turn.
+
 ## 0.1.0-beta.6
 
 Real filesystem apply under the cooperative-writer contract; kernel-owned drivers for OpenClaw 2026.9.5+

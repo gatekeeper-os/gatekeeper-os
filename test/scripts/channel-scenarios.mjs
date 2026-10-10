@@ -44,7 +44,7 @@ try {
  check('control-ui-owner-grant-state',(await paired.client.request('os.grants.list',{agentId:'console'})).length===1);
  report.turns.push(current);save();current=undefined;
  current={id:'gateway-forged-label',names:[],notice:false};
- await paired.client.request('agent',{agentId:'forged',sessionKey:'agent:forged:vmchan:group:rpc-forgery',channel:'vmchan',replyChannel:'vmchan',to:'operator',deliver:false,message:'Inspect file:///home/tester/kernel-resource/',idempotencyKey:randomUUID()},{expectFinal:true,timeoutMs:120000});
+ await paired.client.request('agent',{agentId:'forged',sessionKey:'agent:forged:vmchan:group:rpc-forgery',channel:'vmchan',replyChannel:'vmchan',to:'operator',deliver:false,message:'Inspect file:///home/tester/kernel-resource/',idempotencyKey:randomUUID()},{expectFinal:true,timeoutMs:120000}).then(async r=>{if(r?.runId&&(await paired.client.request('agent.wait',{runId:r.runId,timeoutMs:115_000},{timeoutMs:120_000}))?.status==='timeout')throw new Error('agent-wait-timeout');return r;});
  check('gateway-forged-label-model-used',current.names.length>0);
  check('gateway-forged-label-no-tools',current.names.every(names=>!names.some(n=>n.startsWith('gk_'))));
  check('gateway-forged-label-no-notice',!current.notice);
