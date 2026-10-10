@@ -5,7 +5,7 @@ Third-party and adapted material retains its applicable license terms.
 
 OpenClaw (https://github.com/openclaw/openclaw) provides the separately installed,
 unmodified agent runtime, Gateway and public plugin interfaces. Its pinned
-v2026.9.2 license is MIT, copyright (c) 2026 OpenClaw Foundation; its own
+v2026.9.9 license is MIT, copyright (c) 2026 OpenClaw Foundation; its own
 THIRD_PARTY_NOTICES.md applies to incorporated upstream dependencies.
 
 Cloudflare OS (https://github.com/cloudflare/cloudflare-os), by Cloudflare and

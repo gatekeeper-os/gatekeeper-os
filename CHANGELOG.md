@@ -2,11 +2,40 @@
 
 ## Unreleased
 
+### Upstream pin moves to OpenClaw 2026.9.9
+
+`gkos.lock.json`, the Docker image, plugin `build` metadata and the dev-resolved SDK now use
+2026.9.9. The declared range and `minGatewayVersion` stay at `>=2026.9.2`; a new nightly `floor`
+lane keeps 2026.9.2 under live test. `check:catalog` fails when `pnpm-lock.yaml` resolves an
+`openclaw` other than the pin, so type-checks and the packed gate's client track the pin.
+
+**Node:** 2026.9.9 requires Node `>=24.16.0 <25 || >=26.1.0`. The installer preflight, `.node-version`
+and CI move to 24.16. Package `engines` stay `>=22.22.3`, because the 2026.9.2 floor runs there; a new
+`node-floor` CI job builds and tests on 22.22.3.
+
+**Not yet:** OpenClaw 2026.10.1 (now npm `latest`) fails the live smoke at authenticated kernel RPC;
+see [upstream reference](docs/upstream-reference.md#2026-10-10--pin-moved-to-202699).
+
+### Fixes
+
+- **Installed cells could not load the filesystem gatekeeper.** Since beta.6 the kernel imports each
+  gatekeeper's manifest-declared driver (`dist/driver.js`), but the CLI's plugin staging bundled
+  only `dist/index.js`. Every cell created by the installer or the published 0.1.0-beta.6 CLI logged
+  `gatekeeper fs unavailable`, on any upstream version. Staging now bundles the declared driver and
+  fails the build if it is missing. The packed gate did not catch this because it points the
+  catalog at the npm-packed fs package; fresh-base `phase-1` did.
+- **Kernel `os_*` tools are `catalogMode: "direct-only"`.** With Tool Search at its 2026.9.9 default
+  and a 2026.9.9 client, `os_list_grants` and `os_request_access` were offered only through the
+  hidden catalog, breaking no-grant narrowing. Granted `gk_*` wrappers were already direct-only.
+- **Kernel declarations reference the public SDK.** The inferred plugin-entry export inlined
+  upstream-internal types with dangling relative chunk imports (published beta.6 `index.d.ts`) and
+  stopped bundling on the 2026.9.9 SDK.
+
 ### OpenClaw 2026.9.9 verified; nightly smoke now drives a granted tool call
 
-No product change. Published 0.1.0-beta.6 runs end to end on OpenClaw 2026.9.9: a real operator
-grant, `gk_fs_dir_list` executed by the kernel with one `ok` tool audit row, and an unknown grant
-denied, with Tool Search off and on. Evidence and upstream observations:
+Published 0.1.0-beta.6 executes granted `gk_*` calls on OpenClaw 2026.9.9 through the kernel, with Tool
+Search off and on. Its `os_*` tools are reachable only through Tool Search for 2026.9.9 clients, and its
+CLI-created cells lack the fs driver (see Fixes). Evidence and upstream observations:
 [upstream reference](docs/upstream-reference.md#2026-10-10--openclaw-202699).
 
 - The nightly `conformance-matrix` smoke now runs an agent turn with a local deterministic stub

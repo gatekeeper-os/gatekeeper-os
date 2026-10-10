@@ -25,9 +25,11 @@ acceptance is not established.
 See the [beta.5 release notes](plans/release-notes-beta.5.md) and
 [acceptance receipts](plans/PROGRESS.md).
 
-> **Compatibility: 0.1.0-beta.6 works with OpenClaw 2026.9.2 through 2026.9.9**, verified end to
-> end on 2026.9.2, 2026.9.4, 2026.9.6 and 2026.9.9
-> ([2026.9.9 evidence](docs/upstream-reference.md#2026-10-10--openclaw-202699)). Beta.5 works with
+> **Compatibility:** the upstream pin is OpenClaw 2026.9.9 (Node 24.16+); the declared range is
+> `>=2026.9.2 <2026.11.0`. **Published 0.1.0-beta.6 has two defects fixed on `main`:** cells created by
+> its CLI cannot load the filesystem gatekeeper, and on 2026.9.9 its `os_*` tools are offered only
+> through Tool Search. Granted `gk_*` calls work on 2026.9.2–2026.9.9
+> ([evidence](docs/upstream-reference.md#2026-10-10--openclaw-202699)). Beta.5 works with
 > 2026.9.2–2026.9.4 only: OpenClaw 2026.9.5 made SDK runtime-store slots private to each plugin
 > instance, so on 2026.9.5+ beta.5 fails every gatekeeper and `os_*` call closed. Upgrade to beta.6;
 > see [upstream reference](docs/upstream-reference.md#2026-09-26--openclaw-202695-instance-scoped-runtime-slots).
@@ -142,8 +144,8 @@ No stable release or ClawHub listing exists yet.
 
 Use the Node version in
 [`.node-version`](.node-version) and pnpm version in
-[`package.json`](package.json); the current pins are Node 22.22.3 and pnpm 10.15.0.
-The upstream runtime pin is `openclaw@2026.9.2` in
+[`package.json`](package.json); the current pins are Node 24.16.0 and pnpm 10.15.0.
+The upstream runtime pin is `openclaw@2026.9.9` in
 [`gkos.lock.json`](gkos.lock.json). Compatibility ranges are not a claim that
 every version in the range has passed acceptance.
 

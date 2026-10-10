@@ -55,7 +55,7 @@ If none of these can be made to work, the agent stops and reports what was tried
 Three named snapshots, taken in this order and never modified afterwards:
 
 1. **`base`** — fresh OS with §2 base packages, `tester` user, linger enabled, Docker installed but no images pulled, `.ssh` authorized for the host. No Node, no OpenClaw. This is the starting point for every Phase 1 install test.
-2. **`installed`** — taken after a successful `gkos install` from the current working tree (Phase 1 acceptance). Starting point for Phases 3–6 tests, so you are not paying the install cost every run.
+2. **`installed-<pin>`** (e.g. `installed-2026-9-9`; the original `installed` holds 2026.9.2) — taken after a successful `gkos install` from the current working tree (Phase 1 acceptance). Starting point for Phases 3–6 tests, so you are not paying the install cost every run.
 3. **`connected`** — taken after `gkos gatekeeper add github` + `connect` with a test GitHub account and a test repository introduced to an agent (Phase 4). Starting point for approval, drainer, and update tests.
 
 Rules: never test on a VM that was not just restored from a snapshot; re-take `installed` and `connected` whenever the installer or kernel changes in a way that affects them; delete and recreate `base` if the base image is updated. Record which snapshot each test run started from in `plans/PROGRESS.md`.
@@ -70,7 +70,7 @@ scripts/vm/reset.sh base          # restore a snapshot
 scripts/vm/sync.sh                # rsync the working tree (excluding node_modules, .git, dist) to /home/tester/src
 scripts/vm/exec.sh 'bash -lc "…"' # run a command as tester
 scripts/vm/test.sh phase-1        # reset → sync → run test/phase-1.sh inside → collect artifacts to ./vm-artifacts/<ts>/
-scripts/vm/snapshot.sh installed  # take a named snapshot
+scripts/vm/snapshot.sh installed-2026-9-9  # take a named snapshot (installed-<pin>)
 ```
 
 `scripts/vm/test.sh <phase>` is the only command an acceptance run may use; it guarantees the reset happened and stores every output. Artifacts collected into `vm-artifacts/<timestamp>-<phase>/`: the full command log, `openclaw --version`, `openclaw plugins list --json`, `openclaw doctor --lint --json`, `openclaw security audit --deep --json`, `openclaw os status --json`, `systemctl --user status openclaw-gateway*`, `journalctl --user -u 'openclaw-gateway*' --since <start>`, the contents of `~/.openclaw/os/audit/`, and the conformance verdict JSON. Secrets must never appear in artifacts — the collector greps for token-like strings and fails the run if any are found.
@@ -494,3 +494,16 @@ opt into this nova-specific workaround.
 Inspection of a failed run must preserve its current guest disk: do not revert to
 `installed` before reading retained logs/configs. Booting the current disk starts
 its normal services; make only read-only diagnostic queries and redact auth fields.
+
+## Pin move to 2026.9.9 (2026-10-10)
+
+`scripts/vm/test.sh` now defaults installed-based phases to `installed-<pin>` derived from
+`gkos.lock.json`. Snapshots stay immutable, so a pin move takes a new snapshot and the previous one
+remains for floor and historical reruns (pass `installed` explicitly for 2026.9.2). Procedure used:
+fresh-base `phase-1` (full), then `phase-1 base install-only`, then
+`scripts/vm/snapshot.sh installed-2026-9-9`, then `phase-3 kernel-live`. The guest Node comes from
+upstream's installer (NodeSource) and must satisfy the pin's engines (24.16+ for 2026.9.9).
+
+`phase-3 npm-only` still installs published beta.5, which cannot run on 2026.9.5+. Moving it to a
+published release that carries the installed-cell driver fix is separate acceptance work.
+

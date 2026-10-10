@@ -738,7 +738,9 @@ Final end-to-end matrix: 2026.9.2, 2026.9.4, and 2026.9.6 with Tool Search on an
 ## 2026-10-10 — OpenClaw 2026.9.9
 
 **VERIFIED (live runs on nova, isolated state under `/tmp`, stub openai-completions model):**
-published 0.1.0-beta.6 (`262b80b`, npm `latest`) needs no change for 2026.9.9. Results:
+published 0.1.0-beta.6 (`262b80b`, npm `latest`) executes granted calls on 2026.9.9. **Corrected
+during the pin move (below):** these runs used `tools.profile: "full"` or an explicit `toolSearch`; with
+the 2026.9.9 default and a 2026.9.9 client, beta.6 offers `os_*` only through Tool Search. Results:
 
 | Run | 2026.9.2 | 2026.9.6 | 2026.9.9 |
 |---|---|---|---|
@@ -773,3 +775,39 @@ restarted. 2026.9.9 suppresses ambient channel auto-configuration.
 Outside the declared range: the nightly `beta` lane resolves `2026.10.1-beta.2`, and a prerelease
 never satisfies `<2026.11.0`, so that lane has failed by design since 2026-10-06. Widening the range
 waits for verification against a 2026.10 build.
+
+## 2026-10-10 — pin moved to 2026.9.9
+
+**VERIFIED (dev SDK resolved to 2026.9.9; packed gate on nova; libvirt VM):**
+
+1. **Node floor.** 2026.9.9 declares `engines.node` `>=24.16.0 <25 || >=26.1.0` (2026.9.2:
+   `>=22.22.3 <23 || >=24.15.0 <25 || >=25.9.0`). The installer installs the pin, so its preflight
+   follows the pin. Package `engines` follow the declared floor.
+2. **`registerTool` accepts a v2 factory.** The parameter union gained
+   `{ contextVersion: 2; create(ctx) }`. First-party code registers plain tools; only a kit test
+   that read `catalogMode`/`execute` from a captured registration needed narrowing.
+3. **Declaration bundling.** 2026.9.9's published `.d.ts` contains destructured `declare const { … }`
+   statements that rollup-plugin-dts (tsup `--dts`) cannot parse. The kernel's inferred
+   `definePluginEntry(...)` export pulled upstream-internal declarations into its bundle. Beta.6
+   already emitted them with dangling relative chunk imports. An explicit
+   `ReturnType<typeof definePluginEntry>` annotation emits a 437-byte reference instead.
+4. **Tool Search default depends on the client.** With no `tools.toolSearch` set, a 2026.9.9 server
+   offered a messaging cell's turn only `sessions_yield`/`tool_search`/`tool_call`/`tool_describe`
+   when driven by a 2026.9.9 `GatewayClient`, but direct tools when driven by a 2026.9.2 client. The
+   packed gate resolved its client from the dev SDK (2026.9.2), so it never saw the default.
+   `check:catalog` now pins dev resolution to `gkos.lock.json`. Kernel `os_*` tools are now
+   `direct-only`; the 10-turn packed gate passes on 2026.9.2 and 2026.9.9 with that change and fails
+   on 2026.9.9 without it.
+5. **Installed-cell driver staging (not upstream).** Fresh-base `phase-1` failed nine checks on both
+   `main` (2026.9.2 pin) and the pin branch: the staged fs plugin lacked `dist/driver.js`, so the
+   kernel logged `gatekeeper fs unavailable`. The last fresh-base `phase-1` before this ran on
+   2026-09-09, before kernel-owned drivers landed.
+6. **2026.10.1 (npm `latest` since 2026-10-10, inside the declared range) is not yet compatible.**
+   It rejects the retired `agents.list` config shape that 2026.9.9 still migrates with a warning
+   (product cell configs already use keyed `agents.entries`; the smoke config now does too, and it
+   validates on 2026.9.2, 2026.9.9 and 2026.10.1). With that fixed, the smoke passes config and health on
+   2026.10.1 but fails `authenticated-kernel-rpc`. VM test configs (`kernel-config.mjs`,
+   `phase5-config.mjs`, `channel-config.mjs`, `blueprint-scenarios.mjs`, `npm-only/config.mjs`,
+   `spike-config.mjs`, `deterministic-agent-turn.sh`) still write `agents.list`. Nightly `latest`
+   stays red until 2026.10 support lands or the range is narrowed.
+

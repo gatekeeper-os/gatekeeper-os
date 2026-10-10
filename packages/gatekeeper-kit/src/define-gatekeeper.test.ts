@@ -108,7 +108,8 @@ describe("plugin entry", () => {
     const f = register(mode);
     expect(f.registered).toHaveLength(1); expect(f.registerService).not.toHaveBeenCalled();
     const wrapper = f.registered[0];
-    if (!wrapper || typeof wrapper === "function" || Array.isArray(wrapper)) throw new Error("fixture");
+    // 2026.9.9 widened registerTool with a `{ contextVersion: 2, create }` factory form; the kit registers plain tools.
+    if (!wrapper || typeof wrapper === "function" || Array.isArray(wrapper) || "create" in wrapper) throw new Error("fixture");
     expect(wrapper.catalogMode).toBe("direct-only"); // stays on the middleware path under Tool Search
     // The placeholder must not be an error status: upstream keeps that flag even after middleware replaces the result.
     expect(await wrapper.execute("call", { grant: "grant:00000000" })).toEqual({ content: [{ type: "text", text: GATEKEEPER_TOOL_PLACEHOLDER }], details: {} });

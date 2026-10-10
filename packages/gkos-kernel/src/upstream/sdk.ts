@@ -1,6 +1,7 @@
 /**
  * The ONLY file that imports upstream SDK types. An upstream API rename is a one-file change (plan §12 item 1).
- * Types below were confirmed against openclaw@2026.9.2's published declarations (dist/plugin-sdk/plugin-entry.d.ts).
+ * Types below were confirmed against openclaw@2026.9.2's published declarations (dist/plugin-sdk/plugin-entry.d.ts)
+ * and type-check against the current pin (2026.9.9).
  */
 export type {
   OpenClawPluginApi,
@@ -10,6 +11,9 @@ export type {
   AnyAgentTool,
 } from "openclaw/plugin-sdk/plugin-entry";
 export { definePluginEntry, buildJsonPluginConfigSchema } from "openclaw/plugin-sdk/plugin-entry";
+/** Plugin entry as a reference to the public SDK. An inferred export inlines upstream-internal declarations, which
+ *  emitted broken relative chunk imports and stopped bundling on 2026.9.9. */
+export type PluginEntry = ReturnType<typeof import("openclaw/plugin-sdk/plugin-entry").definePluginEntry>;
 
 /** Handler options for api.registerGatewayMethod (VERIFIED 2026.9.2): { req, params, client, respond, context, … }. */
 export type GatewayMethodOptions = Parameters<Parameters<import("openclaw/plugin-sdk/plugin-entry").OpenClawPluginApi["registerGatewayMethod"]>[1]>[0];

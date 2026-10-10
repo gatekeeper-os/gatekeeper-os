@@ -17,5 +17,10 @@ for (const dir of readdirSync("packages")) {
   if (peer && peer !== "catalog:" && peer !== expected) { console.error(`${p}: peerDependencies.openclaw=${peer} != ${expected}`); bad++; }
   if (compat && compat !== expected) { console.error(`${p}: openclaw.compat.pluginApi=${compat} != ${expected}`); bad++; }
 }
+// Packages type-check against the dev-resolved upstream, so it must be the pin (INVARIANT 2: the pin itself lives
+// only in gkos.lock.json; this asserts the lockfile follows it rather than restating it).
+const pin = JSON.parse(readFileSync("gkos.lock.json", "utf8")).upstream.version;
+const resolved = readFileSync("pnpm-lock.yaml", "utf8").match(/^catalogs:\n  default:\n(?:    .*\n)*?    openclaw:\n      specifier: .*\n      version: (\S+)$/m)?.[1];
+if (resolved !== pin) { console.error(`pnpm-lock.yaml resolves openclaw ${resolved ?? "(missing)"} != gkos.lock.json pin ${pin}`); bad++; }
 if (bad) process.exit(1);
-console.log(`catalog ok: openclaw ${expected}`);
+console.log(`catalog ok: openclaw ${expected}; dev resolution = pin ${pin}`);

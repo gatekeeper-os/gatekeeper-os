@@ -11,9 +11,16 @@ const typeboxLicense = readFileSync(join(root, 'packages/gkos-gatekeeper-fs/node
 for (const [dir, id] of [['gkos-kernel', 'gkos-kernel'], ['gkos-gatekeeper-fs', 'gkos-gatekeeper-fs']]) {
   const source = join(root, 'packages', dir), target = join(destination, id);
   mkdirSync(target, {recursive:true});
+  // The kernel imports a gatekeeper's manifest-declared driver module itself, so it must be staged next to the entry.
+  const declaredDriver = JSON.parse(readFileSync(join(source, 'openclaw.plugin.json'), 'utf8')).gkos?.gatekeeper?.driver;
+  const entry = { index: join(source, 'src/index.ts') };
+  if (declaredDriver !== undefined) {
+    if (declaredDriver !== './dist/driver.js') throw new Error(`${dir}: unsupported driver path ${declaredDriver}`);
+    entry.driver = join(source, 'src/driver.ts');
+  }
 
   await build({
-    entry:[join(source, 'src/index.ts')],
+    entry,
     outDir:join(target, 'dist'),
     format:['esm'],
     target:'node22',
@@ -40,6 +47,7 @@ for (const [dir, id] of [['gkos-kernel', 'gkos-kernel'], ['gkos-gatekeeper-fs', 
     })
   );
   copyFileSync(join(source, 'openclaw.plugin.json'), join(target, 'openclaw.plugin.json'));
+  if (declaredDriver !== undefined && !existsSync(join(target, declaredDriver))) throw new Error(`${dir}: staged driver missing`);
   for (const file of ['LICENSE', 'NOTICE']) {
     copyFileSync(join(source, file), join(target, file));
   }

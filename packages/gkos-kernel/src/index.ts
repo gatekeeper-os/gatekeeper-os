@@ -1,11 +1,12 @@
-// GatekeeperOS kernel plugin entry (plan §5.1). Every SDK shape used here type-checks against openclaw@2026.9.2.
+// GatekeeperOS kernel plugin entry (plan §5.1). Every SDK shape used here type-checks against the pinned openclaw
+// (gkos.lock.json). The explicit public type keeps upstream internals out of the emitted declarations.
 import { Type } from "typebox";
-import { buildJsonPluginConfigSchema, definePluginEntry } from "./upstream/sdk.js";
+import { buildJsonPluginConfigSchema, definePluginEntry, type PluginEntry } from "./upstream/sdk.js";
 import { schema as configSchemaJson } from "./config-schema.js";
 import { mountOperatorCli } from "./upstream/cli.js";
 import { Kernel } from "./kernel.js";
 
-export default definePluginEntry({
+const entry: PluginEntry = definePluginEntry({
   id: "gkos-kernel",
   name: "GatekeeperOS Kernel",
   description: "Capability model, gatekeeper registry, approval queue, and audit for GatekeeperOS.",
@@ -36,12 +37,14 @@ export default definePluginEntry({
     api.on("session_end", (e, ctx) => kernel.onSessionEnd(e, ctx));
 
     // the only two agent-facing kernel tools. execute(toolCallId, params, signal?, onUpdate?) — no ctx argument (VERIFIED);
-    // identity comes from the before_tool_call stash keyed by toolCallId; fail closed if absent.
+    // identity comes from the before_tool_call stash keyed by toolCallId; fail closed if absent. Direct-only: with Tool
+    // Search on (the 2026.9.9 default) a messaging cell would otherwise offer them only through the hidden catalog.
     api.registerTool({
       name: "os_request_access",
       label: "Request access",
       description: "Ask the operator for access to a resource by URL.",
       parameters: Type.Object({ url: Type.String(), reason: Type.String() }),
+      catalogMode: "direct-only",
       execute: (toolCallId, params) => kernel.requestAccess(toolCallId, params as { url: string; reason: string }),
     });
     api.registerTool({
@@ -49,6 +52,7 @@ export default definePluginEntry({
       label: "List grants",
       description: "List the resources you currently have access to.",
       parameters: Type.Object({}),
+      catalogMode: "direct-only",
       execute: (toolCallId) => kernel.listGrantsForCall(toolCallId),
     });
 
@@ -68,3 +72,4 @@ export default definePluginEntry({
     api.registerService({ id: "gkos-drainer", start: (ctx) => kernel.startDrainer(ctx), stop: () => kernel.stopDrainer() });
   },
 });
+export default entry;
