@@ -57,8 +57,8 @@ cfg.agents ??= {};
 cfg.agents.defaults ??= {};
 cfg.agents.defaults.workspace ??= `${stateDir}/workspace`;
 cfg.agents.defaults.model = { primary: 'spike/spike' };
-cfg.agents.list ??= [];
-if (!cfg.agents.list.find((agent) => agent.id === 'main')) cfg.agents.list.push({ id: 'main', default: true });
+cfg.agents.entries ??= {};
+cfg.agents.entries.main ??= {};
 writeFileSync(configPath, JSON.stringify(cfg, null, 2) + '\n', { mode: 0o600 });
 NODE
 

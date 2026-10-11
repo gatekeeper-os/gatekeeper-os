@@ -10,7 +10,7 @@ const config = {
   gateway:{mode:'local',bind:'loopback',port:19100,auth:{mode:'token',token:randomBytes(32).toString('hex')}},
   update:{auto:{enabled:false}},
   models:{providers:{spike:{baseUrl:'http://127.0.0.1:19101/v1',api:'openai-completions',apiKey:randomBytes(32).toString('hex'),models:[{id:'spike',name:'Deterministic test model',reasoning:false,input:['text'],cost:{input:0,output:0,cacheRead:0,cacheWrite:0},contextWindow:128000,maxTokens:1024}]}}},
-  agents:{defaults:{workspace:join(state,'workspace'),model:{primary:'spike/spike'}},list:[{id:'main',default:true},{id:'naming'}]},
+  agents:{defaults:{workspace:join(state,'workspace'),model:{primary:'spike/spike'}},entries:{main:{},naming:{}}},
   tools:{profile:'full'},
   plugins:{allow:['spike-probe','spike-vendor-fixture'],load:{paths:[resolve('scripts/spike-probe'),resolve('scripts/spike-probe/fixture-vendor')]},entries:{'spike-probe':{enabled:true,hooks:{allowConversationAccess:true}},'spike-vendor-fixture':{enabled:true}}}
 };

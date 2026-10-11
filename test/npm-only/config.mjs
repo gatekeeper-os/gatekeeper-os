@@ -21,10 +21,10 @@ function addPlugin(id,folder){
 }
 function agent(id,isDefault=false){
  // This matches the messaging assistant blueprint's sandbox choice; global fs/exec denial is intact.
- const value={...(!cfg.agents.entries&&isDefault?{default:true}:{}),workspace:join(state,'agents',id,'workspace'),model:{primary:'spike/spike'},sandbox:{mode:'off'}};
+ const value={workspace:join(state,'agents',id,'workspace'),model:{primary:'spike/spike'},sandbox:{mode:'off'}};
  mkdirSync(value.workspace,{recursive:true,mode:0o700});
- if(cfg.agents.entries){if(cfg.agents.entries[id]&&id!=='main')throw new Error('fixture-agent-collision');cfg.agents.entries[id]={...cfg.agents.entries[id],...value};}
- else{cfg.agents.list??=[];const existing=cfg.agents.list.find(a=>a.id===id);if(existing){if(id!=='main')throw new Error('fixture-agent-collision');Object.assign(existing,value);}else cfg.agents.list.push({id,...value});}
+ cfg.agents.entries??={};
+ if(cfg.agents.entries[id]&&id!=='main')throw new Error('fixture-agent-collision');cfg.agents.entries[id]={...cfg.agents.entries[id],...value};
 }
 if(mode==='normal'){
  for(const dir of [join(state,'os'),'/home/tester/kernel-resource','/home/tester/kernel-outside'])mkdirSync(dir,{recursive:true,mode:0o700});

@@ -9,7 +9,7 @@ delete cfg.plugins.entries['gkos-kernel-monitor'];cfg.plugins.entries['gkos-gate
 cfg.plugins.entries['gkos-channel-ingress']={enabled:true,hooks:{allowConversationAccess:true}};
 cfg.plugins.entries['gkos-kernel'].config={operators:[{channel:'vmchan',senderId:'operator'}],autoApprove:['github.issue.comment'],notify:{channel:'vmchan',target:'operator'}};
 cfg.commands={ownerAllowFrom:['vmchan:operator']};cfg.channels={vmchan:{enabled:true}};
-cfg.agents.list.push({id:'command'},{id:'command-group'},{id:'command-forged'});
+for(const id of ['command','command-group','command-forged'])cfg.agents.entries[id]={};
 writeFileSync(process.env.OPENCLAW_CONFIG_PATH,JSON.stringify(cfg),{mode:0o600});
 writeFileSync(process.env.OPENCLAW_STATE_DIR+'/os/gatekeepers.json',JSON.stringify({version:1,gatekeepers:[{pluginId:'gkos-gatekeeper-fs',vendor:'fs',apiVersion:1,root:resolve('test/fixtures/phase5-driver'),tools,resources}]}),{mode:0o600});
 for(const file of ['/home/tester/phase5-effects.jsonl','/home/tester/phase5-delivery.jsonl'])writeFileSync(file,'',{mode:0o600});
