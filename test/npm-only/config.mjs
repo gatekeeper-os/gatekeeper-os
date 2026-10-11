@@ -25,6 +25,8 @@ function agent(id,isDefault=false){
  mkdirSync(value.workspace,{recursive:true,mode:0o700});
  cfg.agents.entries??={};
  if(cfg.agents.entries[id]&&id!=='main')throw new Error('fixture-agent-collision');cfg.agents.entries[id]={...cfg.agents.entries[id],...value};
+ // Multi-agent keyed rosters need explicit ownership (2026.10.1 retires default markers).
+ if(Object.keys(cfg.agents.entries).length>1)cfg.agents.ownership='explicit';
 }
 if(mode==='normal'){
  for(const dir of [join(state,'os'),'/home/tester/kernel-resource','/home/tester/kernel-outside'])mkdirSync(dir,{recursive:true,mode:0o700});

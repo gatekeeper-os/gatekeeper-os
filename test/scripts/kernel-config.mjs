@@ -17,7 +17,7 @@ if (process.argv[2] === 'no-hooks') {
   writeFileSync(join(state,'os/gatekeepers.json'),JSON.stringify({version:1,gatekeepers:[{pluginId:'gkos-gatekeeper-fs',vendor:'fs',apiVersion:1,root:resolve('packages/gkos-gatekeeper-fs'),tools:fsTools,resources:fsResources}]}),{mode:0o600});
   const config={gateway:{mode:'local',bind:'loopback',port:19100,auth:{mode:'token',token:randomBytes(32).toString('hex')}},update:{auto:{enabled:false}},
     models:{providers:{spike:{baseUrl:'http://127.0.0.1:19101/v1',api:'openai-completions',apiKey:randomBytes(32).toString('hex'),models:[{id:'spike',name:'VM deterministic model',reasoning:false,input:['text'],cost:{input:0,output:0,cacheRead:0,cacheWrite:0},contextWindow:128000,maxTokens:1024}]}}},
-    agents:{defaults:{workspace:join(state,'workspace'),model:{primary:'spike/spike'}},entries:{main:{},stranger:{}}},tools:{profile:'full'},
+    agents:{defaults:{workspace:join(state,'workspace'),model:{primary:'spike/spike'}},ownership:'explicit',entries:{main:{},stranger:{}}},tools:{profile:'full'},
     plugins:{allow:['gkos-kernel','gkos-gatekeeper-fs','gkos-kernel-monitor'],load:{paths:['packages/gkos-kernel','packages/gkos-gatekeeper-fs','test/fixtures/kernel-monitor'].map(p=>resolve(p))},entries:{
       'gkos-kernel':{enabled:true,hooks:{allowConversationAccess:true},config:{operators:[],install:{allowSources:[]}}},
       'gkos-gatekeeper-fs':{enabled:true,config:{roots:['/home/tester/kernel-resource']}},
