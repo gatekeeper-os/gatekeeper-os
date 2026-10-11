@@ -69,3 +69,12 @@ the selected version/executable; original snapshot Node is left unchanged.
 The five products came only from npm. Independent gatekeeper apply/reject and
 recorded effects/audit passed; limitations above still apply. See
 `plans/PROGRESS.md` for counts, retained failed history and merge gates.
+
+## Retargeted to beta.7 (2026-10-10)
+
+`test/phase-3-npm-only.sh` installs exactly `@gatekeeper-os/*@0.1.0-beta.7` and provisions official Node
+24.16.0, the minimum for the pinned OpenClaw 2026.9.9. Run it from snapshot `installed-2026-9-9` only after
+beta.7 is published and the read-only listing verifier passes. beta.5 is unsupported on OpenClaw 2026.9.5+
+and beta.6's CLI cannot stage the filesystem driver. Scenario expectations still describe synthetic
+approval effects; a first beta.7 run may need fixture-only corrections, never product patches.
+

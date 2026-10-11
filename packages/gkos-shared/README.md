@@ -20,4 +20,4 @@ Checks: `pnpm --filter @gatekeeper-os/shared test` and `pnpm --filter @gatekeepe
 
 ## Distribution
 
-This README ships with `@gatekeeper-os/shared@0.1.0-beta.6`; `beta` selects the newest beta (no stable release). For cell installation use `npm install --global @gatekeeper-os/cli@beta` on a disposable evaluation machine, then follow the [CLI instructions](../gkos-cli/README.md).
+This README ships with `@gatekeeper-os/shared@0.1.0-beta.7`; `beta` selects the newest beta (no stable release). For cell installation use `npm install --global @gatekeeper-os/cli@beta` on a disposable evaluation machine, then follow the [CLI instructions](../gkos-cli/README.md).
