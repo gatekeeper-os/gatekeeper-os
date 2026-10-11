@@ -8,7 +8,7 @@ npm install --global @gatekeeper-os/cli@beta
 gkos cell create evaluation --port 19100 --policy messaging
 ```
 
-All five release packages are `0.1.0-beta.6`; both `beta` and `latest` select
+All five release packages are `0.1.0-beta.7`; both `beta` and `latest` select
 that version. There is no stable release. npm-only messaging-cell acceptance
 passed in `20260916-220009-phase-3` on Node22.22.3 / OpenClaw2026.9.2.
 Successful approval effects were synthetic, not real filesystem/provider writes.

@@ -26,22 +26,22 @@ node --version > "$evidence/guest-node-before"
 [ "$(uname -sm)" = 'Linux x86_64' ]
 runtime=/home/tester/npm-acceptance-runtime
 mkdir -m 700 "$runtime"
-archive=node-v22.22.3-linux-x64.tar.xz
-curl -fsS --retry 2 "https://nodejs.org/dist/v22.22.3/$archive" -o "$runtime/$archive"
-curl -fsS --retry 2 https://nodejs.org/dist/v22.22.3/SHASUMS256.txt -o "$runtime/SHASUMS256.txt"
+archive=node-v24.16.0-linux-x64.tar.xz
+curl -fsS --retry 2 "https://nodejs.org/dist/v24.16.0/$archive" -o "$runtime/$archive"
+curl -fsS --retry 2 https://nodejs.org/dist/v24.16.0/SHASUMS256.txt -o "$runtime/SHASUMS256.txt"
 (cd "$runtime" && grep -E "^[a-f0-9]{64}  $archive$" SHASUMS256.txt > selected.sha256 && sha256sum -c selected.sha256)
 cp "$runtime/selected.sha256" "$evidence/guest-node-archive-sha256"
 tar -xJf "$runtime/$archive" -C "$runtime"
-export PATH="$runtime/node-v22.22.3-linux-x64/bin:$PATH"
+export PATH="$runtime/node-v24.16.0-linux-x64/bin:$PATH"
 node --version > "$evidence/guest-node-version"
-test "$(cat "$evidence/guest-node-version")" = v22.22.3
-node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({version:process.version,executable:process.execPath,required:"v22.22.3",source:"https://nodejs.org/dist/v22.22.3/",archiveSHA256Verified:true},null,2)+"\n")' "$evidence/guest-runtime.json"
+test "$(cat "$evidence/guest-node-version")" = v24.16.0
+node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({version:process.version,executable:process.execPath,required:"v24.16.0",source:"https://nodejs.org/dist/v24.16.0/",archiveSHA256Verified:true},null,2)+"\n")' "$evidence/guest-runtime.json"
 stage=registry-install
 [ ! -e /home/tester/npm-acceptance-prefix ] || { echo "FAIL registry-prefix-not-empty"; exit 1; }
 npm install --global --prefix /home/tester/npm-acceptance-prefix --ignore-scripts --registry=https://registry.npmjs.org \
-  @gatekeeper-os/shared@0.1.0-beta.5 @gatekeeper-os/gatekeeper-kit@0.1.0-beta.5 \
-  @gatekeeper-os/kernel@0.1.0-beta.5 @gatekeeper-os/gatekeeper-fs@0.1.0-beta.5 \
-  @gatekeeper-os/cli@0.1.0-beta.5 > /home/tester/npm-only-install.log 2>&1
+  @gatekeeper-os/shared@0.1.0-beta.7 @gatekeeper-os/gatekeeper-kit@0.1.0-beta.7 \
+  @gatekeeper-os/kernel@0.1.0-beta.7 @gatekeeper-os/gatekeeper-fs@0.1.0-beta.7 \
+  @gatekeeper-os/cli@0.1.0-beta.7 > /home/tester/npm-only-install.log 2>&1
 node registry.mjs
 gkos --version > "$evidence/cli-version"
 openclaw --version > "$evidence/upstream-version"

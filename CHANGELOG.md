@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-beta.7
+
+Installed-cell filesystem gatekeeper fix; OpenClaw pin 2026.9.9 (Node 24.16+); OpenClaw 2026.10.1 support.
+Release notes: [plans/release-notes-beta.7.md](plans/release-notes-beta.7.md).
 
 ### Upstream pin moves to OpenClaw 2026.9.9
 

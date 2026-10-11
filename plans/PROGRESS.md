@@ -3178,3 +3178,13 @@ SDK, 900/900 unit tests, 10-turn packed gate on 2026.9.2 and 2026.9.9 (fails on 
 `direct-only` kernel tools), extended live smoke on 2026.9.2/2026.9.6/2026.9.9.
 Not run: `phase-3 npm-only` (frozen on published beta.5, unsupported on 2026.9.5+), phases 4–9.
 
+## 2026-10-10 — 0.1.0-beta.7 preparation
+
+Five release packages and every internal `workspace:` pin move to 0.1.0-beta.7 via `scripts/release.ts --write`;
+lockfile regenerated with pnpm 10.15.0. Contents: installed-cell fs driver staging (#38), `direct-only` kernel tools
+(#38), pin 2026.9.9 with Node 24.16+ installer floor (#38), OpenClaw 2026.10.1 support (#39), kernel declarations (#38).
+Evidence: `20261010-224746-phase-1` 25/25; `20261010-230617-phase-3` and `20261011-010033-phase-3` kernel-live 104/104;
+hosted conformance matrix run 38101289325 (pinned 2026.9.9, floor 2026.9.2, latest/beta 2026.10.1: 15/15 each).
+`test/phase-3-npm-only.sh` retargeted to published beta.7 on Node 24.16.0; runs after publication. No publish, tag
+push, deprecation or ClawHub listing. [Matt's commands](BETA7-PRIVATE-HANDOFF.md).
+

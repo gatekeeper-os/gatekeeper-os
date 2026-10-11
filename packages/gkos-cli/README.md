@@ -14,7 +14,7 @@ gkos cell create evaluation --port 19100 --policy messaging
 ```
 
 Use a disposable machine for provisioning. This README ships with the five release
-packages at `0.1.0-beta.6`; `beta` selects the newest beta, with no stable release.
+packages at `0.1.0-beta.7`; `beta` selects the newest beta, with no stable release.
 npm-only acceptance of beta.5 passed in `20260916-220009-phase-3` on Node22.22.3 /
 OpenClaw2026.9.2; beta.6 npm-only acceptance follows publication.
 See the [release status](../../README.md#release-status) for remaining limits.
