@@ -7,5 +7,5 @@ cfg.plugins.entries['gkos-channel-ingress']={enabled:true,hooks:{allowConversati
 cfg.plugins.entries['gkos-kernel'].config.operators=[{channel:'vmchan',senderId:'operator'}];
 cfg.plugins.entries['gkos-kernel'].config.egress={denyPatterns:['phase-three-denied-marker']};
 cfg.commands={ownerAllowFrom:['vmchan:operator']};
-cfg.agents.list.push({id:'forged'},{id:'console'},{id:'group-new'},{id:'command'},{id:'command-group'},{id:'command-forged'},{id:'egress'});
+for(const id of ['forged','console','group-new','command','command-group','command-forged','egress'])cfg.agents.entries[id]={};
 writeFileSync(path,JSON.stringify(cfg),{mode:0o600});

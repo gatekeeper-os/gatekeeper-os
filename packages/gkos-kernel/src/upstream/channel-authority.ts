@@ -1,5 +1,6 @@
 /** Resolve host-delivered channel turns and authenticated Control UI turns. */
-import { resolveCommandAuthorization } from "openclaw/plugin-sdk/command-auth";
+// `command-auth-native` carries this export from 2026.9.2 through 2026.10.1; `command-auth` was removed in 2026.10.1.
+import { resolveCommandAuthorization } from "openclaw/plugin-sdk/command-auth-native";
 import { resolveSessionAgentIdStrict } from "openclaw/plugin-sdk/agent-scope-runtime";
 import { parseAgentSessionKey } from "openclaw/plugin-sdk/routing";
 import type { HookCtx, HookEvent } from "./sdk.js";

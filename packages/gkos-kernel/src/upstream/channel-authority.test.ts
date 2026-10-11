@@ -4,7 +4,7 @@ import { resolveChannelTurnAuthority } from "./channel-authority.js";
 
 // Adapter contract tests, not a claim that a transport delivered authenticated identity.
 const sdk=vi.hoisted(()=>({authorize:vi.fn(),agent:vi.fn()}));
-vi.mock("openclaw/plugin-sdk/command-auth",()=>({resolveCommandAuthorization:sdk.authorize}));
+vi.mock("openclaw/plugin-sdk/command-auth-native",()=>({resolveCommandAuthorization:sdk.authorize}));
 vi.mock("openclaw/plugin-sdk/agent-scope-runtime",()=>({resolveSessionAgentIdStrict:sdk.agent}));
 const event=():HookEvent<"reply_dispatch">=>({
   ctx:{Provider:"slack",ChatType:"direct",SenderId:"U123",SessionKey:"agent:main:slack:direct:U123",AgentId:"main",commandText:"https://example.invalid/user",agentText:"https://example.invalid/history",rawText:"https://example.invalid/user",CommandAuthorized:true},

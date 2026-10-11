@@ -802,12 +802,16 @@ waits for verification against a 2026.10 build.
    `main` (2026.9.2 pin) and the pin branch: the staged fs plugin lacked `dist/driver.js`, so the
    kernel logged `gatekeeper fs unavailable`. The last fresh-base `phase-1` before this ran on
    2026-09-09, before kernel-owned drivers landed.
-6. **2026.10.1 (npm `latest` since 2026-10-10, inside the declared range) is not yet compatible.**
-   It rejects the retired `agents.list` config shape that 2026.9.9 still migrates with a warning
-   (product cell configs already use keyed `agents.entries`; the smoke config now does too, and it
-   validates on 2026.9.2, 2026.9.9 and 2026.10.1). With that fixed, the smoke passes config and health on
-   2026.10.1 but fails `authenticated-kernel-rpc`. VM test configs (`kernel-config.mjs`,
-   `phase5-config.mjs`, `channel-config.mjs`, `blueprint-scenarios.mjs`, `npm-only/config.mjs`,
-   `spike-config.mjs`, `deterministic-agent-turn.sh`) still write `agents.list`. Nightly `latest`
-   stays red until 2026.10 support lands or the range is narrowed.
-
+6. **2026.10.1 (npm `latest` since 2026-10-10).** Two breaks, both fixed without upstream changes:
+   - `openclaw/plugin-sdk/command-auth` is gone; the kernel failed during load ("cannot import
+     openclaw/plugin-sdk/command-auth (built with OpenClaw 2026.9.9; running core 2026.10.1)") and every
+     `os.*` RPC returned `unknown method`. `command-auth-native` exports the same
+     `resolveCommandAuthorization(params: CommandAuthorizationParams): CommandAuthorization` on 2026.9.2,
+     2026.9.6, 2026.9.9 and 2026.10.1.
+   - `agents.list` and `agents.entries.*.default` are retired (2026.9.9 migrates them with a warning).
+     Keyed rosters with more than one entry require `agents.ownership: "explicit"` on every release from
+     2026.9.2 (zod rule: `entries.length > 1 && no default marker && ownership !== "explicit"`).
+   Verified: 15-check smoke and 10-turn packed gate on 2026.9.2, 2026.9.9 and 2026.10.1; host harness on
+   2026.10.1 with Tool Search off, on and default (`os_*` offered directly); VM `kernel-live` 104/104 on
+   `installed-2026-9-9` with the migrated configs (`20261011-010033-phase-3`). Not verified: a multi-blueprint
+   cell on 2026.9.9+/2026.10.1 (blueprints register agents through upstream `openclaw agents add`).
