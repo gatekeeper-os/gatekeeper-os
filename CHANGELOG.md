@@ -13,8 +13,14 @@ lane keeps 2026.9.2 under live test. `check:catalog` fails when `pnpm-lock.yaml`
 and CI move to 24.16. Package `engines` stay `>=22.22.3`, because the 2026.9.2 floor runs there; a new
 `node-floor` CI job builds and tests on 22.22.3.
 
-**Not yet:** OpenClaw 2026.10.1 (now npm `latest`) fails the live smoke at authenticated kernel RPC;
-see [upstream reference](docs/upstream-reference.md#2026-10-10--pin-moved-to-202699).
+### OpenClaw 2026.10.1 support
+
+2026.10.1 removed the `openclaw/plugin-sdk/command-auth` subpath, so the kernel failed at import and
+registered nothing (`unknown method: os.status`). The kernel now imports `resolveCommandAuthorization`
+from `openclaw/plugin-sdk/command-auth-native`, which carries the same export from 2026.9.2 through
+2026.10.1. 2026.10.1 also rejects the retired `agents.list` and `default` markers; test and smoke
+configs use keyed `agents.entries`, with `agents.ownership: "explicit"` for multi-agent rosters
+(required on every supported release). Product cell configs already used `agents.entries`.
 
 ### Fixes
 

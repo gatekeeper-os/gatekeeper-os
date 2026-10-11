@@ -26,7 +26,7 @@ See the [beta.5 release notes](plans/release-notes-beta.5.md) and
 [acceptance receipts](plans/PROGRESS.md).
 
 > **Compatibility:** the upstream pin is OpenClaw 2026.9.9 (Node 24.16+); the declared range is
-> `>=2026.9.2 <2026.11.0`. **Published 0.1.0-beta.6 has two defects fixed on `main`:** cells created by
+> `>=2026.9.2 <2026.11.0`, live-tested on 2026.9.2, 2026.9.9 and 2026.10.1 (2026.10.1 needs `main`). **Published 0.1.0-beta.6 has two defects fixed on `main`:** cells created by
 > its CLI cannot load the filesystem gatekeeper, and on 2026.9.9 its `os_*` tools are offered only
 > through Tool Search. Granted `gk_*` calls work on 2026.9.2–2026.9.9
 > ([evidence](docs/upstream-reference.md#2026-10-10--openclaw-202699)). Beta.5 works with
